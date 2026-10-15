@@ -45,6 +45,8 @@ Known landmarks already found:
 - `a78-06-1.51` @ `0x37DF`: 3-letter name table (default high-score initials?), loaded at `0x375A`.
 - MCU `F8F1`: EXTEND letter = shared RAM `FC7C`, incremented mod 6 every vblank.
 - Strings are **length-prefixed ASCII** (e.g. `10 "SELECT GAME MODE"`, `13 "ALL RIGHTS RESERVED"`).
+- The font is in tile bank 0 at the ASCII codes (`0x20–0x5F`, `@` drawn as ©), so a
+  string's bytes are its tile numbers.
 - Free space (`0xFF` runs) in `a78-05-1.52`: `0x785C`(+7A4), `0xBC9F`(+361), `0xD583`(+287D).
   `a78-06-1.51` has none.
 
@@ -185,6 +187,11 @@ From `bublbobl.cpp` `charlayout`: 8×8, 4bpp, region is **bit-inverted**
 `gfx.py`: decode all tiles → PNG sheets (greyscale, and per-palette using dumped palettes).
 Validate against MAME's F4 tile viewer.
 
+Done: `tools/gfx.py` writes `build\gfx\tiles_bank00..11.png` (banks 12–15 are the empty
+sockets) as indexed greyscale, raw colour index per pixel. The font and the wall tiles decode
+cleanly. The sprite tiles look broken up in the sheets, because objects are built from tile
+columns (§6.3); the offline renderer will put them back together.
+
 ### 6.2 Palettes
 RGBx_444 big-endian, 16 palettes × 16 colours. Extract the tables the game copies into
 `F800` (found in Phase 1) so palettes come from ROM, not just snapshots. Colour 15 is
@@ -216,6 +223,8 @@ Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-charac
 
 1. `text.py`: scan main ROM images for length-prefixed ASCII (`len, chars…`), plus raw runs,
    keyed by CPU address (fixed or `bank:addr`). Output `build\text\strings.csv`.
+   Done: `tools/text.py` finds 201 prefixed strings and 56 raw runs. Of the raw runs, 41 are
+   marked `ascending`: they are mostly lists of tile numbers that happen to be printable.
 2. Find the print routine(s) by breaking on writes of a known string to video/object RAM;
    determine the full record format (position, colour, terminator/control codes such as
    the `:`-separated sequences seen in credits).

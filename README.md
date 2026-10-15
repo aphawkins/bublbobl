@@ -40,8 +40,13 @@ mame bublbobl -rompath build/roms
 `build.py` checks your ROMs, assembles `src/`, and stops unless every program ROM
 matches the original byte for byte. The rebuilt set is written to `build/roms/bublbobl/`.
 
-Other tools: `tools/romset.py` (verify the set, write per-CPU images to `build/images/`)
-and `tools/classify.py` (refresh the byte classification maps in `notes/classmap/`).
+Other tools:
+
+- `tools/romset.py` — verify the set, write per-CPU images to `build/images/`
+- `tools/classify.py` — refresh the byte classification maps in `notes/classmap/`
+- `tools/gfx.py` — decode the graphics ROMs into tile sheets, `build/gfx/tiles_bank00..11.png`
+  (`--scale 2` to magnify)
+- `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
 
 ## Legal
 
