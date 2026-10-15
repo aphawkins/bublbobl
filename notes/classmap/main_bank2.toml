@@ -1,0 +1,198 @@
+# Byte classification for main_bank2.bin (a78-05-1.52 +0x8000, 0x4000 bytes @ 8000).
+# Generated in part by tools/classify.py: source="auto" entries are rewritten.
+
+[[range]]
+start = 0x807C
+end = 0x808C
+kind = "text"
+source = "auto"
+note = "SCREEN RAM ERROR"
+
+[[range]]
+start = 0x808D
+end = 0x809D
+kind = "text"
+source = "auto"
+note = "OBJECT RAM ERROR"
+
+[[range]]
+start = 0x820E
+end = 0x8217
+kind = "text"
+source = "auto"
+note = "TEST MODE"
+
+[[range]]
+start = 0x8218
+end = 0x821D
+kind = "text"
+source = "auto"
+note = "COINA"
+
+[[range]]
+start = 0x821F
+end = 0x8224
+kind = "text"
+source = "auto"
+note = "COINB"
+
+[[range]]
+start = 0x8226
+end = 0x822D
+kind = "text"
+source = "auto"
+note = "SERVICE"
+
+[[range]]
+start = 0x822F
+end = 0x8234
+kind = "text"
+source = "auto"
+note = "TILT:"
+
+[[range]]
+start = 0x8235
+end = 0x823F
+kind = "text"
+source = "auto"
+note = "1P SELECT:"
+
+[[range]]
+start = 0x8240
+end = 0x824A
+kind = "text"
+source = "auto"
+note = "2P SELECT:"
+
+[[range]]
+start = 0x824B
+end = 0x8253
+kind = "text"
+source = "auto"
+note = "1P AWA :"
+
+[[range]]
+start = 0x8254
+end = 0x825C
+kind = "text"
+source = "auto"
+note = "2P AWA :"
+
+[[range]]
+start = 0x825D
+end = 0x8265
+kind = "text"
+source = "auto"
+note = "1P JUMP:"
+
+[[range]]
+start = 0x8266
+end = 0x826E
+kind = "text"
+source = "auto"
+note = "2P JUMP:"
+
+[[range]]
+start = 0x826F
+end = 0x8277
+kind = "text"
+source = "auto"
+note = "1P LH L:"
+
+[[range]]
+start = 0x8278
+end = 0x8280
+kind = "text"
+source = "auto"
+note = "2P LH L:"
+
+[[range]]
+start = 0x828D
+end = 0x8295
+kind = "text"
+source = "auto"
+note = "DIPSW A:"
+
+[[range]]
+start = 0x82A9
+end = 0x82B3
+kind = "text"
+source = "auto"
+note = "SOUND CODE"
+
+[[range]]
+start = 0x82B4
+end = 0x82BA
+kind = "text"
+source = "auto"
+note = "RAM OK"
+
+[[range]]
+start = 0x82BB
+end = 0x82C1
+kind = "text"
+source = "auto"
+note = "ROM OK"
+
+[[range]]
+start = 0x8673
+end = 0x8685
+kind = "fill"
+source = "auto"
+note = "0x13 x 00"
+
+[[range]]
+start = 0xB7F0
+end = 0xB80D
+kind = "text"
+source = "auto"
+note = "BUT IT WAS NOT A TRUE ENDING!"
+
+[[range]]
+start = 0xB80E
+end = 0xB82B
+kind = "text"
+source = "auto"
+note = "WRITE 8 BIG WORDS ON A PAPER."
+
+[[range]]
+start = 0xB82C
+end = 0xB849
+kind = "text"
+source = "auto"
+note = "THIS IS A KEY OF SECRET GAME."
+
+[[range]]
+start = 0xB84A
+end = 0xB866
+kind = "text"
+source = "auto"
+note = "----HINTS OF THIS WORDS!----"
+
+[[range]]
+start = 0xB867
+end = 0xB882
+kind = "text"
+source = "auto"
+note = " NO MISS CLEAR! ROUND 1-20!"
+
+[[range]]
+start = 0xB883
+end = 0xB89E
+kind = "text"
+source = "auto"
+note = " & ENTER THE SILVER DOOR !!"
+
+[[range]]
+start = 0xB89F
+end = 0xB8B9
+kind = "text"
+source = "auto"
+note = "   YOU WILL FIND \"ABCD...\""
+
+[[range]]
+start = 0xBC9F
+end = 0xBFFF
+kind = "fill"
+source = "auto"
+note = "0x361 x FF"

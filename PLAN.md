@@ -18,6 +18,8 @@ Three stages take Taito's 1986 arcade Bubble Bobble from ROMs to a C# game in
 | 2026-10-14 | The game logic follows the **arcade** code. Where the arcade and the C64 differ, the arcade wins. This supersedes the rule "Faithful to the C64, not the arcade" in `docs/bb-port-plan.md`. |
 | 2026-10-14 | Two renditions play the same game. **8-bit** is the C64 look and sound (the existing assets). **16-bit** is the arcade look and sound. |
 | 2026-10-14 | The golden source is this repo's `src\`, proved byte-exact against the `bublbobl` set (Japan, Ver 0.1). |
+| 2026-10-15 | The repo holds no ROM bytes. `src\` contains only disassembled code and labels; every other range is pulled in with `.incbin` from the user's verified ROM images at build time. |
+| 2026-10-15 | The assembler is GNU Binutils (`z80-elf`, `m68hc11-elf`), built in WSL, instead of the Macroassembler AS. |
 
 These decisions need entries in the repo's `docs/decisions.md`, with the old rule marked
 as superseded (see §3.1).
@@ -44,7 +46,7 @@ must be translated, named and in a byte-exact build.
 ## 3. Stage 3 — C# reimplementation in The Sharp Kind
 
 ### 3.1 Repo documents to change first
-- `docs/decisions.md`: add the three decisions in §1. Mark the C64-first rule as superseded.
+- `docs/decisions.md`: add the three 2026-10-14 decisions in §1. Mark the C64-first rule as superseded.
 - `docs/bb-port-plan.md`: change the scope and rules. The golden source becomes
   the `bublbobl` repo's `src\`. The oracle and capture tools change (§3.6). The C64 reference
   (`rebb64`) becomes the reference for the 8-bit rendition's art and sound only.

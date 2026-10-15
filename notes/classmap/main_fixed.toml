@@ -1,0 +1,436 @@
+# Byte classification for main_fixed.bin (a78-06-1.51 +0x0, 0x8000 bytes @ 0000).
+# Generated in part by tools/classify.py: source="auto" entries are rewritten.
+
+[[range]]
+start = 0x0000
+end = 0x0003
+kind = "code"
+source = "manual"
+note = "reset: DI / IM 2 / JP 00B9"
+
+[[range]]
+start = 0x0234
+end = 0x0242
+kind = "text"
+source = "auto"
+note = "WORK RAM ERROR"
+
+[[range]]
+start = 0x0243
+end = 0x0253
+kind = "text"
+source = "auto"
+note = "COMMON RAM ERROR"
+
+[[range]]
+start = 0x0254
+end = 0x0261
+kind = "text"
+source = "auto"
+note = "PS4 SUM ERROR"
+
+[[range]]
+start = 0x0262
+end = 0x026B
+kind = "text"
+source = "auto"
+note = "I/O ERROR"
+
+[[range]]
+start = 0x04A2
+end = 0x04AC
+kind = "text"
+source = "auto"
+note = "TIME ERROR"
+
+[[range]]
+start = 0x09D2
+end = 0x09D7
+kind = "text"
+source = "auto"
+note = "ROUND"
+
+[[range]]
+start = 0x09D8
+end = 0x09DF
+kind = "text"
+source = "auto"
+note = "READY !"
+
+[[range]]
+start = 0x0D0F
+end = 0x0D13
+kind = "text"
+source = "auto"
+note = "TILT"
+
+[[range]]
+start = 0x1F74
+end = 0x1F87
+kind = "text"
+source = "auto"
+note = "YOU ZAPPED TO ....."
+
+[[range]]
+start = 0x210D
+end = 0x2116
+kind = "text"
+source = "auto"
+note = "GAME OVER"
+
+[[range]]
+start = 0x212C
+end = 0x2132
+kind = "text"
+source = "auto"
+note = "CREDIT"
+
+[[range]]
+start = 0x215B
+end = 0x215F
+kind = "text"
+source = "auto"
+note = "PUSH"
+
+[[range]]
+start = 0x2160
+end = 0x2174
+kind = "text"
+source = "auto"
+note = "ONLY 1 PLAYER BUTTON"
+
+[[range]]
+start = 0x2175
+end = 0x2189
+kind = "text"
+source = "auto"
+note = "1 OR 2 PLAYER BUTTON"
+
+[[range]]
+start = 0x21AB
+end = 0x21B6
+kind = "text"
+source = "auto"
+note = "INSERT COIN"
+
+[[range]]
+start = 0x21B7
+end = 0x21C3
+kind = "text"
+source = "auto"
+note = "INSERT COINS"
+
+[[range]]
+start = 0x23F0
+end = 0x23F6
+kind = "text"
+source = "auto"
+note = "NOTICE"
+
+[[range]]
+start = 0x23F7
+end = 0x240B
+kind = "text"
+source = "auto"
+note = "THIS GAME IS FOR USE"
+
+[[range]]
+start = 0x240C
+end = 0x2414
+kind = "text"
+source = "auto"
+note = "IN JAPAN"
+
+[[range]]
+start = 0x2415
+end = 0x241A
+kind = "text"
+source = "auto"
+note = "ONLY."
+
+[[range]]
+start = 0x241B
+end = 0x2434
+kind = "text"
+source = "auto"
+note = "SALES,EXPORT,OR OPERATION"
+
+[[range]]
+start = 0x2435
+end = 0x244F
+kind = "text"
+source = "auto"
+note = "OUTSIDE THIS TERRITORY MAY"
+
+[[range]]
+start = 0x2450
+end = 0x2457
+kind = "text"
+source = "auto"
+note = "VIOLATE"
+
+[[range]]
+start = 0x2458
+end = 0x246F
+kind = "text"
+source = "auto"
+note = "INTERNATIONAL COPYRIGHT"
+
+[[range]]
+start = 0x2474
+end = 0x2482
+kind = "text"
+source = "auto"
+note = "TRADEMARK LAWS"
+
+[[range]]
+start = 0x2483
+end = 0x248A
+kind = "text"
+source = "auto"
+note = "AND THE"
+
+[[range]]
+start = 0x248B
+end = 0x249E
+kind = "text"
+source = "auto"
+note = "VIOLATOR SUBJECT TO"
+
+[[range]]
+start = 0x249F
+end = 0x24B0
+kind = "text"
+source = "auto"
+note = "SEVERE PENALTIES."
+
+[[range]]
+start = 0x28B5
+end = 0x28CD
+kind = "text"
+source = "auto"
+note = "NOW,IT IS BEGINNING OF A"
+
+[[range]]
+start = 0x28CE
+end = 0x28EC
+kind = "text"
+source = "auto"
+note = "FANTASTIC STORY!! LET'S MAKE A"
+
+[[range]]
+start = 0x28ED
+end = 0x290D
+kind = "text"
+source = "auto"
+note = "JOURNEY TO THE CAVE OF MONSTERS!"
+
+[[range]]
+start = 0x290E
+end = 0x2918
+kind = "text"
+source = "auto"
+note = "GOOD LUCK!"
+
+[[range]]
+start = 0x2AE2
+end = 0x2AF2
+kind = "text"
+source = "auto"
+note = "SELECT GAME MODE"
+
+[[range]]
+start = 0x2AF3
+end = 0x2AF7
+kind = "text"
+source = "auto"
+note = "PUSH"
+
+[[range]]
+start = 0x2D73
+end = 0x2D85
+kind = "text"
+source = "auto"
+note = "BASIC SKILL ...   "
+
+[[range]]
+start = 0x2D86
+end = 0x2DA0
+kind = "text"
+source = "auto"
+note = "TRAP ENEMIES INSIDE       "
+
+[[range]]
+start = 0x2DA1
+end = 0x2DBB
+kind = "text"
+source = "auto"
+note = "BUBBLES.                  "
+
+[[range]]
+start = 0x2DBC
+end = 0x2DD6
+kind = "text"
+source = "auto"
+note = "BURST BUBBLES WITH YOUR   "
+
+[[range]]
+start = 0x2DD7
+end = 0x2DF1
+kind = "text"
+source = "auto"
+note = "HORNS OR FINS.            "
+
+[[range]]
+start = 0x2DF2
+end = 0x2E04
+kind = "text"
+source = "auto"
+note = "ADVANCED SKILL ..."
+
+[[range]]
+start = 0x2E0D
+end = 0x2E27
+kind = "text"
+source = "auto"
+note = "HIGHER POINTS ARE SCORED  "
+
+[[range]]
+start = 0x2E28
+end = 0x2E42
+kind = "text"
+source = "auto"
+note = "WHEN BURSTING SEVERAL     "
+
+[[range]]
+start = 0x2E43
+end = 0x2E5D
+kind = "text"
+source = "auto"
+note = "BUBBLES AT THE SAME TIME. "
+
+[[range]]
+start = 0x2E5E
+end = 0x2E78
+kind = "text"
+source = "auto"
+note = "YOU CAN JUMP OVER BUBBLES."
+
+[[range]]
+start = 0x2E94
+end = 0x2EAE
+kind = "text"
+source = "auto"
+note = "ONE STAGE CLEARED WHEN ALL"
+
+[[range]]
+start = 0x2EAF
+end = 0x2EC9
+kind = "text"
+source = "auto"
+note = "ENEMIES ARE DESTROYED.    "
+
+[[range]]
+start = 0x2FA2
+end = 0x2FAB
+kind = "text"
+source = "auto"
+note = "GAME OVER"
+
+[[range]]
+start = 0x321C
+end = 0x3235
+kind = "text"
+source = "auto"
+note = "1ST BONUS FOR      0 PTS."
+
+[[range]]
+start = 0x3236
+end = 0x324F
+kind = "text"
+source = "auto"
+note = "2ND BONUS FOR      0 PTS."
+
+[[range]]
+start = 0x3250
+end = 0x3261
+kind = "text"
+source = "auto"
+note = "AND MYSTERY !?..."
+
+[[range]]
+start = 0x334A
+end = 0x3353
+kind = "data"
+source = "manual"
+note = "'dead copy:' - ASCII that also runs as opcodes when the tamper check at 333F fails"
+
+[[range]]
+start = 0x3597
+end = 0x359D
+kind = "text"
+source = "auto"
+note = "BEST 5"
+
+[[range]]
+start = 0x359E
+end = 0x35AE
+kind = "text"
+source = "auto"
+note = "SCORE ROUND NAME"
+
+[[range]]
+start = 0x35C3
+end = 0x35D7
+kind = "text"
+source = "auto"
+note = "ENTER 1UP INITIALS !"
+
+[[range]]
+start = 0x35D8
+end = 0x35EC
+kind = "text"
+source = "auto"
+note = "ENTER 2UP INITIALS !"
+
+[[range]]
+start = 0x35ED
+end = 0x35FE
+kind = "text"
+source = "auto"
+note = "SCORE ROUND  NAME"
+
+[[range]]
+start = 0x3DC4
+end = 0x3DD5
+kind = "text"
+source = "auto"
+note = "TODAY'S RECORD IS"
+
+[[range]]
+start = 0x3DD6
+end = 0x3DE2
+kind = "text"
+source = "auto"
+note = "\"ROUND    \" "
+
+[[range]]
+start = 0x560F
+end = 0x5626
+kind = "text"
+source = "auto"
+note = "WELCOME TO SECRET ROUND"
+
+[[range]]
+start = 0x57DF
+end = 0x57E3
+kind = "text"
+source = "auto"
+note = "TIME"
+
+[[range]]
+start = 0x786B
+end = 0x788D
+kind = "fill"
+source = "auto"
+note = "0x23 x 00"

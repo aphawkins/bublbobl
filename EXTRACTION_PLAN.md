@@ -13,6 +13,13 @@ Reference sources:
 - MAME driver: [mamedev/mame](https://github.com/mamedev/mame), cloned alongside this repo at
   `..\..\mamedev\mame` — `src\mame\taito\bublbobl.cpp`,
   `bublbobl_m.cpp` (MCU/IO glue), `bublbobl_v.cpp` (video), `bublbobl.h`
+- MAME binaries: `C:\Games\Retro\mame` (`mame.exe`, `unidasm.exe`) — not on PATH; scripts
+  read `MAME_DIR` from `config.local.toml`
+
+> **The repo holds no ROM bytes.** Source in `src\` contains only what has been
+> disassembled. Every region not yet understood is pulled in at build time from the
+> verified images in `build\images\` with `.incbin`. So `src\` never builds without
+> the user's ROMs, and nothing in the repo is a copy of a ROM.
 
 ---
 
@@ -98,7 +105,7 @@ bublbobl\                     ← repo root
     gfx.py, palette.py, text.py, levels.py, sound.py, ...
     build.py                  ← assemble src\ → build\roms\bublbobl\ and verify CRCs
   src\                        ← the assembler source: the golden source for stage 3
-    main\  (fixed.asm, bank0..3.asm, include files)
+    main\  (fixed.s, bank0..3.s, include files)
     sub\   sound\   mcu\
   build\                      ← generated, git-ignored
     images\  (main_fixed.bin, main_bank0..3.bin, sub.bin, sound.bin, mcu.bin)
@@ -110,7 +117,7 @@ bublbobl\                     ← repo root
   traces\                     ← MAME debugger traces/scripts (raw logs git-ignored)
 ```
 
-Tooling: Python 3 (+ Pillow for PNG), MAME (`mame -debug`,
+Tooling: Python 3 (+ Pillow for PNG), GNU Binutils (§12.1), MAME at `C:\Games\Retro\mame` (`mame -debug`,
 ROMs in `roms\bublbobl.zip`), and its bundled `unidasm.exe` (supports `-arch z80` and
 `-arch m6801`), optionally Ghidra for interactive cross-referencing.
 
@@ -247,7 +254,8 @@ Deliverable: `build\levels\round_XXX.json/.png`, `notes\data_formats.md#levels`.
 ## 9. Phase 5 — Game logic disassembly (main + sub)
 
 1. Generate first-pass listings with `unidasm` using the classification maps so only code
-   regions are disassembled; data regions emitted as `db/dw` with labels.
+   regions are disassembled; data regions get labels and stay as `.incbin` (see the
+   ROM-free rule at the top).
    (Alternatively import into Ghidra: base `0000` + four overlay blocks at `8000`, Z80.)
 2. Work outward from entry points: reset (`0000`), IM2 vector table (vector byte comes from
    MCU shared RAM `FC00`), `RST` handlers (`0008`, `0010`, `0018`, `0020`, `0028`, `0030`,
@@ -264,7 +272,7 @@ Deliverable: `build\levels\round_XXX.json/.png`, `notes\data_formats.md#levels`.
    keep it assembling byte-exact at every commit (Phase 8). Do not let a listing-only
    form drift away from buildable source.
 
-Deliverable: `src\main\*.asm`, `src\sub\*.asm`, `notes\routines.md`, byte-exact rebuild.
+Deliverable: `src\main\*.s`, `src\sub\*.s`, `notes\routines.md`, byte-exact rebuild.
 
 ---
 
@@ -283,7 +291,7 @@ Smallest and most self-contained — a good early win.
    meaning.
 5. Byte-exact rebuild check (Phase 8).
 
-Deliverable: `src\mcu\mcu.asm`, `notes\mcu_shared_ram.md`.
+Deliverable: `src\mcu\mcu.s`, `notes\mcu_shared_ram.md`.
 
 ---
 
@@ -302,46 +310,67 @@ Deliverable: `src\mcu\mcu.asm`, `notes\mcu_shared_ram.md`.
    - optional MIDI conversion,
    - reference audio/VGM captured from MAME for validation.
 
-Deliverable: `src\sound\*.asm`, `build\sound\`, `notes\data_formats.md#sound`.
+Deliverable: `src\sound\*.s`, `build\sound\`, `notes\data_formats.md#sound`.
 
 ---
 
 ## 12. Phase 8 — Reassembly to a byte-exact set that runs in MAME
 
 ### 12.1 Toolchain
-**The Macroassembler AS** (`asl` + `p2bin`) for all four CPUs: it assembles Z80 and 6801,
-so one syntax, one include style and one build script cover the whole set. It also gives
-explicit control of the 6801 addressing mode, which the MCU needs (§12.3).
+**GNU Binutils** (`as`, `ld`, `objcopy`), built from `C:\code\sourceware\binutils-gdb` in
+WSL Ubuntu into `~/bublbobl-tools` for two targets:
+
+| Target | Prefix | CPUs | Notes |
+|---|---|---|---|
+| `z80-elf` | `~/bublbobl-tools/z80/bin/z80-elf-` | main, sub, sound | `-march=z80+xyhl+sli+xdcb` enables the undocumented opcodes |
+| `m68hc11-elf` | `~/bublbobl-tools/m6801/bin/m68hc11-elf-` | MCU | The 68HC11 is a superset of the 6801 with the same encodings |
+
+Each image is assembled to an object, linked at its base (`ld -Ttext=0x0000`, `0x8000` or
+`0xF000`), then written out with `objcopy -O binary`. One syntax (GNU `as`) and one build
+script cover the whole set. Proved on 2026-10-15: the main fixed ROM rebuilt from a
+reset-code split plus `.incbin`, and the MCU image from `.incbin`, both byte-identical.
+
+To rebuild the tools (needs `bison` and `flex` in WSL):
+`configure --target=<target> --prefix=$HOME/bublbobl-tools/<name> --disable-gdb
+--disable-gdbserver --disable-sim --disable-gprofng --disable-gold --disable-nls
+--disable-werror MAKEINFO=true`, then `make all-gas all-ld all-binutils` and the matching
+`install-*` targets.
 
 ### 12.2 Source layout and images
-| Source | `org` | Output | Size |
+| Source | Link base | Output | Size |
 |---|---|---|---|
-| `src\main\fixed.asm` | `0000h` | `a78-06-1.51` | 32K |
-| `src\main\bank0..3.asm` | `8000h` each | joined in order → `a78-05-1.52` | 4 × 16K |
-| `src\sub\sub.asm` | `0000h` | `a78-08.37` | 32K |
-| `src\sound\sound.asm` | `0000h` | `a78-07.46` | 32K |
-| `src\mcu\mcu.asm` | `F000h` | `a78-01.17` | 4K |
+| `src\main\fixed.s` | `0x0000` | `a78-06-1.51` | 32K |
+| `src\main\bank0..3.s` | `0x8000` each | joined in order → `a78-05-1.52` | 4 × 16K |
+| `src\sub\sub.s` | `0x0000` | `a78-08.37` | 32K |
+| `src\sound\sound.s` | `0x0000` | `a78-07.46` | 32K |
+| `src\mcu\mcu.s` | `0xF000` | `a78-01.17` | 4K |
 
 - Shared symbols (I/O ports, shared RAM `E000–F7FF`, MCU RAM `FC00–FFFF`) live in include
   files that every CPU's source uses. Each address then has one name across all four CPUs.
-- The four banks share `8000h`, so each bank keeps its own labels. A call into a bank uses
+- The four banks share `0x8000`, so each bank keeps its own labels. A call into a bank uses
   the bank-switch helpers in the fixed ROM. Name each helper and its bank argument.
-- Pad free space to the original length with `0FFh`, and place fixed strings (the version
-  stamp at `0xFF4C` of `a78-05-1`) at their original addresses with `org` asserts.
+- **No ROM bytes in source.** Each source file starts as one `.incbin` of its image from
+  `build\images\` (`.incbin "file", offset, length`). As regions are
+  disassembled, the `.incbin` is split around them. Data regions get a label and keep a
+  `.incbin` of just their range, so the label is in the source but the bytes are not.
+  `build.py` runs `romset.py` first so the images exist and are verified.
+- Pad free space to the original length with `0xFF`, and place fixed strings (the version
+  stamp at `0xFF4C` of `a78-05-1`) at their original addresses with `.org` (which stops the build if code has run past it).
 - Graphics ROMs and `a71-25.41` are data only. `build.py` copies them from the ROM directory
   so that the output folder is a complete set.
 
 ### 12.3 Encoding traps
 - **6801 extended addressing below `$0100`.** The MCU uses three-byte extended forms for
-  direct-page addresses (e.g. `F6 00 54` = `LDAB $0054`, `7C 00 48` = `INC $0048`). An
-  assembler picks the two-byte direct form by default. Force the extended form (AS: `>`
-  operand prefix) where the original has it.
+  direct-page addresses (e.g. `F6 00 54` = `LDAB $0054`, `7C 00 48` = `INC $0048`). GNU `as`
+  for the 68HC11 already uses the extended form for any address, constant or symbol, and
+  uses the two-byte direct form only with a `*` prefix (`ldab *0x54` = `D6 54`). So write
+  `*` exactly where the original has the direct form.
 - **Z80 undocumented opcodes** (`SLL`, `IXH`/`IXL`, etc.) must assemble as in the original.
   Keep each `JR`/`JP` and each `RST` exactly as found.
 - **Code that is also data.** The `dead copy:` bytes at `0x334A` run as opcodes. Keep them as
-  `db` with a comment that gives both readings.
-- **Ambiguous bytes.** Until a region is proved to be code, keep it as `db`. Wrong code is
-  worse than honest data.
+  a labelled `.incbin` with a comment that gives both readings.
+- **Ambiguous bytes.** Until a region is proved to be code, keep it as a `.incbin`. Wrong
+  code is worse than honest data.
 
 ### 12.4 Build and verify
 `python tools\build.py` does these steps:
@@ -401,13 +430,13 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 ## 15. Suggested order & milestones
 
 1. Phase 0 foundations (ROM loader, images, symbols) and the Phase 8 build skeleton: every
-   ROM starts as one large `db` block, so `build.py` is byte-exact from day one.
+   ROM starts as one `.incbin` of its image, so `build.py` is byte-exact from day one.
 2. Phase 2.1 tile sheets + Phase 3 text dump — quick, visible results.
 3. Phase 6 MCU — small, complete, byte-exact.
 4. Phase 1 traces + RAM map — unlocks everything else.
 5. Phase 2.2–2.4 palettes, offline renderer, sprite frames.
 6. Phase 4 levels.
-7. Phase 5 main/sub disassembly. Replace `db` blocks with code region by region, and keep
+7. Phase 5 main/sub disassembly. Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.
 8. Phase 7 sound.
 9. Phase 8 relocation test.

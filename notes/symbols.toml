@@ -1,0 +1,63 @@
+# Single source of truth for names. Seeded from EXTRACTION_PLAN.md §2.
+# Each table is one address space. Keys are names; values are { addr, size?, note? }.
+# Exported to each assembler / disassembler format by tools (later phases).
+
+[main.io]
+SOUND_CMD     = { addr = 0xFA00, note = "W: sound command / R: sound reply" }
+SOUND_SEMA    = { addr = 0xFA01, note = "R: sound semaphores" }
+SOUND_RESET   = { addr = 0xFA03, note = "sound CPU reset" }
+WATCHDOG      = { addr = 0xFA80 }
+SUB_NMI       = { addr = 0xFB00, note = "NMI to sub CPU" }
+BANK_CTRL     = { addr = 0xFB40, note = "b0-2 bank ((d^4)&7), b4 sub reset, b5 MCU reset, b6 video enable, b7 flip" }
+
+[main.mem]
+BANK_WINDOW   = { addr = 0x8000, size = 0x4000, note = "a78-05-1.52 page; write 4-7 to FB40 for pages 0-3" }
+OBJ_TILES     = { addr = 0xC000, size = 0x1D00, note = "tile-column data for objects, 0x80 bytes per gfx_num" }
+OBJ_RAM       = { addr = 0xDD00, size = 0x0300, note = "4 bytes/object: Y, gfx#, X, attr" }
+SHARED_RAM    = { addr = 0xE000, size = 0x1800, note = "work RAM shared with sub CPU" }
+PALETTE_RAM   = { addr = 0xF800, size = 0x0200, note = "256 x RGBx_444 big-endian" }
+MCU_RAM       = { addr = 0xFC00, size = 0x0400, note = "RAM shared with MCU" }
+MCU_IRQ_VEC   = { addr = 0xFC00, note = "IM 2 vector byte, written by MCU" }
+EXTEND_LETTER = { addr = 0xFC7C, note = "MCU increments mod 6 each vblank (mcu:F8F1)" }
+MCU_G_FLAG    = { addr = 0xFF98, note = "MCU OCF handler checks for 'G' (0x47)" }
+
+[main.code]
+RESET          = { addr = 0x0000, note = "DI / IM 2 / JP 00B9" }
+START          = { addr = 0x00B9 }
+TAMPER_CHECK   = { addr = 0x333F, note = "reads 0B2E, expects 4D; else runs 'dead copy:'" }
+DEAD_COPY      = { addr = 0x334A, note = "ASCII that executes as opcodes" }
+SWB7_SCORE_A   = { addr = 0x0F26, note = "F7FE/F7FF score output mystery" }
+SWB7_SCORE_B   = { addr = 0x0F74 }
+NAME_TABLE_LD  = { addr = 0x375A }
+NAME_TABLE     = { addr = 0x37DF, note = "3-letter names (default hi-score initials?)" }
+ENTRY_ALPHABET = { addr = 0x38D4, note = "name-entry alphabet" }
+
+[bank3.data]
+# a78-05-1.52 page 3 (file 0xC000-0xFFFF), mapped at 8000 when FB40 = 7.
+VERSION_STAMP = { addr = 0xBF4C, note = "file 0xFF4C: 'VER 0.1 4.SEP,1986 SUMMER'" }
+
+[sub.mem]
+SHARED_RAM = { addr = 0xE000, size = 0x1800 }
+
+[sound.io]
+RAM        = { addr = 0x8000, size = 0x1000 }
+YM2203     = { addr = 0x9000, size = 2 }
+YM3526     = { addr = 0xA000, size = 2 }
+CMD_LATCH  = { addr = 0xB000, note = "R: command / W: reply" }
+NMI_ENABLE = { addr = 0xB001 }
+NMI_DISABLE = { addr = 0xB002 }
+
+[sound.code]
+RESET = { addr = 0x0000 }
+IRQ   = { addr = 0x0038, note = "from YM chips" }
+NMI   = { addr = 0x0066, note = "from command latch" }
+
+[mcu.code]
+RESET_VEC   = { addr = 0xF000, note = "-> FEBB" }
+IRQ1        = { addr = 0xF046, note = "vblank" }
+OCF         = { addr = 0xF092, note = "timer; disabled in normal play" }
+SHARED_READ = { addr = 0xF1BF, note = "X=addr -> B" }
+SHARED_WRITE = { addr = 0xF1DB, note = "B -> X=addr" }
+EXTEND_TICK = { addr = 0xF8F1 }
+TEST_RESET  = { addr = 0xFEBB }
+HALT_LOOP   = { addr = 0xFFD3 }

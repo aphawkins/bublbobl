@@ -1,0 +1,72 @@
+# Byte classification for sub.bin (a78-08.37 +0x0, 0x8000 bytes @ 0000).
+# Generated in part by tools/classify.py: source="auto" entries are rewritten.
+
+[[range]]
+start = 0x000D
+end = 0x0037
+kind = "fill"
+source = "auto"
+note = "0x2b x FF"
+
+[[range]]
+start = 0x003A
+end = 0x0065
+kind = "fill"
+source = "auto"
+note = "0x2c x 00"
+
+[[range]]
+start = 0x272F
+end = 0x2747
+kind = "fill"
+source = "auto"
+note = "0x19 x 00"
+
+[[range]]
+start = 0x3DD3
+end = 0x3DEB
+kind = "fill"
+source = "auto"
+note = "0x19 x 00"
+
+[[range]]
+start = 0x59B5
+end = 0x59C4
+kind = "fill"
+source = "auto"
+note = "0x10 x 00"
+
+[[range]]
+start = 0x76E0
+end = 0x7710
+kind = "fill"
+source = "auto"
+note = "0x31 x 00"
+
+[[range]]
+start = 0x7728
+end = 0x776F
+kind = "fill"
+source = "auto"
+note = "0x48 x 00"
+
+[[range]]
+start = 0x7788
+end = 0x77B7
+kind = "fill"
+source = "auto"
+note = "0x30 x 00"
+
+[[range]]
+start = 0x7838
+end = 0x7860
+kind = "fill"
+source = "auto"
+note = "0x29 x 00"
+
+[[range]]
+start = 0x7FBC
+end = 0x7FFF
+kind = "fill"
+source = "auto"
+note = "0x44 x FF"

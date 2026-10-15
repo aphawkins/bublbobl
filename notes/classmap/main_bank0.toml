@@ -1,0 +1,16 @@
+# Byte classification for main_bank0.bin (a78-05-1.52 +0x0, 0x4000 bytes @ 8000).
+# Generated in part by tools/classify.py: source="auto" entries are rewritten.
+
+[[range]]
+start = 0xB510
+end = 0xB514
+kind = "text"
+source = "auto"
+note = "V9WX"
+
+[[range]]
+start = 0xB71B
+end = 0xB721
+kind = "text"
+source = "auto"
+note = "PQRST0"

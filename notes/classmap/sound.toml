@@ -1,0 +1,30 @@
+# Byte classification for sound.bin (a78-07.46 +0x0, 0x8000 bytes @ 0000).
+# Generated in part by tools/classify.py: source="auto" entries are rewritten.
+
+[[range]]
+start = 0x0005
+end = 0x0037
+kind = "fill"
+source = "auto"
+note = "0x33 x 00"
+
+[[range]]
+start = 0x003B
+end = 0x0065
+kind = "fill"
+source = "auto"
+note = "0x2b x 00"
+
+[[range]]
+start = 0x0ED2
+end = 0x0EE6
+kind = "fill"
+source = "auto"
+note = "0x15 x 00"
+
+[[range]]
+start = 0x7D9A
+end = 0x7FFF
+kind = "fill"
+source = "auto"
+note = "0x266 x 00"

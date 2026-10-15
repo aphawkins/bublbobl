@@ -1,0 +1,884 @@
+# Byte classification for main_bank1.bin (a78-05-1.52 +0x4000, 0x4000 bytes @ 8000).
+# Generated in part by tools/classify.py: source="auto" entries are rewritten.
+
+[[range]]
+start = 0x80A4
+end = 0x80BF
+kind = "fill"
+source = "auto"
+note = "0x1c x 00"
+
+[[range]]
+start = 0x81BD
+end = 0x8207
+kind = "fill"
+source = "auto"
+note = "0x4b x 00"
+
+[[range]]
+start = 0x823E
+end = 0x824D
+kind = "fill"
+source = "auto"
+note = "0x10 x 00"
+
+[[range]]
+start = 0x827E
+end = 0x828D
+kind = "fill"
+source = "auto"
+note = "0x10 x 00"
+
+[[range]]
+start = 0x829E
+end = 0x82AF
+kind = "fill"
+source = "auto"
+note = "0x12 x 00"
+
+[[range]]
+start = 0x8350
+end = 0x8354
+kind = "text"
+source = "auto"
+note = "ABCD"
+
+[[range]]
+start = 0x835B
+end = 0x835F
+kind = "text"
+source = "auto"
+note = "JKLM"
+
+[[range]]
+start = 0x85D5
+end = 0x85DA
+kind = "text"
+source = "auto"
+note = "CDEEE"
+
+[[range]]
+start = 0x8D44
+end = 0x8D54
+kind = "text"
+source = "auto"
+note = "CONGRATULATIONS!"
+
+[[range]]
+start = 0x8D5A
+end = 0x8D70
+kind = "text"
+source = "auto"
+note = "NOW,YOU FOUND THE MOST"
+
+[[range]]
+start = 0x8D75
+end = 0x8D92
+kind = "text"
+source = "auto"
+note = "IMPORTANT MAGIC IN THE WORLD."
+
+[[range]]
+start = 0x8D98
+end = 0x8D9C
+kind = "text"
+source = "auto"
+note = "IT'S"
+
+[[range]]
+start = 0x8D9F
+end = 0x8DA5
+kind = "text"
+source = "auto"
+note = "\"LOVE\""
+
+[[range]]
+start = 0x8DAC
+end = 0x8DB8
+kind = "text"
+source = "auto"
+note = "\"FRIENDSHIP\""
+
+[[range]]
+start = 0x8DCE
+end = 0x8DD3
+kind = "text"
+source = "auto"
+note = "STAFF"
+
+[[range]]
+start = 0x8DDD
+end = 0x8DF4
+kind = "text"
+source = "auto"
+note = "GAME DESIGN & CHARACTER"
+
+[[range]]
+start = 0x8DF9
+end = 0x8E04
+kind = "text"
+source = "auto"
+note = "MTJ/MITSUJI"
+
+[[range]]
+start = 0x8E0E
+end = 0x8E22
+kind = "text"
+source = "auto"
+note = "SOFTWARE PROGRAMMERS"
+
+[[range]]
+start = 0x8E27
+end = 0x8E32
+kind = "text"
+source = "auto"
+note = "ICH/FUJISUE"
+
+[[range]]
+start = 0x8E37
+end = 0x8E44
+kind = "text"
+source = "auto"
+note = "NSO/NISHIYORI"
+
+[[range]]
+start = 0x8E4E
+end = 0x8E5B
+kind = "text"
+source = "auto"
+note = "SOUND CREATOR"
+
+[[range]]
+start = 0x8E60
+end = 0x8E6C
+kind = "text"
+source = "auto"
+note = "KIM/KIMIJIMA"
+
+[[range]]
+start = 0x8E76
+end = 0x8E81
+kind = "text"
+source = "auto"
+note = "INSTRUCTION"
+
+[[range]]
+start = 0x8E86
+end = 0x8E91
+kind = "text"
+source = "auto"
+note = "YSH/YOSHIDA"
+
+[[range]]
+start = 0x8E9B
+end = 0x8EA3
+kind = "text"
+source = "auto"
+note = "HARDWARE"
+
+[[range]]
+start = 0x8EA8
+end = 0x8EB4
+kind = "text"
+source = "auto"
+note = "KTU/FUJIMOTO"
+
+[[range]]
+start = 0x8EB9
+end = 0x8EC5
+kind = "text"
+source = "auto"
+note = "SAK/SAKAMOTO"
+
+[[range]]
+start = 0x8ECF
+end = 0x8EE1
+kind = "text"
+source = "auto"
+note = "AND SPECIAL THANKS"
+
+[[range]]
+start = 0x8EE6
+end = 0x8EFA
+kind = "text"
+source = "auto"
+note = "TO ALL OTHER PEOPLE!"
+
+[[range]]
+start = 0x8EFF
+end = 0x8F0A
+kind = "text"
+source = "auto"
+note = "TOP/SUEKADO"
+
+[[range]]
+start = 0x8F0F
+end = 0x8F17
+kind = "text"
+source = "auto"
+note = "HED/UENO"
+
+[[range]]
+start = 0x8F1C
+end = 0x8F24
+kind = "text"
+source = "auto"
+note = "RYO/YUKI"
+
+[[range]]
+start = 0x8F29
+end = 0x8F35
+kind = "text"
+source = "auto"
+note = "SKE/NAKAMURA"
+
+[[range]]
+start = 0x8F3A
+end = 0x8F43
+kind = "text"
+source = "auto"
+note = "SAN/SANBE"
+
+[[range]]
+start = 0x8F48
+end = 0x8F54
+kind = "text"
+source = "auto"
+note = "PAN/NAKAGAWA"
+
+[[range]]
+start = 0x8F59
+end = 0x8F64
+kind = "text"
+source = "auto"
+note = "OTO/IMAMURA"
+
+[[range]]
+start = 0x8F6F
+end = 0x8F79
+kind = "text"
+source = "auto"
+note = "CHARACTERS"
+
+[[range]]
+start = 0x8F7E
+end = 0x8F85
+kind = "text"
+source = "auto"
+note = "BUBBLUN"
+
+[[range]]
+start = 0x8F8A
+end = 0x8F91
+kind = "text"
+source = "auto"
+note = "BOBBLUN"
+
+[[range]]
+start = 0x8F96
+end = 0x8F9E
+kind = "text"
+source = "auto"
+note = "ZEN-CHAN"
+
+[[range]]
+start = 0x8FA3
+end = 0x8FA9
+kind = "text"
+source = "auto"
+note = "MONSTA"
+
+[[range]]
+start = 0x8FAE
+end = 0x8FB9
+kind = "text"
+source = "auto"
+note = "SKEL-MONSTA"
+
+[[range]]
+start = 0x8FBE
+end = 0x8FC4
+kind = "text"
+source = "auto"
+note = "MIGHTA"
+
+[[range]]
+start = 0x8FC9
+end = 0x8FCF
+kind = "text"
+source = "auto"
+note = "PULPUL"
+
+[[range]]
+start = 0x8FD4
+end = 0x8FDB
+kind = "text"
+source = "auto"
+note = "BANEBOU"
+
+[[range]]
+start = 0x8FE0
+end = 0x8FE7
+kind = "text"
+source = "auto"
+note = "INVADER"
+
+[[range]]
+start = 0x8FEC
+end = 0x8FF4
+kind = "text"
+source = "auto"
+note = "HIDEGONS"
+
+[[range]]
+start = 0x8FF9
+end = 0x8FFE
+kind = "text"
+source = "auto"
+note = "DRUNK"
+
+[[range]]
+start = 0x9003
+end = 0x900E
+kind = "text"
+source = "auto"
+note = "SUPER DRUNK"
+
+[[range]]
+start = 0x9013
+end = 0x9019
+kind = "text"
+source = "auto"
+note = "RASCAL"
+
+[[range]]
+start = 0x901E
+end = 0x9023
+kind = "text"
+source = "auto"
+note = "BOBBY"
+
+[[range]]
+start = 0x9028
+end = 0x902D
+kind = "text"
+source = "auto"
+note = "BETTY"
+
+[[range]]
+start = 0x9032
+end = 0x9037
+kind = "text"
+source = "auto"
+note = "BUBBY"
+
+[[range]]
+start = 0x903C
+end = 0x9041
+kind = "text"
+source = "auto"
+note = "PATTY"
+
+[[range]]
+start = 0x9051
+end = 0x905C
+kind = "text"
+source = "auto"
+note = "PRODUCED BY"
+
+[[range]]
+start = 0x909A
+end = 0x90AD
+kind = "text"
+source = "auto"
+note = "ALL RIGHTS RESERVED"
+
+[[range]]
+start = 0x90BF
+end = 0x90D2
+kind = "text"
+source = "auto"
+note = "THANK YOU VERY MUCH"
+
+[[range]]
+start = 0x90D7
+end = 0x90E8
+kind = "text"
+source = "auto"
+note = "FOR YOUR PLAYING!"
+
+[[range]]
+start = 0x90EC
+end = 0x90FC
+kind = "text"
+source = "auto"
+note = "CONGRATULATIONS!"
+
+[[range]]
+start = 0x9102
+end = 0x910D
+kind = "text"
+source = "auto"
+note = "BUT THIS IS"
+
+[[range]]
+start = 0x9110
+end = 0x9122
+kind = "text"
+source = "auto"
+note = "NOT A TRUE ENDING!"
+
+[[range]]
+start = 0x9129
+end = 0x9145
+kind = "text"
+source = "auto"
+note = "COME HERE WITH YOUR FRIENDS!"
+
+[[range]]
+start = 0x914C
+end = 0x9164
+kind = "text"
+source = "auto"
+note = "YOU WILL BE IMPRESSED BY"
+
+[[range]]
+start = 0x9169
+end = 0x9183
+kind = "text"
+source = "auto"
+note = "THE TRUTH OF THIS STORY !!"
+
+[[range]]
+start = 0x918B
+end = 0x919C
+kind = "text"
+source = "auto"
+note = "NEVER FORGET YOUR"
+
+[[range]]
+start = 0x919F
+end = 0x91A7
+kind = "text"
+source = "auto"
+note = "FRIEND !"
+
+[[range]]
+start = 0x91B1
+end = 0x91BD
+kind = "text"
+source = "auto"
+note = "TRY AGAIN !!"
+
+[[range]]
+start = 0x91C1
+end = 0x91D1
+kind = "text"
+source = "auto"
+note = "CONGRATULATIONS!"
+
+[[range]]
+start = 0x91D7
+end = 0x91F3
+kind = "text"
+source = "auto"
+note = "YOU COULD HELP YOUR FATHER &"
+
+[[range]]
+start = 0x91F8
+end = 0x9213
+kind = "text"
+source = "auto"
+note = "MOTHER! THEY WERE CONTROLED"
+
+[[range]]
+start = 0x9218
+end = 0x9235
+kind = "text"
+source = "auto"
+note = "BY SOMEONE. WHO IS HE? NO ONE"
+
+[[range]]
+start = 0x923A
+end = 0x9256
+kind = "text"
+source = "auto"
+note = "KNOWS OF IT! THE TRUTH IS IN"
+
+[[range]]
+start = 0x925B
+end = 0x9274
+kind = "text"
+source = "auto"
+note = "THE DARKNESS FOREVER ...."
+
+[[range]]
+start = 0x927A
+end = 0x9283
+kind = "text"
+source = "auto"
+note = "THE END !"
+
+[[range]]
+start = 0x928F
+end = 0x9294
+kind = "text"
+source = "auto"
+note = "STAFF"
+
+[[range]]
+start = 0x929E
+end = 0x92B5
+kind = "text"
+source = "auto"
+note = "GAME DESIGN & CHARACTER"
+
+[[range]]
+start = 0x92BA
+end = 0x92C5
+kind = "text"
+source = "auto"
+note = "MTJ/MITSUJI"
+
+[[range]]
+start = 0x92CF
+end = 0x92E3
+kind = "text"
+source = "auto"
+note = "SOFTWARE PROGRAMMERS"
+
+[[range]]
+start = 0x92E8
+end = 0x92F3
+kind = "text"
+source = "auto"
+note = "ICH/FUJISUE"
+
+[[range]]
+start = 0x92F8
+end = 0x9305
+kind = "text"
+source = "auto"
+note = "NSO/NISHIYORI"
+
+[[range]]
+start = 0x930F
+end = 0x931C
+kind = "text"
+source = "auto"
+note = "SOUND CREATOR"
+
+[[range]]
+start = 0x9321
+end = 0x932D
+kind = "text"
+source = "auto"
+note = "KIM/KIMIJIMA"
+
+[[range]]
+start = 0x9337
+end = 0x9342
+kind = "text"
+source = "auto"
+note = "INSTRUCTION"
+
+[[range]]
+start = 0x9347
+end = 0x9352
+kind = "text"
+source = "auto"
+note = "YSH/YOSHIDA"
+
+[[range]]
+start = 0x935C
+end = 0x9364
+kind = "text"
+source = "auto"
+note = "HARDWARE"
+
+[[range]]
+start = 0x9369
+end = 0x9375
+kind = "text"
+source = "auto"
+note = "KTU/FUJIMOTO"
+
+[[range]]
+start = 0x937A
+end = 0x9386
+kind = "text"
+source = "auto"
+note = "SAK/SAKAMOTO"
+
+[[range]]
+start = 0x9390
+end = 0x93A2
+kind = "text"
+source = "auto"
+note = "AND SPECIAL THANKS"
+
+[[range]]
+start = 0x93A7
+end = 0x93BB
+kind = "text"
+source = "auto"
+note = "TO ALL OTHER PEOPLE!"
+
+[[range]]
+start = 0x93C0
+end = 0x93CB
+kind = "text"
+source = "auto"
+note = "TOP/SUEKADO"
+
+[[range]]
+start = 0x93D0
+end = 0x93D8
+kind = "text"
+source = "auto"
+note = "HED/UENO"
+
+[[range]]
+start = 0x93DD
+end = 0x93E5
+kind = "text"
+source = "auto"
+note = "RYO/YUKI"
+
+[[range]]
+start = 0x93EA
+end = 0x93F6
+kind = "text"
+source = "auto"
+note = "SKE/NAKAMURA"
+
+[[range]]
+start = 0x93FB
+end = 0x9404
+kind = "text"
+source = "auto"
+note = "SAN/SANBE"
+
+[[range]]
+start = 0x9409
+end = 0x9415
+kind = "text"
+source = "auto"
+note = "PAN/NAKAGAWA"
+
+[[range]]
+start = 0x941A
+end = 0x9425
+kind = "text"
+source = "auto"
+note = "OTO/IMAMURA"
+
+[[range]]
+start = 0x9430
+end = 0x943A
+kind = "text"
+source = "auto"
+note = "CHARACTERS"
+
+[[range]]
+start = 0x943F
+end = 0x9446
+kind = "text"
+source = "auto"
+note = "BUBBLUN"
+
+[[range]]
+start = 0x944B
+end = 0x9452
+kind = "text"
+source = "auto"
+note = "BOBBLUN"
+
+[[range]]
+start = 0x9457
+end = 0x945F
+kind = "text"
+source = "auto"
+note = "ZEN-CHAN"
+
+[[range]]
+start = 0x9464
+end = 0x946A
+kind = "text"
+source = "auto"
+note = "MONSTA"
+
+[[range]]
+start = 0x946F
+end = 0x947A
+kind = "text"
+source = "auto"
+note = "SKEL-MONSTA"
+
+[[range]]
+start = 0x947F
+end = 0x9484
+kind = "text"
+source = "auto"
+note = "MAITA"
+
+[[range]]
+start = 0x9489
+end = 0x948F
+kind = "text"
+source = "auto"
+note = "PULPUL"
+
+[[range]]
+start = 0x9494
+end = 0x949B
+kind = "text"
+source = "auto"
+note = "BANEBOU"
+
+[[range]]
+start = 0x94A0
+end = 0x94A7
+kind = "text"
+source = "auto"
+note = "INVADER"
+
+[[range]]
+start = 0x94AC
+end = 0x94B4
+kind = "text"
+source = "auto"
+note = "HIDEGONS"
+
+[[range]]
+start = 0x94B9
+end = 0x94BE
+kind = "text"
+source = "auto"
+note = "DRUNK"
+
+[[range]]
+start = 0x94C3
+end = 0x94CE
+kind = "text"
+source = "auto"
+note = "SUPER DRUNK"
+
+[[range]]
+start = 0x94D3
+end = 0x94D9
+kind = "text"
+source = "auto"
+note = "RASCAL"
+
+[[range]]
+start = 0x94DE
+end = 0x94E3
+kind = "text"
+source = "auto"
+note = "BOBBY"
+
+[[range]]
+start = 0x94E8
+end = 0x94ED
+kind = "text"
+source = "auto"
+note = "BETTY"
+
+[[range]]
+start = 0x94F2
+end = 0x94F7
+kind = "text"
+source = "auto"
+note = "BUBBY"
+
+[[range]]
+start = 0x94FC
+end = 0x9501
+kind = "text"
+source = "auto"
+note = "PATTY"
+
+[[range]]
+start = 0x9511
+end = 0x951C
+kind = "text"
+source = "auto"
+note = "PRODUCED BY"
+
+[[range]]
+start = 0x955A
+end = 0x956D
+kind = "text"
+source = "auto"
+note = "ALL RIGHTS RESERVED"
+
+[[range]]
+start = 0x957F
+end = 0x9592
+kind = "text"
+source = "auto"
+note = "THANK YOU VERY MUCH"
+
+[[range]]
+start = 0x9597
+end = 0x95A8
+kind = "text"
+source = "auto"
+note = "FOR YOUR PLAYING!"
+
+[[range]]
+start = 0x97C1
+end = 0x97D2
+kind = "fill"
+source = "auto"
+note = "0x12 x 00"
+
+[[range]]
+start = 0x9866
+end = 0x98BD
+kind = "fill"
+source = "auto"
+note = "0x58 x 00"
+
+[[range]]
+start = 0x99D1
+end = 0x99E2
+kind = "fill"
+source = "auto"
+note = "0x12 x 00"
+
+[[range]]
+start = 0x9A36
+end = 0x9A69
+kind = "fill"
+source = "auto"
+note = "0x34 x 00"
+
+[[range]]
+start = 0xA708
+end = 0xA739
+kind = "fill"
+source = "auto"
+note = "0x32 x 00"
+
+[[range]]
+start = 0xA754
+end = 0xA763
+kind = "fill"
+source = "auto"
+note = "0x10 x 00"
+
+[[range]]
+start = 0xB84B
+end = 0xB85A
+kind = "fill"
+source = "auto"
+note = "0x10 x 00"
+
+[[range]]
+start = 0xB85C
+end = 0xBFFF
+kind = "fill"
+source = "auto"
+note = "0x7a4 x FF"

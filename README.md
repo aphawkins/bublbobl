@@ -27,6 +27,8 @@ The `roms/` folder is git-ignored.
 
 - Python 3 (with Pillow)
 - [MAME](https://www.mamedev.org/) (including `unidasm`)
+- [GNU Binutils](https://sourceware.org/binutils/) built for `z80-elf` and `m68hc11-elf`
+  (see [EXTRACTION_PLAN.md](EXTRACTION_PLAN.md) §12.1)
 
 ## Legal
 
