@@ -2,7 +2,8 @@
 
 Usage: python tools/build.py [--roms DIR]
 
-Steps: verify the ROM set and write build/images/ (romset.py); assemble and link each
+Steps: verify the ROM set and write build/images/ (romset.py); write the symbol includes
+to build/include/ (symbols.py); assemble and link each
 source with GNU Binutils; join the banks; check every program ROM's CRC32 and SHA1;
 write the full set (graphics and PROM copied as is) to build/roms/bublbobl/.
 
@@ -21,6 +22,7 @@ import zlib
 from pathlib import Path, PurePosixPath
 
 import romset
+import symbols
 
 ROOT = romset.ROOT
 BUILD = ROOT / "build"
@@ -85,7 +87,7 @@ def assemble() -> dict[str, bytes]:
         stem = "obj/" + src.replace("/", "_")[:-2]
         prefix = f"{tools}/{tool_dir}/bin/{target}-"
         commands += [
-            [prefix + "as", *flags, "-I", "build/images", "-o", f"build/{stem}.o", f"src/{src}"],
+            [prefix + "as", *flags, "-I", "build/images", "-I", "build/include", "-o", f"build/{stem}.o", f"src/{src}"],
             [prefix + "ld", f"-Ttext=0x{base:04x}", "-e", f"0x{base:04x}",
              "-o", f"build/{stem}.elf", f"build/{stem}.o"],
             [prefix + "objcopy", "-O", "binary", f"build/{stem}.elf", f"build/{stem}.bin"],
@@ -114,6 +116,7 @@ def main() -> int:
     images.mkdir(parents=True, exist_ok=True)
     for name, data in romset.images(files).items():
         (images / name).write_bytes(data)
+    symbols.write_includes(BUILD / "include")
 
     built = assemble()
     out_dir = BUILD / "roms" / "bublbobl"

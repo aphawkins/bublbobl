@@ -47,6 +47,10 @@ Other tools:
 - `tools/gfx.py` — decode the graphics ROMs into tile sheets, `build/gfx/tiles_bank00..11.png`
   (`--scale 2` to magnify)
 - `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
+- `tools/symbols.py` — export `notes/symbols.toml` as assembler includes, `build/include/`
+  (`build.py` runs it)
+- `tools/dasm6801.py` — trace the MCU code from its vectors and write a first-pass source to
+  `disasm/mcu.s` (it made the first `src/mcu/mcu.s`, which is now edited by hand)
 
 ## Legal
 

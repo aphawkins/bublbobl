@@ -20,6 +20,7 @@ Three stages take Taito's 1986 arcade Bubble Bobble from ROMs to a C# game in
 | 2026-10-14 | The golden source is this repo's `src\`, proved byte-exact against the `bublbobl` set (Japan, Ver 0.1). |
 | 2026-10-15 | The repo holds no ROM bytes. `src\` contains only disassembled code and labels; every other range is pulled in with `.incbin` from the user's verified ROM images at build time. |
 | 2026-10-15 | The assembler is GNU Binutils (`z80-elf`, `m68hc11-elf`), built in WSL, instead of the Macroassembler AS. |
+| 2026-10-15 | The project owner reviews every commit. Agents leave their work uncommitted for review and commit only when the project owner asks. |
 
 These decisions need entries in the repo's `docs/decisions.md`, with the old rule marked
 as superseded (see §3.1).
@@ -52,7 +53,7 @@ must be translated, named and in a byte-exact build.
   (`rebb64`) becomes the reference for the 8-bit rendition's art and sound only.
 - `docs/bb-readme.md`: change the description and credits ("converted from the arcade
   original", with the C64 rendition credited to Software Creations and Peter Clarke).
-- These are architectural changes, so use the repo's tiered pipeline (`AGENTS.md`). Andy
+- These are architectural changes, so use the repo's tiered pipeline (`AGENTS.md`). The project owner
   commits.
 
 ### 3.2 Shape
@@ -80,7 +81,7 @@ The arcade divides the game between four processors. The C# game has one loop pe
 |---|---|
 | Main Z80 (game logic, IM 2 interrupt from the MCU) | The core of `BubbleBobbleSharpLib` |
 | Sub Z80 (role found in Stage 1, through shared RAM `E000–F7FF`) | Translated into the same loop, at the place in the frame where its results are read |
-| MCU (inputs, coins, IRQ, EXTEND counter, other jobs from Stage 1) | Small services: input, credits, the EXTEND counter, and any other job that affects the game |
+| MCU: inputs, coins, the main IRQ, lives and round counters, proximity checks, speed patterns, a countdown, the EXTEND letter, table fetches (`notes\mcu_shared_ram.md`) | Small services, one for each job that affects the game, run in the MCU's job order |
 | Sound Z80 | Not translated. The game sends **sound command IDs**. Each rendition decides what they sound like |
 
 - **Order in the frame.** At vblank the main CPU, the sub CPU and the MCU all start work.
@@ -161,7 +162,7 @@ not prove that the port matches the arcade.
   the same ROMs, it must make the same bytes. ROMs are never committed.
 - The game logic needs the arcade data (levels, enemy tables, item tables). It is not art,
   so it belongs to the game and not to a rendition. Both renditions use it.
-- **Open question (Andy):** the repo already ships assets taken from `rebb64`, by Andy's
+- **Open question (project owner):** the repo already ships assets taken from `rebb64`, by the project owner's
   decision. Should the repo ship assets taken from the arcade ROMs too? The alternative is to
   extract them on first run from a ROM zip that the player supplies.
 

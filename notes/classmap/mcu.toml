@@ -1,2 +1,114 @@
 # Byte classification for mcu.bin (a78-01.17 +0x0, 0x1000 bytes @ F000).
 # Generated in part by tools/classify.py: source="auto" entries are rewritten.
+
+[[range]]
+start = 0xF000
+end = 0xF044
+kind = "code"
+source = "dasm"
+note = "traced from the vectors (tools/dasm6801.py)"
+
+[[range]]
+start = 0xF045
+end = 0xF045
+kind = "data"
+source = "manual"
+note = "unused byte"
+
+[[range]]
+start = 0xF046
+end = 0xF186
+kind = "code"
+source = "dasm"
+note = "traced from the vectors (tools/dasm6801.py)"
+
+[[range]]
+start = 0xF187
+end = 0xF18E
+kind = "data"
+source = "manual"
+note = "COINAGE"
+
+[[range]]
+start = 0xF18F
+end = 0xF296
+kind = "code"
+source = "dasm"
+note = "traced from the vectors (tools/dasm6801.py)"
+
+[[range]]
+start = 0xF297
+end = 0xF298
+kind = "data"
+source = "manual"
+note = "unused"
+
+[[range]]
+start = 0xF299
+end = 0xF342
+kind = "code"
+source = "dasm"
+note = "traced from the vectors (tools/dasm6801.py)"
+
+[[range]]
+start = 0xF343
+end = 0xF346
+kind = "data"
+source = "manual"
+note = "LIVES_TABLE"
+
+[[range]]
+start = 0xF347
+end = 0xF716
+kind = "code"
+source = "dasm"
+note = "traced from the vectors (tools/dasm6801.py)"
+
+[[range]]
+start = 0xF717
+end = 0xF88E
+kind = "data"
+source = "manual"
+note = "SPEED_PATTERNS: pointers and step lists"
+
+[[range]]
+start = 0xF88F
+end = 0xF898
+kind = "fill"
+source = "manual"
+note = "0xFF"
+
+[[range]]
+start = 0xF899
+end = 0xF9B0
+kind = "code"
+source = "dasm"
+note = "traced from the vectors (tools/dasm6801.py)"
+
+[[range]]
+start = 0xF9B1
+end = 0xFEBA
+kind = "data"
+source = "manual"
+note = "FETCH_BLOCKS: pointers and 5 x 256 bytes"
+
+[[range]]
+start = 0xFEBB
+end = 0xFFDE
+kind = "code"
+source = "dasm"
+note = "traced from the vectors (tools/dasm6801.py)"
+
+[[range]]
+start = 0xFFDF
+end = 0xFFEF
+kind = "text"
+source = "manual"
+note = "BR1O 29.JUN,1986"
+
+[[range]]
+start = 0xFFF0
+end = 0xFFFF
+kind = "data"
+source = "manual"
+note = "vectors"

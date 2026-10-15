@@ -1,6 +1,8 @@
 # Single source of truth for names. Seeded from EXTRACTION_PLAN.md §2.
 # Each table is one address space. Keys are names; values are { addr, size?, note? }.
-# Exported to each assembler / disassembler format by tools (later phases).
+# tools/symbols.py exports them as build/include/<cpu>.inc (.equ lines) for the assembler.
+# [shared.mcu] is the RAM the main CPU and the MCU share: addresses are main-CPU (FC00-FFFF);
+# the MCU include gets the same names at addr & 0xFFF (the MCU sees it at 0C00-0FFF).
 
 [main.io]
 SOUND_CMD     = { addr = 0xFA00, note = "W: sound command / R: sound reply" }
@@ -16,10 +18,7 @@ OBJ_TILES     = { addr = 0xC000, size = 0x1D00, note = "tile-column data for obj
 OBJ_RAM       = { addr = 0xDD00, size = 0x0300, note = "4 bytes/object: Y, gfx#, X, attr" }
 SHARED_RAM    = { addr = 0xE000, size = 0x1800, note = "work RAM shared with sub CPU" }
 PALETTE_RAM   = { addr = 0xF800, size = 0x0200, note = "256 x RGBx_444 big-endian" }
-MCU_RAM       = { addr = 0xFC00, size = 0x0400, note = "RAM shared with MCU" }
-MCU_IRQ_VEC   = { addr = 0xFC00, note = "IM 2 vector byte, written by MCU" }
-EXTEND_LETTER = { addr = 0xFC7C, note = "MCU increments mod 6 each vblank (mcu:F8F1)" }
-MCU_G_FLAG    = { addr = 0xFF98, note = "MCU OCF handler checks for 'G' (0x47)" }
+MCU_RAM       = { addr = 0xFC00, size = 0x0400, note = "RAM shared with MCU, names in [shared.mcu]" }
 
 [main.code]
 RESET          = { addr = 0x0000, note = "DI / IM 2 / JP 00B9" }
@@ -52,12 +51,173 @@ RESET = { addr = 0x0000 }
 IRQ   = { addr = 0x0038, note = "from YM chips" }
 NMI   = { addr = 0x0066, note = "from command latch" }
 
+[shared.mcu]
+# Contract in notes/mcu_shared_ram.md. Direction: M = written by the MCU, Z = by the main CPU.
+IRQ_VECTOR      = { addr = 0xFC00, note = "IM 2 vector byte; the MCU code never touches it" }
+MCU_OBJECTS     = { addr = 0xFC01, size = 0x1C, note = "Z: 7 x 4 bytes: flags (b0 = active), X, Y, -" }
+CREDITS         = { addr = 0xFC1E, note = "M/Z: credits; coins add, the game subtracts" }
+IN0_COPY        = { addr = 0xFC1F, note = "M: port 1 (IN0 and outputs), every vblank" }
+DSW0_COPY       = { addr = 0xFC20, note = "M" }
+DSW1_COPY       = { addr = 0xFC21, note = "M" }
+IN1_COPY        = { addr = 0xFC22, note = "M" }
+IN2_COPY        = { addr = 0xFC23, note = "M" }
+P1_LIVES        = { addr = 0xFC24, note = "M: player 1 spare lives (P1_LIVES_CMD)" }
+P2_LIVES        = { addr = 0xFC25, note = "M: player 2 spare lives (P2_LIVES_CMD)" }
+ROUND           = { addr = 0xFC26, note = "M: round number - 1 (ROUND_CMD)" }
+MCU_PROXIMITY   = { addr = 0xFC27, size = 0x38, note = "M: 7 x 8 bytes, see notes/mcu_shared_ram.md" }
+P1_PROX_ON      = { addr = 0xFC5F, note = "Z: b0 = check player 1 against MCU_OBJECTS" }
+P1_PROX_X       = { addr = 0xFC60, note = "Z" }
+P1_PROX_Y       = { addr = 0xFC61, note = "Z" }
+P1_PROX_HIT     = { addr = 0xFC62, note = "M: 1 = an object is within 8 in X and Y" }
+P1_PROX_INDEX   = { addr = 0xFC63, note = "M: object number at the hit (see notes)" }
+P2_PROX_ON      = { addr = 0xFC67, note = "Z" }
+P2_PROX_X       = { addr = 0xFC68, note = "Z" }
+P2_PROX_Y       = { addr = 0xFC69, note = "Z" }
+P2_PROX_HIT     = { addr = 0xFC6A, note = "M" }
+P2_PROX_INDEX   = { addr = 0xFC6B, note = "M" }
+P1_LIVES_CMD    = { addr = 0xFC6F, note = "Z: 1 = set from DSW1, 2 = +1 (max 10), 4 = -1, 8 = set 10; M clears" }
+P2_LIVES_CMD    = { addr = 0xFC70, note = "Z: as P1_LIVES_CMD" }
+CREDITS_42_KEY  = { addr = 0xFC71, note = "Z: 0x0D here while ROUND_OK = 12 sets CREDITS to 42" }
+SPEED0_SEL      = { addr = 0xFC72, note = "Z: speed 0-40 (tenths of a pixel per frame)" }
+SPEED0_STEP     = { addr = 0xFC73, note = "M: this frame's step" }
+SPEED1_SEL      = { addr = 0xFC74, note = "Z" }
+SPEED1_STEP     = { addr = 0xFC75, note = "M" }
+SPEED2_SEL      = { addr = 0xFC76, note = "Z" }
+SPEED2_STEP     = { addr = 0xFC77, note = "M" }
+TIMER_LO        = { addr = 0xFC78, note = "Z/M: 16-bit countdown, -1 every vblank" }
+TIMER_HI        = { addr = 0xFC79, note = "Z/M" }
+TIMER_RUN       = { addr = 0xFC7A, note = "Z: nonzero = count; M: cleared at zero" }
+TIMER_DONE      = { addr = 0xFC7B, note = "M: set to 1 when the count reaches zero" }
+EXTEND_LETTER   = { addr = 0xFC7C, note = "M: 0-5, +1 every vblank" }
+COIN_STUCK      = { addr = 0xFC7D, note = "M: 1 = a coin input was active at power-on" }
+ROUND_CMD       = { addr = 0xFC7E, note = "Z: 1 = 0, 2 = +1, 4 = 49, 8 = 98, 10 = 99, 20 = 100, 40 = 101; M clears" }
+ALIVE_COUNTER   = { addr = 0xFC7F, note = "Z: watched by MCU_WATCHDOG, which is never called" }
+SPEED3_SEL      = { addr = 0xFC80, note = "Z" }
+SPEED3_STEP     = { addr = 0xFC81, note = "M" }
+ROM_SUM_HI      = { addr = 0xFC82, note = "M: 16-bit word sum of the MCU ROM, high byte (0 when intact)" }
+ROM_SUM_LO      = { addr = 0xFC83, note = "M" }
+MCU_READY       = { addr = 0xFC85, note = "M: 0x37 once start-up is done" }
+FETCH0_DEST     = { addr = 0xFC88, size = 0x100, note = "M: FETCH0 writes here + FETCH0_OFFSET" }
+FETCH1_DEST     = { addr = 0xFD88, size = 0x100, note = "M" }
+FETCH2_DEST     = { addr = 0xFE88, size = 0x100, note = "M" }
+FETCH0_REQ      = { addr = 0xFF88, note = "Z: 1 = fetch one byte; M: 0xFF when done" }
+FETCH0_INDEX    = { addr = 0xFF89, note = "Z: byte index in the block" }
+FETCH0_BLOCK    = { addr = 0xFF8A, note = "Z: block 0-4 of FETCH_BLOCKS" }
+FETCH0_OFFSET   = { addr = 0xFF8B, note = "Z: offset in FETCH0_DEST" }
+FETCH1_REQ      = { addr = 0xFF8C }
+FETCH1_INDEX    = { addr = 0xFF8D }
+FETCH1_BLOCK    = { addr = 0xFF8E }
+FETCH1_OFFSET   = { addr = 0xFF8F }
+FETCH2_REQ      = { addr = 0xFF90 }
+FETCH2_INDEX    = { addr = 0xFF91 }
+FETCH2_BLOCK    = { addr = 0xFF92 }
+FETCH2_OFFSET   = { addr = 0xFF93 }
+LOCKOUT_REQ     = { addr = 0xFF94, note = "Z: 1 = lock the coin slots, 0xFF = unlock" }
+TRAP_KEY        = { addr = 0xFF95, note = "Z: 'B' arms the lives/round tamper traps" }
+NO_DELAY_KEY    = { addr = 0xFF96, note = "Z: 'G' skips the busy wait at the end of IRQ1" }
+MCU_RESET_KEY   = { addr = 0xFF97, note = "Z: 'J' makes the MCU restart from its reset vector" }
+RUN_KEY         = { addr = 0xFF98, note = "Z: 'G' enables coin handling and the main-CPU IRQ" }
+COIN_EVENT      = { addr = 0xFF99, note = "M: set to 1 when credits are added" }
+
+[mcu.io]
+# MC6801U4 internal registers (MAME m6801.cpp).
+P1DDR = { addr = 0x00, note = "port 1 direction" }
+P2DDR = { addr = 0x01 }
+P1    = { addr = 0x02, note = "in: b0 tilt, b1 service, b2 coin 1, b3 coin 2 (IN0); out: b4 coin lockout, b5 coin counter, b6 main IRQ, b7 bus read" }
+P2    = { addr = 0x03, note = "b0-3 bus address 8-11, b4 bus strobe (latched on the rising edge)" }
+P3DDR = { addr = 0x04, note = "0 = read the bus, 0xFF = write it" }
+P4DDR = { addr = 0x05 }
+P3    = { addr = 0x06, note = "bus data" }
+P4    = { addr = 0x07, note = "bus address 0-7" }
+TCSR  = { addr = 0x08, note = "timer control and status" }
+OCR   = { addr = 0x0B, note = "output compare, 16-bit" }
+P3CSR = { addr = 0x0F }
+TRCSR = { addr = 0x11, note = "serial control" }
+TCR1  = { addr = 0x17, note = "6801U4 timer control 1" }
+TCR2  = { addr = 0x18, note = "6801U4 timer control 2" }
+TSR   = { addr = 0x19, note = "6801U4 timer status" }
+OCR2  = { addr = 0x1A, note = "6801U4 output compare 2, 16-bit" }
+OCR3  = { addr = 0x1C, note = "6801U4 output compare 3, 16-bit" }
+
+[mcu.bus]
+# Values of X for SHARED_READ / SHARED_WRITE below 0x800: the switch and input buffers.
+BUS_DSW0 = { addr = 0x000 }
+BUS_DSW1 = { addr = 0x001 }
+BUS_IN1  = { addr = 0x002 }
+BUS_IN2  = { addr = 0x003 }
+
+[mcu.ram]
+# Internal RAM 0x40-0xFF; the stack starts at 0xFF.
+RAM_START    = { addr = 0x40 }
+RAM_END      = { addr = 0x100 }
+COIN2_LAST   = { addr = 0x40, note = "edge detector pairs: last input byte, then state" }
+COIN2_EDGE   = { addr = 0x41, note = "see EDGE" }
+COIN1_LAST   = { addr = 0x42 }
+COIN1_EDGE   = { addr = 0x43 }
+SERVICE_LAST = { addr = 0x44 }
+SERVICE_EDGE = { addr = 0x45 }
+EDGE_TEMP    = { addr = 0x46 }
+COIN1_COUNT  = { addr = 0x48, note = "coins towards the next credit, slot 1" }
+COIN2_COUNT  = { addr = 0x49 }
+X_TO_D       = { addr = 0x4A, note = "2 bytes: X stored here to load it into D" }
+WATCH_LAST   = { addr = 0x4C }
+WATCH_COUNT  = { addr = 0x4D }
+DSW0         = { addr = 0x4E }
+DSW1         = { addr = 0x4F }
+IN1          = { addr = 0x50 }
+IN2          = { addr = 0x51 }
+P1_LIVES_OK  = { addr = 0x52, note = "copy of P1_LIVES, checked by the tamper trap" }
+P2_LIVES_OK  = { addr = 0x53 }
+ROUND_OK     = { addr = 0x54 }
+PROX_X       = { addr = 0x55 }
+PROX_Y       = { addr = 0x56 }
+PROX_INDEX   = { addr = 0x57 }
+PROX_OBJ     = { addr = 0x58, note = "2 bytes: bus address of the object" }
+PROX_OUT     = { addr = 0x5A, note = "2 bytes: bus address of its results" }
+PROX_X_NEAR  = { addr = 0x5C, note = "count of objects within 8 in X" }
+SPEED0_POS   = { addr = 0x5D }
+SPEED1_POS   = { addr = 0x5E }
+SPEED2_POS   = { addr = 0x5F }
+SPEED3_POS   = { addr = 0x60 }
+
 [mcu.code]
-RESET_VEC   = { addr = 0xF000, note = "-> FEBB" }
-IRQ1        = { addr = 0xF046, note = "vblank" }
-OCF         = { addr = 0xF092, note = "timer; disabled in normal play" }
-SHARED_READ = { addr = 0xF1BF, note = "X=addr -> B" }
-SHARED_WRITE = { addr = 0xF1DB, note = "B -> X=addr" }
-EXTEND_TICK = { addr = 0xF8F1 }
-TEST_RESET  = { addr = 0xFEBB }
-HALT_LOOP   = { addr = 0xFFD3 }
+RESET_VEC       = { addr = 0xF000, note = "-> TEST_RESET" }
+COLD_START      = { addr = 0xF003, note = "normal start, from TEST_RESET when no test jig is fitted" }
+IDLE            = { addr = 0xF043 }
+IRQ1            = { addr = 0xF046, note = "vblank: runs every job, in order" }
+OCF             = { addr = 0xF092, note = "coins; also the OCF vector, but ends in RTS and the timer interrupt stays off" }
+LOCKOUT_ON      = { addr = 0xF161 }
+LOCKOUT_OFF     = { addr = 0xF168 }
+EDGE            = { addr = 0xF16F, note = "A = inputs (top bit used), X = pair: update and classify one edge" }
+COINAGE         = { addr = 0xF187, note = "data: 4 x (coins, credits), indexed by a DSW0 coin field" }
+COUNTER_MODE    = { addr = 0xF18F }
+COIN_CHECK      = { addr = 0xF196 }
+LOCKOUT_REQUEST = { addr = 0xF1B0 }
+SHARED_READ     = { addr = 0xF1BF, note = "X = bus address -> B" }
+SHARED_WRITE    = { addr = 0xF1DB, note = "B -> X = bus address" }
+MAIN_IRQ        = { addr = 0xF1F8 }
+MCU_WATCHDOG    = { addr = 0xF217, note = "never called" }
+READ_INPUTS     = { addr = 0xF236 }
+ROM_SUM         = { addr = 0xF27A }
+RESET_REQUEST   = { addr = 0xF299 }
+P1_LIVES_JOB    = { addr = 0xF2A7 }
+LIVES_TABLE     = { addr = 0xF343, note = "data: spare lives for each DSW1 lives setting" }
+P2_LIVES_JOB    = { addr = 0xF347 }
+ROUND_JOB       = { addr = 0xF3E3 }
+P1_PROX_JOB     = { addr = 0xF48F }
+P2_PROX_JOB     = { addr = 0xF585 }
+SPEED01_JOB     = { addr = 0xF67F }
+SPEED2_JOB      = { addr = 0xF6CB }
+SPEED3_JOB      = { addr = 0xF6F1 }
+SPEED_PATTERNS  = { addr = 0xF717, note = "data: 41 pointers, then 0xFF-terminated step lists" }
+TIMER_JOB       = { addr = 0xF899 }
+CREDITS_42_JOB  = { addr = 0xF8D5 }
+EXTEND_TICK     = { addr = 0xF8F1 }
+FETCH0_JOB      = { addr = 0xF903 }
+FETCH1_JOB      = { addr = 0xF93D }
+FETCH2_JOB      = { addr = 0xF977 }
+FETCH_BLOCKS    = { addr = 0xF9B1, note = "data: 5 pointers to 256-byte blocks F9BB-FEBA" }
+TEST_RESET      = { addr = 0xFEBB, note = "reset: factory test jig check, else COLD_START" }
+JIG_RAM_TEST    = { addr = 0xFF40 }
+JIG_PASS        = { addr = 0xFFD3 }
+JIG_FAIL        = { addr = 0xFFDD, note = "also the end of JIG_PASS: loops for ever" }

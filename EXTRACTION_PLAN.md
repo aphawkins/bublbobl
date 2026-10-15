@@ -86,8 +86,9 @@ shared RAM `FC00`. Reset code is `DI / IM 2 / JP 00B9`.
 IRQs come from the sound chips; NMI from the main-CPU command latch.
 
 ### MCU (MC6801U4, 4 MHz/4)
-ROM `F000–FFFF`. Vectors: RESET `F000` (→ `FEBB`), IRQ1 (vblank) `F046`, OCF `F092`
-(timer interrupt disabled in normal play). Shared-RAM access is through ports:
+ROM `F000–FFFF`. Vectors: RESET `F000` (→ `FEBB` test-jig check → `F003` start), IRQ1
+(vblank) `F046`, OCF `F092` (never enabled; `F092` is the coin job, called from IRQ1).
+The full contract with the main CPU is in `notes\mcu_shared_ram.md`. Shared-RAM access is through ports:
 port 4 = address low, port 2 b0–3 = address high, b4 = strobe, port 1 b7 = read/write,
 port 3 = data. Helpers: `F1BF` read (X=addr → B), `F1DB` write (B → X=addr).
 Addresses `0x000–0x003` select DSW0/DSW1/IN1/IN2; `0xC00–0xFFF` = shared RAM.
@@ -301,6 +302,22 @@ Smallest and most self-contained — a good early win.
 5. Byte-exact rebuild check (Phase 8).
 
 Deliverable: `src\mcu\mcu.s`, `notes\mcu_shared_ram.md`.
+
+**Done (2026-10-15).** `tools/dasm6801.py` traced every routine from the vectors and wrote
+the first `src\mcu\mcu.s`. That file was then annotated by hand. It assembles byte-exact,
+and every byte is classified in `notes\classmap\mcu.toml`: `0x944` code and the rest data.
+Only the data ranges are still `.incbin`. Findings that change this plan:
+- There are 19 jobs, not ≈25. The handler at `F092` is the coin job. It is also the OCF
+  vector, but it ends in `RTS` and is never entered by an interrupt.
+- `FEBB` is a check for the factory test jig. It drives patterns on the ports and tests
+  RAM, timers and the ROM sum. Without the jig it jumps to the normal start at `F003`.
+  `FFD3`/`FFDD` are the jig's pass and fail loops.
+- The MCU raises the main CPU's IRQ (port 1 b6) but never writes the vector at `FC00`.
+- Lives and the round counter live in the MCU's shared RAM. The main CPU changes them by
+  command bytes. With `FF95` = `'B'`, a direct write crashes the MCU (tamper trap).
+- `notes\symbols.toml` is now the single source of names. `tools/symbols.py` writes it
+  as `build\include\<cpu>.inc` for every build.
+- Questions left open: `notes\open_questions.md`.
 
 ---
 

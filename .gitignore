@@ -4,6 +4,8 @@ roms/
 
 # Generated output
 build/
+# Raw disassembler listings carry ROM bytes
+disasm/
 traces/*.log
 
 # Local config
