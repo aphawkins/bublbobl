@@ -81,7 +81,7 @@ def write_map(path: Path, image: str, ranges: list[dict]) -> None:
             f'note = "{note}"',
             "",
         ]
-    path.write_text("\n".join(lines), encoding="utf-8")
+    path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
 
 
 def overlaps(a: dict, b: dict) -> bool:

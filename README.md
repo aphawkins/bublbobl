@@ -30,6 +30,19 @@ The `roms/` folder is git-ignored.
 - [GNU Binutils](https://sourceware.org/binutils/) built for `z80-elf` and `m68hc11-elf`
   (see [EXTRACTION_PLAN.md](EXTRACTION_PLAN.md) §12.1)
 
+## Building
+
+```
+python tools/build.py
+mame bublbobl -rompath build/roms
+```
+
+`build.py` checks your ROMs, assembles `src/`, and stops unless every program ROM
+matches the original byte for byte. The rebuilt set is written to `build/roms/bublbobl/`.
+
+Other tools: `tools/romset.py` (verify the set, write per-CPU images to `build/images/`)
+and `tools/classify.py` (refresh the byte classification maps in `notes/classmap/`).
+
 ## Legal
 
 Bubble Bobble is © Taito Corporation. This project is an unofficial, non-commercial
