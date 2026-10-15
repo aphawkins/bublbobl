@@ -1,0 +1,22 @@
+# ROMs are copyrighted — never commit them
+roms/
+*.zip
+
+# Generated output
+build/
+traces/*.log
+
+# Local config
+config.local.toml
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

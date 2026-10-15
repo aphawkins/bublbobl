@@ -1,0 +1,417 @@
+# Bubble Bobble (Taito, 1986) — Code & Data Extraction Plan
+
+Goal: turn the `bublbobl` arcade ROM set into a documented, rebuildable understanding of the
+game — annotated disassemblies for all four CPUs plus extracted, viewable data (graphics,
+palettes, text, levels, enemy tables, music) in open formats.
+
+This file covers stages 1 and 2 of [PLAN.md](PLAN.md): disassembly to source, and
+reassembly to a byte-exact set that runs in MAME. Stage 3, the C# reimplementation in
+The Sharp Kind, consumes what these stages produce and is planned in `PLAN.md`.
+
+Reference sources:
+- ROMs: `roms\bublbobl\` (and `roms\bublbobl.zip`) — not in the repo; supply your own
+- MAME driver: [mamedev/mame](https://github.com/mamedev/mame), cloned alongside this repo at
+  `..\..\mamedev\mame` — `src\mame\taito\bublbobl.cpp`,
+  `bublbobl_m.cpp` (MCU/IO glue), `bublbobl_v.cpp` (video), `bublbobl.h`
+
+---
+
+## 1. The ROM set
+
+The set exactly matches MAME's parent **`bublbobl` — Bubble Bobble (Japan, Ver 0.1)**.
+
+| File | Size | CRC32 | CPU / use | Notes |
+|---|---|---|---|---|
+| `a78-06-1.51` | 32K | 567934b6 | Main Z80, fixed `0000–7FFF` | Game logic, text, "dead copy" tamper trap |
+| `a78-05-1.52` | 64K | 9f8ee242 | Main Z80, banked `8000–BFFF` (4 × 16K) | Test mode, endings, credits, version stamp |
+| `a78-08.37` | 32K | ae11a07b | Sub Z80 `0000–7FFF` | No readable text; role to be established |
+| `a78-07.46` | 32K | 4f9a26e8 | Sound Z80 `0000–7FFF` | Music/SFX driver + data (YM2203 + YM3526) |
+| `a78-01.17` | 4K | b1bfb53d | MC6801U4 MCU `F000–FFFF` | Protection/IO MCU, dated "29.JUN,1986" |
+| `a78-09`…`a78-14` | 6 × 32K | — | Graphics, planes 0–1 | |
+| `a78-15`…`a78-20` | 6 × 32K | — | Graphics, planes 2–3 | |
+| `a71-25.41` | 256B | 2d0f8545 | Video timing / object-layout PROM | Used by the renderer, see §6 |
+
+Known landmarks already found:
+- `a78-05-1.52` @ `0xFF4C`: `VER 0.1 4.SEP,1986 SUMMER` (Ver 0.0 was `18.AUG,1986`).
+- `a78-06-1.51` @ `0x333F`: tamper check — reads ROM `0x0B2E`, expects `0x4D`; on failure
+  falls into the ASCII `dead copy:` which executes as Z80 opcodes and derails the CPU.
+- `a78-06-1.51` @ `0x37DF`: 3-letter name table (default high-score initials?), loaded at `0x375A`.
+- MCU `F8F1`: EXTEND letter = shared RAM `FC7C`, incremented mod 6 every vblank.
+- Strings are **length-prefixed ASCII** (e.g. `10 "SELECT GAME MODE"`, `13 "ALL RIGHTS RESERVED"`).
+- Free space (`0xFF` runs) in `a78-05-1.52`: `0x785C`(+7A4), `0xBC9F`(+361), `0xD583`(+287D).
+  `a78-06-1.51` has none.
+
+> ROMs are copyrighted. Keep them **out of version control**; scripts take the ROM directory
+> as an argument (or read `ROM_DIR` from a local, git-ignored config).
+
+---
+
+## 2. Hardware model (what every tool must agree on)
+
+### Main Z80 (6 MHz)
+| Range | Use |
+|---|---|
+| `0000–7FFF` | `a78-06-1.51` |
+| `8000–BFFF` | Bank window into `a78-05-1.52`. Write to `FB40`: entry = `(data ^ 4) & 7`. Entries 0–3 = file offsets `0x0000/0x4000/0x8000/0xC000`; entries 4–7 = empty socket IC53. So the game writes **4–7** to select file pages 0–3. |
+| `C000–DCFF` | "Video RAM" — actually tile-column data for objects (see §6) |
+| `DD00–DFFF` | Object RAM (4 bytes per object: Y, gfx#, X, attr) |
+| `E000–F7FF` | Work RAM shared with sub CPU |
+| `F800–F9FF` | Palette RAM, 256 × RGBx_444 big-endian (2 bytes/colour) |
+| `FA00` | Sound command (W) / sound reply (R) |
+| `FA01` | Sound semaphores (R) |
+| `FA03` | Sound CPU reset |
+| `FA80` | Watchdog |
+| `FB00` | NMI to sub CPU |
+| `FB40` | Bank (bits 0–2), sub-CPU reset (b4), MCU reset (b5), video enable (b6), flip (b7) |
+| `FC00–FFFF` | RAM shared with the MCU |
+
+Interrupts: main CPU runs in **IM 2**; the MCU raises IRQ and the vector byte is read from
+shared RAM `FC00`. Reset code is `DI / IM 2 / JP 00B9`.
+
+### Sub Z80
+`0000–7FFF` ROM, `E000–F7FF` shared work RAM, IRQ on vblank.
+
+### Sound Z80
+`0000–7FFF` ROM, `8000–8FFF` RAM, `9000/9001` YM2203, `A000/A001` YM3526,
+`B000` command latch (R) / reply (W), `B001`/`B002` NMI enable/disable.
+IRQs come from the sound chips; NMI from the main-CPU command latch.
+
+### MCU (MC6801U4, 4 MHz/4)
+ROM `F000–FFFF`. Vectors: RESET `F000` (→ `FEBB`), IRQ1 (vblank) `F046`, OCF `F092`
+(timer interrupt disabled in normal play). Shared-RAM access is through ports:
+port 4 = address low, port 2 b0–3 = address high, b4 = strobe, port 1 b7 = read/write,
+port 3 = data. Helpers: `F1BF` read (X=addr → B), `F1DB` write (B → X=addr).
+Addresses `0x000–0x003` select DSW0/DSW1/IN1/IN2; `0xC00–0xFFF` = shared RAM.
+
+---
+
+## 3. Work area layout
+
+```
+bublbobl\                     ← repo root
+  PLAN.md                     ← overall plan (all three stages)
+  EXTRACTION_PLAN.md          ← this file
+  README.md                   ← how to run everything
+  config.local.toml           ← ROM_DIR etc. (git-ignored)
+  tools\                      ← Python extraction scripts
+    romset.py                 ← load + CRC-verify the set, build per-CPU images
+    gfx.py, palette.py, text.py, levels.py, sound.py, ...
+    build.py                  ← assemble src\ → build\roms\bublbobl\ and verify CRCs
+  src\                        ← the assembler source: the golden source for stage 3
+    main\  (fixed.asm, bank0..3.asm, include files)
+    sub\   sound\   mcu\
+  build\                      ← generated, git-ignored
+    images\  (main_fixed.bin, main_bank0..3.bin, sub.bin, sound.bin, mcu.bin)
+    gfx\  text\  levels\  sound\
+    roms\bublbobl\            ← reassembled set, for mame -rompath
+  disasm\                     ← raw unidasm passes, before conversion to src\
+  notes\
+    memory_map.md  ram_map.md  data_formats.md  routines.md  open_questions.md
+  traces\                     ← MAME debugger traces/scripts (raw logs git-ignored)
+```
+
+Tooling: Python 3 (+ Pillow for PNG), MAME (`mame -debug`,
+ROMs in `roms\bublbobl.zip`), and its bundled `unidasm.exe` (supports `-arch z80` and
+`-arch m6801`), optionally Ghidra for interactive cross-referencing.
+
+Output languages: main, sub and sound CPUs are **Z80** assembly; the MCU is **Motorola
+6801** (6800-family) assembly.
+
+`unidasm` notes: `-skip N` skips N file bytes, `-basepc` is the address of the *first
+disassembled byte* (so `-skip 0x333f -basepc 0x333f`), and `-count` is in bytes. Banked
+code needs the bank's file offset as `-skip` and `0x8000 + offset-within-bank` as `-basepc`.
+
+---
+
+## 4. Phase 0 — Foundations
+
+1. **`romset.py`** — load every file, verify CRC32/SHA1 against the MAME list, refuse to run on
+   mismatches. Emit per-CPU images into `build\images\`:
+   - `main_fixed.bin` (0000–7FFF), `main_bank0..3.bin` (each 16K, mapped at 8000).
+   - `sub.bin`, `sound.bin`, `mcu.bin` (based at F000).
+2. **Symbol files** — a single source of truth (`notes\symbols.toml` or similar) for I/O
+   ports, RAM variables and routine labels, exported to whatever format each disassembler
+   needs. Seed it from §2.
+3. **Byte classification map** per image: `code / data / text / fill / unknown`. Starts with
+   fill runs and known strings; grows from traces (§5) and disassembly. Everything downstream
+   uses it to avoid disassembling data.
+
+Deliverable: reproducible images + symbol file + empty classification maps.
+
+---
+
+## 5. Phase 1 — Dynamic analysis in MAME (separating code from data)
+
+Run `mame bublbobl -debug` and capture:
+
+1. **Code coverage** — `trace build\traces\main.log,maincpu,noloop` (likewise `sub`,
+   `audiocpu`, `mcu`) across attract mode, a 1P game through several rounds, a 2P game,
+   continue, high-score entry, test mode (service switch) and, if possible, the endings
+   (use the MAME cheat engine / RAM pokes to reach late rounds). Every executed PC is
+   code; feed those addresses into the classification maps.
+   For banked code also log the current bank (breakpoint on `FB40` writes with an action
+   that prints the value) so coverage is attributed to the right bank file.
+2. **Watchpoints** to discover RAM variables and who owns them, e.g.:
+   - round number, lives, score, credits, player state, enemy slots;
+   - `wpset dd00,300,w` (object RAM) to find sprite-building routines;
+   - `wpset c000,1d00,w` at round start to find the level-drawing routine and its ROM source;
+   - `wpset f800,200,w` to find palette loaders and their tables;
+   - `wpset fa00,1,w` to log every sound command (with PC) → sound command catalogue.
+3. **Snapshots** — `save` work RAM, object RAM, video RAM and palette at known moments
+   (title, round 1, boss, ending). Palette RAM is the only source of colour (no colour PROM).
+4. Record every discovered variable in `notes\ram_map.md` with address, size, meaning and
+   writer routine(s).
+
+Deliverable: coverage files per CPU, RAM map, sound-command log, snapshot set.
+
+---
+
+## 6. Phase 2 — Graphics
+
+### 6.1 Tiles
+From `bublbobl.cpp` `charlayout`: 8×8, 4bpp, region is **bit-inverted**
+(`ROMREGION_INVERT`), planes `{0, 4, half, half+4}`, x bits `3,2,1,0,11,10,9,8`,
+16 bytes per row-pair stride (`y*16`), 128 bits per tile. Region layout:
+`a78-09..14` at `0x00000–0x2FFFF`, gap `0x30000–0x3FFFF`, `a78-15..20` at
+`0x40000–0x6FFFF`, gap `0x70000–0x7FFFF`.
+
+`gfx.py`: decode all tiles → PNG sheets (greyscale, and per-palette using dumped palettes).
+Validate against MAME's F4 tile viewer.
+
+### 6.2 Palettes
+RGBx_444 big-endian, 16 palettes × 16 colours. Extract the tables the game copies into
+`F800` (found in Phase 1) so palettes come from ROM, not just snapshots. Colour 15 is
+transparent for objects.
+
+### 6.3 Objects / screen composition
+There is **no tilemap**. `bublbobl_v.cpp` renders everything from object RAM:
+- each 4-byte object: `Y`, `gfx_num`, `X`, `attr` (attr low nibble = tile bank × 1024,
+  bit 6 = X high);
+- `gfx_num` selects a 0x80-byte block of `C000` RAM holding tile/attribute pairs
+  (tile low 8 bits; byte 2: tile bits 8–9, colour b2–5, flipX b6, flipY b7);
+- the `a71-25` PROM (offset `0x80 + (gfx_num & 0xE0)/2`) defines the column shape of each
+  object (skip / new column / row select).
+
+`objects.py`: re-implement this renderer offline so RAM snapshots render to PNG
+identically to MAME. That renderer is then reused to preview levels and sprite frames
+straight from ROM data.
+
+### 6.4 Sprite/animation tables
+Use object-RAM watchpoints to find the routines that write tile lists into `C000`; follow them
+back to ROM frame tables. Extract each character's frames (Bub, Bob, the 10+ enemies,
+items, bubbles, fonts) into named sheets with JSON metadata.
+
+Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.
+
+---
+
+## 7. Phase 3 — Text
+
+1. `text.py`: scan main ROM images for length-prefixed ASCII (`len, chars…`), plus raw runs,
+   keyed by CPU address (fixed or `bank:addr`). Output `build\text\strings.csv`.
+2. Find the print routine(s) by breaking on writes of a known string to video/object RAM;
+   determine the full record format (position, colour, terminator/control codes such as
+   the `:`-separated sequences seen in credits).
+3. Decode special tables: default high scores (`0x37DF` name table + scores), staff roll,
+   ending texts (two variants: "MIGHTA" vs "MAITA"), secret-game hints, test-mode labels.
+4. Map the custom font: which tile numbers correspond to each character (the
+   `ABCDEFGHIJKLMNOPQRSTUVWXYZ .!~` table at `0x38D4` in `a78-06-1` is the name-entry
+   alphabet).
+
+Deliverable: complete string catalogue with addresses and the routine that prints each.
+
+---
+
+## 8. Phase 4 — Level (round) data
+
+100 normal rounds plus the secret/“super” variants.
+
+1. Find the round counter in RAM (Phase 1) and the round-start routine (watch `C000` writes
+   when the round number changes).
+2. Trace back to the ROM tables. Expect, per round:
+   - wall/platform layout (likely a compact bitmap or row-encoded format),
+   - the two-tile wall pattern / colour palette for that round,
+   - enemy list: type, start position, direction, timing,
+   - bubble air-current (wind) data,
+   - possibly special-item / trigger data.
+3. Identify which bank holds them (bank breakpoint during round start).
+4. `levels.py`: decode all rounds → JSON + PNG previews (using the offline renderer).
+   Cross-check against gameplay screenshots for rounds 1, 2, 50 and 100.
+5. Document the "super" mode differences (enemy changes, secret rounds, the
+   `WELCOME TO SECRET ROUND` / `YOU ZAPPED TO` warp logic).
+
+Deliverable: `build\levels\round_XXX.json/.png`, `notes\data_formats.md#levels`.
+
+---
+
+## 9. Phase 5 — Game logic disassembly (main + sub)
+
+1. Generate first-pass listings with `unidasm` using the classification maps so only code
+   regions are disassembled; data regions emitted as `db/dw` with labels.
+   (Alternatively import into Ghidra: base `0000` + four overlay blocks at `8000`, Z80.)
+2. Work outward from entry points: reset (`0000`), IM2 vector table (vector byte comes from
+   MCU shared RAM `FC00`), `RST` handlers (`0008`, `0010`, `0018`, `0020`, `0028`, `0030`,
+   `0038`), main loop, bank-switch trampolines.
+3. Identify and name subsystems: attract/demo, coin/credit, game-mode select, player
+   control, bubble physics, enemy AI per type, item/bonus system (EXTEND, special items,
+   "mystery" bonuses), round transition, death, continue, high-score, endings, test mode.
+4. **Sub CPU** (`a78-08`): determine its role — likely handled from shared RAM `E000–F7FF`.
+   Map every shared variable it reads/writes; correlate with main-CPU writes.
+5. Known items to document: the `dead copy` tamper trap (`0x333F`) and any other
+   self-checks (`PS4 SUM ERROR`, `ROM OK`, RAM tests), the SWB#7 `F7FE/F7FF` score output
+   mystery noted in the driver (routines `0F26`, `0F74`).
+6. Write the result as assembler source in `src\main\` and `src\sub\` from the start, and
+   keep it assembling byte-exact at every commit (Phase 8). Do not let a listing-only
+   form drift away from buildable source.
+
+Deliverable: `src\main\*.asm`, `src\sub\*.asm`, `notes\routines.md`, byte-exact rebuild.
+
+---
+
+## 10. Phase 6 — MCU (6801U4)
+
+Smallest and most self-contained — a good early win.
+
+1. Disassemble `F000–FFFF` with `unidasm a78-01.17 -arch m6801 -basepc 0xf000`.
+2. Annotate the IRQ1 handler at `F046` (≈25 `JSR`s, one subsystem each). Known:
+   `F1BF`/`F1DB` shared-RAM read/write, `F8F1` EXTEND counter, `F092` checks shared `FF98`
+   for `'G'` (0x47).
+3. Name each job: coin handling + lockout + counters, input/DSW reading and publishing to
+   shared RAM, main-CPU IRQ generation + vector, collision/position checks, timers,
+   test-mode code at `FEBB` (reset path) and the `FFD3` halt loop.
+4. Produce a shared-RAM contract table (`FC00–FFFF`): offset, direction (MCU→Z80 / Z80→MCU),
+   meaning.
+5. Byte-exact rebuild check (Phase 8).
+
+Deliverable: `src\mcu\mcu.asm`, `notes\mcu_shared_ram.md`.
+
+---
+
+## 11. Phase 7 — Sound
+
+1. Disassemble `a78-07.46` (entry points: `0000`, `0038` IRQ from YM chips, `0066` NMI from
+   command latch).
+2. Build the command catalogue: map each command byte (from the `FA00` log in Phase 1) to
+   its handler and data pointer. The pointer tables seen around `0x28DA`–`0x2B00` are the
+   likely song/channel lists.
+3. Decode the sequence format (notes, durations, instrument changes, loops) for both chips.
+   Extract YM2203 and YM3526 instrument/patch tables.
+4. Outputs:
+   - `sound_commands.csv` (id → name → type → data addr),
+   - per-song decoded event lists (JSON),
+   - optional MIDI conversion,
+   - reference audio/VGM captured from MAME for validation.
+
+Deliverable: `src\sound\*.asm`, `build\sound\`, `notes\data_formats.md#sound`.
+
+---
+
+## 12. Phase 8 — Reassembly to a byte-exact set that runs in MAME
+
+### 12.1 Toolchain
+**The Macroassembler AS** (`asl` + `p2bin`) for all four CPUs: it assembles Z80 and 6801,
+so one syntax, one include style and one build script cover the whole set. It also gives
+explicit control of the 6801 addressing mode, which the MCU needs (§12.3).
+
+### 12.2 Source layout and images
+| Source | `org` | Output | Size |
+|---|---|---|---|
+| `src\main\fixed.asm` | `0000h` | `a78-06-1.51` | 32K |
+| `src\main\bank0..3.asm` | `8000h` each | joined in order → `a78-05-1.52` | 4 × 16K |
+| `src\sub\sub.asm` | `0000h` | `a78-08.37` | 32K |
+| `src\sound\sound.asm` | `0000h` | `a78-07.46` | 32K |
+| `src\mcu\mcu.asm` | `F000h` | `a78-01.17` | 4K |
+
+- Shared symbols (I/O ports, shared RAM `E000–F7FF`, MCU RAM `FC00–FFFF`) live in include
+  files that every CPU's source uses. Each address then has one name across all four CPUs.
+- The four banks share `8000h`, so each bank keeps its own labels. A call into a bank uses
+  the bank-switch helpers in the fixed ROM. Name each helper and its bank argument.
+- Pad free space to the original length with `0FFh`, and place fixed strings (the version
+  stamp at `0xFF4C` of `a78-05-1`) at their original addresses with `org` asserts.
+- Graphics ROMs and `a71-25.41` are data only. `build.py` copies them from the ROM directory
+  so that the output folder is a complete set.
+
+### 12.3 Encoding traps
+- **6801 extended addressing below `$0100`.** The MCU uses three-byte extended forms for
+  direct-page addresses (e.g. `F6 00 54` = `LDAB $0054`, `7C 00 48` = `INC $0048`). An
+  assembler picks the two-byte direct form by default. Force the extended form (AS: `>`
+  operand prefix) where the original has it.
+- **Z80 undocumented opcodes** (`SLL`, `IXH`/`IXL`, etc.) must assemble as in the original.
+  Keep each `JR`/`JP` and each `RST` exactly as found.
+- **Code that is also data.** The `dead copy:` bytes at `0x334A` run as opcodes. Keep them as
+  `db` with a comment that gives both readings.
+- **Ambiguous bytes.** Until a region is proved to be code, keep it as `db`. Wrong code is
+  worse than honest data.
+
+### 12.4 Build and verify
+`python tools\build.py` does these steps:
+1. Assemble every source.
+2. Split or join the output into the original file names.
+3. Compare CRC32 and SHA1 with the MAME list (`romset.py`). Stop with a byte-offset diff on
+   the first mismatch.
+4. Write the complete set to `build\roms\bublbobl\`.
+
+Then confirm in MAME:
+```bash
+mame bublbobl -rompath build/roms
+```
+A byte-exact set gives no checksum warning. Play attract mode, one round and test mode.
+
+### 12.5 Two levels of done
+1. **Byte-exact.** The CRC matches. Numeric addresses are allowed where meaning is unknown.
+2. **Relocatable.** Every pointer is a label: jump and call targets, address tables, and
+   immediate values that are addresses. Test: put padding in each source near its start,
+   then rebuild and play. The game must still run in MAME (the CRC will change). For this
+   test only, make the tamper check at `0x333F` and the ROM checksum tests pass.
+
+Stage 3 needs level 1. Level 2 is required only for changes to the arcade code itself.
+
+Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing relocation test.
+
+---
+
+## 13. Phase 9 — Consolidation
+
+- `notes\data_formats.md`: every format (text, objects, levels, enemies, sound) with byte
+  diagrams and worked examples.
+- `notes\open_questions.md`: things not yet understood (e.g. SWB#7, unused data,
+  unreferenced strings, the bootleg-vs-original MCU differences).
+- A one-command pipeline (`python tools\extract_all.py --roms <dir>`) that regenerates all of
+  `build\` from the ROMs and validates CRCs first.
+- Optional: compare against Ver 0.0 (`a78-06.51`/`a78-05.52`) and the US sets to document
+  version differences (the "SELECT GAME MODE" mode-select path, bug fixes).
+
+---
+
+## 14. Validation strategy
+
+| Area | Check |
+|---|---|
+| ROM loading | CRC/SHA1 match before every run |
+| Disassembly | Byte-exact reassembly of every CPU image |
+| Graphics | Tile sheets match MAME F4 viewer; offline renderer matches MAME screenshots from the same RAM snapshot |
+| Palettes | ROM-extracted palettes equal palette RAM snapshots |
+| Levels | Rendered round previews match in-game screenshots |
+| Text | Every string located and attributed to a print call |
+| Sound | Decoded sequences replay to match MAME audio / VGM register logs |
+| MCU | Shared-RAM contract consistent with main-CPU usage |
+
+---
+
+## 15. Suggested order & milestones
+
+1. Phase 0 foundations (ROM loader, images, symbols) and the Phase 8 build skeleton: every
+   ROM starts as one large `db` block, so `build.py` is byte-exact from day one.
+2. Phase 2.1 tile sheets + Phase 3 text dump — quick, visible results.
+3. Phase 6 MCU — small, complete, byte-exact.
+4. Phase 1 traces + RAM map — unlocks everything else.
+5. Phase 2.2–2.4 palettes, offline renderer, sprite frames.
+6. Phase 4 levels.
+7. Phase 5 main/sub disassembly. Replace `db` blocks with code region by region, and keep
+   the build byte-exact at each step.
+8. Phase 7 sound.
+9. Phase 8 relocation test.
+10. Phase 9 consolidation.
+
+Before starting each phase, check for existing community documentation or disassemblies of
+Bubble Bobble to cross-reference findings (treat as hints, verify against the ROMs).
