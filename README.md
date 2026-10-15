@@ -51,6 +51,20 @@ Other tools:
   (`build.py` runs it)
 - `tools/dasm6801.py` — trace the MCU code from its vectors and write a first-pass source to
   `disasm/mcu.s` (it made the first `src/mcu/mcu.s`, which is now edited by hand)
+- `tools/trace.py` — run MAME headless on a scripted scenario (`--list`) with the debugger
+  tracing every CPU, and record executed code, RAM and I/O accesses and sound commands in
+  `build/traces/<scenario>/`. `play` records your own play first, then traces the replay.
+  Needs `MAME_DIR` in `config.local.toml`
+- `tools/coverage.py` — merge the traced code into the classification maps
+- `tools/rammap.py` — write `notes/ram_map.md`: who writes and reads each RAM and I/O address
+- `tools/soundcmds.py` — write `notes/sound_commands.md`: every command sent to the sound CPU
+
+`config.local.toml` (git-ignored) holds local paths:
+
+```toml
+ROM_DIR = "roms/bublbobl"            # optional
+MAME_DIR = "C:/Games/Retro/mame"     # folder with mame.exe
+```
 
 ## Legal
 

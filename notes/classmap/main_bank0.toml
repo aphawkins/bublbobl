@@ -2,6 +2,566 @@
 # Generated in part by tools/classify.py: source="auto" entries are rewritten.
 
 [[range]]
+start = 0x8001
+end = 0x8006
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x81B3
+end = 0x81BB
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8287
+end = 0x8292
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8295
+end = 0x8299
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x844A
+end = 0x845D
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x848E
+end = 0x8499
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x849C
+end = 0x84A6
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x85A9
+end = 0x85C5
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x85C8
+end = 0x8672
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8691
+end = 0x8697
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x869D
+end = 0x86A2
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x86A8
+end = 0x873D
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8740
+end = 0x874C
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8751
+end = 0x8755
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8758
+end = 0x875F
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8772
+end = 0x8799
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x87BE
+end = 0x885F
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8865
+end = 0x88B3
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x88B6
+end = 0x88BA
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x88C4
+end = 0x88D2
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x88F5
+end = 0x88F8
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8918
+end = 0x891D
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8940
+end = 0x8B77
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8B7A
+end = 0x8C13
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8C30
+end = 0x8C97
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8CA8
+end = 0x8CB0
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8CD7
+end = 0x8D4A
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8D5B
+end = 0x8D64
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8D8B
+end = 0x8E15
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8E25
+end = 0x8E5E
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8E89
+end = 0x8EDE
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8EFB
+end = 0x8F08
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8F4E
+end = 0x8F59
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x8F5C
+end = 0x8F60
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x913C
+end = 0x91FA
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9200
+end = 0x9217
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x927D
+end = 0x928A
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x92F1
+end = 0x92FC
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x92FF
+end = 0x9303
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x93F6
+end = 0x940F
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9500
+end = 0x9518
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x951B
+end = 0x9545
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9548
+end = 0x95C8
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x95E8
+end = 0x95F8
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9639
+end = 0x9646
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9695
+end = 0x96A0
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x96A3
+end = 0x96A7
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9893
+end = 0x98A0
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x98E5
+end = 0x98F0
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x98F3
+end = 0x98F7
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9DD2
+end = 0x9DDF
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9E33
+end = 0x9E3E
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x9E41
+end = 0x9E45
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA108
+end = 0xA13A
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA13E
+end = 0xA15B
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA15E
+end = 0xA195
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA1A7
+end = 0xA1D1
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA1DF
+end = 0xA200
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA210
+end = 0xA239
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA269
+end = 0xA278
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA29A
+end = 0xA2AB
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA2B7
+end = 0xA2ED
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA2F6
+end = 0xA2FD
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA306
+end = 0xA37E
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA380
+end = 0xA3E1
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA3E6
+end = 0xA408
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA40C
+end = 0xA4A5
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA4AA
+end = 0xA4BD
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA4C6
+end = 0xA4E9
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA4F3
+end = 0xA4F6
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA523
+end = 0xA551
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA586
+end = 0xA5AA
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA5FF
+end = 0xA60A
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA60D
+end = 0xA611
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xA847
+end = 0xA855
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xB0F0
+end = 0xB103
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xB14A
+end = 0xB155
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xB158
+end = 0xB162
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xB391
+end = 0xB399
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xB3B5
+end = 0xB3F1
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
 start = 0xB510
 end = 0xB514
 kind = "text"
@@ -14,3 +574,52 @@ end = 0xB721
 kind = "text"
 source = "auto"
 note = "PQRST0"
+
+[[range]]
+start = 0xB738
+end = 0xB7B4
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xB7C5
+end = 0xB7FF
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xB939
+end = 0xB947
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xBBCF
+end = 0xBBDC
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xBC15
+end = 0xBC20
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xBC23
+end = 0xBC27
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0xBF48
+end = 0xBF60
+kind = "code"
+source = "trace"
+note = "executed in MAME"

@@ -23,13 +23,18 @@ MCU_RAM       = { addr = 0xFC00, size = 0x0400, note = "RAM shared with MCU, nam
 [main.code]
 RESET          = { addr = 0x0000, note = "DI / IM 2 / JP 00B9" }
 START          = { addr = 0x00B9 }
-TAMPER_CHECK   = { addr = 0x333F, note = "reads 0B2E, expects 4D; else runs 'dead copy:'" }
+IDLE           = { addr = 0x01ED, note = "jr $: after start-up the main CPU only runs the IRQ handler" }
+IRQ_HANDLER    = { addr = 0x044D, note = "IM 2, through the vector entry at 0B2E" }
+TAMPER_CHECK   = { addr = 0x333F, note = "low byte of the IM 2 vector entry at 0B2E must be 4D; else runs 'dead copy' at 334A" }
 DEAD_COPY      = { addr = 0x334A, note = "ASCII that executes as opcodes" }
 SWB7_SCORE_A   = { addr = 0x0F26, note = "F7FE/F7FF score output mystery" }
 SWB7_SCORE_B   = { addr = 0x0F74 }
 NAME_TABLE_LD  = { addr = 0x375A }
 NAME_TABLE     = { addr = 0x37DF, note = "3-letter names (default hi-score initials?)" }
 ENTRY_ALPHABET = { addr = 0x38D4, note = "name-entry alphabet" }
+
+[main.data]
+IRQ_VECTOR_ENTRY = { addr = 0x0B2E, size = 2, note = "word 044D: the IM 2 table entry (I = 0B, FC00 = 2E); checked at 333F and bank0:950A" }
 
 [bank3.data]
 # a78-05-1.52 page 3 (file 0xC000-0xFFFF), mapped at 8000 when FB40 = 7.
@@ -53,7 +58,7 @@ NMI   = { addr = 0x0066, note = "from command latch" }
 
 [shared.mcu]
 # Contract in notes/mcu_shared_ram.md. Direction: M = written by the MCU, Z = by the main CPU.
-IRQ_VECTOR      = { addr = 0xFC00, note = "IM 2 vector byte; the MCU code never touches it" }
+IRQ_VECTOR      = { addr = 0xFC00, note = "Z: IM 2 vector byte, 2E (main:$0130, I = 0B -> 0B2E -> 044D); the MCU never touches it" }
 MCU_OBJECTS     = { addr = 0xFC01, size = 0x1C, note = "Z: 7 x 4 bytes: flags (b0 = active), X, Y, -" }
 CREDITS         = { addr = 0xFC1E, note = "M/Z: credits; coins add, the game subtracts" }
 IN0_COPY        = { addr = 0xFC1F, note = "M: port 1 (IN0 and outputs), every vblank" }

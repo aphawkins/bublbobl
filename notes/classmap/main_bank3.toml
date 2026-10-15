@@ -345,6 +345,13 @@ source = "auto"
 note = "0x287d x FF"
 
 [[range]]
+start = 0xBE00
+end = 0xBE41
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
 start = 0xBE4D
 end = 0xBE7E
 kind = "fill"

@@ -41,7 +41,9 @@ The set exactly matches MAME's parent **`bublbobl` — Bubble Bobble (Japan, Ver
 Known landmarks already found:
 - `a78-05-1.52` @ `0xFF4C`: `VER 0.1 4.SEP,1986 SUMMER` (Ver 0.0 was `18.AUG,1986`).
 - `a78-06-1.51` @ `0x333F`: tamper check — reads ROM `0x0B2E`, expects `0x4D`; on failure
-  falls into the ASCII `dead copy:` which executes as Z80 opcodes and derails the CPU.
+  falls into the ASCII `dead copy` (`334A–3352`), which executes as Z80 opcodes and derails
+  the CPU. The `:` after it is `3A`, the first byte of the routine at `3353` (`ld a,($E5D3)`),
+  which runs in normal play.
 - `a78-06-1.51` @ `0x37DF`: 3-letter name table (default high-score initials?), loaded at `0x375A`.
 - MCU `F8F1`: EXTEND letter = shared RAM `FC7C`, incremented mod 6 every vblank.
 - Strings are **length-prefixed ASCII** (e.g. `10 "SELECT GAME MODE"`, `13 "ALL RIGHTS RESERVED"`).
@@ -173,6 +175,44 @@ Run `mame bublbobl -debug` and capture:
    writer routine(s).
 
 Deliverable: coverage files per CPU, RAM map, sound-command log, snapshot set.
+
+**Tooling done (2026-10-15).** `tools/trace.py` runs MAME 0.289 headless
+(`-debug -debugger none`) with `tools/trace.lua` as the autoboot script:
+- The debugger traces each CPU into files that change every second. `trace.py` reads
+  and deletes each finished file, so a long run needs little disk space. A watchpoint on
+  `FB40` puts a bank marker into the main CPU's trace, so code in the bank window is
+  credited to the right page.
+- Lua memory taps count, for every RAM and I/O address, which instruction read or wrote it,
+  and log every sound command written to `FA00`.
+- Inputs come from scripted scenarios (`--list`). DIP switches come from a generated MAME
+  cfg, so the user's own MAME settings never reach a run. `play` records a real game at
+  full speed (`-record`) and traces its replay (`-playback`): use it to reach late rounds,
+  bosses and endings.
+- `--snap N` saves a screenshot and the main CPU's `C000–FFFF` every N seconds.
+- `tools/coverage.py` merges the executed code into the classification maps as
+  `source = "trace"` ranges, which add up over runs. `tools/rammap.py` writes
+  `notes\ram_map.md` and `tools/soundcmds.py` writes `notes\sound_commands.md`.
+
+Traps found on the way: the debugger's `noloop` option means *do not* collapse loops (leave
+it off, or the idle loop floods the trace); `focus` makes the debugger ignore the other CPUs;
+Lua notifier and tap handles must stay referenced or the garbage collector cancels them; a
+soft reset leaves the headless debugger stopped. Tracing runs at about 15–100% of full speed,
+limited by MAME flushing the trace file on every line, so run scenarios side by side.
+
+Findings so far:
+- After start-up the main CPU sits in `jr $` at `01ED`. All game work runs in the IM 2
+  interrupt. The main CPU writes `2E` to `FC00` at `0130`, with I = `0B`, so the vector
+  entry is `0B2E`, which holds `044D`, the handler. The tamper check at `333F` and a second
+  check at `bank0:950A` both verify this vector.
+- `dead copy` is `334A–3352`. The `:` after it is the first byte of the routine at `3353`.
+- First runs (attract 150 s, a 1P game 600 s, a 2P game 400 s, both test modes) executed
+  `0x3E07` bytes of the fixed ROM, `0xF5E` of bank 0, `0xD70` of bank 2, `0x42` of bank 3,
+  none of bank 1, `0x833` of the sub CPU and `0x1954` of the sound CPU. Bank 1 and most of
+  bank 3 need later rounds, the endings or the secret mode: record those with `play`.
+- The main CPU sent 20 different sound commands, most of them through one routine at `1374`.
+- Evidence on the MCU questions is in `notes\open_questions.md`.
+- Still to do in this phase: one frame's order of shared-RAM accesses across the CPUs
+  (PLAN §3.3), and runs that reach late rounds.
 
 ---
 
@@ -393,7 +433,7 @@ To rebuild the tools (needs `bison` and `flex` in WSL):
   `*` exactly where the original has the direct form.
 - **Z80 undocumented opcodes** (`SLL`, `IXH`/`IXL`, etc.) must assemble as in the original.
   Keep each `JR`/`JP` and each `RST` exactly as found.
-- **Code that is also data.** The `dead copy:` bytes at `0x334A` run as opcodes. Keep them as
+- **Code that is also data.** The `dead copy` bytes at `0x334A` run as opcodes. Keep them as
   a labelled `.incbin` with a comment that gives both readings.
 - **Ambiguous bytes.** Until a region is proved to be code, keep it as a `.incbin`. Wrong
   code is worse than honest data.

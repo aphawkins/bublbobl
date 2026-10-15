@@ -43,7 +43,7 @@ the last) depends on that timing. It must be measured in Phase 1 (PLAN.md §3.3)
 
 | Main | Name | Dir | Meaning |
 |---|---|---|---|
-| `FC00` | `IRQ_VECTOR` | — | IM 2 vector byte. The MCU code never touches it, so the main CPU must set it |
+| `FC00` | `IRQ_VECTOR` | Z | IM 2 vector byte. The MCU never touches it. The main CPU writes `2E` once at boot (`main:$0130`, with I = `0B`), so the vector is the table entry at `0B2E`, which holds `044D`, the IRQ handler |
 | `FC01` | `MCU_OBJECTS` | Z | 7 × 4 bytes: flags (b0 = active), X, Y, unused |
 | `FC1E` | `CREDITS` | M/Z | Credits. Coins and service add (max 9 from service); the main CPU subtracts |
 | `FC1F` | `IN0_COPY` | M | Port 1: b0 tilt, b1 service, b2 coin 1, b3 coin 2, b4–7 the MCU's outputs |
@@ -116,6 +116,6 @@ select changes. It wraps when it reaches the `0xFF` at the end of a list.
 ## Things the main CPU must do
 
 - Write `'G'` to `RUN_KEY`, or it gets no IRQ and coins are ignored.
-- Set `IRQ_VECTOR`.
+- Set `IRQ_VECTOR` (the game writes `2E` at `main:$0130`).
 - Change lives and the round only through the command bytes when `TRAP_KEY` = `'B'`.
   Otherwise the MCU crashes, and coins and the IRQ stop.
