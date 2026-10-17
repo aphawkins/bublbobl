@@ -34,7 +34,8 @@ ENEMY1_SLOTS  = { addr = 0xEDF8, note = "group 1, 0x19 bytes each (drew Banebou 
 ENEMY2_SLOTS  = { addr = 0xEEAC, note = "group 2, 0x23 bytes each (drew Mighta in the traced rounds)" }
 ENEMY2_SHOTS  = { addr = 0xEC29, note = "group 2's thrown objects (Mighta's rock)" }
 ENEMY2B_SLOTS = { addr = 0xF1E7, note = "group 2 when ENEMY_SWAP b4, 0x19 bytes each" }
-ENEMY3_SLOTS  = { addr = 0xEFA1, note = "group 3, 0x1B bytes each" }
+ENEMY3_SLOTS  = { addr = 0xEFA1, note = "group 3, 0x1B bytes each (drew Hidegons in the traced rounds)" }
+ENEMY3_SHOTS  = { addr = 0xEB99, size = 0x90, note = "group 3's shots, 0x12 bytes each, set up by ENEMY3_SHOTS_INIT (drew Hidegons' fireballs)" }
 ENEMY4_SLOTS  = { addr = 0xF05F, note = "group 4, 0x19 bytes each (drew Pulpul in the traced rounds)" }
 GHOST_SLOTS   = { addr = 0xF1C2, note = "set up by GHOST_INIT; drew Skel-Monsta, the skull ghost, in the traced rounds" }
 ENEMY5_SLOTS  = { addr = 0xF113, note = "group 5, 0x19 bytes each (drew Monsta in the traced rounds)" }
@@ -62,6 +63,7 @@ LOAD_ROUND_REC = { addr = 0x1775, note = "bank1:ROUND_RECORDS[ROUND_MAIN] -> ROU
 CYCLE_COLOUR   = { addr = 0x1B90, note = "steps palette 1 colour 14 through CYCLE_1_14" }
 RED_RAMP_STEP  = { addr = 0x2873, note = "steps palette 1 colour 1 through RED_RAMP" }
 LOAD_PAL_7_8   = { addr = 0x3C60, note = "PALETTES_7_8 -> F8E0" }
+ENEMY3_SHOTS_INIT = { addr = 0x79E9, note = "clears ENEMY3_SHOTS (8 x 0x12), then sets them up if ENEMY_COUNTS group 3 is nonzero; called from bank0:ROUND_ENEMIES" }
 TAMPER_CHECK   = { addr = 0x333F, note = "low byte of the IM 2 vector entry at 0B2E must be 4D; else runs 'dead copy' at 334A" }
 DEAD_COPY      = { addr = 0x334A, note = "ASCII that executes as opcodes" }
 SWB7_SCORE_A   = { addr = 0x0F26, note = "F7FE/F7FF score output mystery" }

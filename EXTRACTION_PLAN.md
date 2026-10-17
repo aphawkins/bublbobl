@@ -300,10 +300,10 @@ shows the block. The objects are built in `OBJ_SHADOW` (`E1CD`) and copied to `D
   draw also logs IX, which ties it to a slot table. The enemies are six groups, each with
   its own count (`ENEMY_COUNTS`, from round-record bytes 4–6), slot table and code.
   `ENEMY_SWAP` (record byte 12) swaps groups 0 and 2 for a second kind, so there are eight
-  kinds. Seen so far: group 0 Zen-chan, group 1 Banebou, group 2 Mighta, group 4 Pulpul,
-  group 5 Monsta, and Skel-Monsta (`GHOST_SLOTS`). `trace.py --round N` starts a game on round N. Catalogue:
+  kinds. Seen so far: group 0 Zen-chan, group 1 Banebou, group 2 Mighta, group 3 Hidegons,
+  group 4 Pulpul, group 5 Monsta, and Skel-Monsta (`GHOST_SLOTS`). `trace.py --round N` starts a game on round N. Catalogue:
   `notes\sprites.md`.
-- Still to do: rounds with group 3 and the swapped kinds (from rounds 40–60),
+- Still to do: rounds with the swapped kinds (from rounds 50 and 60),
   the bosses and the endings; per-character sheets grouped by slot table.
 
 Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.
