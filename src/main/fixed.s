@@ -1026,8 +1026,8 @@ L_06B9:                 ; 06B9
         ld      a,(0xE5D7)
         cp      0x03
         jr      nz,L_06CF
-        ld      a,(0xE641)
-        ld      hl,0xE646
+        ld      a,(SCORE_P1)
+        ld      hl,SCORE_P2
         cp      (hl)
         jr      nz,L_06CF
         and     0x0F
@@ -1038,7 +1038,7 @@ L_06CF:                 ; 06CF
         ld      hl,0xE5D7
         bit     0,(hl)
         jr      z,L_06E4
-        ld      a,(0xE641)
+        ld      a,(SCORE_P1)
         ld      b,0x0A
         ld      hl,END_PICK_TABLE
 L_06DE:                 ; 06DE
@@ -1050,7 +1050,7 @@ L_06E4:                 ; 06E4
         ld      hl,0xE5D7
         bit     1,(hl)
         jr      z,L_06F9
-        ld      a,(0xE646)
+        ld      a,(SCORE_P2)
         ld      b,0x0A
         ld      hl,END_PICK_TABLE
 L_06F3:                 ; 06F3
@@ -1722,7 +1722,7 @@ L_0BC8:                 ; 0BC8
         ld      a,0x03
         call    BANK_SELECT
         ld      a,(0xBFFF)
-        call    L_0D6D
+        call    SHL4
         ld      hl,0xBFDF
         call    ADD_HL_A
         ld      de,0xE36A
@@ -1735,7 +1735,7 @@ COIN_SCAN:              ; 0BE4
         call    COIN_SOUND
         ld      hl,0xE35E
         ld      a,(IN0_COPY)
-        call    L_0D6D
+        call    SHL4
         ld      b,0x03
 L_0BF2:                 ; 0BF2
         push    af
@@ -1773,7 +1773,7 @@ L_0C27:                 ; 0C27
         jr      L_0C5A
 
 L_0C39:                 ; 0C39
-        call    L_0D64
+        call    SHR3
         and     0x06
         call    ADD_DE_A
         ld      a,(de)
@@ -1955,25 +1955,30 @@ ZERO_BC:                ; 0D50
         ret
 
         .incbin "main_fixed.bin", 0x0D59, 0x0009
-L_0D62:                 ; 0D62
+; A >>= 4 (logical); SHR3 follows
+SHR4:                   ; 0D62
         srl     a
-L_0D64:                 ; 0D64
+; A >>= 3 (logical)
+SHR3:                   ; 0D64
         srl     a
         srl     a
         srl     a
         ret
 
         .incbin "main_fixed.bin", 0x0D6B, 0x0001
-L_0D6C:                 ; 0D6C
+; A <<= 5 (8 bit); SHL4 follows
+SHL5:                   ; 0D6C
         add     a,a
-L_0D6D:                 ; 0D6D
+; A <<= 4 (8 bit)
+SHL4:                   ; 0D6D
         add     a,a
         add     a,a
         add     a,a
         add     a,a
         ret
 
-L_0D72:                 ; 0D72
+; A >>= 6 (arithmetic): the top two bits as -2..1
+SAR6:                   ; 0D72
         sra     a
         sra     a
         sra     a
@@ -2027,7 +2032,8 @@ L_0D99:                 ; 0D99
         ld      d,a
         ret
 
-L_0DA7:                 ; 0DA7
+; DE = word at HL + 2*A: the jump and pointer table reader
+TABLE_WORD:             ; 0DA7
         add     a,a
         add     a,l
         ld      l,a
@@ -2039,7 +2045,8 @@ L_0DAD:                 ; 0DAD
         ld      d,(hl)
         ret
 
-L_0DB1:                 ; 0DB1
+; HL = A * B (8 x 8 bit, shift and add)
+MUL8:                   ; 0DB1
         ld      l,0x00
         ld      h,a
         ld      c,b
@@ -2173,7 +2180,8 @@ RAND_DEC:               ; 0E7E
         dec     (hl)
         jp      RAND_MIX
 
-L_0E85:                 ; 0E85
+; compare the 3 bytes ending at DE with those ending at HL, high byte first (the scores' layout); registers kept, C = (DE) < (HL), Z = equal
+SCORE_CMP:              ; 0E85
         push    bc
         push    de
         push    hl
@@ -2210,7 +2218,8 @@ L_0E9C:                 ; 0E9C
         djnz    L_0E9C
         ret
 
-L_0EAA:                 ; 0EAA
+; B records at IY of 5 bytes (DE first tile, HL string, C attribute), each through PRINT_TEXT
+PRINT_TEXTS:            ; 0EAA
         push    bc
         ld      e,(iy+0)
         ld      d,(iy+1)
@@ -2221,10 +2230,11 @@ L_0EAA:                 ; 0EAA
         pop     bc
         ld      de,0x0005
         add     iy,de
-        djnz    L_0EAA
+        djnz    PRINT_TEXTS
         ret
 
-L_0EC6:                 ; 0EC6
+; draw a block of tiles: HL = tile RAM address, DE = tile numbers (read one column at a time), B columns, C rows, A = the attribute byte. A column is two bytes wide (tile, attribute) and a row steps 0x40
+TILE_RECT:              ; 0EC6
         push    bc
         push    hl
         ld      b,c
@@ -2245,7 +2255,7 @@ L_0EC9:                 ; 0EC9
         pop     bc
         inc     hl
         inc     hl
-        djnz    L_0EC6
+        djnz    TILE_RECT
         ret
 
 ; A bit-reversed to F7FF (F7FE = A) unless DSW1 b6; waits for F7FF to change: the SWB#7 output mystery
@@ -2305,27 +2315,27 @@ SWB7_SCORE_A:           ; 0F26
         ld      a,0x0E
         call    SWB7_OUT
         ld      a,(0xE643)
-        call    L_0D62
+        call    SHR4
         and     0x0F
         call    SWB7_OUT
         ld      a,(0xE643)
-        call    L_0D6D
+        call    SHL4
         and     0xF0
         ld      e,a
         ld      a,(0xE642)
-        call    L_0D62
+        call    SHR4
         or      e
         call    SWB7_OUT
         ld      a,(0xE642)
-        call    L_0D6D
+        call    SHL4
         and     0xF0
         ld      e,a
-        ld      a,(0xE641)
-        call    L_0D62
+        ld      a,(SCORE_P1)
+        call    SHR4
         or      e
         call    SWB7_OUT
-        ld      a,(0xE641)
-        call    L_0D6D
+        ld      a,(SCORE_P1)
+        call    SHL4
         call    SWB7_OUT
         ld      a,(ROUND_MAIN)
         inc     a
@@ -2340,27 +2350,27 @@ SWB7_SCORE_B:           ; 0F74
         ld      a,0x0F
         call    SWB7_OUT
         ld      a,(0xE648)
-        call    L_0D62
+        call    SHR4
         and     0x0F
         call    SWB7_OUT
         ld      a,(0xE648)
-        call    L_0D6D
+        call    SHL4
         and     0xF0
         ld      e,a
         ld      a,(0xE647)
-        call    L_0D62
+        call    SHR4
         or      e
         call    SWB7_OUT
         ld      a,(0xE647)
-        call    L_0D6D
+        call    SHL4
         and     0xF0
         ld      e,a
-        ld      a,(0xE646)
-        call    L_0D62
+        ld      a,(SCORE_P2)
+        call    SHR4
         or      e
         call    SWB7_OUT
-        ld      a,(0xE646)
-        call    L_0D6D
+        ld      a,(SCORE_P2)
+        call    SHL4
         call    SWB7_OUT
         ld      a,(ROUND_MAIN)
         inc     a
@@ -2391,7 +2401,7 @@ L_0FD2:                 ; 0FD2
 L_0FE8:                 ; 0FE8
         push    af
         and     0xF0
-        call    L_0D62
+        call    SHR4
         call    L_0FFE
         ld      (iy+0),a
         pop     af
@@ -2477,7 +2487,7 @@ L_1040:                 ; 1040
         .incbin "main_fixed.bin", 0x1052, 0x004A
 L_109C:                 ; 109C
         ld      hl,0x10A2
-        jp      L_0DA7
+        jp      TABLE_WORD
 
         .incbin "main_fixed.bin", 0x10A2, 0x012C
 ; word table of step patterns, picked by SPEED2_SEL for bubbles and (IX+0C) for enemies
@@ -2724,7 +2734,7 @@ L_14C0:                 ; 14C0
         ld      d,0x00
 L_14C2:                 ; 14C2
         ld      a,d
-        call    L_0D6C
+        call    SHL5
         or      e
         ex      af,af'
         inc     d
@@ -2753,7 +2763,7 @@ SPRITE_LIST_FX:         ; 14E1
         ld      d,0x00
 L_14E6:                 ; 14E6
         ld      a,d
-        call    L_0D6C
+        call    SHL5
         or      e
         ex      af,af'
         inc     d
@@ -2812,17 +2822,20 @@ SPRITE_RECS_FX:         ; 1517
         djnz    SPRITE_RECS_FX
         ret
 
-L_1529:                 ; 1529
+; HL = the object-RAM entry of the object at IX (word at IX+3)
+OBJ_PTR:                ; 1529
         ld      l,(ix+3)
         ld      h,(ix+4)
         ret
 
-L_1530:                 ; 1530
+; HL = word at IX+1
+OBJ_POS:                ; 1530
         ld      l,(ix+1)
         ld      h,(ix+2)
         ret
 
-L_1537:                 ; 1537
+; IX+1 = entry Y + 8, IX+2 = entry X + 8 (the entry from OBJ_PTR)
+OBJ_POS_LOAD:           ; 1537
         ld      l,(ix+3)
         ld      h,(ix+4)
         ld      a,(hl)
@@ -2835,22 +2848,24 @@ L_1537:                 ; 1537
         ld      (ix+2),a
         ret
 
-L_154C:                 ; 154C
-        call    L_1529
+; Y and X of the object's entry = 0
+OBJ_HIDE:               ; 154C
+        call    OBJ_PTR
         ld      (hl),0x00
         inc     hl
         inc     hl
         ld      (hl),0x00
         ret
 
-L_1556:                 ; 1556
+; IX+5 and IX+6 = 0
+IX_SPEED_CLEAR:         ; 1556
         xor     a
         ld      (ix+5),a
         ld      (ix+6),a
         ret
 
 L_155E:                 ; 155E
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2858,7 +2873,7 @@ L_155E:                 ; 155E
         ret
 
 L_1567:                 ; 1567
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2866,7 +2881,7 @@ L_1567:                 ; 1567
         ret
 
 L_1570:                 ; 1570
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2874,7 +2889,7 @@ L_1570:                 ; 1570
         ret
 
 L_1579:                 ; 1579
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2882,7 +2897,7 @@ L_1579:                 ; 1579
         ret
 
 L_1582:                 ; 1582
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2890,7 +2905,7 @@ L_1582:                 ; 1582
         ret
 
 L_158B:                 ; 158B
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2898,7 +2913,7 @@ L_158B:                 ; 158B
         ret
 
 L_1594:                 ; 1594
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2906,7 +2921,7 @@ L_1594:                 ; 1594
         ret
 
 L_159D:                 ; 159D
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2914,7 +2929,7 @@ L_159D:                 ; 159D
         ret
 
 L_15A6:                 ; 15A6
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2922,7 +2937,7 @@ L_15A6:                 ; 15A6
         ret
 
 L_15AF:                 ; 15AF
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2930,7 +2945,7 @@ L_15AF:                 ; 15AF
         ret
 
 L_15B8:                 ; 15B8
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2938,7 +2953,7 @@ L_15B8:                 ; 15B8
         ret
 
 L_15C1:                 ; 15C1
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -2970,13 +2985,13 @@ L_15E9:                 ; 15E9
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
-        jp      L_174C
+        jp      GRID_CELL_A
 
 L_1604:                 ; 1604
         ld      a,(ix+2)
@@ -2984,13 +2999,13 @@ L_1604:                 ; 1604
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         sub     0x08
         ld      h,a
         ld      a,(ix+1)
-        jp      L_174C
+        jp      GRID_CELL_A
 
 L_161F:                 ; 161F
         ld      a,(ix+1)
@@ -3001,7 +3016,7 @@ L_161F:                 ; 161F
         jp      c,L_1634
 L_162E:                 ; 162E
         ld      h,(ix+2)
-        jp      L_174C
+        jp      GRID_CELL_A
 
 L_1634:                 ; 1634
         xor     a
@@ -3018,19 +3033,19 @@ L_1636:                 ; 1636
         cp      0xE0
         jp      c,L_1669
 L_164B:                 ; 164B
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      h,(ix+2)
         ld      a,(ix+1)
         add     a,0x08
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        jp      L_174C
+        jp      GRID_CELL_A
 
 L_1669:                 ; 1669
         xor     a
@@ -3040,47 +3055,48 @@ L_166B:                 ; 166B
         ld      h,(ix+2)
         ld      a,(ix+1)
         sub     0x08
-        jp      L_174C
+        jp      GRID_CELL_A
 
-L_1676:                 ; 1676
+; GRID_CELL_A at Y = (IX+1) - 8 for X = (IX+2) - 7, (IX+2) and (IX+2) + 7; returns at the first zero (wall), else the last cell. L_169F is the same one row lower
+GRID_PROBE_3:           ; 1676
         ld      a,(ix+2)
         sub     0x07
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      h,(ix+2)
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         add     a,0x07
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        jp      L_174C
+        jp      GRID_CELL_A
 
 L_169F:                 ; 169F
         ld      a,(ix+2)
         sub     0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      h,(ix+2)
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         add     a,0x07
         ld      h,a
         ld      a,(ix+1)
-        jp      L_174C
+        jp      GRID_CELL_A
 
 L_16C2:                 ; 16C2
-        call    L_1530
+        call    OBJ_POS
         ld      a,l
         neg
         srl     a
@@ -3088,7 +3104,7 @@ L_16C2:                 ; 16C2
         and     0x3E
         push    af
         ld      a,h
-        call    L_0D64
+        call    SHR3
         call    L_0D8E
         pop     af
         call    ADD_DE_A
@@ -3098,7 +3114,7 @@ L_16C2:                 ; 16C2
         ret
 
 L_16E1:                 ; 16E1
-        call    L_1530
+        call    OBJ_POS
         ld      a,l
         neg
         srl     a
@@ -3106,7 +3122,7 @@ L_16E1:                 ; 16E1
         and     0x3E
         push    af
         ld      a,h
-        call    L_0D64
+        call    SHR3
         call    L_0D8E
         pop     af
         call    ADD_DE_A
@@ -3143,7 +3159,7 @@ L_1705:                 ; 1705
         ld      a,(0xE59B)
         and     0x0F
         ld      hl,0x95AA
-        call    L_0DA7
+        call    TABLE_WORD
         ex      de,hl
         ld      de,0xE568
         ld      bc,0x0030
@@ -3155,7 +3171,8 @@ L_1705:                 ; 1705
 ; A = the ROUND_GRID cell at object X = H, Y = L (row (-L) / 8, column H / 8); the collision probes around objects call it
 GRID_CELL:              ; 174B
         ld      a,l
-L_174C:                 ; 174C
+; GRID_CELL entered with A = Y (the value L would hold) and H = X
+GRID_CELL_A:            ; 174C
         ld      d,h
         neg
         and     0xF8
@@ -3193,7 +3210,7 @@ LOAD_ROUND_REC:         ; 1775
         call    BANK_SELECT
         ld      a,(ROUND_MAIN)
         ld      b,0x2B
-        call    L_0DB1
+        call    MUL8
         ld      de,0xA73A
         add     hl,de
         ld      de,ROUND_RECORD
@@ -3223,7 +3240,7 @@ L_17AA:                 ; 17AA
         ld      d,(hl)
         ld      a,e
         and     0xF0
-        call    L_0D62
+        call    SHR4
         ld      c,a
         ld      a,d
         and     0xF0
@@ -3232,7 +3249,7 @@ L_17AA:                 ; 17AA
         dec     hl
         ld      a,d
         and     0x0F
-        call    L_0D6D
+        call    SHL4
         ld      c,a
         ld      a,e
         and     0x0F
@@ -3241,11 +3258,11 @@ L_17AA:                 ; 17AA
         ld      hl,0xE59E
         ld      a,(hl)
         and     0x0F
-        call    L_0D6D
+        call    SHL4
         ld      c,a
         ld      a,(hl)
         and     0xF0
-        call    L_0D62
+        call    SHR4
         or      c
         ld      (hl),a
 L_17E0:                 ; 17E0
@@ -3311,7 +3328,7 @@ L_184D:                 ; 184D
 L_18A5:                 ; 18A5
         inc     hl
         ld      a,d
-        call    L_0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         inc     d
@@ -3407,7 +3424,7 @@ GRID_WALL_TILE:         ; 1929
         ld      a,(ROUND_MAIN)
         push    af
         ld      b,0x05
-        call    L_0DB1
+        call    MUL8
         ld      de,0x0204
         add     hl,de
         pop     bc
@@ -3439,7 +3456,7 @@ DRAW_GRID_ROW:          ; 1958
         ld      a,(GRID_DRAW_ROW)
         push    af
         ld      b,0x10
-        call    L_0DB1
+        call    MUL8
         ld      de,ROUND_GRID
         add     hl,de
         pop     af
@@ -3470,7 +3487,7 @@ L_1976:                 ; 1976
         exx
         ex      af,af'
 L_198D:                 ; 198D
-        call    L_0D6D
+        call    SHL4
         ld      de,0x0040
         add     iy,de
         djnz    L_1976
@@ -3684,12 +3701,12 @@ L_1B0A:                 ; 1B0A
         ld      de,0x8300
         ld      bc,0x120A
         ld      a,0x05
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD0C8
         ld      de,0x83B4
         ld      bc,0x120C
         ld      a,0x06
-        call    L_0EC6
+        call    TILE_RECT
         ld      a,(SUPER_MODE)
         and     a
         jr      z,L_1B45
@@ -3697,7 +3714,7 @@ L_1B0A:                 ; 1B0A
         ld      de,0x848C
         ld      bc,0x0306
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
 L_1B45:                 ; 1B45
         call    BANK_RESTORE
         call    L_21C4
@@ -3755,7 +3772,7 @@ CYCLE_COLOUR:           ; 1B90
         ld      (hl),a
 L_1BA3:                 ; 1BA3
         ld      hl,CYCLE_1_14
-        call    L_0DA7
+        call    TABLE_WORD
         ld      (0xF83C),de
         ret
 
@@ -3817,7 +3834,7 @@ L_1BFE:                 ; 1BFE
         ld      de,0x848C
         ld      bc,0x0306
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,TIMER_HI
         ld      a,0x0C
         call    ADD_HL_A
@@ -4110,9 +4127,9 @@ L_1EA1:                 ; 1EA1
         rst     0x18
         push    bc
         ld      a,(0xF2A3)
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      de,0x1000
-        call    L_2FB3
+        call    SCORE_UPDATE
         pop     bc
         djnz    L_1EA1
 L_1EB4:                 ; 1EB4
@@ -4316,7 +4333,7 @@ L_205C:                 ; 205C
 L_205E:                 ; 205E
         call    L_32BE
         call    L_314E
-        ld      hl,0xE641
+        ld      hl,SCORE_P1
         ld      bc,0x0003
         call    ZERO_BC
         call    L_33BC
@@ -4328,7 +4345,7 @@ L_205E:                 ; 205E
 L_207B:                 ; 207B
         call    L_32C5
         call    L_315F
-        ld      hl,0xE646
+        ld      hl,SCORE_P2
         ld      bc,0x0003
         call    ZERO_BC
         ld      hl,0xE5D7
@@ -4472,9 +4489,9 @@ L_21CF:                 ; 21CF
         ld      a,(ROUND_MAIN)
         ld      (0xE644),a
 L_221B:                 ; 221B
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x00
-        call    L_2FF0
+        call    SCORE_SHOW
         call    L_33BC
         ld      hl,0xCEC6
         ld      (hl),0x7B
@@ -4487,9 +4504,9 @@ L_221B:                 ; 221B
         ld      a,(ROUND_MAIN)
         ld      (0xE649),a
 L_223E:                 ; 223E
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x01
-        call    L_2FF0
+        call    SCORE_SHOW
         call    L_33B1
         ld      hl,0xD406
         ld      (hl),0x7B
@@ -4692,7 +4709,7 @@ L_2375:                 ; 2375
         rst     0x20
         ld      b,0x0D
         ld      iy,0x23AF
-        call    L_0EAA
+        call    PRINT_TEXTS
         ld      bc,0x02D0
 L_23A6:                 ; 23A6
         rst     0x20
@@ -4794,17 +4811,17 @@ L_2578:                 ; 2578
         ld      de,0xB3F2
         ld      bc,HALT_FAIL
         ld      a,0x2D
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD004
         ld      de,0xB52A
         ld      bc,HALT_FAIL
         ld      a,0x2D
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD304
         ld      de,0xB662
         ld      bc,0x0208
         ld      a,0x2E
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,BUBBLE_SLOTS
         ld      bc,0x0180
         call    ZERO_BC
@@ -4882,7 +4899,7 @@ L_2654:                 ; 2654
         ld      (ix+4),h
         inc     hl
         ld      a,d
-        call    L_0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         ld      (ix+7),a
@@ -4935,7 +4952,7 @@ L_26A4:                 ; 26A4
         bit     0,(hl)
         jp      nz,L_276B
         set     0,(hl)
-        call    L_1529
+        call    OBJ_PTR
         ld      (hl),0x78
         inc     hl
         inc     hl
@@ -4976,7 +4993,7 @@ L_2703:                 ; 2703
         jr      L_2703
 
 L_271A:                 ; 271A
-        call    L_1529
+        call    OBJ_PTR
         bit     3,a
         jr      z,L_2725
         dec     (hl)
@@ -5014,7 +5031,7 @@ L_273B:                 ; 273B
         jr      L_276B
 
 L_274E:                 ; 274E
-        call    L_1529
+        call    OBJ_PTR
         ld      (hl),0x00
         inc     hl
         inc     hl
@@ -5069,7 +5086,7 @@ L_27C1:                 ; 27C1
         jr      z,L_27D4
         ld      de,0x2921
 L_27D4:                 ; 27D4
-        call    L_1529
+        call    OBJ_PTR
         ld      b,0x04
 L_27D9:                 ; 27D9
         ld      a,(de)
@@ -5105,7 +5122,7 @@ L_2810:                 ; 2810
         ld      a,(ix+9)
         inc     (ix+9)
         call    ADD_DE_A
-        call    L_1529
+        call    OBJ_PTR
         ld      a,(de)
         cp      0x88
         jr      nz,L_2827
@@ -5230,12 +5247,12 @@ L_293F:                 ; 293F
         ld      de,0x2A56
         ld      bc,0x0406
         ld      a,0x1F
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD0EC
         ld      de,0x2A6E
         ld      bc,0x0202
         ld      a,0x1F
-        call    L_0EC6
+        call    TILE_RECT
         call    L_29CC
         ld      bc,0x04B0
 L_2989:                 ; 2989
@@ -5280,17 +5297,17 @@ L_29CC:                 ; 29CC
         ld      de,0x2A8E
         ld      bc,0x0407
         ld      a,0x1F
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD25C
         ld      de,0x2AAA
         ld      bc,0x0407
         ld      a,0x1F
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD05C
         ld      de,0x2A56
         ld      bc,0x0406
         ld      a,0x1F
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,SUPER_MODE
         ld      (hl),0x00
         ret
@@ -5300,12 +5317,12 @@ L_29FC:                 ; 29FC
         ld      de,0x2A72
         ld      bc,0x0407
         ld      a,0x1F
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD25C
         ld      de,0x2AC6
         ld      bc,0x0407
         ld      a,0x1F
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,SUPER_MODE
         ld      (hl),0x01
         ld      hl,0xD05E
@@ -5373,7 +5390,7 @@ L_2B15:                 ; 2B15
         call    L_3FFA
         ld      hl,DIFFICULTY
         ld      (hl),0x07
-        ld      hl,0xE645
+        ld      hl,LIVES_P1
         ld      (hl),0x03
         xor     a
         ld      (0xE742),a
@@ -5399,12 +5416,12 @@ L_2B15:                 ; 2B15
         ld      de,0xA6D2
         ld      bc,0x0309
         ld      a,0x06
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD618
         ld      de,0xA60A
         ld      bc,0x0213
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         call    BANK_RESTORE
         ld      a,0xF0
         rst     0x18
@@ -5416,12 +5433,12 @@ L_2B15:                 ; 2B15
         ld      de,0xA708
         ld      bc,0x0219
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD618
         ld      de,0xA630
         ld      bc,0x0212
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         call    BANK_RESTORE
         ld      a,0x5A
         rst     0x18
@@ -5433,17 +5450,17 @@ L_2B15:                 ; 2B15
         ld      de,0xA6ED
         ld      bc,0x0309
         ld      a,0x06
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD618
         ld      de,0xA708
         ld      bc,0x0219
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD618
         ld      de,0xA654
         ld      bc,0x0210
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         call    BANK_RESTORE
         ld      a,0x78
         rst     0x18
@@ -5453,7 +5470,7 @@ L_2B15:                 ; 2B15
         ld      de,0xA674
         ld      bc,L_0216
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         call    BANK_RESTORE
         ld      a,0xB4
         rst     0x18
@@ -5468,12 +5485,12 @@ L_2B15:                 ; 2B15
         ld      de,0xA708
         ld      bc,0x0219
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD5D0
         ld      de,0xA708
         ld      bc,0x0219
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         call    BANK_RESTORE
         ld      bc,0x0168
 L_2C42:                 ; 2C42
@@ -5487,7 +5504,7 @@ L_2C42:                 ; 2C42
         ld      de,0xA6A0
         ld      bc,0x0219
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
         jr      L_2C70
 
 L_2C5D:                 ; 2C5D
@@ -5497,7 +5514,7 @@ L_2C5D:                 ; 2C5D
         ld      de,0xA708
         ld      bc,0x0219
         ld      a,0x07
-        call    L_0EC6
+        call    TILE_RECT
 L_2C70:                 ; 2C70
         call    BANK_RESTORE
         pop     bc
@@ -5627,9 +5644,9 @@ L_2ECA:                 ; 2ECA
         call    L_3FFA
         ld      hl,DIFFICULTY
         ld      (hl),0x07
-        ld      hl,0xE645
+        ld      hl,LIVES_P1
         ld      (hl),0x05
-        ld      hl,0xE64A
+        ld      hl,LIVES_P2
         ld      (hl),0x05
         xor     a
         ld      (0xE742),a
@@ -5720,20 +5737,22 @@ L_2F96:                 ; 2F96
         jp      L_38F0
 
         .incbin "main_fixed.bin", 0x2FA2, 0x0011
-L_2FB3:                 ; 2FB3
+; not in the attract loop: SCORE_ADD (30A5), then 2FC9 HIGH_SCORE_CHECK (2FC9), SCORE_SHOW (2FF0) and EXTRA_LIFE_CHECK (3262)
+SCORE_UPDATE:           ; 2FB3
         ld      a,(ATTRACT)
         and     a
         ret     nz
         push    ix
-        call    L_30A5
-        call    L_2FC9
-        call    L_2FF0
-        call    L_3262
+        call    SCORE_ADD
+        call    HIGH_SCORE_CHECK
+        call    SCORE_SHOW
+        call    EXTRA_LIFE_CHECK
         pop     ix
         ret
 
-L_2FC9:                 ; 2FC9
-        ld      a,(0xE5D6)
+; if the current player's score is not below HIGH_SCORE, copy it there and redraw (2FE4: tile D006, then 340B)
+HIGH_SCORE_CHECK:       ; 2FC9
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_2FD4
         ld      de,0xE643
@@ -5743,7 +5762,7 @@ L_2FD4:                 ; 2FD4
         ld      de,0xE648
 L_2FD7:                 ; 2FD7
         ld      hl,0xE64E
-        call    L_0E85
+        call    SCORE_CMP
         ret     c
         ex      de,hl
         ld      bc,0x0003
@@ -5751,21 +5770,23 @@ L_2FD7:                 ; 2FD7
 L_2FE4:                 ; 2FE4
         ld      hl,0xD006
         ld      de,0xE64E
-        call    L_3002
+        call    SCORE_DRAW
         jp      L_340B
 
-L_2FF0:                 ; 2FF0
+; SCORE_DRAW of the current player's score at CD46 (player 1) or D286 (player 2)
+SCORE_SHOW:             ; 2FF0
         ld      hl,0xCD46
         ld      de,0xE643
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
-        jr      z,L_3002
+        jr      z,SCORE_DRAW
         ld      hl,0xD286
         ld      de,0xE648
-L_3002:                 ; 3002
+; draw a 6-digit BCD score: HL = tile RAM, DE = its high byte; digit tile 0x7B + n, leading zeros blank, a column per digit (0x40 apart)
+SCORE_DRAW:             ; 3002
         ld      bc,0x6000
         ld      a,(de)
-        call    L_0D62
+        call    SHR4
         add     a,0x7B
         cp      0x7B
         jp      z,L_3015
@@ -5800,7 +5821,7 @@ L_3034:                 ; 3034
         call    ADD_HL_A
         dec     de
         ld      a,(de)
-        call    L_0D62
+        call    SHR4
         add     a,0x7B
         cp      0x7B
         jp      z,L_304E
@@ -5837,7 +5858,7 @@ L_3072:                 ; 3072
         call    ADD_HL_A
         dec     de
         ld      a,(de)
-        call    L_0D62
+        call    SHR4
         add     a,0x7B
         cp      0x7B
         jp      z,L_308C
@@ -5862,15 +5883,16 @@ L_3092:                 ; 3092
         ld      (hl),0x00
         ret
 
-L_30A5:                 ; 30A5
-        ld      a,(0xE5D6)
+; add the BCD value in DE to the current player's score (SCORE_P1 or SCORE_P2); stays at 999999
+SCORE_ADD:              ; 30A5
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_30B0
-        ld      hl,0xE641
+        ld      hl,SCORE_P1
         jr      L_30B3
 
 L_30B0:                 ; 30B0
-        ld      hl,0xE646
+        ld      hl,SCORE_P2
 L_30B3:                 ; 30B3
         or      a
         ld      a,(hl)
@@ -5967,8 +5989,8 @@ L_3142:                 ; 3142
 L_314E:                 ; 314E
         ld      hl,0xE63F
         ld      (hl),0x00
-        call    L_3170
-        ld      de,0xE639
+        call    BONUS_TABLE_PTR
+        ld      de,BONUS_NEXT_P1
         ld      bc,0x0003
         ldir
         ret
@@ -5976,27 +5998,28 @@ L_314E:                 ; 314E
 L_315F:                 ; 315F
         ld      hl,0xE640
         ld      (hl),0x00
-        call    L_3170
-        ld      de,0xE63C
+        call    BONUS_TABLE_PTR
+        ld      de,BONUS_NEXT_P2
         ld      bc,0x0003
         ldir
         ret
 
-L_3170:                 ; 3170
+; HL = 0x3181 + 0x18 * (DSW1 b2-3, the bonus life setting): 8 entries of 3 BCD bytes (low first, scores shown with a 0 appended). Entry 0 is the start value of HIGH_SCORE (31E1); entries 1-8 are the thresholds EXTRA_LIFE_CHECK uses
+BONUS_TABLE_PTR:        ; 3170
         ld      a,(DSW1_COPY)
         rrca
         rrca
         and     0x03
         ld      b,0x18
-        call    L_0DB1
+        call    MUL8
         ld      de,0x3181
         add     hl,de
         ret
 
         .incbin "main_fixed.bin", 0x3181, 0x0060
 L_31E1:                 ; 31E1
-        call    L_3170
-        ld      de,0xE64C
+        call    BONUS_TABLE_PTR
+        ld      de,HIGH_SCORE
         ld      bc,0x0003
         ldir
         ret
@@ -6004,24 +6027,25 @@ L_31E1:                 ; 31E1
 L_31ED:                 ; 31ED
         ld      b,0x03
         ld      iy,0x320D
-        call    L_0EAA
-        call    L_3170
+        call    PRINT_TEXTS
+        call    BONUS_TABLE_PTR
         inc     hl
         inc     hl
         ex      de,hl
         push    de
         ld      hl,0xD95C
-        call    L_3002
+        call    SCORE_DRAW
         pop     de
         inc     de
         inc     de
         inc     de
         ld      hl,0xD960
-        jp      L_3002
+        jp      SCORE_DRAW
 
         .incbin "main_fixed.bin", 0x320D, 0x0055
-L_3262:                 ; 3262
-        ld      a,(0xE5D6)
+; when the score reaches the player's BONUS_NEXT value: take the next BONUS_TABLE_PTR entry (E63F or E640 up to 8), then one more life (32E0 / 32F4: sound 0x2D, cap 0x64, redraw the life icons)
+EXTRA_LIFE_CHECK:       ; 3262
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3293
         ld      a,(0xE63F)
@@ -6029,17 +6053,17 @@ L_3262:                 ; 3262
         ret     z
         ld      hl,0xE63B
         ld      de,0xE643
-        call    L_0E85
+        call    SCORE_CMP
         ret     c
         ld      hl,0xE63F
         inc     (hl)
-        call    L_3170
+        call    BONUS_TABLE_PTR
         ld      a,(0xE63F)
         ld      c,a
         add     a,a
         add     a,c
         call    ADD_HL_A
-        ld      de,0xE639
+        ld      de,BONUS_NEXT_P1
         ld      bc,0x0003
         ldir
         jp      L_32E0
@@ -6050,34 +6074,34 @@ L_3293:                 ; 3293
         ret     z
         ld      hl,0xE63E
         ld      de,0xE648
-        call    L_0E85
+        call    SCORE_CMP
         ret     c
         ld      hl,0xE640
         inc     (hl)
-        call    L_3170
+        call    BONUS_TABLE_PTR
         ld      a,(0xE640)
         ld      c,a
         add     a,a
         add     a,c
         call    ADD_HL_A
-        ld      de,0xE63C
+        ld      de,BONUS_NEXT_P2
         ld      bc,0x0003
         ldir
         jp      L_32F4
 
 L_32BE:                 ; 32BE
         call    L_32CC
-        ld      (0xE645),a
+        ld      (LIVES_P1),a
         ret
 
 L_32C5:                 ; 32C5
         call    L_32CC
-        ld      (0xE64A),a
+        ld      (LIVES_P2),a
         ret
 
 L_32CC:                 ; 32CC
         ld      a,(DSW1_COPY)
-        call    L_0D62
+        call    SHR4
         and     0x03
         ld      hl,0x32DC
         call    ADD_HL_A
@@ -6086,7 +6110,7 @@ L_32CC:                 ; 32CC
 
         .incbin "main_fixed.bin", 0x32DC, 0x0004
 L_32E0:                 ; 32E0
-        ld      hl,0xE645
+        ld      hl,LIVES_P1
         ld      a,(hl)
         cp      0x64
         ret     z
@@ -6098,7 +6122,7 @@ L_32E0:                 ; 32E0
         jr      L_3308
 
 L_32F4:                 ; 32F4
-        ld      hl,0xE64A
+        ld      hl,LIVES_P2
         ld      a,(hl)
         cp      0x64
         ret     z
@@ -6125,7 +6149,7 @@ L_3318:                 ; 3318
         ld      a,0x3F
         call    ADD_HL_A
         djnz    L_3318
-        ld      hl,0xE645
+        ld      hl,LIVES_P1
         ld      a,(hl)
         and     a
         ret     z
@@ -6170,7 +6194,7 @@ L_3363:                 ; 3363
         ld      de,0x0041
         sbc     hl,de
         djnz    L_3363
-        ld      hl,0xE64A
+        ld      hl,LIVES_P2
         ld      a,(hl)
         and     a
         ret     z
@@ -6261,7 +6285,7 @@ L_3449:                 ; 3449
 L_3459:                 ; 3459
         push    bc
         push    de
-        call    L_3170
+        call    BONUS_TABLE_PTR
         pop     de
         ld      bc,0x0003
         ldir
@@ -6284,7 +6308,7 @@ L_349F:                 ; 349F
         jr      z,L_34BB
         ld      b,0x06
         ld      iy,0x3574
-        call    L_0EAA
+        call    PRINT_TEXTS
         ld      hl,0x3597
         ld      de,0xD854
         ld      c,0x04
@@ -6294,14 +6318,14 @@ L_349F:                 ; 349F
 L_34BB:                 ; 34BB
         ld      b,0x07
         ld      iy,0x3574
-        call    L_0EAA
+        call    PRINT_TEXTS
         ld      hl,0x35ED
         ld      de,0xD6D4
         ld      c,0x10
         call    PRINT_TEXT
         ld      hl,0x35C3
         ld      c,0x08
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
         jr      z,L_34DF
         ld      hl,0x35D8
@@ -6318,7 +6342,7 @@ L_34ED:                 ; 34ED
         push    de
         push    hl
         push    hl
-        call    L_3002
+        call    SCORE_DRAW
         pop     hl
         ld      de,0x0180
         add     hl,de
@@ -6403,7 +6427,7 @@ L_35FF:                 ; 35FF
         cp      0x05
         ret     z
         ld      b,0x07
-        call    L_0DB1
+        call    MUL8
         ld      de,0xE658
         add     hl,de
         ld      (hl),0x43
@@ -6417,11 +6441,11 @@ L_361D:                 ; 361D
         call    L_36AC
         call    CLEAR_ROWS_A
         call    CLEAR_ROWS_B
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x00
         call    L_363C
         call    CLEAR_ROWS_B
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x01
         call    L_363C
         jp      CLEAR_ROWS_B
@@ -6434,7 +6458,7 @@ L_363C:                 ; 363C
         jp      L_36D1
 
 L_3648:                 ; 3648
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3653
         ld      hl,0xE643
@@ -6446,7 +6470,7 @@ L_3656:                 ; 3656
         ld      b,0x05
         ld      de,0xE672
 L_365B:                 ; 365B
-        call    L_0E85
+        call    SCORE_CMP
         jr      nc,L_366C
         push    hl
         ex      de,hl
@@ -6468,7 +6492,7 @@ L_366C:                 ; 366C
         and     0x03
         inc     a
         ld      b,0x07
-        call    L_0DB1
+        call    MUL8
         push    hl
         pop     bc
         ld      hl,0xE66F
@@ -6484,7 +6508,7 @@ L_366C:                 ; 366C
 L_3695:                 ; 3695
         ld      de,0xE673
 L_3698:                 ; 3698
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_36A3
         ld      hl,0xE644
@@ -6525,14 +6549,14 @@ L_36C7:                 ; 36C7
 L_36D1:                 ; 36D1
         ld      a,(0xE677)
         ld      b,0x07
-        call    L_0DB1
+        call    MUL8
         ld      de,0xE658
         add     hl,de
         ld      bc,0x0003
         call    ZERO_BC
         call    L_349F
         call    L_38BD
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_36F4
         ld      de,0xE643
@@ -6542,10 +6566,10 @@ L_36F4:                 ; 36F4
         ld      de,0xE648
 L_36F7:                 ; 36F7
         ld      hl,0xD658
-        call    L_3002
+        call    SCORE_DRAW
         ld      a,0x30
         ld      (0xD7D8),a
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_370D
         ld      hl,0xE644
@@ -6627,7 +6651,7 @@ L_377F:                 ; 377F
         pop     hl
         ld      a,b
         ld      hl,L_37FD
-        call    L_0DA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
@@ -6701,13 +6725,13 @@ L_37FD:                 ; 37FD
 L_3811:                 ; 3811
         ld      a,(0xE677)
         ld      b,0x07
-        call    L_0DB1
+        call    MUL8
         ld      de,0xE658
         add     hl,de
         ret
 
 L_381E:                 ; 381E
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3829
         ld      hl,IN1_COPY
@@ -6727,7 +6751,7 @@ L_382C:                 ; 382C
         jr      L_38A4
 
 L_383C:                 ; 383C
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3847
         ld      hl,IN1_COPY
@@ -6747,7 +6771,7 @@ L_384A:                 ; 384A
         jr      L_38A4
 
 L_385A:                 ; 385A
-        ld      a,(0xE5D6)
+        ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3865
         ld      hl,IN1_COPY
@@ -6771,7 +6795,7 @@ L_3876:                 ; 3876
         set     0,(hl)
         ld      a,(0xE677)
         ld      b,0x07
-        call    L_0DB1
+        call    MUL8
         ld      de,0xE658
         add     hl,de
         ld      a,(0xE678)
@@ -7245,12 +7269,12 @@ LOAD_PAL_7_8:           ; 3C60
         ld      de,0x9397
         ld      bc,0x0120
         ld      a,0x1D
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xCE8E
         ld      de,0x93B7
         ld      bc,0x1714
         ld      a,0x1D
-        call    L_0EC6
+        call    TILE_RECT
         jp      BANK_RESTORE
 
 L_3CAD:                 ; 3CAD
@@ -7564,7 +7588,7 @@ L_407E:                 ; 407E
         xor     a
         ld      (0xF44D),a
         ld      (0xE5DE),a
-        call    L_1529
+        call    OBJ_PTR
         push    hl
         ld      a,0x08
         call    ADD_HL_A
@@ -7607,7 +7631,7 @@ L_40BD:                 ; 40BD
         inc     hl
         ld      (hl),0x12
 L_40D4:                 ; 40D4
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+0),0x02
         ld      c,0x0D
         call    SOUND_PUSH
@@ -7637,7 +7661,7 @@ L_410D:                 ; 410D
         call    ROUND_END_CLEAR
         ld      hl,ROUND_SECONDS
         ld      (hl),0x05
-        call    L_1529
+        call    OBJ_PTR
         ld      bc,0x0010
         call    ZERO_BC
         ld      (ix+0),0x80
@@ -7645,7 +7669,7 @@ L_410D:                 ; 410D
         jp      nz,L_415F
         ld      hl,0xE613
         res     0,(hl)
-        ld      hl,0xE645
+        ld      hl,LIVES_P1
         dec     (hl)
         ex      af,af'
         call    L_3308
@@ -7670,7 +7694,7 @@ L_4146:                 ; 4146
 L_415F:                 ; 415F
         ld      hl,0xE613
         res     1,(hl)
-        ld      hl,0xE64A
+        ld      hl,LIVES_P2
         dec     (hl)
         ex      af,af'
         call    L_3353
@@ -7700,7 +7724,7 @@ L_4195:                 ; 4195
         xor     a
         rst     0x18
 L_419F:                 ; 419F
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    L_41F5
         call    L_46D4
         call    L_46FD
@@ -7733,8 +7757,8 @@ L_41D7:                 ; 41D7
 
 L_41EC:                 ; 41EC
         ld      a,(ix+9)
-        ld      (0xE5D6),a
-        jp      L_2FB3
+        ld      (PLAYER_NOW),a
+        jp      SCORE_UPDATE
 
 L_41F5:                 ; 41F5
         ld      hl,P1_PROX_X
@@ -7811,16 +7835,16 @@ L_4271:                 ; 4271
         ld      b,a
 L_4283:                 ; 4283
         push    bc
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_42AC
-        call    L_1676
+        call    GRID_PROBE_3
         jr      nz,L_42A6
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
@@ -7848,16 +7872,16 @@ L_42AE:                 ; 42AE
         ld      b,a
 L_42C0:                 ; 42C0
         push    bc
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         sub     0x08
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_42AC
-        call    L_1676
+        call    GRID_PROBE_3
         jr      nz,L_42A6
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
@@ -7876,7 +7900,7 @@ L_42E3:                 ; 42E3
         ld      b,a
 L_42F5:                 ; 42F5
         push    bc
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+1)
         cp      0x20
         jr      c,L_4313
@@ -7886,10 +7910,10 @@ L_42F5:                 ; 42F5
         jr      nz,L_4313
         call    L_169F
         jr      z,L_4313
-        call    L_1676
+        call    GRID_PROBE_3
         jr      z,L_4326
 L_4313:                 ; 4313
-        call    L_1529
+        call    OBJ_PTR
         dec     (hl)
         jr      nz,L_431D
         ld      hl,0xE5E7
@@ -7914,7 +7938,7 @@ L_4334:                 ; 4334
         cp      0x03
         ret     c
         ld      (ix+24),0x00
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    L_43B5
         bit     0,a
         jr      z,L_4377
@@ -7934,12 +7958,12 @@ L_435D:                 ; 435D
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         call    L_15E9
         ret     z
 L_4370:                 ; 4370
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
@@ -7960,12 +7984,12 @@ L_4386:                 ; 4386
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         call    L_1604
         ret     z
 L_4399:                 ; 4399
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
@@ -7994,7 +8018,7 @@ L_43B5:                 ; 43B5
 
 L_43C1:                 ; 43C1
         call    L_420B
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+5)
         cp      0x1E
         jr      nc,L_43E3
@@ -8004,7 +8028,7 @@ L_43C1:                 ; 43C1
         call    L_166B
         jr      z,L_43E3
 L_43DA:                 ; 43DA
-        call    L_1529
+        call    OBJ_PTR
         dec     (hl)
         inc     hl
         inc     hl
@@ -8082,7 +8106,7 @@ L_44FE:                 ; 44FE
         cp      (ix+18)
         ret     z
         ld      (ix+18),a
-        jp      L_1556
+        jp      IX_SPEED_CLEAR
 
 ; player frame from PLAYER_ANIMS[(IX+12)] (FF = none), colour (IX+1A), flip (IX+8) b0
 PLAYER_SPRITE:          ; 450D
@@ -8189,14 +8213,14 @@ L_4617:                 ; 4617
         push    af
         push    af
         ld      hl,0x46AA
-        call    L_0DA7
+        call    TABLE_WORD
         call    L_41EC
         pop     af
         ld      hl,0x46B8
         call    ADD_HL_A
         ld      c,(hl)
         call    SOUND_PUSH
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -8244,7 +8268,7 @@ L_4674:                 ; 4674
         ld      a,(ix+39)
         cp      0x5A
         jr      nc,L_4695
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -8261,7 +8285,7 @@ L_468C:                 ; 468C
         ret
 
 L_4695:                 ; 4695
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -8280,7 +8304,7 @@ L_46D4:                 ; 46D4
         ld      a,(ix+48)
 L_46DF:                 ; 46DF
         ld      hl,SPEED_PATTERNS
-        call    L_0DA7
+        call    TABLE_WORD
         ld      a,(ix+31)
         call    ADD_DE_A
         ld      a,(de)
@@ -8316,12 +8340,12 @@ L_4708:                 ; 4708
         ld      b,a
 L_471D:                 ; 471D
         push    bc
-        call    L_1537
-        call    L_1676
+        call    OBJ_POS_LOAD
+        call    GRID_PROBE_3
         jr      nz,L_4755
         call    L_15E9
         jr      z,L_4759
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
@@ -8337,12 +8361,12 @@ L_4735:                 ; 4735
         ld      b,a
 L_473D:                 ; 473D
         push    bc
-        call    L_1537
-        call    L_1676
+        call    OBJ_POS_LOAD
+        call    GRID_PROBE_3
         jr      nz,L_4755
         call    L_1604
         jr      z,L_4759
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
@@ -8441,9 +8465,9 @@ L_48A6:                 ; 48A6
         call    SOUND_PUSH
         ld      (ix+12),0x00
         set     1,(ix+12)
-        call    L_1529
+        call    OBJ_PTR
         res     0,(hl)
-        call    L_1537
+        call    OBJ_POS_LOAD
         bit     1,(ix+45)
         ld      de,L_0050
         call    nz,L_41EC
@@ -8477,9 +8501,9 @@ L_48E8:                 ; 48E8
         ld      a,(hl)
         call    L_44FE
         ld      (ix+17),0x00
-        call    L_1529
+        call    OBJ_PTR
         res     0,(hl)
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    L_1387
         res     0,(ix+11)
 L_4912:                 ; 4912
@@ -8497,7 +8521,7 @@ L_491E:                 ; 491E
         ret
 
 L_4926:                 ; 4926
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+15)
         and     a
         jp      p,L_4936
@@ -8518,21 +8542,21 @@ L_493A:                 ; 493A
         add     a,0x09
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_49AD
         ld      a,(ix+2)
         add     a,0x09
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_49AD
         ld      a,(ix+2)
         add     a,0x09
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_49AD
         jp      L_4A3F
 
@@ -8541,21 +8565,21 @@ L_497F:                 ; 497F
         add     a,0x09
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      nz,L_49B8
         ld      a,(ix+2)
         add     a,0x09
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_49AD
         ld      a,(ix+2)
         add     a,0x09
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         jr      nz,L_49B8
 L_49AD:                 ; 49AD
         ld      a,(ix+1)
@@ -8576,21 +8600,21 @@ L_49C4:                 ; 49C4
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_4A29
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_4A29
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_4A29
         jr      L_4A3F
 
@@ -8599,21 +8623,21 @@ L_49FB:                 ; 49FB
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      nz,L_4A34
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_4A29
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         jr      nz,L_4A34
 L_4A29:                 ; 4A29
         ld      a,(ix+1)
@@ -8635,27 +8659,27 @@ L_4A3F:                 ; 4A3F
         jr      nz,L_4A7E
         ld      h,(ix+2)
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_4A7E
         ld      a,(ix+2)
         sub     0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_4A7E
         ld      a,(ix+2)
         add     a,0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_4A7E
-        call    L_1676
+        call    GRID_PROBE_3
         jr      nz,L_4A7E
         set     0,(ix+11)
         ret
 
 L_4A7E:                 ; 4A7E
-        call    L_1529
+        call    OBJ_PTR
         ld      a,(ix+15)
         add     a,(hl)
         ld      (hl),a
@@ -8991,7 +9015,7 @@ L_4DA3:                 ; 4DA3
         ld      a,(0xF536)
         cp      0x01
         jr      z,L_4DFF
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+0),a
         set     2,(ix+0)
         jr      L_4DFF
@@ -9015,7 +9039,7 @@ L_4DDC:                 ; 4DDC
 
 L_4DE3:                 ; 4DE3
         ld      (ix+0),0x00
-        call    L_1529
+        call    OBJ_PTR
         ld      bc,0x0010
         call    ZERO_BC
         ld      hl,0xE719
@@ -9027,7 +9051,7 @@ L_4DE3:                 ; 4DE3
 L_4DFD:                 ; 4DFD
         set     1,(hl)
 L_4DFF:                 ; 4DFF
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      de,0x000C
         add     ix,de
         pop     bc
@@ -9074,7 +9098,7 @@ L_4E4A:                 ; 4E4A
         cp      0x02
         ret     nz
         ld      (ix+11),0x00
-        call    L_1529
+        call    OBJ_PTR
         ld      b,0x04
         ld      a,(hl)
         cp      0x28
@@ -9107,7 +9131,7 @@ L_4E81:                 ; 4E81
         inc     hl
         djnz    L_4E81
 L_4E89:                 ; 4E89
-        call    L_1529
+        call    OBJ_PTR
         ld      b,0x04
         inc     hl
         inc     hl
@@ -9335,11 +9359,11 @@ L_5015:                 ; 5015
         jr      z,L_503B
         ld      b,a
         ld      a,(0xF460)
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
 L_5031:                 ; 5031
         push    bc
         ld      de,SET_E2F8_1A
-        call    L_2FB3
+        call    SCORE_UPDATE
         pop     bc
         djnz    L_5031
 L_503B:                 ; 503B
@@ -9425,7 +9449,7 @@ L_50CB:                 ; 50CB
         call    BANK_SELECT
         ld      a,(0xE724)
         ld      hl,L_50F6
-        call    L_0DA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
@@ -9477,7 +9501,7 @@ L_5143:                 ; 5143
         jp      nz,L_51B8
         bit     2,a
         jp      nz,L_51CA
-        call    L_1529
+        call    OBJ_PTR
         ld      a,(ix+8)
         add     a,a
         add     a,a
@@ -9498,7 +9522,7 @@ L_5143:                 ; 5143
         ld      c,a
         ld      a,(ix+7)
         call    SPRITE
-        call    L_1537
+        call    OBJ_POS_LOAD
         set     0,(ix+0)
         jr      L_51CA
 
@@ -9508,16 +9532,16 @@ L_517F:                 ; 517F
         jr      nc,L_51CA
         and     a
         jr      nz,L_5197
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      de,0x1000
-        call    L_2FB3
+        call    SCORE_UPDATE
         ld      c,0x1E
         jr      L_51A2
 
 L_5197:                 ; 5197
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      de,0x1000
-        call    L_2FB3
+        call    SCORE_UPDATE
         ld      c,0x22
 L_51A2:                 ; 51A2
         ld      b,0x98
@@ -9532,12 +9556,12 @@ L_51A2:                 ; 51A2
 L_51B8:                 ; 51B8
         dec     (ix+9)
         jr      z,L_51C3
-        call    L_1529
+        call    OBJ_PTR
         inc     (hl)
         jr      L_51CA
 
 L_51C3:                 ; 51C3
-        call    L_154C
+        call    OBJ_HIDE
         ld      (ix+0),0x04
 L_51CA:                 ; 51CA
         pop     bc
@@ -9563,7 +9587,7 @@ L_526F:                 ; 526F
         ld      (ix+4),h
         inc     hl
         ld      a,d
-        call    L_0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         ld      (ix+7),a
@@ -9851,7 +9875,7 @@ L_5498:                 ; 5498
         ldir
         ld      a,(0xE724)
         ld      hl,L_54BC
-        call    L_0DA7
+        call    TABLE_WORD
         ex      de,hl
 L_54BB:                 ; 54BB
         jp      (hl)
@@ -10160,17 +10184,17 @@ L_58F0:                 ; 58F0
         ld      hl,0xE5D7
         bit     0,(hl)
         jr      z,L_594A
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x00
         ld      de,0x5000
-        call    L_2FB3
+        call    SCORE_UPDATE
         ld      de,0x5000
         ld      a,(0xE73A)
         ld      hl,0xE73B
         cp      (hl)
         jr      c,L_5923
         ld      de,0x5000
-        call    L_2FB3
+        call    SCORE_UPDATE
         ld      hl,0x5B2D
         ld      bc,0x0A1D
         ld      e,0x02
@@ -10204,16 +10228,16 @@ L_594A:                 ; 594A
         xor     a
         rst     0x18
 L_5959:                 ; 5959
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x01
         ld      de,0x5000
-        call    L_2FB3
+        call    SCORE_UPDATE
         ld      a,(0xE73B)
         ld      hl,0xE73A
         cp      (hl)
         jr      c,L_597E
         ld      de,0x5000
-        call    L_2FB3
+        call    SCORE_UPDATE
         ld      hl,0x5B2D
         ld      bc,0x0A21
         ld      e,0x05
@@ -10519,7 +10543,7 @@ L_5BD8:                 ; 5BD8
         ld      (ix+4),h
         inc     hl
         ld      a,d
-        call    L_0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         ld      (ix+7),a
@@ -10608,7 +10632,7 @@ L_5C78:                 ; 5C78
         ld      a,(0xE76A)
         and     a
         jp      nz,L_5F7B
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    L_64C5
         jp      c,L_602A
         ld      de,0x0208
@@ -10650,7 +10674,7 @@ L_5CE0:                 ; 5CE0
         jp      L_5F7B
 
 L_5CE8:                 ; 5CE8
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      e,(ix+1)
         ld      d,(ix+2)
         ld      c,0x0E
@@ -10686,7 +10710,7 @@ L_5D12:                 ; 5D12
 L_5D2F:                 ; 5D2F
         call    SPRITE
 L_5D32:                 ; 5D32
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         bit     0,(ix+15)
@@ -10743,7 +10767,7 @@ L_5D96:                 ; 5D96
         ld      a,(0xE76A)
         and     a
         jp      nz,L_5F7B
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    L_63D1
         jr      z,L_5DBF
         ld      a,(ix+18)
@@ -10751,7 +10775,7 @@ L_5D96:                 ; 5D96
         ld      (ix+18),a
         jp      nc,L_602A
 L_5DBF:                 ; 5DBF
-        call    L_61E4
+        call    CELL_TRACK
         ld      hl,0xF60F
         bit     0,(ix+22)
         jr      z,L_5DCC
@@ -10780,11 +10804,11 @@ L_5DE5:                 ; 5DE5
         ld      (ix+25),a
         call    L_60A2
         call    L_158B
-        call    L_61E4
+        call    CELL_TRACK
         ld      a,(0xE59F)
         ld      (ix+13),a
         ld      (ix+12),0x01
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+26),a
         ld      (ix+0),0x04
 L_5E10:                 ; 5E10
@@ -10931,7 +10955,7 @@ L_5F0B:                 ; 5F0B
         call    ADD_HL_A
         ld      a,(ix+24)
         dec     a
-        call    L_0D6D
+        call    SHL4
         ld      b,a
         add     a,a
         add     a,b
@@ -10958,7 +10982,7 @@ L_5F5C:                 ; 5F5C
         ld      a,(ix+24)
         dec     a
         ld      hl,0x5F75
-        call    L_0DA7
+        call    TABLE_WORD
         ex      de,hl
         inc     (hl)
         jp      L_5F7B
@@ -10968,7 +10992,7 @@ L_5F7B:                 ; 5F7B
         ld      hl,0xE75B
         dec     (hl)
         set     0,(ix+11)
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+26),a
         ld      (ix+33),a
         ld      (ix+38),a
@@ -11014,13 +11038,13 @@ L_5FBC:                 ; 5FBC
         and     a
         jp      p,L_64C7
 L_5FE4:                 ; 5FE4
-        call    L_154C
+        call    OBJ_HIDE
         bit     0,(ix+11)
         jr      nz,L_5FF1
         ld      hl,0xE75B
         dec     (hl)
 L_5FF1:                 ; 5FF1
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+0),a
         ld      (ix+26),a
         ld      (ix+8),a
@@ -11059,8 +11083,8 @@ L_602A:                 ; 602A
 
 L_604C:                 ; 604C
         ld      a,(ix+22)
-        ld      (0xE5D6),a
-        jp      L_2FB3
+        ld      (PLAYER_NOW),a
+        jp      SCORE_UPDATE
 
         .incbin "main_fixed.bin", 0x6055, 0x0010
 ; as ROM_SUM_STEP_A, one byte of every 2nd from 2642 to 731B into EB2F, then compared with EB30
@@ -11200,7 +11224,7 @@ L_6138:                 ; 6138
 BUBBLE_SPEED:           ; 6144
         ld      a,(SPEED2_SEL)
         ld      hl,SPEED_PATTERNS
-        call    L_0DA7
+        call    TABLE_WORD
         ld      a,(ix+36)
         call    ADD_DE_A
         ld      a,(de)
@@ -11218,7 +11242,7 @@ L_615E:                 ; 615E
         ld      b,a
 L_616A:                 ; 616A
         push    bc
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    BUBBLE_DRIFT
         pop     bc
         djnz    L_616A
@@ -11228,7 +11252,7 @@ L_616A:                 ; 616A
 BUBBLE_DRIFT:           ; 6175
         ld      a,(ix+10)
         ld      hl,L_61F4
-        call    L_0DA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
@@ -11236,7 +11260,7 @@ L_6180:                 ; 6180
         ld      a,(ix+2)
         and     0x07
         jp      nz,L_618C
-        call    L_61E4
+        call    CELL_TRACK
         ret     nz
 L_618C:                 ; 618C
         ld      l,(ix+3)
@@ -11251,7 +11275,7 @@ L_619A:                 ; 619A
         ld      a,(ix+2)
         and     0x07
         jp      nz,L_61A6
-        call    L_61E4
+        call    CELL_TRACK
         ret     nz
 L_61A6:                 ; 61A6
         ld      l,(ix+3)
@@ -11266,7 +11290,7 @@ L_61B4:                 ; 61B4
         ld      a,(ix+1)
         and     0x07
         jp      nz,L_61C0
-        call    L_61E4
+        call    CELL_TRACK
         ret     nz
 L_61C0:                 ; 61C0
         ld      l,(ix+3)
@@ -11279,7 +11303,7 @@ L_61CC:                 ; 61CC
         ld      a,(ix+1)
         and     0x07
         jp      nz,L_61D8
-        call    L_61E4
+        call    CELL_TRACK
         ret     nz
 L_61D8:                 ; 61D8
         ld      l,(ix+3)
@@ -11289,10 +11313,11 @@ L_61D8:                 ; 61D8
 L_61E3:                 ; 61E3
         ret
 
-L_61E4:                 ; 61E4
+; A = grid cell at the object (X (IX+2), Y (IX+1)); compared with, then stored in, (IX+10): Z = the cell did not change
+CELL_TRACK:             ; 61E4
         ld      a,(ix+1)
         ld      h,(ix+2)
-        call    L_174C
+        call    GRID_CELL_A
         cp      (ix+10)
         ld      (ix+10),a
         ret
@@ -11366,7 +11391,7 @@ L_6283:                 ; 6283
         ld      a,(hl)
         add     a,(ix+19)
         ld      (hl),a
-        call    L_1537
+        call    OBJ_POS_LOAD
         ex      af,af'
         jp      m,L_62A5
         call    L_161F
@@ -11382,7 +11407,7 @@ L_62AB:                 ; 62AB
         ld      a,(hl)
         sub     (ix+19)
         ld      (hl),a
-        call    L_1537
+        call    OBJ_POS_LOAD
 L_62B9:                 ; 62B9
         ld      (ix+19),0x00
 L_62BD:                 ; 62BD
@@ -11397,7 +11422,7 @@ L_62BD:                 ; 62BD
         ld      a,(hl)
         add     a,(ix+20)
         ld      (hl),a
-        call    L_1537
+        call    OBJ_POS_LOAD
         ex      af,af'
         jp      m,L_62E0
         call    L_15E9
@@ -11415,7 +11440,7 @@ L_62E6:                 ; 62E6
         ld      a,(hl)
         sub     (ix+20)
         ld      (hl),a
-        call    L_1537
+        call    OBJ_POS_LOAD
 L_62F6:                 ; 62F6
         ld      (ix+20),0x00
         ret
@@ -11505,7 +11530,7 @@ L_6365:                 ; 6365
         inc     hl
         ld      a,(hl)
         ld      (ix+31),a
-        call    L_1529
+        call    OBJ_PTR
         ld      a,e
         sub     0x08
         ld      (hl),a
@@ -11579,12 +11604,12 @@ L_6406:                 ; 6406
         jr      z,L_6429
         ld      b,(ix+31)
 L_6414:                 ; 6414
-        call    L_1537
+        call    OBJ_POS_LOAD
         push    bc
         call    L_15E9
         pop     bc
         ret     z
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
@@ -11596,7 +11621,7 @@ L_6414:                 ; 6414
 L_6429:                 ; 6429
         ld      b,(ix+31)
 L_642C:                 ; 642C
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
@@ -11615,7 +11640,7 @@ L_642C:                 ; 642C
         call    GRID_CELL
         pop     bc
         ret     z
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
@@ -11690,14 +11715,14 @@ L_6559:                 ; 6559
         ld      b,0x02
 L_656E:                 ; 656E
         push    bc
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+1)
         and     0x07
         jr      nz,L_657F
-        call    L_1676
+        call    GRID_PROBE_3
         jp      z,L_6589
 L_657F:                 ; 657F
-        call    L_1529
+        call    OBJ_PTR
         dec     (hl)
 L_6583:                 ; 6583
         pop     bc
@@ -11733,7 +11758,7 @@ L_65BC:                 ; 65BC
         jr      z,L_6583
         dec     (ix+16)
         jp      z,L_5FE4
-        call    L_1529
+        call    OBJ_PTR
         inc     (hl)
         jp      L_602A
 
@@ -11778,7 +11803,7 @@ L_660D:                 ; 660D
         pop     af
 L_6616:                 ; 6616
         call    L_340B
-        call    L_1530
+        call    OBJ_POS
         ex      de,hl
         ld      hl,0xF557
         ld      a,(hl)
@@ -11796,7 +11821,7 @@ L_6616:                 ; 6616
 
 L_6633:                 ; 6633
         call    L_158B
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+0),0x40
 L_663D:                 ; 663D
         ld      de,CLOCK_TICK
@@ -11807,23 +11832,23 @@ L_663D:                 ; 663D
         ld      c,0x1C
         ld      a,(ix+7)
         call    SPRITE
-        call    L_1529
+        call    OBJ_PTR
         dec     (hl)
         ld      a,(hl)
         cp      0x0A
         jp      c,L_5FE4
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+1)
         and     0x07
         jp      nz,L_602A
         ld      h,(ix+2)
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jp      z,L_602A
         ld      h,(ix+2)
         ld      a,(ix+1)
         sub     0x08
-        call    L_174C
+        call    GRID_CELL_A
         jp      nz,L_602A
         ld      hl,0xF624
         bit     0,(hl)
@@ -11850,7 +11875,7 @@ L_66A1:                 ; 66A1
         push    de
         push    hl
 L_66AF:                 ; 66AF
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         ld      a,0x08
@@ -11862,14 +11887,14 @@ L_66BE:                 ; 66BE
         ld      (hl),a
         inc     hl
         ld      (hl),0x15
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+0),0x20
 L_66CA:                 ; 66CA
         bit     0,(ix+28)
         jr      nz,L_6720
         bit     5,(ix+26)
         jr      nz,L_6711
-        call    L_1537
+        call    OBJ_POS_LOAD
         ld      de,CLOCK_TICK
         call    ANIM_STEP
         ld      hl,0x6751
@@ -11878,7 +11903,7 @@ L_66CA:                 ; 66CA
         ld      c,0x1C
         ld      a,(ix+7)
         call    SPRITE
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         bit     0,(ix+15)
@@ -11901,7 +11926,7 @@ L_6705:                 ; 6705
         jp      L_602A
 
 L_6711:                 ; 6711
-        call    L_1556
+        call    IX_SPEED_CLEAR
         set     0,(ix+28)
         call    L_1579
         ld      c,0x33
@@ -11925,7 +11950,7 @@ L_6738:                 ; 6738
         ld      a,(ROUND_MAIN)
         cp      0x63
         jp      z,L_5FE4
-        call    L_1556
+        call    IX_SPEED_CLEAR
         call    L_158B
         jp      L_602A
 
@@ -12010,7 +12035,7 @@ L_6806:                 ; 6806
         jr      z,L_6812
         ld      de,0x6BFF
 L_6812:                 ; 6812
-        call    L_1529
+        call    OBJ_PTR
         ld      b,0x04
 L_6817:                 ; 6817
         ld      a,(de)
@@ -12072,11 +12097,11 @@ L_688C:                 ; 688C
         jr      z,L_689A
 L_6890:                 ; 6890
         set     1,(ix+0)
-        call    L_1556
+        call    IX_SPEED_CLEAR
         jp      L_6BEC
 
 L_689A:                 ; 689A
-        call    L_1529
+        call    OBJ_PTR
         ld      b,0x04
         ld      de,0x6C07
 L_68A2:                 ; 68A2
@@ -12106,7 +12131,7 @@ L_68C3:                 ; 68C3
         ld      a,(ix+11)
         inc     (ix+11)
         call    ADD_DE_A
-        call    L_1529
+        call    OBJ_PTR
         ld      a,(de)
         cp      0x88
         jr      nz,L_68DA
@@ -12200,7 +12225,7 @@ L_6949:                 ; 6949
 
 L_6957:                 ; 6957
         set     2,(ix+0)
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      b,0x04
         ld      l,(ix+3)
         ld      h,(ix+4)
@@ -12220,7 +12245,7 @@ L_6976:                 ; 6976
         call    L_69BE
         bit     3,(ix+0)
         jr      nz,L_6994
-        call    L_1529
+        call    OBJ_PTR
         ld      (hl),0xA8
         inc     hl
         inc     hl
@@ -12231,7 +12256,7 @@ L_6976:                 ; 6976
 L_6990:                 ; 6990
         set     3,(ix+0)
 L_6994:                 ; 6994
-        call    L_1529
+        call    OBJ_PTR
         ld      a,(hl)
         cp      0x19
         jr      nc,L_69A3
@@ -12423,7 +12448,7 @@ L_6AE3:                 ; 6AE3
         jr      nz,L_6B0D
         set     5,(ix+0)
         call    L_6B80
-        call    L_1556
+        call    IX_SPEED_CLEAR
         bit     0,(ix+8)
         jp      nz,L_6BEC
         call    0xB878
@@ -12438,7 +12463,7 @@ L_6B0D:                 ; 6B0D
         jr      z,L_6B19
         ld      de,0x6C0F
 L_6B19:                 ; 6B19
-        call    L_1529
+        call    OBJ_PTR
         ld      b,0x02
 L_6B1E:                 ; 6B1E
         ld      a,(de)
@@ -12494,7 +12519,7 @@ L_6B77:                 ; 6B77
         jp      L_6BEC
 
 L_6B80:                 ; 6B80
-        call    L_1529
+        call    OBJ_PTR
         ld      a,0x08
         call    ADD_HL_A
         ld      (hl),0x30
@@ -12519,12 +12544,12 @@ L_6B9F:                 ; 6B9F
         ld      de,0x6C5F
         ld      bc,0x040A
         ld      a,0x1C
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xDA20
         ld      de,0x6C5F
         ld      bc,0x040A
         ld      a,0x1C
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_6BC2:                 ; 6BC2
@@ -12538,7 +12563,7 @@ L_6BC2:                 ; 6BC2
         ld      de,0x6C87
         ld      bc,0x0214
         ld      a,0x1C
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_6BDD:                 ; 6BDD
@@ -12546,7 +12571,7 @@ L_6BDD:                 ; 6BDD
         ld      de,0x6C87
         ld      bc,0x0214
         ld      a,0x20
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_6BEC:                 ; 6BEC
@@ -12596,7 +12621,7 @@ L_6DC0:                 ; 6DC0
 L_6DD4:                 ; 6DD4
         ld      e,0xF0
 L_6DD6:                 ; 6DD6
-        call    L_1529
+        call    OBJ_PTR
         ld      (hl),e
         inc     hl
         inc     hl
@@ -12623,7 +12648,7 @@ L_6DEC:                 ; 6DEC
 L_6E00:                 ; 6E00
         ld      e,0xF0
 L_6E02:                 ; 6E02
-        call    L_1529
+        call    OBJ_PTR
         ld      (hl),e
         inc     hl
         inc     hl
@@ -12635,8 +12660,8 @@ L_6E02:                 ; 6E02
         ld      (hl),0x12
         ld      (ix+14),0x01
 L_6E16:                 ; 6E16
-        call    L_1537
-        call    L_1530
+        call    OBJ_POS_LOAD
+        call    OBJ_POS
         call    L_6214
         call    GRID_CELL
         ld      (ix+10),a
@@ -12656,7 +12681,7 @@ L_6E16:                 ; 6E16
         call    ADD_DE_A
         ld      a,(de)
         ld      hl,L_6E50
-        call    L_0DA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
@@ -12907,22 +12932,22 @@ L_704A:                 ; 704A
         ld      de,0x849E
         ld      bc,0x1A0C
         ld      a,0x03
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD008
         ld      de,0x85D6
         ld      bc,0x1A0C
         ld      a,0x03
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD308
         ld      de,0x870E
         ld      bc,0x1A08
         ld      a,0x03
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD55A
         ld      de,0x8A54
         ld      bc,0x071E
         ld      a,0x36
-        call    L_0EC6
+        call    TILE_RECT
         call    L_7969
         call    BANK_RESTORE
         ld      hl,0x0384
@@ -13237,7 +13262,7 @@ L_72C6:                 ; 72C6
         ld      de,0x88B0
         ld      bc,0x0705
         ld      a,0x35
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_72D5:                 ; 72D5
@@ -13245,7 +13270,7 @@ L_72D5:                 ; 72D5
         ld      de,0x87DE
         ld      bc,0x0705
         ld      a,0x34
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_72E4:                 ; 72E4
@@ -13253,7 +13278,7 @@ L_72E4:                 ; 72E4
         ld      de,0x8982
         ld      bc,0x0705
         ld      a,0x36
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_72F3:                 ; 72F3
@@ -13267,7 +13292,7 @@ L_72F3:                 ; 72F3
         ld      de,0x8B26
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7312:                 ; 7312
@@ -13275,7 +13300,7 @@ L_7312:                 ; 7312
         ld      de,0x8BF8
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7321:                 ; 7321
@@ -13304,7 +13329,7 @@ L_734B:                 ; 734B
         ld      de,0x88D3
         ld      bc,0x0705
         ld      a,0x35
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_735A:                 ; 735A
@@ -13312,7 +13337,7 @@ L_735A:                 ; 735A
         ld      de,0x8801
         ld      bc,0x0705
         ld      a,0x34
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7369:                 ; 7369
@@ -13320,7 +13345,7 @@ L_7369:                 ; 7369
         ld      de,0x89A5
         ld      bc,0x0705
         ld      a,0x36
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7378:                 ; 7378
@@ -13331,7 +13356,7 @@ L_7378:                 ; 7378
         ld      de,0x8B49
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_738E:                 ; 738E
@@ -13339,7 +13364,7 @@ L_738E:                 ; 738E
         ld      de,0x8C1B
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_739D:                 ; 739D
@@ -13368,7 +13393,7 @@ L_73C7:                 ; 73C7
         ld      de,0x88F6
         ld      bc,0x0705
         ld      a,0x35
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_73D6:                 ; 73D6
@@ -13376,7 +13401,7 @@ L_73D6:                 ; 73D6
         ld      de,0x8824
         ld      bc,0x0705
         ld      a,0x34
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_73E5:                 ; 73E5
@@ -13384,7 +13409,7 @@ L_73E5:                 ; 73E5
         ld      de,0x89C8
         ld      bc,0x0705
         ld      a,0x36
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_73F4:                 ; 73F4
@@ -13395,7 +13420,7 @@ L_73F4:                 ; 73F4
         ld      de,0x8B6C
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_740A:                 ; 740A
@@ -13403,7 +13428,7 @@ L_740A:                 ; 740A
         ld      de,0x8C3E
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7419:                 ; 7419
@@ -13432,7 +13457,7 @@ L_7443:                 ; 7443
         ld      de,0x8919
         ld      bc,0x0705
         ld      a,0x35
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7452:                 ; 7452
@@ -13440,7 +13465,7 @@ L_7452:                 ; 7452
         ld      de,0x8847
         ld      bc,0x0705
         ld      a,0x34
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7461:                 ; 7461
@@ -13448,7 +13473,7 @@ L_7461:                 ; 7461
         ld      de,0x89EB
         ld      bc,0x0705
         ld      a,0x36
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7470:                 ; 7470
@@ -13459,7 +13484,7 @@ L_7470:                 ; 7470
         ld      de,0x8B8F
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7486:                 ; 7486
@@ -13467,7 +13492,7 @@ L_7486:                 ; 7486
         ld      de,0x8C61
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7495:                 ; 7495
@@ -13496,7 +13521,7 @@ L_74BF:                 ; 74BF
         ld      de,0x893C
         ld      bc,0x0705
         ld      a,0x35
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_74CE:                 ; 74CE
@@ -13504,7 +13529,7 @@ L_74CE:                 ; 74CE
         ld      de,0x886A
         ld      bc,0x0705
         ld      a,0x34
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_74DD:                 ; 74DD
@@ -13512,7 +13537,7 @@ L_74DD:                 ; 74DD
         ld      de,0x8A0E
         ld      bc,0x0705
         ld      a,0x36
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_74EC:                 ; 74EC
@@ -13523,7 +13548,7 @@ L_74EC:                 ; 74EC
         ld      de,0x8BB2
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7502:                 ; 7502
@@ -13531,7 +13556,7 @@ L_7502:                 ; 7502
         ld      de,0x8C84
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7511:                 ; 7511
@@ -13563,7 +13588,7 @@ L_7544:                 ; 7544
         ld      de,0x895F
         ld      bc,0x0705
         ld      a,0x35
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7553:                 ; 7553
@@ -13571,7 +13596,7 @@ L_7553:                 ; 7553
         ld      de,0x888D
         ld      bc,0x0705
         ld      a,0x34
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7562:                 ; 7562
@@ -13579,7 +13604,7 @@ L_7562:                 ; 7562
         ld      de,0x8A31
         ld      bc,0x0705
         ld      a,0x36
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7571:                 ; 7571
@@ -13593,7 +13618,7 @@ L_7571:                 ; 7571
         ld      de,0x8BD5
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_7590:                 ; 7590
@@ -13601,7 +13626,7 @@ L_7590:                 ; 7590
         ld      de,0x8CA7
         ld      bc,0x0705
         ld      a,0x37
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_759F:                 ; 759F
@@ -13764,14 +13789,14 @@ L_76A8:                 ; 76A8
         ld      a,(0xEB56)
         and     a
         jr      nz,L_76F5
-        ld      a,(0xE645)
+        ld      a,(LIVES_P1)
         inc     a
         cp      0x05
         jr      c,L_76BF
         ld      a,0x05
 L_76BF:                 ; 76BF
         ld      b,0x08
-        call    L_0DB1
+        call    MUL8
         ld      c,l
         ld      b,0x04
         ld      l,(ix+1)
@@ -13804,14 +13829,14 @@ L_76E4:                 ; 76E4
         jp      L_775A
 
 L_76F5:                 ; 76F5
-        ld      a,(0xE64A)
+        ld      a,(LIVES_P2)
         inc     a
         cp      0x05
         jr      c,L_76FF
         ld      a,0x05
 L_76FF:                 ; 76FF
         ld      b,0x08
-        call    L_0DB1
+        call    MUL8
         ld      c,l
         ld      b,0x04
         ld      l,(ix+1)
@@ -13916,12 +13941,12 @@ L_77C6:                 ; 77C6
         ld      de,0x8CCA
         ld      bc,0x040E
         ld      a,0x27
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD9DA
         ld      de,0x8D02
         ld      bc,0x0408
         ld      a,0x26
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_77EE:                 ; 77EE
@@ -13929,12 +13954,12 @@ L_77EE:                 ; 77EE
         ld      de,0x8CCA
         ld      bc,0x040E
         ld      a,0x2B
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD9DA
         ld      de,0x8D22
         ld      bc,0x0408
         ld      a,0x2A
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
 L_780B:                 ; 780B
@@ -13942,32 +13967,32 @@ L_780B:                 ; 780B
         ld      de,0x786B
         ld      bc,0x0705
         ld      a,0x00
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD69A
         ld      de,0x786B
         ld      bc,0x0705
         ld      a,0x00
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD7DA
         ld      de,0x786B
         ld      bc,0x0705
         ld      a,0x00
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xD91A
         ld      de,0x786B
         ld      bc,0x0705
         ld      a,0x00
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xDA5A
         ld      de,0x786B
         ld      bc,0x0705
         ld      a,0x00
-        call    L_0EC6
+        call    TILE_RECT
         ld      hl,0xDB9A
         ld      de,0x786B
         ld      bc,0x0705
         ld      a,0x00
-        call    L_0EC6
+        call    TILE_RECT
         ret
 
         .incbin "main_fixed.bin", 0x7860, 0x002E
@@ -14121,7 +14146,7 @@ L_796E:                 ; 796E
         ld      hl,0xE5D7
         bit     0,(hl)
         jr      z,L_79A1
-        ld      hl,0xE645
+        ld      hl,LIVES_P1
         ld      a,(hl)
         or      a
         jr      z,L_79A1
@@ -14143,7 +14168,7 @@ L_79A1:                 ; 79A1
         ld      hl,0xE5D7
         bit     1,(hl)
         ret     z
-        ld      hl,0xE64A
+        ld      hl,LIVES_P2
         ld      a,(hl)
         or      a
         ret     z
@@ -14259,7 +14284,7 @@ L_7A82:                 ; 7A82
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
-        call    L_1529
+        call    OBJ_PTR
         ld      a,(de)
         ld      (hl),a
         inc     hl
@@ -14285,7 +14310,7 @@ L_7AAC:                 ; 7AAC
         call    SPRITE
         set     0,(ix+0)
 L_7ABA:                 ; 7ABA
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    0x8838
         ld      a,(TIMER_RUN)
         and     a
@@ -14294,7 +14319,7 @@ L_7ABA:                 ; 7ABA
         jp      nz,L_7B61
         ld      a,(ix+7)
         ld      hl,L_7B8C
-        call    L_0DA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
@@ -14305,10 +14330,10 @@ L_7AD9:                 ; 7AD9
         ld      b,a
 L_7AE1:                 ; 7AE1
         push    bc
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    0x879A
         jr      z,L_7AF6
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
@@ -14318,7 +14343,7 @@ L_7AE1:                 ; 7AE1
 
 L_7AF6:                 ; 7AF6
         pop     bc
-        call    L_1556
+        call    IX_SPEED_CLEAR
         set     6,(ix+0)
         jp      L_7B75
 
@@ -14329,10 +14354,10 @@ L_7B01:                 ; 7B01
         ld      b,a
 L_7B09:                 ; 7B09
         push    bc
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    0x87AC
         jr      z,L_7AF6
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
@@ -14384,7 +14409,7 @@ L_7B61:                 ; 7B61
         ld      a,0x18
         call    ADD_HL_A
         res     3,(hl)
-        call    L_154C
+        call    OBJ_HIDE
         ld      hl,0xF05E
         inc     (hl)
 L_7B75:                 ; 7B75
@@ -14445,13 +14470,13 @@ L_7BC3:                 ; 7BC3
         sub     0x0A
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         sub     0x13
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         ret
 
 L_7BE3:                 ; 7BE3
@@ -14459,13 +14484,13 @@ L_7BE3:                 ; 7BE3
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         add     a,0x10
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         ret
 
         ld      hl,IRQ_HANDLER
@@ -14493,12 +14518,12 @@ L_7C0B:                 ; 7C0B
         inc     (hl)
         set     2,(ix+14)
         set     0,(ix+14)
-        call    L_1529
+        call    OBJ_PTR
         ld      (hl),0xE0
         inc     hl
         inc     hl
         ld      a,(ix+9)
-        call    L_0D6D
+        call    SHL4
         ld      b,a
         ld      a,(hl)
         cp      0x90
@@ -14527,17 +14552,17 @@ L_7C60:                 ; 7C60
         ld      a,(hl)
         inc     hl
         ld      (hl),0x00
-        call    L_1529
+        call    OBJ_PTR
         ld      (hl),b
         inc     hl
         inc     hl
         ld      (hl),a
-        call    L_1537
+        call    OBJ_POS_LOAD
         jp      L_7E8C
 
 L_7C72:                 ; 7C72
         ld      (ix+14),0x00
-        call    L_1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         ld      a,(hl)
@@ -14555,7 +14580,7 @@ L_7C8E:                 ; 7C8E
         ld      (hl),0x13
         ld      a,(ix+9)
         ld      hl,0x80C9
-        call    L_0DA7
+        call    TABLE_WORD
         bit     4,(ix+0)
         jr      z,L_7CA5
         ld      de,0x808D
@@ -14582,7 +14607,7 @@ L_7CB9:                 ; 7CB9
         ld      c,0x24
         ld      a,(ix+10)
         call    SPRITE
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+18),a
         ld      (ix+13),a
         ld      (ix+11),a
@@ -14598,7 +14623,7 @@ L_7CB9:                 ; 7CB9
         ret
 
 L_7CEE:                 ; 7CEE
-        call    L_1537
+        call    OBJ_POS_LOAD
         call    0x86A8
         bit     1,(ix+14)
         jp      nz,L_7F4B
@@ -14625,7 +14650,7 @@ L_7D0F:                 ; 7D0F
 
 L_7D33:                 ; 7D33
         set     1,(ix+14)
-        call    L_1556
+        call    IX_SPEED_CLEAR
         jp      L_7E8C
 
 L_7D3D:                 ; 7D3D
@@ -14639,7 +14664,7 @@ L_7D3D:                 ; 7D3D
         ld      (ix+8),0x01
         ld      a,(ix+9)
         ld      hl,0x8160
-        call    L_0DA7
+        call    TABLE_WORD
         ld      (ix+16),e
         ld      (ix+17),d
         inc     de
@@ -14656,24 +14681,24 @@ L_7D71:                 ; 7D71
         jr      nz,L_7DAA
         ld      a,(ix+1)
         ld      h,(ix+2)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7DAA
         ld      a,(ix+2)
         sub     0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7DAA
         ld      a,(ix+2)
         add     a,0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7DAA
-        call    L_1676
+        call    GRID_PROBE_3
         jr      z,L_7DB1
 L_7DAA:                 ; 7DAA
-        call    L_1529
+        call    OBJ_PTR
         dec     (hl)
         jp      L_7E8C
 
@@ -14681,7 +14706,7 @@ L_7DB1:                 ; 7DB1
         call    0x86BD
         ld      (hl),0x08
         set     3,(ix+14)
-        call    L_1556
+        call    IX_SPEED_CLEAR
         ld      (ix+22),0x3C
         jp      L_7E8C
 
@@ -14698,7 +14723,7 @@ L_7DD1:                 ; 7DD1
         ld      (ix+8),0x03
         ld      a,(ix+9)
         ld      hl,0x8160
-        call    L_0DA7
+        call    TABLE_WORD
         ld      (ix+16),e
         ld      (ix+17),d
         inc     de
@@ -14715,24 +14740,24 @@ L_7DF7:                 ; 7DF7
         jr      nz,L_7E31
         ld      a,(ix+1)
         ld      h,(ix+2)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7E31
         ld      a,(ix+2)
         sub     0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7E31
         ld      a,(ix+2)
         add     a,0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7E31
-        call    L_1676
+        call    GRID_PROBE_3
         jp      z,L_7DB1
 L_7E31:                 ; 7E31
-        call    L_1529
+        call    OBJ_PTR
         dec     (hl)
         jp      L_7E8C
 
@@ -14749,24 +14774,24 @@ L_7E45:                 ; 7E45
         jr      nz,L_7E7A
         ld      a,(ix+1)
         ld      h,(ix+2)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7E7A
         ld      a,(ix+2)
         sub     0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7E7A
         ld      a,(ix+2)
         add     a,0x07
         ld      h,a
         ld      a,(ix+1)
-        call    L_174C
+        call    GRID_CELL_A
         jr      z,L_7E7A
-        call    L_1676
+        call    GRID_PROBE_3
         jr      z,L_7E80
 L_7E7A:                 ; 7E7A
-        call    L_1529
+        call    OBJ_PTR
         dec     (hl)
         jr      L_7EAB
 
@@ -14774,7 +14799,7 @@ L_7E80:                 ; 7E80
         call    0x86BD
         ld      (hl),0x08
         set     3,(ix+14)
-        call    L_1556
+        call    IX_SPEED_CLEAR
 L_7E8C:                 ; 7E8C
         bit     3,(ix+14)
         jr      nz,L_7EAB
@@ -14795,7 +14820,7 @@ L_7E8C:                 ; 7E8C
 L_7EAB:                 ; 7EAB
         ld      a,(ix+21)
         ld      hl,0x8009
-        call    L_0DA7
+        call    TABLE_WORD
         ld      b,e
         ld      c,d
 L_7EB6:                 ; 7EB6
@@ -14832,11 +14857,11 @@ L_7EE4:                 ; 7EE4
         ld      hl,0xE5E8
         inc     (hl)
         ld      a,b
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      a,(ix+21)
         ld      hl,0x8032
-        call    L_0DA7
-        call    L_2FB3
+        call    TABLE_WORD
+        call    SCORE_UPDATE
         ld      c,0x11
         call    SOUND_PUSH
         set     4,(ix+14)
@@ -14858,7 +14883,7 @@ L_7F04:                 ; 7F04
 
 L_7F28:                 ; 7F28
         ld      (ix+11),0x00
-        call    L_1529
+        call    OBJ_PTR
         inc     (hl)
 L_7F30:                 ; 7F30
         ld      a,(ix+21)
@@ -14884,7 +14909,7 @@ L_7F53:                 ; 7F53
         ld      (ix+14),0x00
         ld      (ix+0),0x00
         set     3,(ix+0)
-        call    L_154C
+        call    OBJ_HIDE
         ret
 
 L_7F68:                 ; 7F68
@@ -14917,7 +14942,7 @@ L_7F90:                 ; 7F90
         call    ADD_DE_A
         ld      a,(de)
         ld      b,a
-        call    L_1529
+        call    OBJ_PTR
         bit     0,b
         jr      z,L_7FAE
         bit     3,b

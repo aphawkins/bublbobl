@@ -504,12 +504,23 @@ Started (2026-10-17) with the sub CPU, which is now done:
   tables and the entries so far) and `tools/build.py` must still report byte-exact. Do not
   edit those sources by hand: a comment or name goes in `symbols.toml`, a new table or entry
   goes in the script, a range that is data goes in `notes/classmap/<image>.toml`.
+- Common helpers (2026-10-17): the shifts (`SHR4`, `SHR3`, `SHL5`, `SHL4`, `SAR6`), `TABLE_WORD`
+  (`0DA7`, the table reader), `MUL8`, `TILE_RECT` (`0EC6`, a block of tiles to the tile RAM, the
+  most called helper with 76 callers), `PRINT_TEXTS`, the object-pointer helpers `OBJ_PTR`,
+  `OBJ_POS`, `OBJ_POS_LOAD`, `OBJ_HIDE`, and the grid probes `GRID_CELL_A`, `GRID_PROBE_3`,
+  `CELL_TRACK`.
+- Score code (2026-10-17), read from the code and not yet seen in a MAME run: `SCORE_ADD`
+  (`30A5`, BCD, saturates at 999999), `SCORE_CMP`, `SCORE_UPDATE`, `HIGH_SCORE_CHECK`,
+  `SCORE_SHOW`, `SCORE_DRAW`, `EXTRA_LIFE_CHECK`, with `PLAYER_NOW`, `SCORE_P1/P2`,
+  `HIGH_SCORE`, `LIVES_P1/P2` and `BONUS_NEXT_P1/P2`. `BONUS_TABLE_PTR` (`3170`) is the bonus
+  life table picked by DSW1 b2-3 (8 entries of 3 BCD bytes), first taken for a coinage table.
+  Entry 0 is the start value of `HIGH_SCORE` (`31E1`): confirm this in MAME.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
      `tools/trace.lua`, then rename them.
-  3. Check some `--probe` regions against a MAME trace.
+  3. Check some `--probe` regions, and the score code above, against a MAME trace.
   4. Name the bank 0 and bank 2 routines (`[bank0.code]`, `[bank2.code]`), the enemy AI first.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 

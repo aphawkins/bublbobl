@@ -38,6 +38,14 @@ HURRY         = { addr = 0xE349, note = "1 = HURRY UP has been shown (0832); FF 
 GHOST_ON      = { addr = 0xE343, note = "FF = Skel-Monsta is out: record byte 15 seconds after HURRY UP (087E)" }
 NO_SPECIAL    = { addr = 0xE34A, note = "1 = 3 s before HURRY UP: no special item appears after that (0770)" }
 SPECIAL_LIST  = { addr = 0xE745, size = 0x10, note = "16 bubble types for SPAWN_BUBBLE to pick from: record bytes 38-41 give how many are 1 (lightning), 2 (water), 3 (fire), 4; the rest 0 (plain)" }
+PLAYER_NOW    = { addr = 0xE5D6, note = "0 = player 1 is playing, nonzero = player 2: picks SCORE_P1 or SCORE_P2 and their companion records" }
+SCORE_P1      = { addr = 0xE641, size = 3, note = "player 1's score: 6 BCD digits, low byte first; SCORE_ADD saturates at 999999" }
+SCORE_P2      = { addr = 0xE646, size = 3, note = "player 2's score, as SCORE_P1" }
+HIGH_SCORE    = { addr = 0xE64C, size = 3, note = "the high score, as SCORE_P1; starts from BONUS_TABLE_PTR entry 0 (31E1), HIGH_SCORE_CHECK raises it" }
+LIVES_P1      = { addr = 0xE645, note = "player 1's lives: 3 at the title, +1 per extra life (cap 0x64)" }
+LIVES_P2      = { addr = 0xE64A, note = "player 2's lives" }
+BONUS_NEXT_P1 = { addr = 0xE639, size = 3, note = "the score at which player 1 gets the next extra life (a BONUS_TABLE_PTR entry); the number given so far is E63F, at most 8" }
+BONUS_NEXT_P2 = { addr = 0xE63C, size = 3, note = "as BONUS_NEXT_P1 for player 2; count in E640" }
 POINTS_ITEM   = { addr = 0xE2AD, size = 4, note = "object: the points item, at record bytes 1-2 (Y, X)" }
 SPECIAL_ITEM  = { addr = 0xE2B1, size = 4, note = "object: the special item, at record bytes 10-11 (Y, X)" }
 POINTS_KIND   = { addr = 0xF44C, note = "the points item: entry in bank2:POINTS_ITEMS" }
@@ -157,6 +165,31 @@ SET_E1D2_SEQ = { addr = 0x031C, note = "E1CE = 9A; first byte of 16 4-byte recor
 SET_E2F5_RECS = { addr = 0x0330, note = "clears E2D5, then 16 records (0, word from 0352 + 2n, 0) at E2F5" }
 SET_E2D5_RECS = { addr = 0x0372, note = "clears E2F5, then 16 records (0, word from 0394 + 2n, 0) at E2D5" }
 ADD_DE_A = { addr = 0x0D84, note = "DE += A" }
+HIGH_SCORE_CHECK = { addr = 0x2FC9, note = "if the current player's score is not below HIGH_SCORE, copy it there and redraw (2FE4: tile D006, then 340B)" }
+SCORE_SHOW = { addr = 0x2FF0, note = "SCORE_DRAW of the current player's score at CD46 (player 1) or D286 (player 2)" }
+SCORE_DRAW = { addr = 0x3002, note = "draw a 6-digit BCD score: HL = tile RAM, DE = its high byte; digit tile 0x7B + n, leading zeros blank, a column per digit (0x40 apart)" }
+EXTRA_LIFE_CHECK = { addr = 0x3262, note = "when the score reaches the player's BONUS_NEXT value: take the next BONUS_TABLE_PTR entry (E63F or E640 up to 8), then one more life (32E0 / 32F4: sound 0x2D, cap 0x64, redraw the life icons)" }
+SCORE_ADD = { addr = 0x30A5, note = "add the BCD value in DE to the current player's score (SCORE_P1 or SCORE_P2); stays at 999999" }
+SCORE_CMP = { addr = 0x0E85, note = "compare the 3 bytes ending at DE with those ending at HL, high byte first (the scores' layout); registers kept, C = (DE) < (HL), Z = equal" }
+PRINT_TEXTS = { addr = 0x0EAA, note = "B records at IY of 5 bytes (DE first tile, HL string, C attribute), each through PRINT_TEXT" }
+SCORE_UPDATE = { addr = 0x2FB3, note = "not in the attract loop: SCORE_ADD (30A5), then 2FC9 HIGH_SCORE_CHECK (2FC9), SCORE_SHOW (2FF0) and EXTRA_LIFE_CHECK (3262)" }
+SHR4 = { addr = 0x0D62, note = "A >>= 4 (logical); SHR3 follows" }
+SHR3 = { addr = 0x0D64, note = "A >>= 3 (logical)" }
+SHL5 = { addr = 0x0D6C, note = "A <<= 5 (8 bit); SHL4 follows" }
+SHL4 = { addr = 0x0D6D, note = "A <<= 4 (8 bit)" }
+SAR6 = { addr = 0x0D72, note = "A >>= 6 (arithmetic): the top two bits as -2..1" }
+TABLE_WORD = { addr = 0x0DA7, note = "DE = word at HL + 2*A: the jump and pointer table reader" }
+MUL8 = { addr = 0x0DB1, note = "HL = A * B (8 x 8 bit, shift and add)" }
+TILE_RECT = { addr = 0x0EC6, note = "draw a block of tiles: HL = tile RAM address, DE = tile numbers (read one column at a time), B columns, C rows, A = the attribute byte. A column is two bytes wide (tile, attribute) and a row steps 0x40" }
+OBJ_PTR = { addr = 0x1529, note = "HL = the object-RAM entry of the object at IX (word at IX+3)" }
+OBJ_POS = { addr = 0x1530, note = "HL = word at IX+1" }
+OBJ_POS_LOAD = { addr = 0x1537, note = "IX+1 = entry Y + 8, IX+2 = entry X + 8 (the entry from OBJ_PTR)" }
+OBJ_HIDE = { addr = 0x154C, note = "Y and X of the object's entry = 0" }
+IX_SPEED_CLEAR = { addr = 0x1556, note = "IX+5 and IX+6 = 0" }
+GRID_CELL_A = { addr = 0x174C, note = "GRID_CELL entered with A = Y (the value L would hold) and H = X" }
+GRID_PROBE_3 = { addr = 0x1676, note = "GRID_CELL_A at Y = (IX+1) - 8 for X = (IX+2) - 7, (IX+2) and (IX+2) + 7; returns at the first zero (wall), else the last cell. L_169F is the same one row lower" }
+CELL_TRACK = { addr = 0x61E4, note = "A = grid cell at the object (X (IX+2), Y (IX+1)); compared with, then stored in, (IX+10): Z = the cell did not change" }
+BONUS_TABLE_PTR = { addr = 0x3170, note = "HL = 0x3181 + 0x18 * (DSW1 b2-3, the bonus life setting): 8 entries of 3 BCD bytes (low first, scores shown with a 0 appended). Entry 0 is the start value of HIGH_SCORE (31E1); entries 1-8 are the thresholds EXTRA_LIFE_CHECK uses" }
 ADD_HL_A = { addr = 0x0D89, note = "HL += A" }
 CLEAR_OBJ_TILES = { addr = 0x03B4, note = "OBJ_TILES = 0 (0x1CFF bytes)" }
 CLEAR_OBJ_TILES_LOW = { addr = 0x03C2, note = "C000-CBFF = 0" }
