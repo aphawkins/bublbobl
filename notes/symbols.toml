@@ -19,6 +19,7 @@ OBJ_RAM       = { addr = 0xDD00, size = 0x0300, note = "4 bytes/object: Y, gfx#,
 SHARED_RAM    = { addr = 0xE000, size = 0x1800, note = "work RAM shared with sub CPU" }
 PALETTE_RAM   = { addr = 0xF800, size = 0x0200, note = "256 x RGBx_444 big-endian" }
 MCU_RAM       = { addr = 0xFC00, size = 0x0400, note = "RAM shared with MCU, names in [shared.mcu]" }
+OBJ_SHADOW    = { addr = 0xE1CD, size = 0x0168, note = "objects 0-89 as built this frame; OBJ_COPY copies it to OBJ_RAM at the next IRQ" }
 FB40_COPY     = { addr = 0xE1CB, note = "last value written to FB40" }
 BANK_SAVED    = { addr = 0xE1CC, note = "bank bits before BANK_SELECT; BANK_RESTORE puts them back" }
 ROUND_RECORD  = { addr = 0xE598, note = "0x2B bytes: the round's record from bank1:ROUND_RECORDS; byte 0 = round palette index" }
@@ -31,6 +32,16 @@ IDLE           = { addr = 0x01ED, note = "jr $: after start-up the main CPU only
 IRQ_HANDLER    = { addr = 0x044D, note = "IM 2, through the vector entry at 0B2E" }
 BANK_SELECT    = { addr = 0x026C, note = "A = page 0-3 of a78-05-1; FB40 value from BANK_PAGES" }
 BANK_RESTORE   = { addr = 0x029B, note = "back to the bank saved in BANK_SAVED" }
+OBJ_COPY       = { addr = 0x04AD, note = "OBJ_SHADOW -> OBJ_RAM, 0x168 bytes, at the start of each IRQ" }
+GFX_QUARTER    = { addr = 0x145D, note = "A = gfx_num -> IY = its quarter of the gfx block: C000 + (A & 1F) * 80 + ((A >> 1) & 30)" }
+SPRITE         = { addr = 0x147D, note = "16 x 16 sprite: A = gfx_num, B = first of 4 tiles, C = tile attribute; writes rows 6-7 of the quarter" }
+SPRITE_FLIPX   = { addr = 0x149C, note = "as SPRITE, mirrored: sets C b6 and swaps the columns" }
+SPRITE_LIST    = { addr = 0x14BD, note = "B sprites from the tile list at HL, gfx numbers from (IX+7)" }
+SPRITE_LIST_FX = { addr = 0x14E1, note = "as SPRITE_LIST through SPRITE_FLIPX" }
+SPRITE_RECS    = { addr = 0x1505, note = "B sprites from 3-byte records at HL: gfx_num, tile, attribute" }
+SPRITE_RECS_FX = { addr = 0x1517, note = "as SPRITE_RECS through SPRITE_FLIPX" }
+ANIM_STEP      = { addr = 0x15CA, note = "E = frame count, D = delay: steps (IX+6) delay and (IX+5) frame; returns the frame in A" }
+PLAYER_SPRITE  = { addr = 0x450D, note = "player frame from PLAYER_ANIMS[(IX+12)] (FF = none), colour (IX+1A), flip (IX+8) b0" }
 LOAD_PALETTES  = { addr = 0x0B30, note = "bank1:PALETTES -> F800, 0x200 bytes" }
 LOAD_ROUND_PAL = { addr = 0x0B43, note = "bank1:ROUND_PALETTES[index] -> palette 14 (F9C0) or 15 (F9E0) by ROUND_MAIN b0" }
 LOAD_ROUND_REC = { addr = 0x1775, note = "bank1:ROUND_RECORDS[ROUND_MAIN] -> ROUND_RECORD" }
@@ -52,6 +63,8 @@ BANK_PAGES       = { addr = 0x0293, size = 8, note = "FB40 bank bits for pages 0
 CYCLE_1_14       = { addr = 0x1BAE, size = 12, note = "6 colours" }
 RED_RAMP         = { addr = 0x2895, size = 32, note = "16 colours, black to red" }
 PALETTES_7_8     = { addr = 0x3CC2, size = 0x40 }
+PLAYER_ANIMS     = { addr = 0x4584, size = 0x60, note = "12 x 8 bytes: frame count, delay for each of 4 speeds (IX+2C), frame list pointer, flags (b0 one-shot, b1 list holds every frame; else first tile + 4 x frame)" }
+PLAYER_FRAMES    = { addr = 0x45E4, size = 0x0D, note = "first tiles for PLAYER_ANIMS" }
 
 [bank1.data]
 # a78-05-1.52 page 1 (file 0x4000-0x7FFF), mapped at 8000 when FB40 = 5.

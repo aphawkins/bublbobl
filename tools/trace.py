@@ -17,6 +17,8 @@ Output, in build/traces/<scenario>/ (or --name):
   coverage.json  every instruction address executed, per CPU image (bank0..3 for 8000-BFFF)
   access.csv     cpu, address, R/W, instruction address, count, for RAM and I/O
   sound.csv      every write to the sound latch FA00: frame, instruction address, value
+  sprites.csv    every 16 x 16 sprite drawn through 147D / 149C: caller, gfx_num, tile bank,
+                 first tile, attribute, count (read by tools/sprites.py)
   snap/          with --snap N: a screenshot every N seconds, and ram_<frame>.bin, the
                  main CPU's C000-FFFF at the same moment
 

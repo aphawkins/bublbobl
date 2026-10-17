@@ -281,8 +281,26 @@ Use object-RAM watchpoints to find the routines that write tile lists into `C000
 back to ROM frame tables. Extract each character's frames (Bub, Bob, the 10+ enemies,
 items, bubbles, fonts) into named sheets with JSON metadata.
 
+Started (2026-10-17). Every 16 × 16 sprite goes through `SPRITE` (`147D`) or `SPRITE_FLIPX`
+(`149C`): A = gfx_num, B = the first of four consecutive tiles, C = the tile attribute. So
+a frame is (tile bank, B, C), and the bank comes from the attribute of the object that
+shows the block. The objects are built in `OBJ_SHADOW` (`E1CD`) and copied to `DD00` by
+`OBJ_COPY` (`04AD`) at the next IRQ.
+- Few frames come from ROM tables. Most callers step `ANIM_STEP` (`15CA`, E = frame
+  count, D = delay) and compute B inline (e.g. `26E8`: frame × 4 + `D4`, colour `1C`).
+  The player is the exception: `PLAYER_SPRITE` (`450D`) reads 12 animation records at
+  `PLAYER_ANIMS` (`4584`) and first tiles at `PLAYER_FRAMES` (`45E4`).
+- So the frames are captured, not decoded: `trace.lua` logs every sprite draw with its
+  caller in `sprites.csv`, and `tools/sprites.py` writes one sheet per caller plus
+  `build\gfx\sprites\sprites.json`. Four runs of scripted play (attract, 1P twice, 2P)
+  gave 523 frames from 60 callers: Bub and Bob, bubbles, Zen-chan, items, scores, round
+  banners, HURRY UP, INSERT COIN. A caller is the CALL whose return address is on the
+  stack, so a routine that ends in `JP SPRITE` is listed under its own caller.
+- Still to do: runs that reach the other enemies, bosses and endings (`play`); name each
+  caller after its character in `symbols.toml`; per-character sheets built from those
+  names.
+
 Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.
-Still to do: §6.4.
 
 ---
 
@@ -526,7 +544,7 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 2. Phase 2.1 tile sheets + Phase 3 text dump — quick, visible results.
 3. Phase 6 MCU — small, complete, byte-exact.
 4. Phase 1 traces + RAM map — unlocks everything else.
-5. Phase 2.2–2.4 palettes, offline renderer (both done), sprite frames.
+5. Phase 2.2–2.4 palettes, offline renderer (both done), sprite frames (started).
 6. Phase 4 levels.
 7. Phase 5 main/sub disassembly. Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.

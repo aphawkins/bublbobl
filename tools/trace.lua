@@ -58,6 +58,67 @@ local function count(c, kind, addr)
   counts[key] = (counts[key] or 0) + 1
 end
 
+-- Sprite draws: every 16 x 16 sprite goes through SPRITE (147D) or SPRITE_FLIPX (149C),
+-- whose first tile write is at 1480 or 14A1. There B = first tile, C = tile attribute and
+-- IY = the sprite's quarter of a gfx block. The caller is the return address on the stack,
+-- or one level further out for the list helpers that loop over SPRITE. The object's tile
+-- bank is read from the object RAM copy (OBJ_SHADOW, E1CD) when the frame is shown,
+-- that is, when the IRQ handler starts copying it to DD00.
+local SPRITE_FIRST_WRITE = { [0x1480] = "n", [0x14A1] = "x" }
+local LIST_RETURNS = { [0x14DA] = 8, [0x14FE] = 8, [0x150F] = 6, [0x1521] = 6 }
+local sprite_counts = {}  -- "caller,flip,gfx,bank,tile,attr" -> { n, first frame }
+local pending = {}        -- this frame's draws: { caller, flip, gfx, tile, attr }
+
+local function word(space, addr)
+  return space:read_u8(addr) | (space:read_u8((addr + 1) & 0xFFFF) << 8)
+end
+
+-- "1A2B", or "bank2:9C40" from the bank bits in FB40_COPY (E1CB), which the code writes
+-- alongside FB40 itself.
+local function code_addr(space, addr)
+  if addr >= 0x8000 and addr < 0xC000 then
+    local page = (space:read_u8(0xE1CB) ~ 4) & 7
+    return (page <= 3 and ("bank" .. page) or "bank?") .. string.format(":%04X", addr)
+  end
+  return string.format("%04X", addr)
+end
+
+local function sprite_draw(c, pc)
+  local st = c.dev.state
+  local sp = st["SP"].value
+  muted = true
+  local ret = word(c.space, sp)
+  local caller = ret
+  if LIST_RETURNS[ret] then caller = word(c.space, sp + LIST_RETURNS[ret]) end
+  local where = code_addr(c.space, caller - 3)
+  muted = false
+  local iy = st["IY"].value - 0xC000
+  local gfx = (iy // 0x80) | (((iy % 0x80) // 0x10) << 5)
+  pending[#pending + 1] = { where, SPRITE_FIRST_WRITE[pc], gfx, st["B"].value, st["C"].value }
+end
+
+local function sprites_shown(c)
+  if #pending == 0 then return end
+  muted = true
+  local banks = {}
+  for n = 0, 0x168 // 4 - 1 do
+    local o = 0xE1CD + n * 4
+    local g = c.space:read_u8(o + 1)
+    if banks[g] == nil and (c.space:read_u8(o) | g | c.space:read_u8(o + 2)) ~= 0 then
+      banks[g] = c.space:read_u8(o + 3) & 0x0F
+    end
+  end
+  muted = false
+  for _, d in ipairs(pending) do
+    local bank = banks[d[3]]
+    local key = string.format("%s,%s,%02X,%s,%02X,%02X", d[1], d[2], d[3],
+      bank and string.format("%X", bank) or "-", d[4], d[5])
+    local s = sprite_counts[key]
+    if s then s[1] = s[1] + 1 else sprite_counts[key] = { 1, frame } end
+  end
+  pending = {}
+end
+
 for _, c in ipairs(CFG.cpus) do
   for _, r in ipairs(c.taps or {}) do
     local lo, hi = r[1], r[2]
@@ -69,7 +130,12 @@ for _, c in ipairs(CFG.cpus) do
       function(offset, data, mask)
         count(c, 1, offset)
         if c.main then
-          if offset & 0xFFC0 == 0xFB40 then
+          if offset < 0xD000 then
+            local pc = c.curpc.value
+            if SPRITE_FIRST_WRITE[pc] then sprite_draw(c, pc) end
+          elseif offset == 0xDD00 and c.curpc.value == 0x04B6 then
+            sprites_shown(c)
+          elseif offset & 0xFFC0 == 0xFB40 then
             bank = (data ~ 4) & 7
             bank_raw = data
           elseif offset & 0xFF83 == 0xFA00 then
@@ -126,6 +192,10 @@ local function finish()
   f = assert(io.open(out .. "/sound.csv", "w"))
   f:write("frame,pc,cmd\n")
   for _, line in ipairs(sound_log) do f:write(line, "\n") end
+  f:close()
+  f = assert(io.open(out .. "/sprites.csv", "w"))
+  f:write("caller,flip,gfx,bank,tile,attr,count,first_frame\n")
+  for key, s in pairs(sprite_counts) do f:write(string.format("%s,%d,%d\n", key, s[1], s[2])) end
   f:close()
   f = assert(io.open(out .. "/done", "w"))
   f:write(tostring(frame), "\n")
