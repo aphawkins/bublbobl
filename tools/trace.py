@@ -9,6 +9,9 @@ autoboot script. Tracing runs well below full speed, so separate scenarios are b
 side by side in separate shells. The MCU is not traced unless asked for (--cpus): its
 code is already fully classified.
 
+--round N starts every game on round N (tools/start_round.lua), in the recording and in
+its replay alike. A recording made with --round keeps N in <name>.round beside the .inp.
+
 "play" first opens a normal MAME window and records your inputs (-record) until you
 close it, then traces a headless replay of that recording (-playback). --inp traces an
 earlier recording again.
@@ -241,6 +244,7 @@ def main() -> int:
     ap.add_argument("--name", help="output folder under build/traces (default: the scenario)")
     ap.add_argument("--snap", type=int, default=0, help="screenshot and RAM dump every N seconds")
     ap.add_argument("--inp", type=Path, help="play: trace this recording instead of a new one")
+    ap.add_argument("--round", type=int, help="start each game on this round (1-100)")
     ap.add_argument("--list", action="store_true", help="list the scenarios")
     args = ap.parse_args()
     if args.list or not args.scenario:
@@ -259,7 +263,7 @@ def main() -> int:
         if old.is_dir():
             if old.name != "cfg" or not args.inp:
                 shutil.rmtree(old)
-        elif old.suffix != ".inp":
+        elif old.suffix not in (".inp", ".round"):
             old.unlink()
     traced = set(args.cpus.split(","))
     if args.snap:
@@ -276,8 +280,17 @@ def main() -> int:
                   "taps": [[lo, hi] for lo, hi in taps]} for t, n, tr, taps in CPUS],
         "events": events,
     }
+    # A recording keeps its start round beside it, so its replay starts on the same round.
+    inp = (args.inp.resolve() if args.inp else out / "play.inp") if interactive else None
+    start_round = args.round
+    if start_round is None and args.inp and inp.with_suffix(".round").exists():
+        start_round = int(inp.with_suffix(".round").read_text())
+    if start_round is not None and not 1 <= start_round <= 100:
+        raise SystemExit("--round must be 1-100")
+    cfg["round"] = start_round or 1
+    start_lua = (ROOT / "tools" / "start_round.lua").read_text()
     script = out / "trace_run.lua"
-    script.write_text("CFG = " + lua_value(cfg) + "\n\n"
+    script.write_text("CFG = " + lua_value(cfg) + "\n\n" + start_lua + "\n"
                       + (ROOT / "tools" / "trace.lua").read_text(), encoding="utf-8")
 
     exe = mame_exe()
@@ -291,10 +304,16 @@ def main() -> int:
     argv = common + ["-snapshot_directory", str(out), "-snapname", "snap/%i", "-debug", "-debugger", "none", "-autoboot_script", str(script),
                      "-video", "none", "-sound", "none", "-nothrottle"]
     if interactive:
-        inp = args.inp.resolve() if args.inp else out / "play.inp"
         if not args.inp:
+            record = common + ["-window", "-record", inp.name]
+            if cfg["round"] > 1:
+                rec_script = out / "record.lua"
+                rec_script.write_text("CFG = " + lua_value({"round": cfg["round"]}) + "\n\n"
+                                      + start_lua, encoding="utf-8")
+                record += ["-autoboot_script", str(rec_script)]
+                inp.with_suffix(".round").write_text(f"{cfg['round']}\n")
             print("Recording: play, then close MAME to start the trace.", flush=True)
-            subprocess.run(common + ["-window", "-record", inp.name], cwd=exe.parent,
+            subprocess.run(record, cwd=exe.parent,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if not inp.exists():
             raise SystemExit(f"no recording at {inp}")

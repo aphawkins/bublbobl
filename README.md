@@ -60,7 +60,8 @@ Other tools:
 - `tools/trace.py` — run MAME headless on a scripted scenario (`--list`) with the debugger
   tracing every CPU, and record executed code, RAM and I/O accesses and sound commands in
   `build/traces/<scenario>/`. `play` records your own play first, then traces the replay.
-  `--snap N` adds a screenshot and RAM image every N seconds. Needs `MAME_DIR` in
+  `--snap N` adds a screenshot and RAM image every N seconds. `--round N` starts every
+  game on round N, in a recording and its replay (`tools/start_round.lua`). Needs `MAME_DIR` in
   `config.local.toml`. `rammap.py` reads every run in `build/traces/`, so move runs made
   only for snapshots elsewhere (for example `build/snaps/`)
 - `tools/coverage.py` — merge the traced code into the classification maps

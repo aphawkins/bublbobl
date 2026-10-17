@@ -35,7 +35,8 @@ ENEMY2_SLOTS  = { addr = 0xEEAC, note = "group 2, 0x23 bytes each (drew Mighta i
 ENEMY2_SHOTS  = { addr = 0xEC29, note = "group 2's thrown objects (Mighta's rock)" }
 ENEMY2B_SLOTS = { addr = 0xF1E7, note = "group 2 when ENEMY_SWAP b4, 0x19 bytes each" }
 ENEMY3_SLOTS  = { addr = 0xEFA1, note = "group 3, 0x1B bytes each" }
-ENEMY4_SLOTS  = { addr = 0xF05F, note = "group 4, 0x19 bytes each" }
+ENEMY4_SLOTS  = { addr = 0xF05F, note = "group 4, 0x19 bytes each (drew Pulpul in the traced rounds)" }
+GHOST_SLOTS   = { addr = 0xF1C2, note = "set up by GHOST_INIT; drew Skel-Monsta, the skull ghost, in the traced rounds" }
 ENEMY5_SLOTS  = { addr = 0xF113, note = "group 5, 0x19 bytes each (drew Monsta in the traced rounds)" }
 
 [main.code]
@@ -93,6 +94,7 @@ ENEMY2B_INIT  = { addr = 0xA59D, note = "returns unless ENEMY_SWAP b4" }
 ENEMY3_INIT   = { addr = 0x9639 }
 ENEMY4_INIT   = { addr = 0x9893 }
 ENEMY5_INIT   = { addr = 0x9DD2 }
+GHOST_INIT    = { addr = 0xA108, note = "GHOST_SLOTS; no count in ENEMY_COUNTS" }
 ENEMY_ANIM_SPRITE = { addr = 0x913C, note = "ANIM_STEP, then SPRITE or SPRITE_FLIPX with B = frame x 4 + (HL); flip from (IX+8) b1" }
 
 [bank1.data]

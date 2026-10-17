@@ -4,8 +4,9 @@ What each sprite-drawing call site draws, from the sheets `tools/sprites.py` bui
 the traced runs (`build/gfx/sprites/`). The descriptions say what the frames show. A
 name in `symbols.toml` needs the code to agree, as for the enemy groups below.
 
-Runs so far: attract, scripted 1P and 2P play, and one recorded game (`spr_play`, 25,452
-frames) that reached at least round 10. 622 frames from 72 call sites.
+Runs so far: attract, scripted 1P and 2P play, a recorded game from round 1 (`spr_play`,
+25,452 frames, to at least round 10) and one from round 20 (`spr_r20`, 16,463 frames,
+`trace.py play --round 20`). 749 frames from 87 call sites.
 
 ## How a sprite is drawn
 
@@ -35,15 +36,22 @@ group 2 (b4) with a second kind, which has its own tables. That gives eight kind
 | 2 | `ENEMY2_SHOTS` `EC29` | | 6 | Mighta's rock: roll `bank0:83BC` (`1004–1034`), break `bank0:83E7` (`10A4–10AC`) |
 | 2, swapped | `ENEMY2B_SLOTS` `F1E7` | `0x19` | 50 | not yet traced |
 | 3 | `ENEMY3_SLOTS` `EFA1` | `0x1B` | 40 | not yet traced |
-| 4 | `ENEMY4_SLOTS` `F05F` | `0x19` | 20 | not yet traced |
+| 4 | `ENEMY4_SLOTS` `F05F` | `0x19` | 20 | Pulpul: `bank0:9B9D` (`B68–B84`) |
 | 5 | `ENEMY5_SLOTS` `F113` | `0x19` | 10 | Monsta: `bank0:A088` (`14CC–14D8`) |
 
 Code shared by the groups:
 - `bank0:915D–9171`: one frame, used by groups 0 (`964`) and 2 (`1038`).
 - `7EBF`/`7EC4`: the enemy trapped in a bubble, then the food it turns into. The bubble
-  frames depend on the group: `C04–C10` group 0, `C24–C30` group 2, `C54–C60` group 5.
+  frames depend on the group: `C04–C10` group 0, `C24–C30` group 2, `C44–C50` group 4,
+  `C54–C60` group 5.
 - `7F47`: the score for a popped enemy (`E48–E8C`). `7F75`: sparkle (`ABC–AC4`).
 - `7CCB`, `bank0:8910`: tile `C00`, a blank frame.
+
+Other enemy-like tables, with an init in `ROUND_ENEMIES` but no count:
+
+| Slots | Init | Seen as |
+|---|---|---|
+| `F1C2` | `bank0:A108` | Skel-Monsta, the skull ghost (`bank0:A3F6`, `14E4–14E8`); `bank0:A4AE` drew cyan drops and an `ooo` frame (`CB0–14B0`) |
 
 ## Players
 
@@ -70,6 +78,8 @@ The bubble slots are 0x28 bytes from `E76C` (IX `E76C`, `E794`, `E7BC`, …).
 | `64E1` | food from bubbles (cherries, fries) |
 | `65A0` | "700" |
 | `6EAB` | EXTEND letter bubbles (tiles `104–118`, colour 13) |
+| `664F` | fire bubble flames (`1494–149C`) |
+| `66EB`, `6732` | lightning bolt, and its burst (`14A0–14A8`, `D04–D18`) |
 | `bank2:84E0`, `bank2:86D4` | items: food, cake, candy (IX `E6F0`) |
 | `bank2:8581`, `bank2:8771` | item scores |
 
@@ -80,10 +90,11 @@ The bubble slots are 0x28 bytes from `E76C` (IX `E76C`, `E794`, `E7BC`, …).
 | `07C6` | HURRY UP!! |
 | `3964–3C2D` | round start: "ROUND", the number, arrows, Bub (colour 7) and Bob (colour 8) |
 | `bank2:B08E` | INSERT COIN / JOIN!! panels |
+| `bank2:9CF2–9DFD` | on the round-20 board: the two captives in bubbles with HELP!!, and the cage machines (IX `F537`, `F541`) |
 | `bank2:B0C2`, `B0D5` | Bub on the title screen |
 
 ## Still to do
 
-- Rounds that use groups 1, 3, 4 and the two swapped kinds (first rounds above; the
-  swapped kinds from round 60 for group 0 and 50 for group 2), the bosses and the endings.
+- Rounds that use groups 1 and 3 and the two swapped kinds (from rounds 30, 40, 60 for
+  group 0 and 50 for group 2), the bosses and the endings.
 - Per-character sheets: group the frames by slot table instead of by caller.
