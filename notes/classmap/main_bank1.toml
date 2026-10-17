@@ -2,39 +2,18 @@
 # Generated in part by tools/classify.py: source="auto" entries are rewritten.
 
 [[range]]
-start = 0x80A4
-end = 0x80BF
-kind = "fill"
-source = "auto"
-note = "0x1c x 00"
+start = 0x8000
+end = 0x81FF
+kind = "data"
+source = "manual"
+note = "PALETTES: palette RAM image, 16 x 16 RGBx_444, copied by 0B30"
 
 [[range]]
-start = 0x81BD
-end = 0x8207
-kind = "fill"
-source = "auto"
-note = "0x4b x 00"
-
-[[range]]
-start = 0x823E
-end = 0x824D
-kind = "fill"
-source = "auto"
-note = "0x10 x 00"
-
-[[range]]
-start = 0x827E
-end = 0x828D
-kind = "fill"
-source = "auto"
-note = "0x10 x 00"
-
-[[range]]
-start = 0x829E
-end = 0x82AF
-kind = "fill"
-source = "auto"
-note = "0x12 x 00"
+start = 0x8200
+end = 0x82FF
+kind = "data"
+source = "manual"
+note = "ROUND_PALETTES: 8 x 16 RGBx_444, copied by 0B43"
 
 [[range]]
 start = 0x8350
@@ -863,11 +842,11 @@ source = "auto"
 note = "0x32 x 00"
 
 [[range]]
-start = 0xA754
-end = 0xA763
-kind = "fill"
-source = "auto"
-note = "0x10 x 00"
+start = 0xA73A
+end = 0xB805
+kind = "data"
+source = "manual"
+note = "ROUND_RECORDS: 100 x 0x2B, copied by 1775"
 
 [[range]]
 start = 0xB84B

@@ -19,12 +19,24 @@ OBJ_RAM       = { addr = 0xDD00, size = 0x0300, note = "4 bytes/object: Y, gfx#,
 SHARED_RAM    = { addr = 0xE000, size = 0x1800, note = "work RAM shared with sub CPU" }
 PALETTE_RAM   = { addr = 0xF800, size = 0x0200, note = "256 x RGBx_444 big-endian" }
 MCU_RAM       = { addr = 0xFC00, size = 0x0400, note = "RAM shared with MCU, names in [shared.mcu]" }
+FB40_COPY     = { addr = 0xE1CB, note = "last value written to FB40" }
+BANK_SAVED    = { addr = 0xE1CC, note = "bank bits before BANK_SELECT; BANK_RESTORE puts them back" }
+ROUND_RECORD  = { addr = 0xE598, note = "0x2B bytes: the round's record from bank1:ROUND_RECORDS; byte 0 = round palette index" }
+ROUND_MAIN    = { addr = 0xE64B, note = "main CPU copy of the round number (MCU ROUND) from 0; 100 (0x64) in the title and attract screens; b0 picks palette 14 or 15" }
 
 [main.code]
 RESET          = { addr = 0x0000, note = "DI / IM 2 / JP 00B9" }
 START          = { addr = 0x00B9 }
 IDLE           = { addr = 0x01ED, note = "jr $: after start-up the main CPU only runs the IRQ handler" }
 IRQ_HANDLER    = { addr = 0x044D, note = "IM 2, through the vector entry at 0B2E" }
+BANK_SELECT    = { addr = 0x026C, note = "A = page 0-3 of a78-05-1; FB40 value from BANK_PAGES" }
+BANK_RESTORE   = { addr = 0x029B, note = "back to the bank saved in BANK_SAVED" }
+LOAD_PALETTES  = { addr = 0x0B30, note = "bank1:PALETTES -> F800, 0x200 bytes" }
+LOAD_ROUND_PAL = { addr = 0x0B43, note = "bank1:ROUND_PALETTES[index] -> palette 14 (F9C0) or 15 (F9E0) by ROUND_MAIN b0" }
+LOAD_ROUND_REC = { addr = 0x1775, note = "bank1:ROUND_RECORDS[ROUND_MAIN] -> ROUND_RECORD" }
+CYCLE_COLOUR   = { addr = 0x1B90, note = "steps palette 1 colour 14 through CYCLE_1_14" }
+RED_RAMP_STEP  = { addr = 0x2873, note = "steps palette 1 colour 1 through RED_RAMP" }
+LOAD_PAL_7_8   = { addr = 0x3C60, note = "PALETTES_7_8 -> F8E0" }
 TAMPER_CHECK   = { addr = 0x333F, note = "low byte of the IM 2 vector entry at 0B2E must be 4D; else runs 'dead copy' at 334A" }
 DEAD_COPY      = { addr = 0x334A, note = "ASCII that executes as opcodes" }
 SWB7_SCORE_A   = { addr = 0x0F26, note = "F7FE/F7FF score output mystery" }
@@ -35,6 +47,17 @@ ENTRY_ALPHABET = { addr = 0x38D4, note = "name-entry alphabet" }
 
 [main.data]
 IRQ_VECTOR_ENTRY = { addr = 0x0B2E, size = 2, note = "word 044D: the IM 2 table entry (I = 0B, FC00 = 2E); checked at 333F and bank0:950A" }
+
+BANK_PAGES       = { addr = 0x0293, size = 8, note = "FB40 bank bits for pages 0-3: 04-07 if DSW-B:8 (ROM type) is off, else 04 05 00 01 (pages 2-3 in IC53)" }
+CYCLE_1_14       = { addr = 0x1BAE, size = 12, note = "6 colours" }
+RED_RAMP         = { addr = 0x2895, size = 32, note = "16 colours, black to red" }
+PALETTES_7_8     = { addr = 0x3CC2, size = 0x40 }
+
+[bank1.data]
+# a78-05-1.52 page 1 (file 0x4000-0x7FFF), mapped at 8000 when FB40 = 5.
+PALETTES       = { addr = 0x8000, size = 0x0200, note = "all of palette RAM; palettes 14-15 zero" }
+ROUND_PALETTES = { addr = 0x8200, size = 0x0100, note = "8 palettes for palette 14 or 15" }
+ROUND_RECORDS  = { addr = 0xA73A, size = 0x10CC, note = "100 x 0x2B bytes, one per round" }
 
 [bank3.data]
 # a78-05-1.52 page 3 (file 0xC000-0xFFFF), mapped at 8000 when FB40 = 7.

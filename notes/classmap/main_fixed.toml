@@ -86,6 +86,13 @@ source = "trace"
 note = "executed in MAME"
 
 [[range]]
+start = 0x0293
+end = 0x029A
+kind = "data"
+source = "manual"
+note = "BANK_PAGES: FB40 bank bits for pages 0-3, two sets by DSW-B:8"
+
+[[range]]
 start = 0x029B
 end = 0x02C7
 kind = "code"
@@ -611,6 +618,13 @@ source = "trace"
 note = "executed in MAME"
 
 [[range]]
+start = 0x1BAE
+end = 0x1BB9
+kind = "data"
+source = "manual"
+note = "CYCLE_1_14: 6 RGBx_444 colours for palette 1 colour 14"
+
+[[range]]
 start = 0x1BBA
 end = 0x1BDE
 kind = "code"
@@ -924,6 +938,13 @@ end = 0x2894
 kind = "code"
 source = "trace"
 note = "executed in MAME"
+
+[[range]]
+start = 0x2895
+end = 0x28B4
+kind = "data"
+source = "manual"
+note = "RED_RAMP: 16 RGBx_444 colours, black to red, for palette 1 colour 1"
 
 [[range]]
 start = 0x28B5
@@ -1414,6 +1435,13 @@ end = 0x3CC1
 kind = "code"
 source = "trace"
 note = "executed in MAME"
+
+[[range]]
+start = 0x3CC2
+end = 0x3D01
+kind = "data"
+source = "manual"
+note = "PALETTES_7_8: 2 x 16 RGBx_444, copied to F8E0 by 3C60"
 
 [[range]]
 start = 0x3DC4

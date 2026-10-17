@@ -238,6 +238,25 @@ RGBx_444 big-endian, 16 palettes × 16 colours. Extract the tables the game copi
 `F800` (found in Phase 1) so palettes come from ROM, not just snapshots. Colour 15 is
 transparent for objects.
 
+Done: `tools/palette.py` writes `build\gfx\palettes.json` and a swatch sheet
+`palettes.png`. Every colour comes from ROM:
+- `bank1:8000` (`PALETTES`) is the whole `0x200`-byte palette RAM image. `LOAD_PALETTES`
+  (`0B30`) copies it with `BANK_SELECT` page 1. Palettes 14 and 15 are zero there.
+- `bank1:8200` (`ROUND_PALETTES`) holds 8 round palettes. `LOAD_ROUND_PAL` (`0B43`) copies
+  one into palette 14 or 15, depending on bit 0 of the round number `ROUND_MAIN` (`E64B`).
+  So the old round and the new round each have a palette while the screen scrolls between
+  them. The index is byte 0 of the round's record.
+- The round records are `0x2B` bytes per round at `bank1:A73A` (`ROUND_RECORDS`), and
+  `LOAD_ROUND_REC` (`1775`) copies the current one to `E598`. This is the lead for Phase 4.
+- Animated colours: palette 1 colour 14 cycles through 6 colours at `1BAE`, palette 1
+  colour 1 ramps from black to red through `2895`, palettes 7–8 come from `3CC2`, and
+  palette 11 is changed by `bank0:B764–B7FE` (not decoded yet).
+- Checked against palette RAM in 30 MAME snapshots: palettes 0–13 equal `PALETTES` apart
+  from the animated entries, and palettes 14–15 equal the round palette named by the
+  round's record.
+- `BANK_PAGES` (`0293`) has two sets of `FB40` values. DSW-B:8 (ROM type) picks one: pages
+  0–3 all in IC52, or pages 2–3 in IC53.
+
 ### 6.3 Objects / screen composition
 There is **no tilemap**. `bublbobl_v.cpp` renders everything from object RAM:
 - each 4-byte object: `Y`, `gfx_num`, `X`, `attr` (attr low nibble = tile bank × 1024,
@@ -251,12 +270,19 @@ There is **no tilemap**. `bublbobl_v.cpp` renders everything from object RAM:
 identically to MAME. That renderer is then reused to preview levels and sprite frames
 straight from ROM data.
 
+Done: `tools/objects.py` renders a `C000–FFFF` RAM image to PNG, following
+`screen_update_bublbobl`. Video enable and flip come from `FB40_COPY` (`E1CB`), the
+main CPU's copy of `FB40`. `--check` renders every RAM image in a `trace.py --snap`
+folder and compares it with MAME's screenshot of the same frame. All 30 frames (title,
+attract demo, a 1P game across rounds 1–2) are pixel-identical.
+
 ### 6.4 Sprite/animation tables
 Use object-RAM watchpoints to find the routines that write tile lists into `C000`; follow them
 back to ROM frame tables. Extract each character's frames (Bub, Bob, the 10+ enemies,
 items, bubbles, fonts) into named sheets with JSON metadata.
 
 Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.
+Still to do: §6.4.
 
 ---
 
@@ -500,7 +526,7 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 2. Phase 2.1 tile sheets + Phase 3 text dump — quick, visible results.
 3. Phase 6 MCU — small, complete, byte-exact.
 4. Phase 1 traces + RAM map — unlocks everything else.
-5. Phase 2.2–2.4 palettes, offline renderer, sprite frames.
+5. Phase 2.2–2.4 palettes, offline renderer (both done), sprite frames.
 6. Phase 4 levels.
 7. Phase 5 main/sub disassembly. Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.

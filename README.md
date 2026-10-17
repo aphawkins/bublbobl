@@ -46,6 +46,10 @@ Other tools:
 - `tools/classify.py` — refresh the byte classification maps in `notes/classmap/`
 - `tools/gfx.py` — decode the graphics ROMs into tile sheets, `build/gfx/tiles_bank00..11.png`
   (`--scale 2` to magnify)
+- `tools/palette.py` — extract every palette from ROM, `build/gfx/palettes.json` and
+  `palettes.png`
+- `tools/objects.py` — render a main-CPU RAM image (`C000–FFFF`) to PNG as the hardware
+  draws it; `--check <snap folder>` compares the renders with MAME's screenshots
 - `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
 - `tools/symbols.py` — export `notes/symbols.toml` as assembler includes, `build/include/`
   (`build.py` runs it)
@@ -54,7 +58,9 @@ Other tools:
 - `tools/trace.py` — run MAME headless on a scripted scenario (`--list`) with the debugger
   tracing every CPU, and record executed code, RAM and I/O accesses and sound commands in
   `build/traces/<scenario>/`. `play` records your own play first, then traces the replay.
-  Needs `MAME_DIR` in `config.local.toml`
+  `--snap N` adds a screenshot and RAM image every N seconds. Needs `MAME_DIR` in
+  `config.local.toml`. `rammap.py` reads every run in `build/traces/`, so move runs made
+  only for snapshots elsewhere (for example `build/snaps/`)
 - `tools/coverage.py` — merge the traced code into the classification maps
 - `tools/rammap.py` — write `notes/ram_map.md`: who writes and reads each RAM and I/O address
 - `tools/soundcmds.py` — write `notes/sound_commands.md`: every command sent to the sound CPU
