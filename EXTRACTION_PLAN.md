@@ -356,6 +356,23 @@ Deliverable: complete string catalogue with addresses and the routine that print
 
 Deliverable: `build\levels\round_XXX.json/.png`, `notes\data_formats.md#levels`.
 
+Started (2026-10-17). Steps 1–4 are done for the walls:
+- A round is `ROUND_GRID` (`E398`): 32 × 32 cells of 8 × 8, 0 = wall and 1–4 = open,
+  probably the bubbles' air current. It is also the collision map (`GRID_CELL`, `174B`).
+  So walls and wind are one format, not two.
+- Most of it comes from the **sub CPU**, which answers part of Phase 5's question about its
+  role. `GRID_UNPACK` (sub `00A9`) unpacks 0x120 bytes per round from `ROUND_LAYOUTS` (sub
+  `0CFC–7D7B`), 3 bits a cell, into rows 5–28. The main CPU copies the ceiling and the
+  floor (rows 0–4, 29–31) from `bank1:GRID_EDGES`, picked by `ROUND_RECORD` byte 3.
+- Each round has its own five tiles: 0x204 + 5 × round for the 2 × 2 side-wall block and
+  +4 for the walls, colour 14 or 15. `SHADE_GRID_ROW` adds shadow tiles F0–F5.
+- `tools/levels.py` writes `build\levels\round_NNN.json/.png` and `rounds.png`. `--check`
+  rebuilds the grid and wall tiles from the ROMs and compares them with RAM snapshots.
+  Every grid matched (rounds 1, 2, 50, 100), and so did every fully drawn set of tile
+  columns. Notes: `notes\levels.md`.
+- Still to do: what values 1–4 do, the rest of the round record (enemy start positions and
+  timings are likely in bytes 7–42), and step 5, the super mode.
+
 ---
 
 ## 9. Phase 5 — Game logic disassembly (main + sub)
@@ -558,7 +575,7 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 3. Phase 6 MCU — small, complete, byte-exact.
 4. Phase 1 traces + RAM map — unlocks everything else.
 5. Phase 2.2–2.4 palettes, offline renderer and sprite frames (all done).
-6. Phase 4 levels.
+6. Phase 4 levels (walls done; the rest of the round record and the super mode to go).
 7. Phase 5 main/sub disassembly. Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.
 8. Phase 7 sound.

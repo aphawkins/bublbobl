@@ -23,6 +23,9 @@ OBJ_SHADOW    = { addr = 0xE1CD, size = 0x0168, note = "objects 0-89 as built th
 FB40_COPY     = { addr = 0xE1CB, note = "last value written to FB40" }
 BANK_SAVED    = { addr = 0xE1CC, note = "bank bits before BANK_SELECT; BANK_RESTORE puts them back" }
 ROUND_RECORD  = { addr = 0xE598, note = "0x2B bytes: the round's record from bank1:ROUND_RECORDS; byte 0 = round palette index" }
+GRID_REQUEST  = { addr = 0xE397, note = "LOAD_GRID_EDGES sets 1 and waits; the sub CPU's GRID_UNPACK fills ROUND_GRID rows 5-28 and sets FF" }
+ROUND_GRID    = { addr = 0xE398, size = 0x200, note = "32 x 32 cells of 8 x 8, 16 bytes a row, high nibble first: 0 = wall, 1-4 = open (air current?). Rows 0-4 and 29-31 from LOAD_GRID_EDGES, 5-28 from the sub CPU" }
+GRID_DRAW_ROW = { addr = 0xE5C4, note = "next ROUND_GRID row DRAW_GRID_ROW draws at round start; 0x20 when done" }
 ROUND_MAIN    = { addr = 0xE64B, note = "main CPU copy of the round number (MCU ROUND) from 0; 100 (0x64) in the title and attract screens; b0 picks palette 14 or 15" }
 ENEMY_SWAP    = { addr = 0xE5A4, note = "ROUND_RECORD byte 12: b0 = group 0 is ENEMY0B, not ENEMY0; b4 = group 2 is ENEMY2B, not ENEMY2" }
 ENEMY_TOTAL   = { addr = 0xED3D, note = "sum of ENEMY_COUNTS" }
@@ -62,7 +65,13 @@ ANIM_STEP      = { addr = 0x15CA, note = "E = frame count, D = delay: steps (IX+
 PLAYER_SPRITE  = { addr = 0x450D, note = "player frame from PLAYER_ANIMS[(IX+12)] (FF = none), colour (IX+1A), flip (IX+8) b0" }
 LOAD_PALETTES  = { addr = 0x0B30, note = "bank1:PALETTES -> F800, 0x200 bytes" }
 LOAD_ROUND_PAL = { addr = 0x0B43, note = "bank1:ROUND_PALETTES[index] -> palette 14 (F9C0) or 15 (F9E0) by ROUND_MAIN b0" }
+GRID_CELL      = { addr = 0x174B, note = "A = the ROUND_GRID cell at object X = H, Y = L (row (-L) / 8, column H / 8); the collision probes around objects call it" }
 LOAD_ROUND_REC = { addr = 0x1775, note = "bank1:ROUND_RECORDS[ROUND_MAIN] -> ROUND_RECORD" }
+LOAD_GRID_EDGES = { addr = 0x1700, note = "asks the sub CPU for ROUND_GRID rows 5-28 (GRID_REQUEST), then copies rows 0-4 and 29-31 from bank1:GRID_EDGES by ROUND_RECORD byte 3's nibbles" }
+GRID_WALL_TILE = { addr = 0x1929, note = "HL = 0x204 + 5 x ROUND_MAIN with colour 14/15: the side-wall block; +4 is the wall tile" }
+DRAW_GRID_ROW  = { addr = 0x1958, note = "ROUND_GRID row GRID_DRAW_ROW -> tile columns CD00-D4FF: wall tile where a cell is 0" }
+SHADE_GRID_ROW = { addr = 0x199C, note = "shadow tiles F0-F5 in the row's open cells, by the walls above, left and above-left" }
+SIDE_WALL_ROW  = { addr = 0x1A99, note = "columns 0-1 and 30-31 of a row: the 2 x 2 side-wall block where the wall tile is" }
 CYCLE_COLOUR   = { addr = 0x1B90, note = "steps palette 1 colour 14 through CYCLE_1_14" }
 RED_RAMP_STEP  = { addr = 0x2873, note = "steps palette 1 colour 1 through RED_RAMP" }
 LOAD_PAL_7_8   = { addr = 0x3C60, note = "PALETTES_7_8 -> F8E0" }
@@ -116,6 +125,9 @@ BOSS_POSES    = { addr = 0xAF4C, size = 0x80, note = "8 x 16 first tiles (bank 8
 PALETTES       = { addr = 0x8000, size = 0x0200, note = "all of palette RAM; palettes 14-15 zero" }
 ROUND_PALETTES = { addr = 0x8200, size = 0x0100, note = "8 palettes for palette 14 or 15" }
 ROUND_RECORDS  = { addr = 0xA73A, size = 0x10CC, note = "100 x 0x2B bytes, one per round" }
+GRID_EDGES     = { addr = 0x95AA, size = 0x40, note = "32 pointers; LOAD_GRID_EDGES uses 0-15 for both edges: 0x50 bytes for the top, the first 0x30 for the bottom. 16-31 point at GRID_EDGE_LOW, never read there" }
+GRID_EDGE_ROWS = { addr = 0x95EA, size = 0x02D0, note = "9 x 0x50 bytes: ROUND_GRID rows 0-4; the first 0x30 also fill rows 29-31" }
+GRID_EDGE_LOW  = { addr = 0x98BA, size = 0x01B0, note = "9 x 0x30 bytes, each the same as the first 0x30 of the matching GRID_EDGE_ROWS pattern; unreferenced" }
 
 [bank3.data]
 
@@ -124,6 +136,12 @@ VERSION_STAMP = { addr = 0xBF4C, note = "file 0xFF4C: 'VER 0.1 4.SEP,1986 SUMMER
 
 [sub.mem]
 SHARED_RAM = { addr = 0xE000, size = 0x1800 }
+
+[sub.code]
+GRID_UNPACK = { addr = 0x00A9, note = "when GRID_REQUEST = 1: ROUND_LAYOUTS[ROUND_MAIN] -> ROUND_GRID rows 5-28 (E3E8), 6 bits a byte; then GRID_REQUEST = FF" }
+
+[sub.data]
+ROUND_LAYOUTS = { addr = 0x0CFC, size = 0x7080, note = "100 x 0x120 bytes: a bit stream of 0x300 3-bit cells, ROUND_GRID rows 5-28" }
 
 [sound.io]
 RAM        = { addr = 0x8000, size = 0x1000 }

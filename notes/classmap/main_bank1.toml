@@ -807,32 +807,11 @@ source = "auto"
 note = "FOR YOUR PLAYING!"
 
 [[range]]
-start = 0x97C1
-end = 0x97D2
-kind = "fill"
-source = "auto"
-note = "0x12 x 00"
-
-[[range]]
-start = 0x9866
-end = 0x98BD
-kind = "fill"
-source = "auto"
-note = "0x58 x 00"
-
-[[range]]
-start = 0x99D1
-end = 0x99E2
-kind = "fill"
-source = "auto"
-note = "0x12 x 00"
-
-[[range]]
-start = 0x9A36
+start = 0x95AA
 end = 0x9A69
-kind = "fill"
-source = "auto"
-note = "0x34 x 00"
+kind = "data"
+source = "manual"
+note = "GRID_EDGES: 32 pointers, then GRID_EDGE_ROWS (9 x 0x50) and GRID_EDGE_LOW (9 x 0x30), read by 1700"
 
 [[range]]
 start = 0xA708

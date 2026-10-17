@@ -53,6 +53,8 @@ Other tools:
 - `tools/sprites.py` — sprite sheets from the sprite draws that `trace.py` logs
   (`sprites.csv`), one sheet per calling routine and one per character, in
   `build/gfx/sprites/` with `sprites.json` and `characters/characters.json`
+- `tools/levels.py` — decode the 100 round layouts, `build/levels/round_NNN.json` and `.png`
+  plus `rounds.png`; `--check <snap folder>` compares them with RAM snapshots
 - `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
 - `tools/symbols.py` — export `notes/symbols.toml` as assembler includes, `build/include/`
   (`build.py` runs it)
