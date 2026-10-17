@@ -28,8 +28,8 @@ ENEMY_SWAP    = { addr = 0xE5A4, note = "ROUND_RECORD byte 12: b0 = group 0 is E
 ENEMY_TOTAL   = { addr = 0xED3D, note = "sum of ENEMY_COUNTS" }
 ENEMY_COUNTS  = { addr = 0xED3E, size = 6, note = "enemies in groups 0-5: the nibbles of ROUND_RECORD bytes 4-6, high nibble first" }
 ENEMY0_SLOTS  = { addr = 0xED49, size = 0xAF, note = "group 0, 0x19 bytes each (drew Zen-chan in the traced rounds)" }
-ENEMY0B_SLOTS = { addr = 0xF2AA, note = "group 0 when ENEMY_SWAP b0, 0x19 bytes each" }
-ENEMY0B_AUX   = { addr = 0xECAA, note = "group 0 when ENEMY_SWAP b0, 0x11 bytes each" }
+ENEMY0B_SLOTS = { addr = 0xF2AA, note = "group 0 when ENEMY_SWAP b0, 0x19 bytes each (drew Invader in the traced rounds)" }
+ENEMY0B_SHOTS = { addr = 0xECAA, note = "group 0's swapped kind's shots, 0x11 bytes each (drew Invader's laser)" }
 ENEMY1_SLOTS  = { addr = 0xEDF8, note = "group 1, 0x19 bytes each (drew Banebou in the traced rounds)" }
 ENEMY2_SLOTS  = { addr = 0xEEAC, note = "group 2, 0x23 bytes each (drew Mighta in the traced rounds)" }
 ENEMY2_SHOTS  = { addr = 0xEC29, note = "group 2's thrown objects (Mighta's rock)" }
@@ -88,7 +88,7 @@ PLAYER_FRAMES    = { addr = 0x45E4, size = 0x0D, note = "first tiles for PLAYER_
 ROUND_ENEMIES = { addr = 0x85A9, note = "round start: ENEMY_COUNTS from ROUND_RECORD, then each group's init" }
 ENEMY0_INIT   = { addr = 0x89B9, note = "clears ENEMY0_SLOTS; returns if ENEMY_SWAP b0" }
 ENEMY0B_INIT  = { addr = 0xB0F0, note = "returns unless ENEMY_SWAP b0" }
-ENEMY0B_AUX_INIT = { addr = 0x844A, note = "returns unless ENEMY_SWAP b0" }
+ENEMY0B_SHOTS_INIT = { addr = 0x844A, note = "returns unless ENEMY_SWAP b0" }
 ENEMY1_INIT   = { addr = 0x8EFB }
 ENEMY1_UPDATE = { addr = 0x8F4E }
 ENEMY2_INIT   = { addr = 0x927D, note = "returns if ENEMY_SWAP b4" }

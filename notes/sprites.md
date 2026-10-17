@@ -7,7 +7,8 @@ name in `symbols.toml` needs the code to agree, as for the enemy groups below.
 Runs so far: attract, scripted 1P and 2P play, a recorded game from round 1 (`spr_play`,
 25,452 frames, to at least round 10) and one from round 20 (`spr_r20`, 16,463 frames,
 `trace.py play --round 20`), round 30 (`spr_r30`, 7,115 frames), round 40 (`spr_r40`,
-4,558 frames) and round 50 (`spr_r50`, 3,107 frames). 983 frames from 96 call sites.
+4,558 frames), round 50 (`spr_r50`, 3,107 frames) and round 60 (`spr_r60`, 3,969
+frames). 1,014 frames from 100 call sites.
 
 ## How a sprite is drawn
 
@@ -31,7 +32,8 @@ group 2 (b4) with a second kind, which has its own tables. That gives eight kind
 | Group | Slots | Stride | First round | Seen as |
 |---|---|---|---|---|
 | 0 | `ENEMY0_SLOTS` `ED49` | `0x19` | 1 | Zen-chan: walk `bank0:9155`, tiles `964–988` |
-| 0, swapped | `ENEMY0B_SLOTS` `F2AA`, `ENEMY0B_AUX` `ECAA` | `0x19`, `0x11` | 60 | not yet traced |
+| 0, swapped | `ENEMY0B_SLOTS` `F2AA` | `0x19` | 60 | Invader: `bank0:9155` (`974–990`), `bank0:B192` |
+| 0, swapped | `ENEMY0B_SHOTS` `ECAA` | `0x11` | 60 | Invader's laser: `bank0:850B`, `8566`, `8580` (`EC4–ED0`) |
 | 1 | `ENEMY1_SLOTS` `EDF8` | `0x19` | 30 | Banebou: `bank0:9155` (`B98–BB4`), `bank0:8F90` |
 | 2 | `ENEMY2_SLOTS` `EEAC` | `0x23` | 6 | Mighta: walk `bank0:94C3` (`1008–101C`), throw `bank0:8237`/`8260` (`1054–1098`) |
 | 2 | `ENEMY2_SHOTS` `EC29` | | 6 | Mighta's rock: roll `bank0:83BC` (`1004–1034`), break `bank0:83E7` (`10A4–10AC`) |
@@ -44,10 +46,10 @@ group 2 (b4) with a second kind, which has its own tables. That gives eight kind
 
 Code shared by the groups:
 - `ENEMY_ANIM_SPRITE` (`bank0:913C`, calls at `9155`/`9159`): walk frames for groups 0,
-  1 and 3. `bank0:915D–9171`: one frame, used by groups 0 (`964`) and 2 (`1038`).
+  1 and 3 and Invader. `bank0:915D–9171`: one frame, used by groups 0 (`964`) and 2 (`1038`).
 - `7EBF`/`7EC4`: the enemy trapped in a bubble, then the food it turns into. The bubble
-  frames are 4 tiles from `C04 + 0x10 × kind`: groups 0–5 are kinds 0–5, and group 2's
-  swapped kind (Drunk) is `C74–C80`, so group 0's swapped kind is likely `C64–C70`.
+  frames are 4 tiles from `C04 + 0x10 × kind`: groups 0–5 are kinds 0–5, group 0's
+  swapped kind (Invader) is kind 6 (`C64–C70`) and group 2's (Drunk) is kind 7 (`C74–C80`).
 - `7F47`: the score for a popped enemy (`E48–E8C`). `7F75`: sparkle (`ABC–AC4`).
 - `7CCB`, `bank0:8910`: tile `C00`, a blank frame.
 
@@ -99,5 +101,5 @@ The bubble slots are 0x28 bytes from `E76C` (IX `E76C`, `E794`, `E7BC`, …).
 
 ## Still to do
 
-- Rounds that use group 0's swapped kind (from round 60), the bosses and the endings.
+- The boss (round 100) and the endings.
 - Per-character sheets: group the frames by slot table instead of by caller.
