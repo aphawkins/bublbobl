@@ -51,7 +51,8 @@ Other tools:
 - `tools/objects.py` — render a main-CPU RAM image (`C000–FFFF`) to PNG as the hardware
   draws it; `--check <snap folder>` compares the renders with MAME's screenshots
 - `tools/sprites.py` — sprite sheets from the sprite draws that `trace.py` logs
-  (`sprites.csv`), one sheet per calling routine, in `build/gfx/sprites/` with `sprites.json`
+  (`sprites.csv`), one sheet per calling routine and one per character, in
+  `build/gfx/sprites/` with `sprites.json` and `characters/characters.json`
 - `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
 - `tools/symbols.py` — export `notes/symbols.toml` as assembler includes, `build/include/`
   (`build.py` runs it)

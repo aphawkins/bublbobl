@@ -309,8 +309,9 @@ shows the block. The objects are built in `OBJ_SHADOW` (`E1CD`) and copied to `D
   then "YOU ZAPPED TO" round 50.
 - The 2-player (true) ending is traced too: HAPPY END, the staff credits and the game's
   own character list, which confirms every enemy name.
-- Still to do: per-character sheets grouped by slot
-  table.
+- Per-character sheets: `sprites.py` writes `build\gfx\sprites\characters\`, one sheet
+  per character (19), picked by slot table or caller, with Super Drunk drawn whole. §6.4
+  is done, apart from frames no recording reached.
 
 Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.
 
@@ -556,7 +557,7 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 2. Phase 2.1 tile sheets + Phase 3 text dump — quick, visible results.
 3. Phase 6 MCU — small, complete, byte-exact.
 4. Phase 1 traces + RAM map — unlocks everything else.
-5. Phase 2.2–2.4 palettes, offline renderer (both done), sprite frames (started).
+5. Phase 2.2–2.4 palettes, offline renderer and sprite frames (all done).
 6. Phase 4 levels.
 7. Phase 5 main/sub disassembly. Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.

@@ -17,6 +17,16 @@ BOBBLUN, ZEN-CHAN, MONSTA, SKEL-MONSTA, MIGHTA, PULPUL, BANEBOU, INVADER, HIDEGO
 DRUNK, SUPER DRUNK, RASCAL, BOBBY, BETTY, BUBBY and PATTY. Bubblun and Bobblun are the
 players, called Bub and Bob below.
 
+## Character sheets
+
+`tools/sprites.py` also writes `build/gfx/sprites/characters/`: one sheet per character
+and `characters.json`. `CHARACTERS` in the tool picks each character's frames by the IX
+range of its slot table (the enemies, their shots, the boss) or by caller (the players,
+the bubbles). The enemy sheets leave out the score, sparkle and blank frames every enemy
+shares, and the food a popped enemy turns into. Super Drunk is drawn whole, one 64 × 64
+pose per sheet entry, where all 16 pieces were seen: 4 normal, 4 tumbling and 2 of the
+trapped poses.
+
 ## How a sprite is drawn
 
 - `SPRITE` (`147D`) / `SPRITE_FLIPX` (`149C`): A = gfx_num, B = first of 4 tiles,
@@ -155,5 +165,6 @@ The bubble slots are 0x28 bytes from `E76C` (IX `E76C`, `E794`, `E7BC`, …).
 
 ## Still to do
 
-- Per-character sheets grouped by slot table, with the 64 × 64 boss drawn whole.
+- Frames the recordings never showed: the sheets hold only what was drawn. For example,
+  two of the trapped boss's poses are incomplete, and Bob never died by fire.
 - Per-character sheets: group the frames by slot table instead of by caller.
