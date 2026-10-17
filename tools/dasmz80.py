@@ -3,7 +3,7 @@
 Usage: python tools/dasmz80.py CPU [--roms DIR] [--entry ADDR ...] [--table ADDR:COUNT ...]
                                    [--out FILE]
 
-CPU is an image in IMAGES (sub, sound, main_fixed). Starts at RST 0, the IM 1 vector
+CPU is an image in IMAGES (sub, sound, main_fixed, main_bank0-3). Starts at RST 0, the IM 1 vector
 0038, NMI 0066 (where they are not FF), the start of every traced code range in
 notes/classmap/<cpu>.toml, every [<cpu>.code] name, any --entry addresses and the words of each --table (a jump
 table of COUNT little-endian addresses, written as .word labels). It follows
@@ -38,9 +38,17 @@ IMAGES = {
     "main_fixed": ("main_fixed.bin", 0x0000, 0x8000, ["main.code", "main.data"],
                    ["main.io", "main.mem", "shared.mcu"]),
 }
+# the four banked 16K pages of a78-05-1, each linked at 0x8000
+for _n in range(4):
+    IMAGES[f"main_bank{_n}"] = (f"main_bank{_n}.bin", 0x8000, 0xC000,
+                                [f"bank{_n}.code", f"bank{_n}.data"],
+                                ["main.io", "main.mem", "shared.mcu"])
 
 # cpu -> the include file tools/symbols.py writes for it
-INCLUDE = {"sub": "sub.inc", "main_fixed": "main.inc"}
+INCLUDE = {"sub": "sub.inc", "main_fixed": "main.inc",
+           **{f"main_bank{n}": "main.inc" for n in range(4)}}
+# banks also see the fixed ROM's names (build/include/fixed.inc)
+EXTRA_INCLUDE = {f"main_bank{n}": "fixed.inc" for n in range(4)}
 
 R = ["b", "c", "d", "e", "h", "l", "(hl)", "a"]
 RP = ["bc", "de", "hl", "sp"]
@@ -256,6 +264,12 @@ class Names:
             for k, v in table(path).items():
                 if base <= v["addr"] < end:
                     self.code[v["addr"]] = (k, v.get("note"))
+        self.ext: dict[int, str] = {}  # names in another image's code (the fixed ROM, for a bank)
+        if cpu in EXTRA_INCLUDE:
+            for path in ("main.code", "main.data"):
+                for k, v in table(path).items():
+                    if v["addr"] < 0x8000:
+                        self.ext[v["addr"]] = k
         self.ram: dict[int, str] = {}
         for path in includes:
             for k, v in table(path).items():
@@ -303,6 +317,59 @@ class Dasm:
                     break
                 a += i.n
 
+    def bad_targets(self) -> set[int]:
+        """Branch and call targets that fall inside an instruction."""
+        return {i.target for i in self.insns.values()
+                if i.target is not None and self.base <= i.target < self.end
+                and self.inside(i.target)}
+
+    def probe(self) -> int:
+        """Trace every untraced gap whose bytes decode cleanly from its start to a stop.
+
+        A gap is a run of bytes in no instruction and no blocked range. Data seldom decodes
+        for dozens of instructions and ends exactly on a RET, JP or JR, so such a gap is code
+        the trace did not reach (a routine called through a bank switch). Returns the number
+        of gaps taken."""
+        taken = 0
+        again = True
+        while again:
+            again = False
+            covered = bytearray(self.end - self.base)
+            for a, i in self.insns.items():
+                covered[a - self.base:a - self.base + i.n] = b"" * i.n
+            for lo, hi in self.blocked:
+                for a in range(max(lo, self.base), min(hi, self.end)):
+                    covered[a - self.base] = 1
+            a = self.base
+            while a < self.end:
+                if covered[a - self.base]:
+                    a += 1
+                    continue
+                e = a
+                while e < self.end and not covered[e - self.base]:
+                    e += 1
+                p, last, count = a, None, 0
+                while p < e:
+                    i = decode(self.mem, p)
+                    if i is None or p + i.n > e:
+                        break
+                    last, count, p = i, count + 1, p + i.n
+                if p == e and last is not None and last.flow == "stop" and count >= 4:
+                    before = (dict(self.insns), set(self.targets), set(self.data_refs))
+                    bad = self.bad_targets()
+                    self.trace([a], label=False)
+                    # reject it when something now jumps into the middle of an instruction
+                    if self.bad_targets() - bad:
+                        self.insns, self.targets, self.data_refs = before
+                        self.blocked.append((a, e))
+                    else:
+                        self.targets.add(a)
+                        taken += 1
+                    again = True
+                    break
+                a = e
+        return taken
+
     def table(self, a: int, count: int) -> list[int]:
         words = [self.mem(a + 2 * k) | self.mem(a + 2 * k + 1) << 8 for k in range(count)]
         self.tables[a] = words
@@ -328,13 +395,14 @@ class Dasm:
         def num(v: int) -> str:
             if v in labels:
                 return labels[v]
-            return names.ram.get(v) or f"0x{v:04X}"
+            return names.ram.get(v) or names.ext.get(v) or f"0x{v:04X}"
 
         out = [
             f"; {cpu} - first pass by tools/dasmz80.py",
             f"; No ROM bytes: every range not disassembled is .incbin of build/images/{img}.",
             "",
             *([f'        .include "{INCLUDE[cpu]}"'] if cpu in INCLUDE else []),
+            *([f'        .include "{EXTRA_INCLUDE[cpu]}"'] if cpu in EXTRA_INCLUDE else []),
             "        .section .text",
             "",
         ]
@@ -354,11 +422,15 @@ class Dasm:
             if i is not None:
                 text = i.text
                 if i.target is not None:
-                    text = text.replace("{T}", labels.get(i.target, f"0x{i.target:04X}"))
+                    text = text.replace("{T}", labels.get(i.target) or names.ext.get(i.target) or f"0x{i.target:04X}")
                 if i.value is not None:
                     text = text.replace("{N}", num(i.value))
                 mnem, _, ops = text.partition(" ")
-                if i.exact:
+                # a target inside another instruction has no label: keep the bytes, read in a comment
+                if i.target is not None and i.target not in labels and i.flow != "call"                         and text.split()[0] in ("jr", "djnz"):
+                    out.append(f'        .incbin "{img}", 0x{a - self.base:04X}, {i.n}'
+                               f"{'':<8}; {text} (target is inside an instruction)")
+                elif i.exact:
                     out.append(f"        {mnem:<7} {ops}".rstrip())
                 else:
                     out.append(f'        .incbin "{img}", 0x{a - self.base:04X}, {i.n}'
@@ -402,6 +474,8 @@ def main() -> int:
                     help="extra code entry point (hex)")
     ap.add_argument("--table", action="append", default=[],
                     help="jump table ADDR:COUNT (hex address, decimal count)")
+    ap.add_argument("--probe", action="store_true",
+                    help="also trace untraced gaps that decode cleanly to a RET/JP/JR")
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
     img, base, end, _l, _i = IMAGES[args.cpu]
@@ -428,6 +502,8 @@ def main() -> int:
     d.trace([a for a in entries if a not in data_names])
     # traced starts are entry points but get no label of their own
     d.trace([a for a in traced_starts(args.cpu) if a not in data_names], label=False)
+    if args.probe:
+        print(f"probe: {d.probe()} gaps taken", file=sys.stderr)
     out = args.out or ROOT / "disasm" / f"{args.cpu}.s"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(d.source(args.cpu, names), encoding="utf-8", newline="\n")

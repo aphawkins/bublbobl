@@ -20,6 +20,10 @@ SHARED_RAM    = { addr = 0xE000, size = 0x1800, note = "work RAM shared with sub
 PALETTE_RAM   = { addr = 0xF800, size = 0x0200, note = "256 x RGBx_444 big-endian" }
 MCU_RAM       = { addr = 0xFC00, size = 0x0400, note = "RAM shared with MCU, names in [shared.mcu]" }
 OBJ_SHADOW    = { addr = 0xE1CD, size = 0x0168, note = "objects 0-89 as built this frame; OBJ_COPY copies it to OBJ_RAM at the next IRQ" }
+SCHED_FREE    = { addr = 0xE194, note = "1 when the scheduler is not running; 0 inside it, when an IRQ only runs FRAME_TICK on the stack at E1C5" }
+RAND_STATE    = { addr = 0xE37F, size = 2, note = "16-bit random state: RAND_INC, RAND_DEC and RAND_MIX" }
+SOUND_QUEUE   = { addr = 0xE381, size = 0x10, note = "sound commands waiting for SOUND_QUEUE_POP" }
+SOUND_QUEUE_LEN = { addr = 0xE391, note = "commands in SOUND_QUEUE" }
 FB40_COPY     = { addr = 0xE1CB, note = "last value written to FB40" }
 BANK_SAVED    = { addr = 0xE1CC, note = "bank bits before BANK_SELECT; BANK_RESTORE puts them back" }
 ROUND_RECORD  = { addr = 0xE598, note = "0x2B bytes: the round's record from bank1:ROUND_RECORDS, shifted by DIFFICULTY and SUPER_MODE; fields in notes/levels.md" }
@@ -128,8 +132,96 @@ TAMPER_CHECK   = { addr = 0x333F, note = "low byte of the IM 2 vector entry at 0
 SWB7_SCORE_A   = { addr = 0x0F26, note = "F7FE/F7FF score output mystery" }
 SWB7_SCORE_B   = { addr = 0x0F74 }
 NAME_TABLE_LD  = { addr = 0x375A }
+TASK_KILL = { addr = 0x0008, note = "RST 08: task A stops (its timer E000+A = 0)" }
+TASK_START = { addr = 0x0010, note = "RST 10: task A runs at the next scheduler pass (timer = 1)" }
+TASK_SLEEP = { addr = 0x0018, note = "RST 18: the running task saves its registers and sleeps A frames (0 = until started)" }
+TASK_YIELD = { addr = 0x0020, note = "RST 20: as TASK_SLEEP with A = 1" }
+TASKS_CLEAR = { addr = 0x0028, note = "RST 28: stops all 6 tasks (E000-E005 = 0)" }
+TASK_SPAWN = { addr = 0x0030, note = "RST 30: starts task A with a new stack in E020+, entered at word A of the table at 0B22" }
+SCHEDULER = { addr = 0x005E, note = "each frame: counts down the 6 task timers E000-E005; a task reaching 0 is resumed from its saved SP (E006 + 2 x task)" }
+SCHED_NEXT = { addr = 0x0086, note = "next task slot; returns after slot 5" }
+CLEAR_B = { addr = 0x008D, note = "B bytes at HL = 0" }
+TASK_SWITCH = { addr = 0x0093, note = "saves the registers on the task's stack, stores SP in E006+2n and goes back to the scheduler's stack" }
+WORK_RAM_FAIL = { addr = 0x01EF, note = "work RAM test failed: WORK RAM ERROR" }
+HALT_FAIL = { addr = 0x020C, note = "video off, RUN_KEY = 0, then spins forever" }
+COMMON_RAM_FAIL = { addr = 0x0218, note = "MCU shared RAM test failed: COMMON RAM ERROR" }
+SET_E1D0_10 = { addr = 0x02AC, note = "first byte of 16 4-byte records at E1D0 = 10" }
+SET_E1D0_11 = { addr = 0x02BA, note = "first byte of 16 4-byte records at E1D0 = 11" }
+SET_E1D0_19 = { addr = 0x02C8, note = "first byte of 16 4-byte records at E1D0 = 19" }
+SET_E1D0_1A = { addr = 0x02D6, note = "first byte of 16 4-byte records at E1D0 = 1A" }
+SET_E2F8_10 = { addr = 0x02E4, note = "first byte of 16 4-byte records at E2F8 = 10" }
+SET_E2D8_11 = { addr = 0x02F2, note = "first byte of 16 4-byte records at E2D8 = 11" }
+SET_E2F8_1A = { addr = 0x0300, note = "first byte of 16 4-byte records at E2F8 = 1A" }
+SET_E2F8_1B = { addr = 0x030E, note = "first byte of 16 4-byte records at E2F8 = 1B" }
+SET_E1D2_SEQ = { addr = 0x031C, note = "E1CE = 9A; first byte of 16 4-byte records from E1D2 = DB, DC, ..." }
+SET_E2F5_RECS = { addr = 0x0330, note = "clears E2D5, then 16 records (0, word from 0352 + 2n, 0) at E2F5" }
+SET_E2D5_RECS = { addr = 0x0372, note = "clears E2F5, then 16 records (0, word from 0394 + 2n, 0) at E2D5" }
+ADD_DE_A = { addr = 0x0D84, note = "DE += A" }
+ADD_HL_A = { addr = 0x0D89, note = "HL += A" }
+CLEAR_OBJ_TILES = { addr = 0x03B4, note = "OBJ_TILES = 0 (0x1CFF bytes)" }
+CLEAR_OBJ_TILES_LOW = { addr = 0x03C2, note = "C000-CBFF = 0" }
+CLEAR_ROWS_A = { addr = 0x03CB, note = "28 tile rows (32 tiles across, 0x40 apart) from CD08 = 0" }
+CLEAR_ROWS_B = { addr = 0x03D0, note = "as CLEAR_ROWS_A from D508" }
+CLEAR_ROWS_C = { addr = 0x03E1, note = "25 x 28 tiles from D588 = 0" }
+CLEAR_TILE_ROW = { addr = 0x03FD, note = "32 tiles across from HL (0x40 apart, 2 bytes each) = 0" }
+CLEAR_E20D = { addr = 0x040C, note = "E20D-E2F4 = 0" }
+CLEAR_OBJ_TILES_ALL = { addr = 0x0415, note = "OBJ_TILES, 0xD00 bytes = 0" }
+CLEAR_OBJ_SHADOW = { addr = 0x041E, note = "OBJ_SHADOW = 0" }
+VIDEO_ON = { addr = 0x0427, note = "FB40 b6 set" }
+WRITE_BANK_CTRL = { addr = 0x042C, note = "FB40_COPY (HL) -> BANK_CTRL" }
+VIDEO_OFF = { addr = 0x0431, note = "FB40 b6 clear" }
+SET_FLIP = { addr = 0x0438, note = "FB40 b7 (flip) from DSW0 b1: set when the bit is 0" }
+FLIP_ON = { addr = 0x0446, note = "FB40 b7 set" }
+FRAME_TICK = { addr = 0x04BE, note = "per-frame housekeeping: three IRQ jobs, CLOCK_TICK, SUB_CPU_WATCH, MAIN_FRAME + 1" }
+TEST_IRQ = { addr = 0x04D8, note = "DSW0 b0 or b2 clear (test switch): colour 0 shows one input byte (IN0_COPY + DSW1 & 7); no game" }
+CLOCK_TICK = { addr = 0x0504, note = "E335-E337 count frames, seconds, minutes (each wraps at 0x3C)" }
+CLOCK_RESET = { addr = 0x0514, note = "E335-E337 = 0" }
+SUB_CPU_WATCH = { addr = 0x0524, note = "SUB_FRAMES unchanged for 0xB4 frames: RST 0 (the sub CPU has stopped)" }
+COIN_SCAN = { addr = 0x0BE4, note = "each frame: COIN_SOUND, then edge-detects IN0_COPY and the coin switches (E35E-E372, E367 credit count) into credits" }
+COIN_SOUND = { addr = 0x0C6D, note = "if E367 (credits) is nonzero and E368 is idle: E367 - 1, SOUND_CMD = 34, then waits 0x2D frames (E369) before the next" }
+TILT_RESET = { addr = 0x0CAC, note = "IN0_COPY b0 clear (tilt): clears the screen, prints TILT, waits, then RST 0" }
+ZERO_BC = { addr = 0x0D50, note = "BC bytes at HL = 0" }
+RAND_MIX = { addr = 0x0E5E, note = "scrambles the 16-bit RAND_STATE (shift left, feedback from bits 15 and 4)" }
+RAND_INC = { addr = 0x0E79, note = "RAND_STATE low byte + 1 (called once in each IRQ)" }
+RAND_DEC = { addr = 0x0E7E, note = "RAND_STATE high byte - 1, then RAND_MIX (called each frame)" }
+PRINT_TEXT = { addr = 0x0E9A, note = "HL = length-prefixed string, DE = first tile, C = attribute: tiles 0x40 apart (one column right each)" }
+SWB7_OUT = { addr = 0x0EE0, note = "A bit-reversed to F7FF (F7FE = A) unless DSW1 b6; waits for F7FF to change: the SWB#7 output mystery" }
+SOUND_QUEUE_POP = { addr = 0x136C, note = "each IRQ: if SOUND_QUEUE_LEN, sends SOUND_QUEUE[0] to SOUND_CMD and shifts the 16-byte queue down" }
+SOUND_PUSH = { addr = 0x1350, note = "C = sound command: appended to SOUND_QUEUE (up to 15, else dropped); skipped in the attract loop when DSW0 b3 is clear" }
+ROUND_TASK = { addr = 0x0538, note = "task 2: LOAD_ROUND_REC, clears E33B.., starts task 3 (not on the last round), then runs the round frame by frame until its end" }
+ATTRACT_TASK = { addr = 0x1D17, note = "task 0 (started at 01D7): ATTRACT = 1, clears the screen, starts task 1; after a wait, resets the tasks and runs the attract loop" }
+TITLE_TASK = { addr = 0x2AF8, note = "task 1: ROUND_MAIN = 0x64 (the title/attract layout), DIFFICULTY 7; the title screen" }
+OBJECTS_TASK = { addr = 0x3DF0, note = "task 3: each frame calls the bank-2 per-object updates (A59B, A2FC, 936A ...), then starts task 4" }
+BUBBLES_TASK = { addr = 0x5B3C, note = "task 5: clears E744.., then each frame the bubble routines (5046, 5C2B, 6EF8); the pop-flag state is POP_FLAG" }
+ROUND_VARS_CLEAR = { addr = 0x063E, note = "clears the per-round flags (E6FF, E737, E341, E342, F536, SUB_CHECKS ...) and the words F9DE, F9FE" }
+ROUND_END_CLEAR = { addr = 0x0673, note = "round over: E2D5 cleared if E34B is negative, E344-E34E (11 bytes) cleared" }
+ROUND_END_PICK = { addr = 0x068C, note = "E744 = which end-of-round item/text: from F464, F46B, the ROUND_MAIN table at 0710, or the players' E641/E646 against the table at 0706; FF = none" }
+LAST_ENEMY_HURRY = { addr = 0x0730, note = "ENEMY_TOTAL = 1 and HURRY not 1: HURRY = FF" }
+ROUND_CLOCK_TICK = { addr = 0x0891, note = "unless E341: F455/F456 count frames and seconds; E344-E346 count frames, ROUND_SECONDS and minutes" }
+READ_INPUTS = { addr = 0x08B3, note = "P1/P2 inputs for the game into E33F/E340: the live ports, or DEMO_INPUTS in the attract loop" }
+COPY_INPUTS = { addr = 0x08B9, note = "IN1_COPY and IN2_COPY -> E33F, E340" }
+DEMO_INPUTS = { addr = 0x08C0, note = "attract demo: (count, input) byte pairs from bank 1 at E353 (P1) and E355 (P2) -> E33F, E340" }
+DEMO_RECORD = { addr = 0x0909, note = "never entered (08C0 always branches past it): records IN1/IN2 as (count, input) pairs through E353/E355 in bank 1" }
+ROUND_READY_TEXT = { addr = 0x0967, note = "E33B state: prints ROUND n and READY ! at the start of a round (E33C counts 0x78 frames), then blanks them" }
+TASKS_RESTART = { addr = 0x09EC, note = "E34F nonzero in a game: stops tasks 3-5, clears the screen and starts task 0 again" }
+ROUND_SETUP = { addr = 0x0A12, note = "draws the round (L_0A97, L_18EE, L_0AA4); in a game it scrolls the objects off and on (E351 = FF) with VIDEO on" }
+TILES_SAVE = { addr = 0x0A97, note = "E352 = 1; copies 4 tile bytes x 32 rows from CD04 to D504" }
+TILES_RESTORE = { addr = 0x0AA4, note = "E352 = 0; copies D504 back to CD04, then clears the rows D504, D506, CD00 and CD02" }
+TILE_COPY = { addr = 0x0ACA, note = "32 rows of 4 bytes from HL to DE, rows 0x40 apart" }
+ROM_SUM_STEP_A = { addr = 0x0AE3, note = "each call adds one byte of every 4th (0004, 0008 ... 0C04) into E35C; when done compares with E35D" }
+GRID_DRAW_START = { addr = 0x18E7, note = "GRID_DRAW_ROW = 0, then LOAD_GRID_EDGES" }
+GRID_DRAW_NEXT = { addr = 0x18EE, note = "draws ROUND_GRID rows until GRID_DRAW_ROW = 0x20 (one row if E5C3 is set): clear the row's tiles, DRAW_GRID_ROW, L_6065, SHADE_GRID_ROW, L_1A93; after row 31, SIDE_WALL_ROW for rows 30 and 31" }
+ROM_SUM_STEP_B = { addr = 0x6065, note = "as ROM_SUM_STEP_A, one byte of every 2nd from 2642 to 731B into EB2F, then compared with EB30" }
+ROUND_NUMBER_DRAW = { addr = 0x30DF, note = "tiles at D508/D548: the round number ROUND_MAIN + 1 (tens, units); nothing in the attract loop; round 100 has its own tiles (8A)" }
 
 [main.data]
+END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }
+HURRY_RECS = { addr = 0x0847, size = 16, note = "4 x (0, X, Y, tile): the HURRY UP sprites copied to E2D5; a RET Z tamper compare follows" }
+HURRY_TILES = { addr = 0x0857, size = 8, note = "tile lists for the two HURRY UP frames (0857, 085B)" }
+ROUND_TEXT = { addr = 0x09D2, size = 26, note = "length-prefixed ROUND, READY ! and a blank (0B spaces)" }
+TASK_ENTRIES = { addr = 0x0B22, size = 12, note = "6 words: the entry of each task for TASK_SPAWN: ATTRACT_TASK, TITLE_TASK, ROUND_TASK, OBJECTS_TASK, bank0:85A9 (a bank 0 task), BUBBLES_TASK" }
+TILT_TEXT = { addr = 0x0D0F, size = 5, note = "length-prefixed TILT" }
+TIME_ERROR_TEXT = { addr = 0x04A2, size = 0x0B, note = "length-prefixed TIME ERROR, printed when the interrupted PC was C000 or above" }
 IRQ_VECTOR_ENTRY = { addr = 0x0B2E, size = 2, note = "word 044D: the IM 2 table entry (I = 0B, FC00 = 2E); checked at 333F and bank0:950A" }
 SPEED_PATTERNS = { addr = 0x11CE, note = "word table of step patterns, picked by SPEED2_SEL for bubbles and (IX+0C) for enemies" }
 DEAD_COPY      = { addr = 0x334A, note = "ASCII that executes as opcodes" }
@@ -191,6 +283,23 @@ BANK2_CHECK   = { addr = 0x85AE, note = "one step a call of a sum over bank2 (F4
 SPECIAL_PICK  = { addr = 0x85EB, note = "at round start (3E0E): SPECIAL_KIND from SKIP_KINDS, else the first SPECIAL_RULES entry whose counter has reached its threshold (clearing it); none in the attract demo or round 100" }
 SPECIAL_RUN   = { addr = 0x8686, note = "the special item: appears at record bytes 10-11 when SPECIAL_TIMER runs out, unless NO_SPECIAL or no enemies" }
 SPECIAL_TAKE  = { addr = 0x873E, note = "a player touches the special item: its effect through the table at 8AFF" }
+REC_F46B_INIT = { addr = 0x8BA7, note = "round start, called by OBJECTS_TASK: clears the state record at F46B" }
+REC_F46B_RUN = { addr = 0x8BB0, note = "each frame: steps the record at F46B" }
+REC_F513_INIT = { addr = 0x90DD, note = "round start, called by OBJECTS_TASK: clears the state record at F513" }
+REC_F519_INIT = { addr = 0x92B6, note = "round start, called by OBJECTS_TASK: clears the state record at F519" }
+REC_F521_INIT = { addr = 0x936A, note = "round start, called by OBJECTS_TASK: clears the state record at F521" }
+REC_F52B_INIT = { addr = 0x96E6, note = "round start, called by OBJECTS_TASK: clears the state record at F52B" }
+REC_F52B_RUN = { addr = 0x96EF, note = "each frame: steps the record at F52B" }
+REC_F531_INIT = { addr = 0x99E2, note = "round start, called by OBJECTS_TASK: clears the state record at F531" }
+REC_F531_RUN = { addr = 0x99EB, note = "each frame: steps the record at F531" }
+REC_F54B_INIT = { addr = 0x9F76, note = "round start, called by OBJECTS_TASK: clears the state record at F54B" }
+REC_F54B_RUN = { addr = 0x9F7F, note = "each frame: steps the record at F54B" }
+REC_F590_INIT = { addr = 0xA2FC, note = "round start, called by OBJECTS_TASK: clears the state record at F590" }
+REC_F59E_INIT = { addr = 0xA59B, note = "round start, called by OBJECTS_TASK: clears the state record at F59E" }
+REC_F59E_RUN = { addr = 0xA5A4, note = "each frame: steps the record at F59E" }
+REC_F5AC_INIT = { addr = 0xA820, note = "round start, called by OBJECTS_TASK: clears the state record at F5AC" }
+REC_F60F_INIT = { addr = 0xAC80, note = "round start, called by OBJECTS_TASK: clears the state record at F60F" }
+REC_F624_INIT = { addr = 0xB9C4, note = "round start, called by OBJECTS_TASK: clears the state record at F624" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

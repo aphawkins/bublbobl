@@ -439,8 +439,79 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `--table 37FD:10 --table 50F6:3 --table 54BC:3 --table 61F4:7 --table 6E50:5 --table 7B8C:4`.
   That reaches 0x525 more code bytes (0x68B3 in all, 12346 instructions) and still builds
   byte-exact. Tables in the banks (`80C9`, `8160`, `8009`, `8032`, `95AA`) wait for the banks.
-- Next: name the routines and annotate `src/main/fixed.s` by hand (do not rerun the tool
-  over it), then do the four banks.
+- Banks, first pass (2026-10-17): `dasmz80.py` now takes `main_bank0`..`main_bank3`. Bank 0
+  traces 0x2848 code bytes (4515 instructions), bank 2 0x1923 (3028) and bank 3 0x42 (34);
+  bank 1 has none (all graphics/level data) and stays one `.incbin`. Banks 0, 2 and 3 are the
+  tool's output and the set still builds byte-exact. The first run read 743 more instructions
+  in bank 2, but they were data: five `jr`/`djnz` aimed into the middle of another
+  instruction. Two ranges are now marked data in the classification map (`9E94–9F75`, the
+  3-byte records and pointers that follow the tamper compare's `RET Z`, and `B339–B4B4`, the
+  "insert coin to continue" text and 5-byte records). Expect the same in bank 0 and the fixed
+  ROM: a conditional `RET` or a path that runs on into data is the sign. Labels were `L_xxxx`
+  at this point; names came later (below).
+  The same check found two in the fixed ROM, now manual data in the map: `0847–085E` (after
+  the `RET Z` of a second tamper compare, of (0004) with `START`) and `5406–5415` (8 words
+  after the `RST 18` that ends the routine at `53CF`, passed as `--table 5406:8`). The fixed
+  ROM is now 12310 instructions, 0x688D code bytes. Other spots are still likely: look for
+  decoded code after an unconditional end that is not a `RET`/`JP`.
+- Annotation started (2026-10-17): names live in `notes/symbols.toml` and are renamed in
+  `src/main/fixed.s` by script. `0000–03B3` is done: the six-task coroutine scheduler
+  (`SCHEDULER`, RSTs `TASK_KILL`/`TASK_START`/`TASK_SLEEP`/`TASK_YIELD`/`TASKS_CLEAR`/
+  `TASK_SPAWN`, `TASK_SWITCH`), the start-up RAM-test failures and small record fillers.
+  `03B4–0535` is done too: the screen/RAM clearers, `VIDEO_ON`/`VIDEO_OFF`/`SET_FLIP`, the IRQ
+  handler (`SCHED_FREE` decides between the full path and `FRAME_TICK` alone on a side stack;
+  `TEST_IRQ` in test mode; `TIME ERROR` if the interrupted PC is in RAM), `CLOCK_TICK` and
+  `SUB_CPU_WATCH`.
+  Also named: the helpers `ZERO_BC`, `PRINT_TEXT`, `SOUND_PUSH`/`SOUND_QUEUE_POP` (a 15-entry
+  sound command queue), the random state (`RAND_INC`/`RAND_DEC`/`RAND_MIX`), `TILT_RESET`,
+  `COIN_SCAN`/`COIN_SOUND` and `SWB7_OUT`. The tool prints a constant such as 0x10 as `TASK_START`
+  when a label has that address; those `ld rr,imm` operands were put back to numbers.
+- The six tasks (2026-10-17): `TASK_ENTRIES` (`0B22`) holds their entries: `ATTRACT_TASK`,
+  `TITLE_TASK`, `ROUND_TASK`, `OBJECTS_TASK`, bank 0 `85A9`, `BUBBLES_TASK`. `ROUND_TASK` and
+  the others were not reached before. `tools/redo_fixed.sh` regenerates `src/main/fixed.s`
+  with every `--table`/`--entry` so far; because names and notes come from `notes/symbols.toml`
+  (labels get their note as a comment), annotating means editing that file and rerunning the
+  script, not editing the source. Add new tables and entries to the script.
+- `ROUND_TASK`'s helpers (2026-10-17): the round variables and clock, `HURRY`/ghost checks,
+  the input path (`READ_INPUTS`; in the attract loop `DEMO_INPUTS` plays (count, input) byte
+  pairs from bank 1, and `DEMO_RECORD`, which would record them, can't be reached), the
+  READY text and `TASKS_RESTART`.
+- Round drawing (2026-10-17): `GRID_DRAW_START`/`GRID_DRAW_NEXT` draw the grid a row at a time,
+  `TILES_SAVE`/`TILES_RESTORE` move 4 tile columns, `ROUND_NUMBER_DRAW` the round number.
+  `ROM_SUM_STEP_A` (`0AE3`) and `ROM_SUM_STEP_B` (`6065`) are ROM checks that sum one byte a
+  call: A every 4th byte of `0004–0C07`, B every 2nd of `2642–731B`.
+- Banks use the same scheme (2026-10-17): `dasmz80.py main_bankN` takes its labels from
+  `[bankN.code]`/`[bankN.data]` and the fixed ROM's names from `build/include/fixed.inc`
+  (`tools/symbols.py` writes it), so a bank's calls into the fixed ROM read `ZERO_BC`, `GRID_CELL`
+  and so on. `tools/redo_banks.sh` regenerates banks 0, 2 and 3. `symbols.py` now stops on a
+  name used twice (my `ROUND_CLOCK` label hid the RAM byte of that name).
+- Gap probe (2026-10-17): `dasmz80.py --probe` also traces an untraced gap that decodes
+  cleanly from its first byte to a `RET`/`JP`/`JR` exactly at its end (4 instructions or more),
+  and drops it if anything then branches into the middle of an instruction. The page-2 calls in
+  `OBJECTS_TASK` land on small init routines, with the per-frame code in the gaps between them.
+  Result: fixed ROM 12595 instructions (0x6AC2 bytes), bank 0 5156 (0x2DBD), bank 2 4784
+  (0x274E), bank 3 unchanged. All still byte-exact, and both scripts use `--probe`. These
+  regions are heuristic: code that MAME has not run. Check one against a MAME trace before
+  relying on it, and mark it data in the classification map if it is.
+- `OBJECTS_TASK` calls twelve page-2 entries (`8BA7`, `90DD`, `92B6`, `936A`, `96E6`, `99E2`,
+  `9F76`, `A2FC`, `A59B`, `A820`, `AC80`, `B9C4`, with `POINTS_PICK` and `SPECIAL_PICK`). Each
+  is a round-start clear of one state record in `F46B–F65F`; they are named `REC_<addr>_INIT`
+  (with `_RUN` where the per-frame code follows at a label) until the records' meaning is
+  known. `F59E` clears all bubbles and shows a growing sprite pattern in five stages; the
+  bubbles stop while `F59E`, `F595` or `F5B6` is nonzero.
+- Workflow now: `notes/symbols.toml` holds every name and note; `tools/redo_fixed.sh` and
+  `tools/redo_banks.sh` regenerate `src/main/fixed.s` and `bank0/2/3.s` (with `--probe`, the
+  tables and the entries so far) and `tools/build.py` must still report byte-exact. Do not
+  edit those sources by hand: a comment or name goes in `symbols.toml`, a new table or entry
+  goes in the script, a range that is data goes in `notes/classmap/<image>.toml`.
+- Next:
+  1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
+     the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
+  2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
+     `tools/trace.lua`, then rename them.
+  3. Check some `--probe` regions against a MAME trace.
+  4. Name the bank 0 and bank 2 routines (`[bank0.code]`, `[bank2.code]`), the enemy AI first.
+  5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---
 

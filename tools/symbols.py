@@ -22,6 +22,9 @@ SYMBOLS = ROOT / "notes" / "symbols.toml"
 INCLUDES = {
     "main": [("main.io", None), ("main.mem", None), ("shared.mcu", None)],
     # the sub CPU sees only the shared work RAM, at the main CPU's addresses
+    # the fixed ROM's names, for the bank sources that call into it
+    "fixed": [("main.code", lambda a: a if a < 0x8000 else None),
+              ("main.data", lambda a: a if a < 0x8000 else None)],
     "sub": [("main.mem", lambda a: a if 0xE000 <= a < 0xF800 else None)],
     "mcu": [("mcu.io", None), ("mcu.bus", None), ("mcu.ram", None),
             ("shared.mcu", lambda a: a & 0x0FFF)],  # the MCU bus sees FC00-FFFF at 0C00-0FFF
@@ -54,6 +57,13 @@ def render(data: dict, cpu: str) -> str:
 
 def write_includes(out: Path) -> list[Path]:
     data = tomllib.loads(SYMBOLS.read_text(encoding="utf-8"))
+    seen: dict[str, str] = {}  # a code label and a RAM name must not share a name
+    for cpu in ("main", "bank0", "bank1", "bank2", "bank3"):
+        for kind, names in data.get(cpu, {}).items():
+            for name in names:
+                if name in seen:
+                    raise SystemExit(f"{name} is in both [{seen[name]}] and [{cpu}.{kind}]")
+                seen[name] = f"{cpu}.{kind}"
     out.mkdir(parents=True, exist_ok=True)
     paths = []
     for cpu in INCLUDES:

@@ -672,3 +672,17 @@ end = 0xBFFF
 kind = "fill"
 source = "auto"
 note = "0x361 x FF"
+
+[[range]]
+start = 0x9E94
+end = 0x9F75
+kind = "data"
+source = "manual"
+note = "after the RET Z of the tamper compare (a mismatch falls in here): 3-byte records, small tables, word pointers"
+
+[[range]]
+start = 0xB339
+end = 0xB4B4
+kind = "data"
+source = "manual"
+note = "text (insert coin to continue, push start) then 5-byte records"

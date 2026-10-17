@@ -2037,3 +2037,17 @@ end = 0x7FFF
 kind = "code"
 source = "trace"
 note = "executed in MAME"
+
+[[range]]
+start = 0x0847
+end = 0x085E
+kind = "data"
+source = "manual"
+note = "after the RET Z of the tamper compare of (0004) with START: 4-byte records and a byte table"
+
+[[range]]
+start = 0x5406
+end = 0x5415
+kind = "data"
+source = "manual"
+note = "8 words (395E 3968 395F ...) after the RST 18 that ends the routine at 53CF"
