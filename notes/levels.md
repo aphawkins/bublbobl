@@ -40,8 +40,11 @@ Three pieces fill the grid at round start:
   sets `GRID_REQUEST` (`E397`) to 1 and waits. The sub CPU's `GRID_UNPACK` (sub `00A9`)
   reads 0x120 bytes at `ROUND_LAYOUTS` (sub `0CFC`) + round × 0x120. It treats them as a
   bit stream, 3 bits a cell, and writes each pair of cells as bits 6-4 and 2-0 of one byte.
-  Then it sets `GRID_REQUEST` to FF. The 100 layouts fill sub `0CFC–7D7B`. This is most of
-  what the sub CPU's ROM holds.
+  Then it sets `GRID_REQUEST` to FF. The 100 layouts fill sub `0CFC–7D7B`. Two more
+  follow: layout 100 (`ATTRACT_LAYOUT`, `7D7C`) is in `ROUND_GRID` in every attract and
+  title snapshot, where `ROUND_MAIN` is 0x64; layout 101 (`7E9C`) is in no trace or
+  snapshot. This is most of what the sub CPU's ROM holds. The rest of the sub CPU is the
+  hit tests (`notes/sub.md`).
 - **Rows 0–4 and 29–31 come from bank 1.** `ROUND_RECORD` byte 3 holds two pattern
   numbers. The high nibble picks a 0x50-byte top pattern (rows 0–4) and the low nibble a
   bottom one (rows 29–31), both through entries 0–15 of `GRID_EDGES` (`bank1:95AA`). The
@@ -163,7 +166,7 @@ thresholds, and the higher kind is tried first: `E5E3` gives kind 06 at 15, 07 a
 and 7 rounds.
 `E5E7` gives kinds 09–0D at 15–19. Counters confirmed so far: `E5F6` counts the special items
 taken (`8794`), `E5FE` the HURRY UPs (`0839`) and `E611` the times Skel-Monsta came (`0888`),
-which gives kind 30. Kind 2E sets `F44D` (`8AA3`), so both items come after 0xF0 frames. The
+which gives kind 30. `E5F4` counts the enemies killed by a bubble in state b5 (sub `0572`). Kind 2E sets `F44D` (`8AA3`), so both items come after 0xF0 frames. The
 rest of the counters are listed by address in `items.json`; what each counts is still open.
 
 `BANK2_CHECK` (`85AE`), called from kind 0's effect (`87B1`), `9104`, `A318` and `A978`, is
@@ -244,4 +247,5 @@ The round 1 preview matches MAME's screenshot of round 1.
   (`SPECIAL_EFFECTS`, `bank2:8AFF`) and name.
 - What `ORIGINAL_GAME` changes (read at `227C`), and what `F463` does.
 - What moves `DIFFICULTY` up and down.
+- Whether layout 101 (sub `7E9C`) is ever used.
 - Round 100's walls are drawn as usual, but the boss and the endings draw over them.

@@ -48,6 +48,20 @@ BANK2_SUM     = { addr = 0xF45D, note = "bank3:938A (FA), copied at 2529: the su
 SKIP_KINDS    = { addr = 0xE612, note = "set to 3 by special kind 2F (bank2:8AA9): the next 3 special items are kinds 0B, 0A, 09" }
 SPECIAL_STATE = { addr = 0xF45F, note = "as POINTS_STATE" }
 SPECIAL_TIMER = { addr = 0xF461, size = 2, note = "frames: 2D0 (F0 if F44D) until it appears, then 384 on show" }
+MAIN_FRAME    = { addr = 0xE338, note = "stepped by the main CPU's interrupt (04D3); the sub CPU's MAIN_WATCHDOG wrecks RAM if it stops for 0x3C frames" }
+P1_REC        = { addr = 0xE691, size = 0x32, note = "player 1: +0 b0 alive (the sub CPU writes 0x10 when it is hit), +1 Y, +2 X, +8 b0 facing, +9 player number; fields the sub CPU reads in src/sub/sub.s" }
+P2_REC        = { addr = 0xE6C3, size = 0x32, note = "player 2, as P1_REC" }
+BUBBLE_COUNT  = { addr = 0xE76B, note = "bubble slots in use (BUBBLE_SLOTS)" }
+BUBBLE_SLOTS  = { addr = 0xE76C, note = "0x28 bytes each: +0 state (b0-b7, main dispatch at 5C37), +1 Y, +2 X, +0F direction, +13/+14 pushes in Y/X, +1A hit flags from the sub CPU" }
+ENEMY_HITS    = { addr = 0xED21, size = 0x1C, note = "7 x 4 bytes, one per enemy: +0 b0 can be hit, b3 marked (+3 = 1 / FF by the player who touched it); the sub CPU writes 0x10 (killed, +3 = 6 or 8) or 2 (beaten by a player); +1 Y, +2 X" }
+SUB_CHECKS    = { addr = 0xF66B, note = "'I' (49): the sub CPU runs its hit tests. Set at 080D and 4E47, cleared at 0660 and 078D" }
+WATCH_LAST    = { addr = 0xF66C, note = "sub: MAIN_FRAME as last seen" }
+WATCH_COUNT   = { addr = 0xF66D, note = "sub: frames MAIN_FRAME has not changed" }
+SUB_FRAMES    = { addr = 0xF66E, note = "sub: frame counter" }
+POP_FLAG      = { addr = 0xF66F, note = "sub: 1 = a bubble popped this frame; F670-F672 its +1D, Y, X; POP_CHAIN pops its neighbours next frame" }
+POP_CHAIN_N   = { addr = 0xF673, note = "sub: enemy bubbles popped in this chain" }
+POP_DIRECTION = { addr = 0xF674, note = "sub: facing of the player who popped or pushed, for the chain" }
+POP_ENEMIES   = { addr = 0xF677, size = 4, note = "per player (2 bytes each): enemy bubbles popped, and a flag the sub CPU sets when the count is nonzero. Read by the main CPU at 4605 and 45FD, cleared at 5B8B" }
 GRID_REQUEST  = { addr = 0xE397, note = "LOAD_GRID_EDGES sets 1 and waits; the sub CPU's GRID_UNPACK fills ROUND_GRID rows 5-28 and sets FF" }
 ROUND_GRID    = { addr = 0xE398, size = 0x200, note = "32 x 32 cells of 8 x 8, 16 bytes a row, high nibble first: 0 = wall, 1-4 = open (air current?). Rows 0-4 and 29-31 from LOAD_GRID_EDGES, 5-28 from the sub CPU" }
 GRID_DRAW_ROW = { addr = 0xE5C4, note = "next ROUND_GRID row DRAW_GRID_ROW draws at round start; 0x20 when done" }
@@ -98,7 +112,6 @@ BUBBLE_SPEED   = { addr = 0x6144, note = "steps from the SPEED_PATTERNS row SPEE
 BUBBLE_DRIFT   = { addr = 0x6175, note = "one pixel by the bubble's cell (IX+0A): 0-1 up (Y+1), 2 right, 3 left, 4 down, 5-6 stay; re-reads the cell on an 8-pixel boundary (61E4)" }
 BUBBLE_TIMER   = { addr = 0x60B6, note = "(IX+0C) frames to 3C, then (IX+0D) seconds down; at FF the bubble pops or its enemy escapes" }
 SPAWN_BUBBLE   = { addr = 0x6D9B, note = "every E75C frames, under 16 bubbles: a bubble from the floor or ceiling gaps (record byte 3; none when it is AA), type from SPECIAL_LIST" }
-SPEED_PATTERNS = { addr = 0x11CE, note = "word table of step patterns, picked by SPEED2_SEL for bubbles and (IX+0C) for enemies" }
 LOAD_GRID_EDGES = { addr = 0x1700, note = "asks the sub CPU for ROUND_GRID rows 5-28 (GRID_REQUEST), then copies rows 0-4 and 29-31 from bank1:GRID_EDGES by ROUND_RECORD byte 3's nibbles" }
 GRID_WALL_TILE = { addr = 0x1929, note = "HL = 0x204 + 5 x ROUND_MAIN with colour 14/15: the side-wall block; +4 is the wall tile" }
 DRAW_GRID_ROW  = { addr = 0x1958, note = "ROUND_GRID row GRID_DRAW_ROW -> tile columns CD00-D4FF: wall tile where a cell is 0" }
@@ -112,15 +125,16 @@ RED_RAMP_STEP  = { addr = 0x2873, note = "steps palette 1 colour 1 through RED_R
 LOAD_PAL_7_8   = { addr = 0x3C60, note = "PALETTES_7_8 -> F8E0" }
 ENEMY3_SHOTS_INIT = { addr = 0x79E9, note = "clears ENEMY3_SHOTS (8 x 0x12), then sets them up if ENEMY_COUNTS group 3 is nonzero; called from bank0:ROUND_ENEMIES" }
 TAMPER_CHECK   = { addr = 0x333F, note = "low byte of the IM 2 vector entry at 0B2E must be 4D; else runs 'dead copy' at 334A" }
-DEAD_COPY      = { addr = 0x334A, note = "ASCII that executes as opcodes" }
 SWB7_SCORE_A   = { addr = 0x0F26, note = "F7FE/F7FF score output mystery" }
 SWB7_SCORE_B   = { addr = 0x0F74 }
 NAME_TABLE_LD  = { addr = 0x375A }
-NAME_TABLE     = { addr = 0x37DF, note = "3-letter names (default hi-score initials?)" }
-ENTRY_ALPHABET = { addr = 0x38D4, note = "name-entry alphabet" }
 
 [main.data]
 IRQ_VECTOR_ENTRY = { addr = 0x0B2E, size = 2, note = "word 044D: the IM 2 table entry (I = 0B, FC00 = 2E); checked at 333F and bank0:950A" }
+SPEED_PATTERNS = { addr = 0x11CE, note = "word table of step patterns, picked by SPEED2_SEL for bubbles and (IX+0C) for enemies" }
+DEAD_COPY      = { addr = 0x334A, note = "ASCII that executes as opcodes" }
+NAME_TABLE     = { addr = 0x37DF, note = "3-letter names (default hi-score initials?)" }
+ENTRY_ALPHABET = { addr = 0x38D4, note = "name-entry alphabet" }
 
 BANK_PAGES       = { addr = 0x0293, size = 8, note = "FB40 bank bits for pages 0-3: 04-07 if DSW-B:8 (ROM type) is off, else 04 05 00 01 (pages 2-3 in IC53)" }
 CYCLE_1_14       = { addr = 0x1BAE, size = 12, note = "6 colours" }
@@ -195,10 +209,26 @@ VERSION_STAMP = { addr = 0xBF4C, note = "file 0xFF4C: 'VER 0.1 4.SEP,1986 SUMMER
 SHARED_RAM = { addr = 0xE000, size = 0x1800 }
 
 [sub.code]
+RESET             = { addr = 0x0000 }
+VBLANK            = { addr = 0x0068, note = "IM 1, once a frame: GRID_UNPACK, GHOST_HITS, then the hit tests while SUB_CHECKS = 'I'" }
+ROM_SUM_CHECK     = { addr = 0x017B, note = "byte sum of 0000-7FFF must be 0, else hang before EI" }
+MAIN_WATCHDOG     = { addr = 0x0190, note = "MAIN_FRAME still for 0x3C frames: ~E800-EFFF over E000-E7FF, then hang" }
+PLAYER_ENEMY_HITS = { addr = 0x01B9 }
+FIND_ENEMY        = { addr = 0x02B4, note = "first ENEMY_HITS record with b0 within C of Y = E, X = D" }
+GHOST_HITS        = { addr = 0x02E0 }
+PLAYER_NEAR       = { addr = 0x036B, note = "player within E of the object at IX: A = 0 / 1" }
+BUBBLE_HITS       = { addr = 0x03BB }
+PLAYER_BUBBLE     = { addr = 0x0664, note = "a player pushes, pops or bounces on a bubble" }
+BUBBLE_PUSH       = { addr = 0x0772, note = "a bubble pushes those ahead of it, through PUSH_TABLE" }
+POP_CHAIN         = { addr = 0x08F0 }
+BOSS_HITS         = { addr = 0x0CCE }
 GRID_UNPACK = { addr = 0x00A9, note = "when GRID_REQUEST = 1: ROUND_LAYOUTS[ROUND_MAIN] -> ROUND_GRID rows 5-28 (E3E8), 6 bits a byte; then GRID_REQUEST = FF" }
 
 [sub.data]
+PUSH_TABLE    = { addr = 0x0785, size = 0x20, note = "16 words by bubble direction (+0F): PUSH_UP, PUSH_RIGHT, PUSH_LEFT, PUSH_DOWN, PUSH_NONE" }
 ROUND_LAYOUTS = { addr = 0x0CFC, size = 0x7080, note = "100 x 0x120 bytes: a bit stream of 0x300 3-bit cells, ROUND_GRID rows 5-28" }
+ATTRACT_LAYOUT = { addr = 0x7D7C, size = 0x120, note = "layout 100: ROUND_MAIN = 0x64, the title and attract screens" }
+LAYOUT_101    = { addr = 0x7E9C, size = 0x120, note = "layout 101: never seen in a trace or snapshot" }
 
 [sound.io]
 RAM        = { addr = 0x8000, size = 0x1000 }

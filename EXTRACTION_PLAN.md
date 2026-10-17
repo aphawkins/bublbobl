@@ -412,6 +412,28 @@ Started (2026-10-17). Steps 1–4 are done for the walls:
 
 Deliverable: `src\main\*.s`, `src\sub\*.s`, `notes\routines.md`, byte-exact rebuild.
 
+Started (2026-10-17) with the sub CPU, which is now done:
+- `tools/dasmz80.py` is the Z80 counterpart of `dasm6801.py`. It traces from the vectors,
+  the named routines, the traced ranges in the classification map, `--entry` addresses and
+  `--table` jump tables, and writes GNU `as` source with `.incbin` for the rest. An
+  encoding `as` would not reproduce (ED duplicates, undocumented DDCB forms) stays
+  `.incbin` with the reading in a comment. It runs on `sub`, `sound` and `main_fixed`.
+- `src\sub\sub.s` assembles byte-exact. All 0xC85 bytes of code in `0000–0CFB` are
+  instructions, with each routine named and commented; only the RST/NMI gaps, one byte at
+  `018F`, the jump table and the round layouts are `.incbin`. `tools/symbols.py` now
+  writes `sub.inc` (the `[main.mem]` names in `E000–F7FF`).
+- Step 4 is answered. The sub CPU unpacks the round walls and does every hit test (players,
+  enemies, enemy shots, bubbles, effects, the boss) and the bubble pushing and chain pops.
+  It writes flags that the main CPU acts on. It also has a ROM sum that hangs it, and a
+  watchdog that wrecks the work RAM if the main CPU's frame counter stops. Notes:
+  `notes\sub.md`.
+- The sub ROM holds two more layouts after the 100 rounds: the attract screen's
+  (`ROUND_MAIN` 0x64) and one never seen in use.
+- Next: the main fixed ROM, region by region. A first pass (`dasmz80.py main_fixed`) traces
+  0x6546 code bytes. Its jump tables have to be listed first: `0DA7` reads word A of the
+  table at HL, and callers such as `50EE` jump through it, so the tool can't see those
+  targets. Then it can go into `src\main\fixed.s`.
+
 ---
 
 ## 10. Phase 6 — MCU (6801U4)
@@ -590,7 +612,7 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 4. Phase 1 traces + RAM map — unlocks everything else.
 5. Phase 2.2–2.4 palettes, offline renderer and sprite frames (all done).
 6. Phase 4 levels (done; the item counters' meanings move to Phase 5).
-7. Phase 5 main/sub disassembly. Replace `.incbin` ranges with code region by region, and keep
+7. Phase 5 main/sub disassembly (sub done). Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.
 8. Phase 7 sound.
 9. Phase 8 relocation test.
