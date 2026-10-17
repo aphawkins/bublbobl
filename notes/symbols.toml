@@ -33,7 +33,8 @@ ENEMY0B_AUX   = { addr = 0xECAA, note = "group 0 when ENEMY_SWAP b0, 0x11 bytes 
 ENEMY1_SLOTS  = { addr = 0xEDF8, note = "group 1, 0x19 bytes each (drew Banebou in the traced rounds)" }
 ENEMY2_SLOTS  = { addr = 0xEEAC, note = "group 2, 0x23 bytes each (drew Mighta in the traced rounds)" }
 ENEMY2_SHOTS  = { addr = 0xEC29, note = "group 2's thrown objects (Mighta's rock)" }
-ENEMY2B_SLOTS = { addr = 0xF1E7, note = "group 2 when ENEMY_SWAP b4, 0x19 bytes each" }
+ENEMY2B_SLOTS = { addr = 0xF1E7, note = "group 2 when ENEMY_SWAP b4, 0x19 bytes each (drew Drunk in the traced rounds)" }
+ENEMY2B_SHOTS = { addr = 0xF3CE, size = 0x77, note = "group 2's swapped kind's shots, 7 x 0x11 (drew Drunk's bottles)" }
 ENEMY3_SLOTS  = { addr = 0xEFA1, note = "group 3, 0x1B bytes each (drew Hidegons in the traced rounds)" }
 ENEMY3_SHOTS  = { addr = 0xEB99, size = 0x90, note = "group 3's shots, 0x12 bytes each, set up by ENEMY3_SHOTS_INIT (drew Hidegons' fireballs)" }
 ENEMY4_SLOTS  = { addr = 0xF05F, note = "group 4, 0x19 bytes each (drew Pulpul in the traced rounds)" }
@@ -93,6 +94,7 @@ ENEMY1_UPDATE = { addr = 0x8F4E }
 ENEMY2_INIT   = { addr = 0x927D, note = "returns if ENEMY_SWAP b4" }
 ENEMY2_UPDATE = { addr = 0x92F1 }
 ENEMY2B_INIT  = { addr = 0xA59D, note = "returns unless ENEMY_SWAP b4" }
+ENEMY2B_SHOTS_INIT = { addr = 0xBBCF, note = "clears ENEMY2B_SHOTS; sets them up only if group 2 is nonzero and ENEMY_SWAP b4" }
 ENEMY3_INIT   = { addr = 0x9639 }
 ENEMY4_INIT   = { addr = 0x9893 }
 ENEMY5_INIT   = { addr = 0x9DD2 }
