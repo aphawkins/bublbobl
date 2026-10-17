@@ -39,6 +39,8 @@ ENEMY3_SLOTS  = { addr = 0xEFA1, note = "group 3, 0x1B bytes each (drew Hidegons
 ENEMY3_SHOTS  = { addr = 0xEB99, size = 0x90, note = "group 3's shots, 0x12 bytes each, set up by ENEMY3_SHOTS_INIT (drew Hidegons' fireballs)" }
 ENEMY4_SLOTS  = { addr = 0xF05F, note = "group 4, 0x19 bytes each (drew Pulpul in the traced rounds)" }
 GHOST_SLOTS   = { addr = 0xF1C2, note = "set up by GHOST_INIT; drew Skel-Monsta, the skull ghost, in the traced rounds" }
+BOSS_SLOT     = { addr = 0xF296, size = 0x14, note = "the round 100 boss, set up by BOSS_INIT (drew Super Drunk)" }
+BOSS_SHOTS    = { addr = 0xF367, size = 0x67, note = "the boss's bottles, 0x0C bytes each, set up by BOSS_SHOTS_INIT" }
 ENEMY5_SLOTS  = { addr = 0xF113, note = "group 5, 0x19 bytes each (drew Monsta in the traced rounds)" }
 
 [main.code]
@@ -99,7 +101,15 @@ ENEMY3_INIT   = { addr = 0x9639 }
 ENEMY4_INIT   = { addr = 0x9893 }
 ENEMY5_INIT   = { addr = 0x9DD2 }
 GHOST_INIT    = { addr = 0xA108, note = "GHOST_SLOTS; no count in ENEMY_COUNTS" }
+ENEMY2_SHOTS_INIT = { addr = 0x81B3, note = "clears ENEMY2_SHOTS, 0x81 bytes" }
+BOSS_INIT     = { addr = 0xA847, note = "clears BOSS_SLOT; returns unless ROUND_MAIN = 0x63 (round 100)" }
+BOSS_UPDATE   = { addr = 0xA8C7, note = "draws at A99A-A9FD: ANIM_STEP picks pose 0-1 (or 2-3 if (IX+8) b0) from BOSS_POSES, 16 pieces into gfx blocks 0C-0F" }
+BOSS_SHOTS_INIT = { addr = 0xB939, note = "clears BOSS_SHOTS; returns unless ROUND_MAIN = 0x63" }
 ENEMY_ANIM_SPRITE = { addr = 0x913C, note = "ANIM_STEP, then SPRITE or SPRITE_FLIPX with B = frame x 4 + (HL); flip from (IX+8) b1" }
+
+[bank0.data]
+BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
+BOSS_POSES    = { addr = 0xAF4C, size = 0x80, note = "8 x 16 first tiles (bank 8): poses 0-1, mirrored 0-1, poses 2-3, mirrored 2-3; piece i at column i % 4, row i / 4" }
 
 [bank1.data]
 # a78-05-1.52 page 1 (file 0x4000-0x7FFF), mapped at 8000 when FB40 = 5.
