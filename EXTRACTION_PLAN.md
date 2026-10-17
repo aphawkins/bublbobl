@@ -305,7 +305,9 @@ shows the block. The objects are built in `OBJ_SHADOW` (`E1CD`) and copied to `D
   Skel-Monsta (`GHOST_SLOTS`). All eight kinds are traced, and the round 100 boss,
   Super Drunk (`BOSS_SLOT`), 16 pieces from `BOSS_POSES`. `trace.py --round N` starts a game on round N. Catalogue:
   `notes\sprites.md`.
-- Still to do: the endings; per-character sheets grouped by slot
+- The 1P ending is traced (`trace.py --boss-hits 80` traps the boss at once): text screens,
+  then "YOU ZAPPED TO" round 50.
+- Still to do: the 2-player (true) ending; per-character sheets grouped by slot
   table.
 
 Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.

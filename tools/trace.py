@@ -9,8 +9,10 @@ autoboot script. Tracing runs well below full speed, so separate scenarios are b
 side by side in separate shells. The MCU is not traced unless asked for (--cpus): its
 code is already fully classified.
 
---round N starts every game on round N (tools/start_round.lua), in the recording and in
-its replay alike. A recording made with --round keeps N in <name>.round beside the .inp.
+Cheats (tools/cheats.lua), in the recording and in its replay alike: --round N starts every
+game on round N; --boss-hits N starts the round 100 boss with N of its 80 hits taken (80:
+it is beaten as soon as it drifts to the middle). A recording keeps its cheats in
+<name>.cheats beside the .inp.
 
 "play" first opens a normal MAME window and records your inputs (-record) until you
 close it, then traces a headless replay of that recording (-playback). --inp traces an
@@ -245,6 +247,7 @@ def main() -> int:
     ap.add_argument("--snap", type=int, default=0, help="screenshot and RAM dump every N seconds")
     ap.add_argument("--inp", type=Path, help="play: trace this recording instead of a new one")
     ap.add_argument("--round", type=int, help="start each game on this round (1-100)")
+    ap.add_argument("--boss-hits", type=int, help="hits the round 100 boss has taken at the start (0-80)")
     ap.add_argument("--list", action="store_true", help="list the scenarios")
     args = ap.parse_args()
     if args.list or not args.scenario:
@@ -263,7 +266,7 @@ def main() -> int:
         if old.is_dir():
             if old.name != "cfg" or not args.inp:
                 shutil.rmtree(old)
-        elif old.suffix not in (".inp", ".round"):
+        elif old.suffix not in (".inp", ".round", ".cheats"):
             old.unlink()
     traced = set(args.cpus.split(","))
     if args.snap:
@@ -280,17 +283,24 @@ def main() -> int:
                   "taps": [[lo, hi] for lo, hi in taps]} for t, n, tr, taps in CPUS],
         "events": events,
     }
-    # A recording keeps its start round beside it, so its replay starts on the same round.
+    # A recording keeps its cheats beside it (<name>.cheats; older ones <name>.round), so
+    # its replay plays the same game.
     inp = (args.inp.resolve() if args.inp else out / "play.inp") if interactive else None
-    start_round = args.round
-    if start_round is None and args.inp and inp.with_suffix(".round").exists():
-        start_round = int(inp.with_suffix(".round").read_text())
-    if start_round is not None and not 1 <= start_round <= 100:
+    cheats = {"round": args.round, "boss_hits": args.boss_hits}
+    if args.inp and inp.with_suffix(".cheats").exists():
+        saved = json.loads(inp.with_suffix(".cheats").read_text())
+        cheats = {k: v if v is not None else saved.get(k) for k, v in cheats.items()}
+    elif args.inp and cheats["round"] is None and inp.with_suffix(".round").exists():
+        cheats["round"] = int(inp.with_suffix(".round").read_text())
+    cheats = {"round": cheats["round"] or 1, "boss_hits": cheats["boss_hits"] or 0}
+    if not 1 <= cheats["round"] <= 100:
         raise SystemExit("--round must be 1-100")
-    cfg["round"] = start_round or 1
-    start_lua = (ROOT / "tools" / "start_round.lua").read_text()
+    if not 0 <= cheats["boss_hits"] <= 80:
+        raise SystemExit("--boss-hits must be 0-80")
+    cfg.update(cheats)
+    cheats_lua = (ROOT / "tools" / "cheats.lua").read_text()
     script = out / "trace_run.lua"
-    script.write_text("CFG = " + lua_value(cfg) + "\n\n" + start_lua + "\n"
+    script.write_text("CFG = " + lua_value(cfg) + "\n\n" + cheats_lua + "\n"
                       + (ROOT / "tools" / "trace.lua").read_text(), encoding="utf-8")
 
     exe = mame_exe()
@@ -306,12 +316,12 @@ def main() -> int:
     if interactive:
         if not args.inp:
             record = common + ["-window", "-record", inp.name]
-            if cfg["round"] > 1:
+            if cheats != {"round": 1, "boss_hits": 0}:
                 rec_script = out / "record.lua"
-                rec_script.write_text("CFG = " + lua_value({"round": cfg["round"]}) + "\n\n"
-                                      + start_lua, encoding="utf-8")
+                rec_script.write_text("CFG = " + lua_value(cheats) + "\n\n" + cheats_lua,
+                                      encoding="utf-8")
                 record += ["-autoboot_script", str(rec_script)]
-                inp.with_suffix(".round").write_text(f"{cfg['round']}\n")
+                inp.with_suffix(".cheats").write_text(json.dumps(cheats) + "\n")
             print("Recording: play, then close MAME to start the trace.", flush=True)
             subprocess.run(record, cwd=exe.parent,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

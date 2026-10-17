@@ -39,7 +39,7 @@ ENEMY3_SLOTS  = { addr = 0xEFA1, note = "group 3, 0x1B bytes each (drew Hidegons
 ENEMY3_SHOTS  = { addr = 0xEB99, size = 0x90, note = "group 3's shots, 0x12 bytes each, set up by ENEMY3_SHOTS_INIT (drew Hidegons' fireballs)" }
 ENEMY4_SLOTS  = { addr = 0xF05F, note = "group 4, 0x19 bytes each (drew Pulpul in the traced rounds)" }
 GHOST_SLOTS   = { addr = 0xF1C2, note = "set up by GHOST_INIT; drew Skel-Monsta, the skull ghost, in the traced rounds" }
-BOSS_SLOT     = { addr = 0xF296, size = 0x14, note = "the round 100 boss, set up by BOSS_INIT (drew Super Drunk)" }
+BOSS_SLOT     = { addr = 0xF296, size = 0x14, note = "the round 100 boss, set up by BOSS_INIT (drew Super Drunk). +0B = hits taken: from 0x46 it flashes (bank0:AE73), from 0x50 bank0:A960 traps it in a bubble (+0 = 2) when X is 80-87; unpopped, it escapes angry (+0 = 9) with hits 0" }
 BOSS_SHOTS    = { addr = 0xF367, size = 0x67, note = "the boss's bottles, 0x0C bytes each, set up by BOSS_SHOTS_INIT" }
 ENEMY5_SLOTS  = { addr = 0xF113, note = "group 5, 0x19 bytes each (drew Monsta in the traced rounds)" }
 

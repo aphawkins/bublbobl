@@ -8,8 +8,8 @@ Runs so far: attract, scripted 1P and 2P play, a recorded game from round 1 (`sp
 25,452 frames, to at least round 10) and one from round 20 (`spr_r20`, 16,463 frames,
 `trace.py play --round 20`), round 30 (`spr_r30`, 7,115 frames), round 40 (`spr_r40`,
 4,558 frames), round 50 (`spr_r50`, 3,107 frames), round 60 (`spr_r60`, 3,969
-frames) and round 100 (`spr_r100`, 3,284 frames, which did not reach an ending). 1,164
-frames from 104 call sites.
+frames), round 100 (`spr_r100`, 3,284 frames) and a 1P game completed with
+`--round 100 --boss-hits 80` (`spr_end`, 4,929 frames). 1,292 frames from 109 call sites.
 
 ## How a sprite is drawn
 
@@ -65,17 +65,31 @@ Other enemy-like tables, with an init in `ROUND_ENEMIES` but no count:
 `BOSS_INIT` (`bank0:A847`) and `BOSS_SHOTS_INIT` (`bank0:B939`) do nothing unless
 `ROUND_MAIN` is `0x63`, round 100.
 
+Hits taken are `BOSS_SLOT`+`0B` (`F2A1`). From 70 the boss flashes; at 80 it is trapped in
+a bubble once its X is `80–87`, and if the bubble is not popped it escapes as the red,
+angry Super Drunk with the count back at 0. `trace.py --boss-hits 80` starts it at 80.
+
 | Table | Caller | Shows |
 |---|---|---|
 | `BOSS_SLOT` `F296` | `bank0:A9EB`, `A9FA` (in `BOSS_UPDATE`) | Super Drunk, 64 × 64 in 16 pieces, colour 12, bank 8 tiles `2000–20FF` |
 | `BOSS_SHOTS` `F367` (stride `0x0C`) | `bank0:BAD5` | the boss's bottles (`1F40–1F4C`) |
+| `BOSS_SLOT` | `bank0:AADA` | the boss trapped in a bubble (`2280–22FC`, colour 12) |
+| `BOSS_SLOT` | `bank0:ABED` | the beaten boss tumbling, four rotations (`2100–21FC`, colour 10) |
 | IX `EB36`, `EB46` | `6864` | the captives in bubbles (`1B04–1B90`) |
+| IX `EB36` | `6951`, `69B8`, `6A39` | the ending: the captives' bubbles burst (`1B14–1B80`), a freed captive (`1BC8`), Bub (`A44–A50`) |
 
 `BOSS_UPDATE` draws the 16 pieces at `bank0:A99A–A9FD` through `SPRITE_LIST` into gfx
 blocks `0C–0F`. ANIM_STEP picks pose 0 or 1, or 2 or 3 when (IX+8) b0 is set. The
 first tiles come from `BOSS_POSES` (`bank0:AF4C`): four poses starting at tiles `00`,
 `40`, `80` and `C0`, each also stored mirrored. Piece *i* goes at column *i* mod 4,
 row *i* / 4. The 16 positions are in `BOSS_PIECE_XY` (`bank0:AF0C`).
+
+## The 1P ending
+
+After the boss, the captives are freed and the text screens follow (drawn as text, not
+sprites): "CONGRATULATIONS! BUT THIS IS NOT A TRUE ENDING! COME HERE WITH YOUR FRIENDS!
+… TRY AGAIN!!", then "YOU ZAPPED TO ....." and play goes on at round 50. Going by that
+message, the true ending needs a 2-player game.
 
 ## Players
 
@@ -119,5 +133,5 @@ The bubble slots are 0x28 bytes from `E76C` (IX `E76C`, `E794`, `E7BC`, …).
 
 ## Still to do
 
-- The endings.
+- The 2-player (true) ending.
 - Per-character sheets: group the frames by slot table instead of by caller.
