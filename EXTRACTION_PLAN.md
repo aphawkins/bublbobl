@@ -429,10 +429,14 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `notes\sub.md`.
 - The sub ROM holds two more layouts after the 100 rounds: the attract screen's
   (`ROUND_MAIN` 0x64) and one never seen in use.
-- Next: the main fixed ROM, region by region. A first pass (`dasmz80.py main_fixed`) traces
-  0x6546 code bytes. Its jump tables have to be listed first: `0DA7` reads word A of the
-  table at HL, and callers such as `50EE` jump through it, so the tool can't see those
-  targets. Then it can go into `src\main\fixed.s`.
+- Main fixed ROM, first pass (2026-10-17): `dasmz80.py main_fixed` traces 0x638E code bytes
+  (11728 instructions, 1273 labels) and `src\mainixed.s` is that output; it builds
+  byte-exact. The tool now stops a path at text, fill and hand-marked data ranges of the
+  classification map (a routine whose end the tracer can't see ran into the strings at
+  `2D73`) and at the end of the image. Labels are still `L_xxxx`, and the jump tables that
+  `0DA7` reads (callers such as `50EE`) are only followed where MAME executed them.
+- Next: name the routines and annotate `src\mainixed.s` by hand, list the jump tables so
+  the untraced targets are reached, then do the four banks.
 
 ---
 

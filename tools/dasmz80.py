@@ -271,6 +271,7 @@ class Dasm:
         self.data_refs: set[int] = set()
         self.entries: set[int] = set()
         self.tables: dict[int, list[int]] = {}
+        self.blocked: list[tuple[int, int]] = []  # classified text, fill or hand-marked data: never code
 
     def mem(self, a: int) -> int:
         a &= 0xFFFF
@@ -283,10 +284,14 @@ class Dasm:
         while todo:
             a = todo.pop()
             while self.base <= a < self.end and a not in self.insns:
+                if any(lo <= a < hi for lo, hi in self.blocked):
+                    break
                 i = decode(self.mem, a)
                 if i is None:  # a path into data, or an opcode this tool does not read
                     print(f"warning: opcode not read at {a:04X}: {self.mem(a):02X} "
                           f"{self.mem(a + 1):02X}; path stopped", file=sys.stderr)
+                    break
+                if a + i.n > self.end:  # runs off the end of the image
                     break
                 self.insns[a] = i
                 if i.target is not None and self.base <= i.target < self.end:
@@ -379,6 +384,16 @@ def traced_starts(cpu: str) -> list[int]:
     return [r["start"] for r in ranges if r["kind"] == "code" and r.get("source") == "trace"]
 
 
+def blocked_ranges(cpu: str) -> list[tuple[int, int]]:
+    """Ranges the classification map calls text or fill: a path that runs into one stops."""
+    path = ROOT / "notes" / "classmap" / f"{IMAGES[cpu][0].removesuffix('.bin')}.toml"
+    if not path.exists():
+        return []
+    ranges = tomllib.loads(path.read_text(encoding="utf-8")).get("range", [])
+    return [(r["start"], r["end"] + 1) for r in ranges if r["kind"] in ("text", "fill")
+            or r["kind"] == "data" and r.get("source") == "manual"]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("cpu", choices=IMAGES)
@@ -396,6 +411,7 @@ def main() -> int:
         print(e, file=sys.stderr)
         return 1
     d = Dasm(data[:end - base], base, end)
+    d.blocked = blocked_ranges(args.cpu)
     names = Names(args.cpu)
     entries = [a for a in (0x0000, 0x0038, 0x0066) if base <= a < end and d.mem(a) != 0xFF]
     entries += list(names.code) + args.entry
