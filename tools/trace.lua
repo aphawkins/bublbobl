@@ -63,11 +63,12 @@ end
 -- IY = the sprite's quarter of a gfx block. The caller is the return address on the stack,
 -- or one level further out for the list helpers that loop over SPRITE. The object's tile
 -- bank is read from the object RAM copy (OBJ_SHADOW, E1CD) when the frame is shown,
--- that is, when the IRQ handler starts copying it to DD00.
+-- that is, when the IRQ handler starts copying it to DD00. IX is logged too: most callers
+-- point it at the record of the thing being drawn, so it says whose frame it is.
 local SPRITE_FIRST_WRITE = { [0x1480] = "n", [0x14A1] = "x" }
 local LIST_RETURNS = { [0x14DA] = 8, [0x14FE] = 8, [0x150F] = 6, [0x1521] = 6 }
-local sprite_counts = {}  -- "caller,flip,gfx,bank,tile,attr" -> { n, first frame }
-local pending = {}        -- this frame's draws: { caller, flip, gfx, tile, attr }
+local sprite_counts = {}  -- "caller,flip,gfx,bank,tile,attr,ix" -> { n, first frame }
+local pending = {}        -- this frame's draws: { caller, flip, gfx, tile, attr, ix }
 
 local function word(space, addr)
   return space:read_u8(addr) | (space:read_u8((addr + 1) & 0xFFFF) << 8)
@@ -94,7 +95,8 @@ local function sprite_draw(c, pc)
   muted = false
   local iy = st["IY"].value - 0xC000
   local gfx = (iy // 0x80) | (((iy % 0x80) // 0x10) << 5)
-  pending[#pending + 1] = { where, SPRITE_FIRST_WRITE[pc], gfx, st["B"].value, st["C"].value }
+  pending[#pending + 1] = { where, SPRITE_FIRST_WRITE[pc], gfx, st["B"].value, st["C"].value,
+    st["IX"].value }
 end
 
 local function sprites_shown(c)
@@ -111,8 +113,8 @@ local function sprites_shown(c)
   muted = false
   for _, d in ipairs(pending) do
     local bank = banks[d[3]]
-    local key = string.format("%s,%s,%02X,%s,%02X,%02X", d[1], d[2], d[3],
-      bank and string.format("%X", bank) or "-", d[4], d[5])
+    local key = string.format("%s,%s,%02X,%s,%02X,%02X,%04X", d[1], d[2], d[3],
+      bank and string.format("%X", bank) or "-", d[4], d[5], d[6])
     local s = sprite_counts[key]
     if s then s[1] = s[1] + 1 else sprite_counts[key] = { 1, frame } end
   end
@@ -194,7 +196,7 @@ local function finish()
   for _, line in ipairs(sound_log) do f:write(line, "\n") end
   f:close()
   f = assert(io.open(out .. "/sprites.csv", "w"))
-  f:write("caller,flip,gfx,bank,tile,attr,count,first_frame\n")
+  f:write("caller,flip,gfx,bank,tile,attr,ix,count,first_frame\n")
   for key, s in pairs(sprite_counts) do f:write(string.format("%s,%d,%d\n", key, s[1], s[2])) end
   f:close()
   f = assert(io.open(out .. "/done", "w"))

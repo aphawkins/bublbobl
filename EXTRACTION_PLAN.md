@@ -296,9 +296,14 @@ shows the block. The objects are built in `OBJ_SHADOW` (`E1CD`) and copied to `D
   gave 523 frames from 60 callers: Bub and Bob, bubbles, Zen-chan, items, scores, round
   banners, HURRY UP, INSERT COIN. A caller is the CALL whose return address is on the
   stack, so a routine that ends in `JP SPRITE` is listed under its own caller.
-- Still to do: runs that reach the other enemies, bosses and endings (`play`); name each
-  caller after its character in `symbols.toml`; per-character sheets built from those
-  names.
+- A recorded game to round 10 added Mighta and Monsta: 622 frames from 72 callers. Each
+  draw also logs IX, which ties it to a slot table. The enemies are six groups, each with
+  its own count (`ENEMY_COUNTS`, from round-record bytes 4–6), slot table and code.
+  `ENEMY_SWAP` (record byte 12) swaps groups 0 and 2 for a second kind, so there are eight
+  kinds. Seen so far: group 0 Zen-chan, group 2 Mighta, group 5 Monsta. Catalogue:
+  `notes\sprites.md`.
+- Still to do: rounds with groups 1, 3, 4 and the swapped kinds (from rounds 20–60),
+  the bosses and the endings; per-character sheets grouped by slot table.
 
 Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.
 

@@ -16,11 +16,12 @@ block. So a sprite frame is (bank, B, C), and the ROM frame tables are tables of
 
 trace.lua writes sprites.csv in each trace folder: caller (the instruction that called
 SPRITE, or the caller of the list helpers 14BD, 14E1, 1505 and 1517), flip (n or x),
-gfx_num, bank, B, C, count and the first frame seen. This tool merges the folders (default:
+gfx_num, bank, B, C, IX, count and the first frame seen. Most callers point IX at the
+record of the thing they draw, so IX says whose frame it is (notes/sprites.md). This tool merges the folders (default:
 every folder in build/traces and build/snaps) and writes, in build/gfx/sprites/:
 
   sprites.json      per caller: each frame's bank, tile, attribute, colour, flips seen,
-                    gfx numbers and count. Frames are in (bank, tile, colour) order and
+                    gfx numbers, IX values and count. Frames are in (bank, tile, colour) order and
                     drawn unflipped; "flips" lists the forms the game used.
   <caller>.png      that caller's frames left to right, 16 per row, in the same order
   all.png           every caller's row of frames under its name, for an overview
@@ -63,9 +64,11 @@ def load_draws(folders: list[Path]) -> dict:
                 key = (int(row["bank"], 16), b, attr & 0x3F)
                 flips = ("x" if row["flip"] == "x" else "") + ("y" if attr & 0x80 else "")
                 fr = callers[row["caller"]].setdefault(
-                    key, {"flips": set(), "gfx": set(), "count": 0, "runs": set()})
+                    key, {"flips": set(), "gfx": set(), "ix": set(), "count": 0, "runs": set()})
                 fr["flips"].add(flips or "-")
                 fr["gfx"].add(int(row["gfx"], 16))
+                if row.get("ix"):
+                    fr["ix"].add(int(row["ix"], 16))
                 fr["count"] += int(row["count"])
                 fr["runs"].add(folder.name)
     return callers
@@ -160,6 +163,7 @@ def main() -> int:
             "colour": attr >> 2,
             "flips": sorted(callers[caller][(bank, b, attr)]["flips"]),
             "gfx": [f"{g:02X}" for g in sorted(callers[caller][(bank, b, attr)]["gfx"])],
+            "ix": [f"{i:04X}" for i in sorted(callers[caller][(bank, b, attr)]["ix"])],
             "count": callers[caller][(bank, b, attr)]["count"],
             "runs": sorted(callers[caller][(bank, b, attr)]["runs"]),
         } for bank, b, attr in frames]
