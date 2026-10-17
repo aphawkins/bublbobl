@@ -4,8 +4,11 @@ Usage: python tools/levels.py [--roms DIR] [--out DIR] [--scale N]
        python tools/levels.py --check SNAPDIR [SNAPDIR ...]
 
 Writes build/levels/round_NNN.json and round_NNN.png for rounds 1-100, and rounds.png,
-all 100 on one sheet. --check rebuilds the grid and the wall tiles of every ram_<frame>.bin
-in a trace.py snap/ folder from the ROMs, and compares them with the RAM.
+all 100 on one sheet; round_NNN_super.png and rounds_super.png are the same rounds in the
+super mode's palettes. items.json holds the tables that choose each round's two items.
+--check rebuilds the grid, the wall tiles, the round record and the
+round palette of every ram_<frame>.bin in a trace.py snap/ folder from the ROMs, and
+compares them with the RAM.
 
 A round is a 32 x 32 grid of 8 x 8 cells, ROUND_GRID (E398-E597): 16 bytes a row, two
 cells a byte, high nibble first. 0 is wall; 1-4 are open, and are the air current that
@@ -68,6 +71,8 @@ RAM_DRAW_ROW = 0xE5C4 - RAM_BASE  # next row to draw; 0x20 once the round is dra
 RAM_RECORD = 0xE598 - RAM_BASE
 RAM_SUPER = 0xE5DB - RAM_BASE
 RAM_DIFFICULTY = 0xE5DC - RAM_BASE
+RAM_ROUND_PAL = (0xF9C0 - RAM_BASE, 0xF9E0 - RAM_BASE)  # palette 14 (even rounds), 15 (odd)
+PAL_BYTES = 0x20
 
 # LOAD_ROUND_REC's difficulty tables (fixed ROM): one signed step per DIFFICULTY for
 # byte 7, then one per DIFFICULTY - 0x10 for bytes 13, 15 and 8.
@@ -76,6 +81,18 @@ DIFF_HURRY = 0x1870
 DIFF_GHOST = 0x187F
 DIFF_SPEED = 0x188E
 DIFFICULTY_MAX = 0x1E
+
+# The item tables (bank2 addresses). POINTS_PICK tries three flags in turn; a set flag
+# picks one of its 16 kinds at random. SPECIAL_PICK takes the first of the 0x36 rules
+# whose counter has reached its threshold, rule n giving kind 0x35 - n.
+POINTS_FLAGS = 0x8463
+POINTS_FLAGS_COUNT = 3
+POINTS_FLAGS_SIZE = 0x12   # flag address, then 16 kinds
+SPECIAL_RULES = 0xB4F2
+SPECIAL_RULE_COUNT = 0x36
+SPECIAL_RULE_SIZE = 7      # counter address, 4 thresholds, the byte for F463
+SPECIAL_CLASS = 0x8667     # threshold column by DIFFICULTY
+SPECIAL_EFFECTS = 0x8AFF   # the take handler by kind
 
 
 def record(bank1: bytes, r: int) -> bytes:
@@ -187,8 +204,9 @@ class Painter:
             t = self.tiles[code] = gfx.decode_tile(self.low, self.high, code)
         return t
 
-    def render(self, r: int, t: list[list[int]]) -> Image.Image:
-        """The visible 256 x 224 playfield; colour 15 and the score rows are black."""
+    def render(self, pal_index: int, t: list[list[int]]) -> Image.Image:
+        """The visible 256 x 224 playfield in round palette pal_index; colour 15 and the
+        score rows are black."""
         top, bottom = VISIBLE_ROWS
         pens = bytearray([16]) * (256 * (bottom - top) * 8)
         for col in range(GRID_COLS):
@@ -204,11 +222,20 @@ class Painter:
                         p = pix[y * 8 + x]
                         if p != 15:
                             pens[base + x] = p
-        cols = self.pal["round"]["palettes"][self.pal["round"]["index_by_round"][r]]
+        cols = self.pal["round"]["palettes"][pal_index]
         img = Image.new("P", (256, (bottom - top) * 8))
         img.putpalette([int(c[i:i + 2], 16) for c in cols for i in (1, 3, 5)] + [0, 0, 0])
         img.frombytes(bytes(pens))
         return img
+
+
+def palette_index(rec: bytes, super_mode: int) -> int:
+    """The round palette LOAD_ROUND_PAL (0B43) copies: byte 0, or in the super mode
+    byte 14 + 3, less 8 from 8 up."""
+    if not super_mode:
+        return rec[0]
+    v = rec[14] + 3
+    return v - 8 if v >= 8 else v
 
 
 def loaded_record(fixed: bytes, rec: bytes, r: int, difficulty: int, super_mode: int) -> bytes:
@@ -276,7 +303,58 @@ def decode_record(rec: bytes) -> dict:
     }
 
 
-def round_json(r: int, rec: bytes, g: bytes, sub_offset: int) -> dict:
+def items_json(bank2: bytes) -> dict:
+    """How POINTS_PICK (bank2:83E8) and SPECIAL_PICK (bank2:85EB) choose the round's two
+    items, from their tables (notes/levels.md)."""
+    def at(a: int) -> int:
+        return bank2[a - 0x8000]
+
+    def word(a: int) -> int:
+        return at(a) | at(a + 1) << 8
+
+    flags = []
+    for i in range(POINTS_FLAGS_COUNT):
+        e = POINTS_FLAGS + i * POINTS_FLAGS_SIZE
+        flags.append({"flag": f"{word(e):04X}",
+                      "kinds": [at(e + 2 + k) for k in range(POINTS_FLAGS_SIZE - 2)]})
+    rules = []
+    for n in range(SPECIAL_RULE_COUNT):
+        e = SPECIAL_RULES + n * SPECIAL_RULE_SIZE
+        th = [at(e + 2 + c) for c in range(4)]
+        kind = SPECIAL_RULE_COUNT - 1 - n
+        rules.append({"kind": kind, "counter": f"{word(e):04X}",
+                      # Columns by DIFFICULTY class: 0-4, 5-7, 8-11, 12 and up.
+                      "thresholds": [th[at(SPECIAL_CLASS + d)] for d in (0, 5, 8, 12)],
+                      "f463": at(e + 6),
+                      "effect": f"bank2:{word(SPECIAL_EFFECTS + 2 * kind):04X}"})
+    return {
+        "points": {
+            "source": "bank2:83E8",
+            "attract": "0x14 + random 0-31",
+            "round_1": "0x15 + random 0-15",
+            "flags": flags,
+            "otherwise": "1P: 0x31 - min(seconds on the last round, 0x1D); "
+                         "2P: 0x3B - min(seconds, 0x27)",
+        },
+        "special": {
+            "source": "bank2:85EB",
+            "none": "in the attract demo and on round 100",
+            "rules": rules,
+        },
+    }
+
+
+def super_json(fixed: bytes, rec: bytes, r: int) -> dict:
+    """What the super mode changes: LOAD_ROUND_REC's swaps, and the palette."""
+    b = loaded_record(fixed, rec, r, 0, 1)
+    return {
+        "palette": palette_index(rec, 1),
+        "enemy_counts": [b[4 + i // 2] >> (0 if i & 1 else 4) & 15 for i in range(6)],
+        "enemy_swap": b[12],
+    }
+
+
+def round_json(r: int, rec: bytes, g: bytes, sub_offset: int, fixed: bytes) -> dict:
     c = cells(g)
     return {
         "round": r + 1,
@@ -285,6 +363,7 @@ def round_json(r: int, rec: bytes, g: bytes, sub_offset: int) -> dict:
             "bytes": rec.hex(" "),
             **decode_record(rec),
         },
+        "super": super_json(fixed, rec, r),
         "layout_source": f"sub:{sub_offset:04X}",
         "wall_tile": f"{WALL_TILE + TILES_PER_ROUND * r:03X}",
         "side_tiles": f"{SIDE_TILE + TILES_PER_ROUND * r:03X}",
@@ -334,7 +413,16 @@ def check(images: dict[str, bytes], folder: Path) -> int:
                     bad += 1
         else:
             rec = "record not checked"
-        print(f"{f.name}: round {n + 1}: grid matches, {state}, {rec}")
+        # Only while the round is on screen: the title and start screens reload palettes.
+        pal = ""
+        if n == r and drawn and same:
+            i = palette_index(record(bank1, r), ram[RAM_SUPER])
+            o = palette.ROUND_PALS + i * PAL_BYTES
+            at = RAM_ROUND_PAL[r & 1]
+            pal = f", palette {i} " + ("matches" if ram[at:at + PAL_BYTES] == bank1[o:o + PAL_BYTES]
+                                       else "differs")
+        mode = " (super)" if ram[RAM_SUPER] else ""
+        print(f"{f.name}: round {n + 1}{mode}: grid matches, {state}, {rec}{pal}")
     return bad
 
 
@@ -353,28 +441,34 @@ def main() -> int:
     images = romset.images(files)
     if args.check:
         return 1 if sum(check(images, d) for d in args.check) else 0
-    bank1, sub = images["main_bank1.bin"], images["sub.bin"]
-    painter = Painter(files, palette.extract(images["main_fixed.bin"], bank1))
+    bank1, sub, fixed = images["main_bank1.bin"], images["sub.bin"], images["main_fixed.bin"]
+    painter = Painter(files, palette.extract(fixed, bank1))
     args.out.mkdir(parents=True, exist_ok=True)
-    thumbs = []
+    thumbs: dict[str, list[Image.Image]] = {"": [], "_super": []}
     for r in range(ROUNDS):
         rec = record(bank1, r)
         g = grid(bank1, sub, r)
         name = f"round_{r + 1:03d}"
-        doc = round_json(r, rec, g, ROUND_LAYOUTS + r * LAYOUT_BYTES)
+        doc = round_json(r, rec, g, ROUND_LAYOUTS + r * LAYOUT_BYTES, fixed)
         (args.out / f"{name}.json").write_text(json.dumps(doc, indent=1) + "\n")
-        img = painter.render(r, tile_words(r, g, rec[3]))
-        thumbs.append(img.convert("RGB"))
-        if args.scale > 1:
-            img = img.resize((img.width * args.scale, img.height * args.scale), Image.NEAREST)
-        img.save(args.out / f"{name}.png")
-    w, h = thumbs[0].size
-    sheet = Image.new("RGB", (10 * (w + 4), 10 * (h + 4)), (40, 40, 40))
-    for r, img in enumerate(thumbs):
-        sheet.paste(img, ((r % 10) * (w + 4) + 2, (r // 10) * (h + 4) + 2))
-    sheet = sheet.resize((sheet.width // 2, sheet.height // 2), Image.LANCZOS)
-    sheet.save(args.out / "rounds.png")
-    print(f"{ROUNDS} rounds: round_001-{ROUNDS:03d}.json/.png, rounds.png -> {args.out}")
+        t = tile_words(r, g, rec[3])
+        for suffix, super_mode in (("", 0), ("_super", 1)):
+            img = painter.render(palette_index(rec, super_mode), t)
+            thumbs[suffix].append(img.convert("RGB"))
+            if args.scale > 1:
+                img = img.resize((img.width * args.scale, img.height * args.scale), Image.NEAREST)
+            img.save(args.out / f"{name}{suffix}.png")
+    (args.out / "items.json").write_text(
+        json.dumps(items_json(images["main_bank2.bin"]), indent=1) + "\n")
+    for suffix, imgs in thumbs.items():
+        w, h = imgs[0].size
+        sheet = Image.new("RGB", (10 * (w + 4), 10 * (h + 4)), (40, 40, 40))
+        for r, img in enumerate(imgs):
+            sheet.paste(img, ((r % 10) * (w + 4) + 2, (r // 10) * (h + 4) + 2))
+        sheet = sheet.resize((sheet.width // 2, sheet.height // 2), Image.LANCZOS)
+        sheet.save(args.out / f"rounds{suffix}.png")
+    print(f"{ROUNDS} rounds: round_001-{ROUNDS:03d}.json, .png and _super.png, rounds.png "
+          f"and rounds_super.png, items.json -> {args.out}")
     return 0
 
 

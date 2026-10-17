@@ -694,11 +694,11 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E5C5 | 0x1 |  | 1B93, 1B98 | 1B93, 1B94 |  |  |
 | E5C6 | 0x1 |  | 1B9B, 1BA2 | 1B9B, 1B9C |  |  |
 | E5C7 | 0x1 |  | 1BC2 | 1BDD |  |  |
-| E5C8-E5CF | 0x8 |  | 1BC9 |  |  |  |
+| E5C8-E5CF | 0x8 | CODE_INPUTS | 1BC9 |  |  |  |
 | E5D0 | 0x1 |  | 1BBD | 1BCF |  |  |
-| E5D1 | 0x1 |  | 1FE2 | 227C |  |  |
-| E5D2 | 0x1 |  | 1FE8 | 3FE1 |  |  |
-| E5D3 | 0x1 |  | 1D33, 1DA1 | 0592, 059C, 0742, 08B3, 0972, 09EC, 0A1A, 1350 +22 |  |  |
+| E5D1 | 0x1 | ORIGINAL_GAME | 1FE2 | 227C |  |  |
+| E5D2 | 0x1 | POWER_UP | 1FE8 | 3FE1 |  |  |
+| E5D3 | 0x1 | ATTRACT | 1D33, 1DA1 | 0592, 059C, 0742, 08B3, 0972, 09EC, 0A1A, 1350 +22 |  |  |
 | E5D4 | 0x1 |  | 1D30, 1D9C, 2D6F, 2F50 | 1D55 |  |  |
 | E5D6 | 0x1 |  | 221E, 2241, 3629, 3634, 41EF, 604F, 7EEC | 2FC9, 2FF6, 30A5, 3262, 3648 |  |  |
 | E5D7 | 0x1 |  | 202E, 2044, 2B4E, 2EFB, 4149, 417F | 056C, 0573, 05C4, 05FC, 06B9, 06D2, 06E7, 1E36 +19 |  | 0992 |
@@ -734,7 +734,7 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E60B-E60C | 0x2 |  | 2261 | 225C |  |  |
 | E60D-E610 | 0x4 |  |  | bank2:862A |  |  |
 | E611 | 0x1 |  | 0888 | 0888, bank2:862A |  |  |
-| E612 | 0x1 |  |  | bank2:8604 |  |  |
+| E612 | 0x1 | SKIP_KINDS |  | bank2:8604 |  |  |
 | E613 | 0x1 |  | 1DF1, 1DF8, 412C, 4162 | 2289, 2296, 412C, 4162 |  |  |
 | E614 | 0x1 |  | 24C5 | 24B1 |  |  |
 | E615-E616 | 0x2 |  | 24BF, 24DA | 24C7 |  |  |
@@ -2153,16 +2153,16 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | F44E | 0x1 |  |  | bank0:885A, bank0:888B, bank0:8DEA |  |  |
 | F44F | 0x1 | POINTS_STATE | bank2:84F8, bank2:84FA, bank2:852E, bank2:8530, bank2:8549, bank2:854B, bank2:85A9, bank2:85AB | bank2:849F, bank2:84FA, bank2:8530, bank2:854B, bank2:854E, bank2:85AB |  |  |
 | F450-F451 | 0x2 | POINTS_TIMER | bank2:845F, bank2:84B7, bank2:84E6, bank2:8504, bank2:8513, bank2:8528, bank2:8537, bank2:85A3 | bank2:84B3, bank2:8500, bank2:850F, bank2:8533 |  |  |
-| F452 | 0x1 |  |  | bank2:840C |  |  |
-| F453 | 0x1 |  | 0837 | bank2:840C |  |  |
-| F454 | 0x1 |  | 0883, bank2:843D | bank2:840C |  |  |
+| F452 | 0x1 | POINTS_FLAG_U |  | bank2:840C |  |  |
+| F453 | 0x1 | POINTS_FLAG_H | 0837 | bank2:840C |  |  |
+| F454 | 0x1 | POINTS_FLAG_G | 0883, bank2:843D | bank2:840C |  |  |
 | F455 | 0x1 |  | 0899, 089F | 0899, 089A |  |  |
-| F456 | 0x1 |  | 08A2 | 08A2, bank2:841E, bank2:842D |  |  |
+| F456 | 0x1 | ROUND_CLOCK | 08A2 | 08A2, bank2:841E, bank2:842D |  |  |
 | F457-F458 | 0x2 |  |  | bank2:862A |  |  |
 | F459 | 0x1 |  | bank2:85C2 | bank2:85AE |  |  |
 | F45A-F45B | 0x2 |  | bank2:85BC, bank2:85D8 | bank2:85C4 |  |  |
 | F45C | 0x1 |  | bank2:85B7, bank2:85CD | bank2:85CC |  |  |
-| F45D | 0x1 |  | 252C |  |  |  |
+| F45D | 0x1 | BANK2_SUM | 252C |  |  |  |
 | F45E | 0x1 | SPECIAL_KIND | bank2:8643 | bank2:86C3, bank2:8757, bank2:87A6 |  |  |
 | F45F | 0x1 | SPECIAL_STATE | bank2:863A, bank2:86E0, bank2:86E2, bank2:871E, bank2:8720, bank2:8739, bank2:873B, bank2:878B +1 | bank2:863A, bank2:8686, bank2:86E2, bank2:8720, bank2:873B, bank2:873E, bank2:878D |  |  |
 | F460 | 0x1 |  | bank2:877C |  |  |  |

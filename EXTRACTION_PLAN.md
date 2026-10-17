@@ -377,8 +377,15 @@ Started (2026-10-17). Steps 1–4 are done for the walls:
   and the mix of special bubbles. `LOAD_ROUND_REC` shifts four of the fields by a
   difficulty value (`E5DC`) and swaps enemy groups in the super mode. `--check` replays it
   and matches the record in every RAM snapshot.
-- Still to do: step 5, the super mode (what sets `E5DB`, and a traced super round), bubble
-  type 4, and how the two items are chosen.
+- Step 5 is done. The super mode comes from the title code S J B L R J S R and the SELECT
+  GAME MODE screen; `trace.py super1p` enters it, and `--check`, which now also compares
+  the round palette, matches super rounds 1 and 77. Bubble type 4 never appears: only
+  round 100 lists it, and round 100 has no gaps to spawn bubbles from. The two items are
+  chosen from the last round's time and flags (points) and from counters of what the
+  players have done, against thresholds by difficulty (special); `items.json` holds the
+  tables.
+- Still to do: what most item counters count and what each special item does. These belong
+  to Phase 5's item system.
 
 ---
 
@@ -582,7 +589,7 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 3. Phase 6 MCU — small, complete, byte-exact.
 4. Phase 1 traces + RAM map — unlocks everything else.
 5. Phase 2.2–2.4 palettes, offline renderer and sprite frames (all done).
-6. Phase 4 levels (walls and the round record done; the super mode to go).
+6. Phase 4 levels (done; the item counters' meanings move to Phase 5).
 7. Phase 5 main/sub disassembly. Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.
 8. Phase 7 sound.

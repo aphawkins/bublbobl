@@ -39,6 +39,3 @@ still differ.
 - SWB#7 `F7FE/F7FF` score output, routines `0F26` and `0F74` (from the MAME driver notes).
 - **Palette 11 (`bank0:B764–B7FE`)** is rewritten colour by colour, and read back, in
   attract mode and in play. What is the effect, and where are its colours?
-- **The second round-palette index (`0B5B`).** When `E5DB` is non-zero, `LOAD_ROUND_PAL`
-  uses `E5A6 + 3` (mod 8) instead of the record's byte 0. `E5A6` is byte 14 of the round
-  record. When is `E5DB` set?

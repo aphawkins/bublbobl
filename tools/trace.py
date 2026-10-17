@@ -126,6 +126,24 @@ def scenario(name, seconds, seed):
         for p in range(1, players + 1):
             random_play(ev, rng, 8 * FPS, total, p)
         return ev, 600, False, {}
+    if name == "super1p":
+        # The title (from boot to about frame 450) takes 8 changes of P1's inputs, compared
+        # at 1BF6 with the codes at 1CBE. This one is the super mode's: Start, Jump, Bubble,
+        # Left, Right, Jump, Start, Right. Start on the title does not start a game.
+        total = (seconds or 120) * FPS
+        f = 2 * FPS
+        for field in ["1 Player Start", "P1 Button 2", "P1 Button 1", "P1 Left",
+                      "P1 Right", "P1 Button 2", "1 Player Start", "P1 Right"]:
+            press(ev, f, ":IN1", field, 4)
+            f += 10
+        coin_and_start(ev, 10 * FPS)
+        # SELECT GAME MODE (2931) waits up to 0x4B0 frames: Right picks the super mode and
+        # either button starts.
+        for g in range(13 * FPS, 22 * FPS, FPS):
+            press(ev, g, ":IN1", "P1 Right", 4)
+        press(ev, 24 * FPS, ":IN1", "P1 Button 1", 4)
+        random_play(ev, rng, 26 * FPS, total)
+        return ev, 120, False, {}
     if name == "testgrid":
         f = 5 * FPS
         for port, field in [(":IN0", "Coin 1"), (":IN0", "Coin 2"), (":IN0", "Service 1"),
@@ -148,6 +166,7 @@ SCENARIOS = {
     "attract": "attract mode, no inputs (150 s)",
     "game1p": "coin, 1P start, random play, re-coin every 20 s (600 s)",
     "game2p": "coins, 2P start, random play for both (600 s)",
+    "super1p": "the super mode code on the title, coin, 1P start, super mode, random play (120 s)",
     "testgrid": "DSW mode 'Test (Grid and Inputs)', every input pressed in turn (30 s)",
     "testram": "DSW mode 'Test (RAM and Sound)/Pause' (60 s)",
     "play": "record your own play in a MAME window, then trace the replay",

@@ -54,7 +54,8 @@ Other tools:
   (`sprites.csv`), one sheet per calling routine and one per character, in
   `build/gfx/sprites/` with `sprites.json` and `characters/characters.json`
 - `tools/levels.py` — decode the 100 round layouts, `build/levels/round_NNN.json` and `.png`
-  plus `rounds.png`; `--check <snap folder>` compares them with RAM snapshots
+  plus `rounds.png`, the same in the super mode's palettes (`_super.png`), and the item
+  tables (`items.json`); `--check <snap folder>` compares them with RAM snapshots
 - `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
 - `tools/symbols.py` — export `notes/symbols.toml` as assembler includes, `build/include/`
   (`build.py` runs it)
@@ -62,7 +63,8 @@ Other tools:
   `disasm/mcu.s` (it made the first `src/mcu/mcu.s`, which is now edited by hand)
 - `tools/trace.py` — run MAME headless on a scripted scenario (`--list`) with the debugger
   tracing every CPU, and record executed code, RAM and I/O accesses and sound commands in
-  `build/traces/<scenario>/`. `play` records your own play first, then traces the replay.
+  `build/traces/<scenario>/`. `play` records your own play first, then traces the replay;
+  `super1p` enters the super mode code on the title.
   `--snap N` adds a screenshot and RAM image every N seconds. Cheats, in a recording and
   its replay (`tools/cheats.lua`): `--round N` starts every game on round N, and
   `--boss-hits 80` traps the round 100 boss in a bubble at once. Needs `MAME_DIR` in
