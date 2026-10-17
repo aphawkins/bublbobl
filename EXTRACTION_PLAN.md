@@ -435,8 +435,12 @@ Started (2026-10-17) with the sub CPU, which is now done:
   classification map (a routine whose end the tracer can't see ran into the strings at
   `2D73`) and at the end of the image. Labels are still `L_xxxx`, and the jump tables that
   `0DA7` reads (callers such as `50EE`) are only followed where MAME executed them.
-- Next: name the routines and annotate `src\mainixed.s` by hand, list the jump tables so
-  the untraced targets are reached, then do the four banks.
+- Jump tables (2026-10-17): the `0DA7` word tables in the fixed ROM were added with
+  `--table 37FD:10 --table 50F6:3 --table 54BC:3 --table 61F4:7 --table 6E50:5 --table 7B8C:4`.
+  That reaches 0x525 more code bytes (0x68B3 in all, 12346 instructions) and still builds
+  byte-exact. Tables in the banks (`80C9`, `8160`, `8009`, `8032`, `95AA`) wait for the banks.
+- Next: name the routines and annotate `src/main/fixed.s` by hand (do not rerun the tool
+  over it), then do the four banks.
 
 ---
 

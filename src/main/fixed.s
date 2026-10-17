@@ -2411,7 +2411,60 @@ L_13E4:                 ; 13E4
         xor     a
         ret
 
-        .incbin "main_fixed.bin", 0x13F0, 0x0054
+L_13F0:                 ; 13F0
+        ld      hl,P1_REC
+        bit     0,(hl)
+        jp      z,L_141B
+        inc     hl
+        ld      a,(hl)
+        sub     (ix+1)
+        jp      p,L_1402
+        neg
+L_1402:                 ; 1402
+        cp      c
+        jp      nc,L_141B
+        inc     hl
+        ld      a,(hl)
+        sub     (ix+2)
+        jp      p,L_1410
+        neg
+L_1410:                 ; 1410
+        cp      b
+        jp      nc,L_141B
+        ld      a,(0xE698)
+        ld      c,a
+        ld      a,0x00
+        ret
+
+L_141B:                 ; 141B
+        ld      hl,P2_REC
+        bit     0,(hl)
+        jp      z,L_1442
+        inc     hl
+        ld      a,(hl)
+        sub     (ix+1)
+        jp      p,L_142D
+        neg
+L_142D:                 ; 142D
+        cp      c
+        ret     nc
+        inc     hl
+        ld      a,(hl)
+        sub     (ix+2)
+        jp      p,L_1439
+        neg
+L_1439:                 ; 1439
+        cp      b
+        ret     nc
+        ld      a,(0xE6CA)
+        ld      c,a
+        ld      a,0x01
+        ret
+
+L_1442:                 ; 1442
+        xor     a
+        ret
+
         ld      bc,0x0E0E
         ld      a,l
         sub     (ix+1)
@@ -6241,12 +6294,55 @@ L_377F:                 ; 377F
         pop     de
         pop     hl
         ld      a,b
-        ld      hl,0x37FD
+        ld      hl,L_37FD
         call    L_0DA7
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_fixed.bin", 0x378A, 0x0047
+L_378A:                 ; 378A
+        call    L_3811
+        ld      (hl),0x48
+        inc     hl
+        ld      (hl),0x2E
+        inc     hl
+        ld      (hl),0x21
+        ld      c,0x12
+        call    L_1350
+        call    L_18BB
+        ld      hl,0xF457
+        inc     (hl)
+        ld      iy,L_0061
+        bit     3,(iy-95)
+        jr      nz,L_37D1
+        push    de
+        ex      (sp),ix
+L_37AE:                 ; 37AE
+        ld      hl,0xE604
+        inc     (hl)
+        jr      L_37D1
+
+L_37B4:                 ; 37B4
+        ld      hl,0xE605
+        inc     (hl)
+        jr      L_37D1
+
+L_37BA:                 ; 37BA
+        ld      hl,0xE606
+        inc     (hl)
+        jr      L_37D1
+
+L_37C0:                 ; 37C0
+        ld      hl,0xE607
+        inc     (hl)
+        jr      L_37D1
+
+L_37C6:                 ; 37C6
+        ld      hl,0xE608
+        inc     (hl)
+        ld      c,0x2D
+        call    L_1350
+        jr      L_37D1
+
 L_37D1:                 ; 37D1
         call    L_349F
         call    L_38BD
@@ -6258,7 +6354,18 @@ L_37D1:                 ; 37D1
 
 ; 3-letter names (default hi-score initials?)
 NAME_TABLE:             ; 37DF
-        .incbin "main_fixed.bin", 0x37DF, 0x0032
+        .incbin "main_fixed.bin", 0x37DF, 0x001E
+L_37FD:                 ; 37FD
+        .word   L_378A
+        .word   L_37AE
+        .word   L_37B4
+        .word   L_37BA
+        .word   L_37C0
+        .word   L_37C6
+        .word   L_37C6
+        .word   L_37C6
+        .word   L_37C6
+        .word   L_37C6
 L_3811:                 ; 3811
         ld      a,(0xE677)
         ld      b,0x07
@@ -8980,12 +9087,130 @@ L_50CB:                 ; 50CB
         ld      a,0x02
         call    BANK_SELECT
         ld      a,(0xE724)
-        ld      hl,0x50F6
+        ld      hl,L_50F6
         call    L_0DA7
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_fixed.bin", 0x50F6, 0x0171
+L_50F6:                 ; 50F6
+        .word   L_50FC
+        .word   L_510B
+        .word   L_5115
+L_50FC:                 ; 50FC
+        ld      hl,0xF47B
+        ld      (hl),0x00
+        call    0x8DA3
+        ld      hl,0xF47C
+        ld      (hl),0x01
+        jr      L_5124
+
+L_510B:                 ; 510B
+        call    0xA433
+        ld      hl,0xF595
+        ld      (hl),0x01
+        jr      L_5124
+
+L_5115:                 ; 5115
+        ld      hl,0xF47B
+        ld      (hl),0x01
+        call    0x8DA3
+        ld      hl,0xF47C
+        ld      (hl),0x01
+        jr      L_5124
+
+L_5124:                 ; 5124
+        call    BANK_RESTORE
+L_5127:                 ; 5127
+        rst     0x20
+        call    L_55DB
+        call    L_52B6
+        call    L_5353
+        call    L_5416
+        call    L_52A6
+        call    0xA150
+        call    L_541E
+        ld      ix,BUBBLE_SLOTS
+        ld      b,0x24
+L_5143:                 ; 5143
+        push    bc
+        ld      a,(ix+0)
+        bit     0,a
+        jr      nz,L_517F
+        bit     1,a
+        jp      nz,L_51B8
+        bit     2,a
+        jp      nz,L_51CA
+        call    L_1529
+        ld      a,(ix+8)
+        add     a,a
+        add     a,a
+        ld      de,0x51D7
+        call    L_0D84
+        ld      a,(de)
+        ld      (hl),a
+        inc     hl
+        inc     hl
+        inc     de
+        ld      a,(de)
+        ld      (hl),a
+        inc     de
+        ld      a,(de)
+        ld      b,a
+        inc     de
+        ld      a,(de)
+        ld      c,a
+        ld      a,(ix+7)
+        call    SPRITE
+        call    L_1537
+        set     0,(ix+0)
+        jr      L_51CA
+
+L_517F:                 ; 517F
+        ld      bc,0x1010
+        call    L_13F0
+        jr      nc,L_51CA
+        and     a
+        jr      nz,L_5197
+        ld      (0xE5D6),a
+        ld      de,0x1000
+        call    L_2FB3
+        ld      c,0x1E
+        jr      L_51A2
+
+L_5197:                 ; 5197
+        ld      (0xE5D6),a
+        ld      de,0x1000
+        call    L_2FB3
+        ld      c,0x22
+L_51A2:                 ; 51A2
+        ld      b,0x98
+        ld      a,(ix+7)
+        call    SPRITE
+        ld      (ix+9),0x3C
+        ld      (ix+0),0x02
+        ld      hl,0xE725
+        inc     (hl)
+        jr      L_51CA
+
+L_51B8:                 ; 51B8
+        dec     (ix+9)
+        jr      z,L_51C3
+        call    L_1529
+        inc     (hl)
+        jr      L_51CA
+
+L_51C3:                 ; 51C3
+        call    L_154C
+        ld      (ix+0),0x04
+L_51CA:                 ; 51CA
+        pop     bc
+        ld      de,0x000A
+        add     ix,de
+        dec     b
+        jp      nz,L_5143
+        jp      L_5127
+
+        .incbin "main_fixed.bin", 0x51D7, 0x0090
 L_5267:                 ; 5267
         ld      ix,BUBBLE_SLOTS
         xor     a
@@ -9025,7 +9250,265 @@ L_5294:                 ; 5294
         jr      nz,L_526F
         ret
 
-        .incbin "main_fixed.bin", 0x52A6, 0x01F2
+L_52A6:                 ; 52A6
+        ld      hl,(0xE72E)
+        dec     hl
+        ld      (0xE72E),hl
+        ld      a,l
+        or      h
+        ret     nz
+        ld      hl,GHOST_ON
+        ld      (hl),0x01
+        ret
+
+L_52B6:                 ; 52B6
+        ld      a,(0xE72B)
+        bit     1,a
+        jr      nz,L_5302
+        bit     0,a
+        jr      nz,L_52CD
+        ld      a,(0xE725)
+        cp      0x18
+        ret     c
+        ld      hl,0xE72B
+        set     0,(hl)
+        ret
+
+L_52CD:                 ; 52CD
+        ld      hl,0xE72C
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x1E
+        ret     nz
+        ld      (hl),0x00
+        inc     hl
+        ld      a,(0xE72D)
+        add     a,a
+        add     a,a
+        add     a,a
+        ld      hl,0x533B
+        call    L_0D89
+        ld      de,0xD0E6
+        ld      bc,0x0004
+        ldir
+        ld      de,0xD126
+        ld      bc,0x0004
+        ldir
+        ld      hl,0xE72D
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x03
+        ret     nz
+        ld      hl,0xE72B
+        set     1,(hl)
+        ret
+
+L_5302:                 ; 5302
+        ld      hl,0xE5D7
+        bit     0,(hl)
+        jr      z,L_5320
+        ld      hl,0xE2C5
+        ld      a,(hl)
+        cp      0x58
+        jr      nz,L_5320
+        inc     hl
+        inc     hl
+        ld      a,(hl)
+        cp      0x77
+        jr      c,L_5320
+        cp      0x7A
+        jr      nc,L_5320
+        dec     hl
+        dec     hl
+        ld      (hl),0x18
+L_5320:                 ; 5320
+        ld      hl,0xE5D7
+        bit     1,(hl)
+        ret     z
+        ld      hl,0xE2B5
+        ld      a,(hl)
+        cp      0x58
+        ret     nz
+        inc     hl
+        inc     hl
+        ld      a,(hl)
+        cp      0x77
+        ret     c
+        cp      0x7A
+        ret     nc
+        dec     hl
+        dec     hl
+        ld      (hl),0x18
+        ret
+
+        .incbin "main_fixed.bin", 0x533B, 0x0018
+L_5353:                 ; 5353
+        ld      a,(0xE731)
+        bit     1,a
+        jr      nz,L_539F
+        bit     0,a
+        jr      nz,L_536A
+        ld      a,(0xE725)
+        cp      0x24
+        ret     c
+        ld      hl,0xE731
+        set     0,(hl)
+        ret
+
+L_536A:                 ; 536A
+        ld      hl,0xE732
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x1E
+        ret     nz
+        ld      (hl),0x00
+        inc     hl
+        ld      a,(0xE733)
+        add     a,a
+        add     a,a
+        add     a,a
+        ld      hl,0x5406
+        call    L_0D89
+        ld      de,0xD0F6
+        ld      bc,0x0004
+        ldir
+        ld      de,0xD136
+        ld      bc,0x0004
+        ldir
+        ld      hl,0xE733
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x02
+        ret     nz
+        ld      hl,0xE731
+        set     1,(hl)
+        ret
+
+L_539F:                 ; 539F
+        ld      hl,0xE5D7
+        bit     0,(hl)
+        jr      z,L_53B9
+        ld      hl,0xE2C5
+        ld      a,(hl)
+        cp      0x18
+        jr      nz,L_53B9
+        inc     hl
+        inc     hl
+        ld      a,(hl)
+        cp      0x77
+        jr      c,L_53B9
+        cp      0x7A
+        jr      c,L_53CF
+L_53B9:                 ; 53B9
+        ld      hl,0xE5D7
+        bit     1,(hl)
+        ret     z
+        ld      hl,0xE2B5
+        ld      a,(hl)
+        cp      0x18
+        ret     nz
+        inc     hl
+        inc     hl
+        ld      a,(hl)
+        cp      0x77
+        ret     c
+        cp      0x7A
+        ret     nc
+L_53CF:                 ; 53CF
+        ld      a,0x03
+        rst     0x08
+        call    L_18BB
+        call    L_03CB
+        call    L_02AC
+        ld      a,(0xE726)
+        ld      (ROUND_MAIN),a
+        ld      hl,0xE358
+        ld      (hl),0x00
+        ld      c,0x30
+        call    L_1350
+        ld      hl,0xE342
+        ld      (hl),0x01
+        ld      hl,0xE723
+        ld      (hl),0x00
+        ld      hl,0xE357
+        ld      (hl),0x01
+        ld      hl,ENEMY_TOTAL
+        ld      (hl),0x00
+        ld      hl,0xE730
+        ld      (hl),0x00
+        xor     a
+        rst     0x18
+        ld      e,(hl)
+        add     hl,sp
+        ld      l,b
+        add     hl,sp
+        ld      e,a
+        add     hl,sp
+        ld      l,c
+        add     hl,sp
+        ld      (hl),d
+        add     hl,sp
+        ld      a,e
+        add     hl,sp
+        ld      (hl),e
+        add     hl,sp
+        ld      a,h
+        add     hl,sp
+L_5416:                 ; 5416
+        ld      hl,0xE730
+        bit     7,(hl)
+        ret     z
+        jr      L_53CF
+
+L_541E:                 ; 541E
+        ld      hl,0xE727
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x07
+        ret     nz
+        ld      (hl),0x00
+        inc     hl
+        inc     (hl)
+        bit     0,(hl)
+        jr      nz,L_545B
+        ld      hl,0x5488
+        ld      de,0xCD8A
+        ld      bc,0x0004
+        ldir
+        ld      hl,0x548C
+        ld      de,0xCDCA
+        ld      bc,0x0004
+        ldir
+        ld      hl,0x5488
+        ld      de,0xD40A
+        ld      bc,0x0004
+        ldir
+        ld      hl,0x548C
+        ld      de,0xD44A
+        ld      bc,0x0004
+        ldir
+        ret
+
+L_545B:                 ; 545B
+        ld      hl,0x5490
+        ld      de,0xCD8A
+        ld      bc,0x0004
+        ldir
+        ld      hl,0x5494
+        ld      de,0xCDCA
+        ld      bc,0x0004
+        ldir
+        ld      hl,0x5490
+        ld      de,0xD40A
+        ld      bc,0x0004
+        ldir
+        ld      hl,0x5494
+        ld      de,0xD44A
+        ld      bc,0x0004
+        ldir
+        ret
+
+        .incbin "main_fixed.bin", 0x5488, 0x0010
 L_5498:                 ; 5498
         ld      iy,0xFC44
         ld      a,(iy+65)
@@ -9037,13 +9520,119 @@ L_5498:                 ; 5498
         ld      bc,L_0020
         ldir
         ld      a,(0xE724)
-        ld      hl,0x54BC
+        ld      hl,L_54BC
         call    L_0DA7
         ex      de,hl
 L_54BB:                 ; 54BB
         jp      (hl)
 
-        .incbin "main_fixed.bin", 0x54BC, 0x02BA
+L_54BC:                 ; 54BC
+        .word   L_54C2
+        .word   L_54ED
+        .word   L_5518
+L_54C2:                 ; 54C2
+        ld      a,0x03
+        call    BANK_SELECT
+        ld      hl,0x555B
+        ld      de,0xF9E0
+        ld      bc,L_0020
+        ldir
+        ld      hl,0xCD08
+        ld      de,BANK_WINDOW
+        ld      bc,0x1A10
+        call    L_5543
+        ld      hl,0xD108
+        ld      de,0x8340
+        ld      bc,0x1A10
+        call    L_5543
+        jp      BANK_RESTORE
+
+L_54ED:                 ; 54ED
+        ld      a,0x03
+        call    BANK_SELECT
+        ld      hl,0x557B
+        ld      de,0xF9E0
+        ld      bc,L_0020
+        ldir
+        ld      hl,0xCD08
+        ld      de,0x8680
+        ld      bc,0x1A10
+        call    L_5543
+        ld      hl,0xD108
+        ld      de,0x89C0
+        ld      bc,0x1A10
+        call    L_5543
+        jp      BANK_RESTORE
+
+L_5518:                 ; 5518
+        ld      a,0x03
+        call    BANK_SELECT
+        ld      hl,0x559B
+        ld      de,0xF9E0
+        ld      bc,L_0020
+        ldir
+        ld      hl,0xCD08
+        ld      de,0x8D00
+        ld      bc,0x1A10
+        call    L_5543
+        ld      hl,0xD108
+        ld      de,0x9040
+        ld      bc,0x1A10
+        call    L_5543
+        jp      BANK_RESTORE
+
+L_5543:                 ; 5543
+        push    bc
+        push    hl
+        ld      b,c
+L_5546:                 ; 5546
+        ld      a,(de)
+        ld      (hl),a
+        inc     hl
+        inc     de
+        ld      a,(de)
+        ld      (hl),a
+        inc     de
+        ld      a,0x3F
+        call    L_0D89
+        djnz    L_5546
+        pop     hl
+        pop     bc
+        inc     hl
+        inc     hl
+        djnz    L_5543
+        ret
+
+        .incbin "main_fixed.bin", 0x555B, 0x0080
+L_55DB:                 ; 55DB
+        ld      a,(0xE729)
+        and     a
+        jr      z,L_55E5
+        jp      m,L_55FA
+        ret
+
+L_55E5:                 ; 55E5
+        ld      hl,0xE729
+        ld      (hl),0xFF
+        ld      hl,0xE72A
+        ld      (hl),0x78
+        ld      hl,0x560F
+        ld      de,0xD65E
+        ld      c,0x00
+        jp      L_0E9A
+
+L_55FA:                 ; 55FA
+        ld      hl,0xE72A
+        dec     (hl)
+        ret     nz
+        ld      hl,0xE729
+        ld      (hl),0x01
+        ld      hl,0x5627
+        ld      de,0xD65E
+        ld      c,0x00
+        jp      L_0E9A
+
+        .incbin "main_fixed.bin", 0x560F, 0x0167
 L_5776:                 ; 5776
         ld      hl,0xE737
         ld      bc,0x000B
@@ -10295,12 +10884,68 @@ L_616A:                 ; 616A
 ; one pixel by the bubble's cell (IX+0A): 0-1 up (Y+1), 2 right, 3 left, 4 down, 5-6 stay; re-reads the cell on an 8-pixel boundary (61E4)
 BUBBLE_DRIFT:           ; 6175
         ld      a,(ix+10)
-        ld      hl,0x61F4
+        ld      hl,L_61F4
         call    L_0DA7
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_fixed.bin", 0x6180, 0x0064
+L_6180:                 ; 6180
+        ld      a,(ix+2)
+        and     0x07
+        jp      nz,L_618C
+        call    L_61E4
+        ret     nz
+L_618C:                 ; 618C
+        ld      l,(ix+3)
+        ld      h,(ix+4)
+        inc     hl
+        inc     hl
+        inc     (hl)
+        ld      (ix+15),0x01
+        ret
+
+L_619A:                 ; 619A
+        ld      a,(ix+2)
+        and     0x07
+        jp      nz,L_61A6
+        call    L_61E4
+        ret     nz
+L_61A6:                 ; 61A6
+        ld      l,(ix+3)
+        ld      h,(ix+4)
+        inc     hl
+        inc     hl
+        dec     (hl)
+        ld      (ix+15),0x03
+        ret
+
+L_61B4:                 ; 61B4
+        ld      a,(ix+1)
+        and     0x07
+        jp      nz,L_61C0
+        call    L_61E4
+        ret     nz
+L_61C0:                 ; 61C0
+        ld      l,(ix+3)
+        ld      h,(ix+4)
+        inc     (hl)
+        ld      (ix+15),0x00
+        ret
+
+L_61CC:                 ; 61CC
+        ld      a,(ix+1)
+        and     0x07
+        jp      nz,L_61D8
+        call    L_61E4
+        ret     nz
+L_61D8:                 ; 61D8
+        ld      l,(ix+3)
+        ld      h,(ix+4)
+        dec     (hl)
+        ld      (ix+15),0x02
+L_61E3:                 ; 61E3
+        ret
+
 L_61E4:                 ; 61E4
         ld      a,(ix+1)
         ld      h,(ix+2)
@@ -10309,7 +10954,15 @@ L_61E4:                 ; 61E4
         ld      (ix+10),a
         ret
 
-        .incbin "main_fixed.bin", 0x61F4, 0x0020
+L_61F4:                 ; 61F4
+        .word   L_61B4
+        .word   L_61B4
+        .word   L_6180
+        .word   L_619A
+        .word   L_61CC
+        .word   L_61E3
+        .word   L_61E3
+        .incbin "main_fixed.bin", 0x6202, 0x0012
 L_6214:                 ; 6214
         ld      a,(SPEED2_SEL)
         ld      hl,0x622A
@@ -10758,7 +11411,7 @@ L_65E6:                 ; 65E6
         add     a,(hl)
         ld      (hl),a
         inc     de
-        ld      hl,0x142D
+        ld      hl,L_142D
         or      a
         sbc     hl,de
         jr      z,L_65FE
@@ -11659,16 +12312,28 @@ L_6E16:                 ; 6E16
         ld      de,SPECIAL_LIST
         call    L_0D84
         ld      a,(de)
-        ld      hl,0x6E50
+        ld      hl,L_6E50
         call    L_0DA7
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_fixed.bin", 0x6E50, 0x000A
+L_6E50:                 ; 6E50
+        .word   L_6E5A
+        .word   L_6ED9
+        .word   L_6ED3
+        .word   L_6EBB
+        .word   L_6E61
+L_6E5A:                 ; 6E5A
         ld      (ix+0),0x01
         jp      L_602A
 
-        .incbin "main_fixed.bin", 0x6E61, 0x0010
+L_6E61:                 ; 6E61
+        ld      a,(ix+7)
+        ld      bc,0xC404
+        call    SPRITE
+        set     4,(ix+33)
+        jp      L_602A
+
 L_6E71:                 ; 6E71
         ld      iy,0xFC9D
         ld      a,(iy-24)
@@ -11705,11 +12370,27 @@ L_6E9B:                 ; 6E9B
         call    L_0D14
         jp      L_602A
 
-        .incbin "main_fixed.bin", 0x6EBB, 0x0018
+L_6EBB:                 ; 6EBB
+        ld      a,i
+        ld      d,a
+        ld      a,(MCU_RAM)
+        ld      e,a
+        ld      hl,IRQ_VECTOR_ENTRY
+        or      a
+        sbc     hl,de
+        jr      z,L_6ECD
+        push    af
+        ex      (sp),ix
+L_6ECD:                 ; 6ECD
+        ld      (ix+24),0x01
+        jr      L_6EDD
+
+L_6ED3:                 ; 6ED3
         ld      (ix+24),0x02
         jr      L_6EDD
 
-        .incbin "main_fixed.bin", 0x6ED9, 0x0004
+L_6ED9:                 ; 6ED9
+        ld      (ix+24),0x03
 L_6EDD:                 ; 6EDD
         ld      (ix+5),0x00
         call    L_158B
@@ -13269,12 +13950,90 @@ L_7ABA:                 ; 7ABA
         bit     6,(ix+0)
         jp      nz,L_7B61
         ld      a,(ix+7)
-        ld      hl,0x7B8C
+        ld      hl,L_7B8C
         call    L_0DA7
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_fixed.bin", 0x7AD9, 0x0088
+L_7AD9:                 ; 7AD9
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_7B1E
+        ld      b,a
+L_7AE1:                 ; 7AE1
+        push    bc
+        call    L_1537
+        call    0x879A
+        jr      z,L_7AF6
+        call    L_1529
+        inc     hl
+        inc     hl
+        dec     (hl)
+        pop     bc
+        djnz    L_7AE1
+        jp      L_7B1E
+
+L_7AF6:                 ; 7AF6
+        pop     bc
+        call    L_1556
+        set     6,(ix+0)
+        jp      L_7B75
+
+L_7B01:                 ; 7B01
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_7B1E
+        ld      b,a
+L_7B09:                 ; 7B09
+        push    bc
+        call    L_1537
+        call    0x87AC
+        jr      z,L_7AF6
+        call    L_1529
+        inc     hl
+        inc     hl
+        inc     (hl)
+        pop     bc
+        djnz    L_7B09
+        jp      L_7B1E
+
+L_7B1E:                 ; 7B1E
+        inc     (ix+16)
+        ld      a,(ix+5)
+        cp      0x05
+        jr      z,L_7B37
+        ld      de,0x0406
+        ld      a,(HURRY)
+        and     a
+        jr      z,L_7B34
+        ld      de,0x0206
+L_7B34:                 ; 7B34
+        call    ANIM_STEP
+L_7B37:                 ; 7B37
+        ld      b,a
+        ld      a,0x05
+        sub     b
+        add     a,a
+        add     a,a
+        ld      b,a
+        ld      a,0x4C
+        bit     3,(ix+16)
+        jr      nz,L_7B48
+        ld      a,0x64
+L_7B48:                 ; 7B48
+        add     a,b
+        ld      b,a
+        ld      c,0x1E
+        ld      a,(ix+10)
+        bit     1,(ix+7)
+        jr      z,L_7B5B
+        call    SPRITE
+        jp      L_7B75
+
+L_7B5B:                 ; 7B5B
+        call    SPRITE_FLIPX
+        jp      L_7B75
+
 L_7B61:                 ; 7B61
         ld      (ix+0),0x00
         pop     hl
@@ -13300,7 +14059,12 @@ L_7B75:                 ; 7B75
         jp      nz,L_7A42
         ret
 
-        .incbin "main_fixed.bin", 0x7B8C, 0x0071
+L_7B8C:                 ; 7B8C
+        .word   L_7B1E
+        .word   L_7B01
+        .word   L_7B1E
+        .word   L_7AD9
+        .incbin "main_fixed.bin", 0x7B94, 0x0069
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
