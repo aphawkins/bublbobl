@@ -9,7 +9,13 @@ Runs so far: attract, scripted 1P and 2P play, a recorded game from round 1 (`sp
 `trace.py play --round 20`), round 30 (`spr_r30`, 7,115 frames), round 40 (`spr_r40`,
 4,558 frames), round 50 (`spr_r50`, 3,107 frames), round 60 (`spr_r60`, 3,969
 frames), round 100 (`spr_r100`, 3,284 frames) and a 1P game completed with
-`--round 100 --boss-hits 80` (`spr_end`, 4,929 frames). 1,292 frames from 109 call sites.
+`--round 100 --boss-hits 80` (`spr_end`, 4,929 frames), and the same as a 2P game
+(`spr_end2p`, 12,400 frames). 1,388 frames from 121 call sites.
+
+The names are the game's own: the true ending's credits list the characters as BUBBLUN,
+BOBBLUN, ZEN-CHAN, MONSTA, SKEL-MONSTA, MIGHTA, PULPUL, BANEBOU, INVADER, HIDEGONS,
+DRUNK, SUPER DRUNK, RASCAL, BOBBY, BETTY, BUBBY and PATTY. Bubblun and Bobblun are the
+players, called Bub and Bob below.
 
 ## How a sprite is drawn
 
@@ -88,8 +94,24 @@ row *i* / 4. The 16 positions are in `BOSS_PIECE_XY` (`bank0:AF0C`).
 
 After the boss, the captives are freed and the text screens follow (drawn as text, not
 sprites): "CONGRATULATIONS! BUT THIS IS NOT A TRUE ENDING! COME HERE WITH YOUR FRIENDS!
-… TRY AGAIN!!", then "YOU ZAPPED TO ....." and play goes on at round 50. Going by that
-message, the true ending needs a 2-player game.
+… TRY AGAIN!!", then "YOU ZAPPED TO ....." and play goes on at round 50. The true ending
+needs a 2-player game.
+
+## The 2P (true) ending
+
+Traced with `--round 100 --boss-hits 80` in a 2-player game. "ROUND 100 CLEAR"
+(`3B4F`/`3B5D` for player 1, `3C3A`/`3C47` for player 2, tiles `17E0–17FC`), then
+"1000000PTS!! HAPPY END!!" with a big heart, then "CONGRATULATIONS! NOW, YOU FOUND THE
+MOST IMPORTANT MAGIC IN THE WORLD. IT'S "LOVE" & "FRIENDSHIP"!", the staff credits, the
+character list above, and "PRODUCED BY TAITO". The ending spells MIGHTA.
+
+| Caller | Shows |
+|---|---|
+| `69B2` | a freed captive (`1BC8`, colour 6) |
+| `6B38`, `6B41`, `6B68`, `6B74` | the players in human form, colours 6 and 3 (`1BC4–1BE8`) |
+| `6B9B` | a heart (`1A44`) |
+| `6AC5` | cyan drops (`CB0–CB8`), as drawn for Skel-Monsta's table by `bank0:A4AE` |
+| `bank0:BFA8` | a ring, a square, a star and purple wedges (`9C4–19C8`, IX `E6C3`) |
 
 ## Players
 
@@ -133,5 +155,5 @@ The bubble slots are 0x28 bytes from `E76C` (IX `E76C`, `E794`, `E7BC`, …).
 
 ## Still to do
 
-- The 2-player (true) ending.
+- Per-character sheets grouped by slot table, with the 64 × 64 boss drawn whole.
 - Per-character sheets: group the frames by slot table instead of by caller.

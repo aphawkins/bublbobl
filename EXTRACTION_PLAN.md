@@ -307,7 +307,9 @@ shows the block. The objects are built in `OBJ_SHADOW` (`E1CD`) and copied to `D
   `notes\sprites.md`.
 - The 1P ending is traced (`trace.py --boss-hits 80` traps the boss at once): text screens,
   then "YOU ZAPPED TO" round 50.
-- Still to do: the 2-player (true) ending; per-character sheets grouped by slot
+- The 2-player (true) ending is traced too: HAPPY END, the staff credits and the game's
+  own character list, which confirms every enemy name.
+- Still to do: per-character sheets grouped by slot
   table.
 
 Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.
