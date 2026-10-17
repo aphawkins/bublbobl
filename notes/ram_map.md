@@ -391,14 +391,14 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E2AA | 0x1 |  | 18AB, bank0:A131 |  |  |  |
 | E2AB | 0x1 |  | 1553, 27DF, 2857, 2863, 3949, bank0:A2C9, bank0:A39D, bank0:A3C5 | 1545, 2857, 2863, bank0:A398, bank0:A3C0 |  |  |
 | E2AC | 0x1 |  | 157F, 1591, 27E1, 394D, bank0:A140 |  |  |  |
-| E2AD | 0x1 |  | bank2:84C6, bank2:8523 | bank2:8523, bank2:8557 |  |  |
-| E2AE | 0x1 |  | bank2:84C8 |  |  |  |
-| E2AF | 0x1 |  | bank2:84CB | bank2:855A |  |  |
-| E2B0 | 0x1 |  | bank2:84CD |  |  |  |
-| E2B1 | 0x1 |  | bank2:86BA, bank2:8713 | bank2:8713, bank2:8747 |  |  |
-| E2B2 | 0x1 |  | bank2:86BC |  |  |  |
-| E2B3 | 0x1 |  | bank2:86BF | bank2:874A |  |  |
-| E2B4 | 0x1 |  | bank2:86C1 |  |  |  |
+| E2AD | 0x1 | POINTS_ITEM | bank2:84C6, bank2:8523 | bank2:8523, bank2:8557 |  |  |
+| E2AE | 0x1 | POINTS_ITEM+1 | bank2:84C8 |  |  |  |
+| E2AF | 0x1 | POINTS_ITEM+2 | bank2:84CB | bank2:855A |  |  |
+| E2B0 | 0x1 | POINTS_ITEM+3 | bank2:84CD |  |  |  |
+| E2B1 | 0x1 | SPECIAL_ITEM | bank2:86BA, bank2:8713 | bank2:8713, bank2:8747 |  |  |
+| E2B2 | 0x1 | SPECIAL_ITEM+1 | bank2:86BC |  |  |  |
+| E2B3 | 0x1 | SPECIAL_ITEM+2 | bank2:86BF | bank2:874A |  |  |
+| E2B4 | 0x1 | SPECIAL_ITEM+3 | bank2:86C1 |  |  |  |
 | E2B5 | 0x1 |  | 3F7A, 4316, 43DD, 48B6, 4906, 4A85, 4E77, 4E78 +4 | 153D, 4316, 43DD, 48B6, 4906, 4A84, 4E62, 4E77 +1 |  |  |
 | E2B6 | 0x1 |  | 18AB, 3F7D, bank2:ADD7, bank2:AFA5 |  |  |  |
 | E2B7 | 0x1 |  | 3F80, 429F, 42DC, 4375, 439E, 4730, 4750, 4AA7 +10 | 1545, 429F, 42DC, 4375, 439E, 4730, 4750, 4AA7 +9 |  |  |
@@ -541,14 +541,14 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E340 | 0x1 |  | 08BC, 0903 | 43BD |  |  |
 | E341 | 0x1 |  | 065A | 0891 |  |  |
 | E342 | 0x1 |  | 0663 | 0609 |  |  |
-| E343 | 0x1 |  | 087E, bank0:A468 | 0865, bank0:A164 |  |  |
+| E343 | 0x1 | GHOST_ON | 087E, bank0:A468 | 0865, bank0:A164 |  |  |
 | E344 | 0x1 |  | 08A8, 08AD | 08A8, 08A9 |  |  |
-| E345 | 0x1 |  | 08A8, 4113 | 076A, 0779, 08A8, 08A9, 3F2E, 3FB2 |  |  |
+| E345 | 0x1 | ROUND_SECONDS | 08A8, 4113 | 076A, 0779, 08A8, 08A9, 3F2E, 3FB2 |  |  |
 | E346 | 0x1 |  |  | 0765, 3F2E, 3FB2 |  |  |
 | E347 | 0x1 |  | 086D, 0872 | 086D, 086E |  |  |
 | E348 | 0x1 |  | 0875 | 0875, 0879 |  |  |
-| E349 | 0x1 |  | 073F, 0832 | 0736, 085F, bank0:886B, bank0:8897, bank0:8AB3, bank0:8DF6 |  |  |
-| E34A | 0x1 |  | 077E | bank0:BF4D, bank2:86A3, bank2:86E5 |  |  |
+| E349 | 0x1 | HURRY | 073F, 0832 | 0736, 085F, bank0:886B, bank0:8897, bank0:8AB3, bank0:8DF6 |  |  |
+| E34A | 0x1 | NO_SPECIAL | 077E | bank0:BF4D, bank2:86A3, bank2:86E5 |  |  |
 | E34B | 0x1 |  | 07A5, 07EC, 0812, 082D | 0673, 0752, 07C9 |  |  |
 | E34C | 0x1 |  | 07AA, 07B0 | 07AA, 07AB |  |  |
 | E34D | 0x1 |  | 07B3 | 07B3, 07B7 |  |  |
@@ -594,7 +594,7 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E393-E394 | 0x2 |  | 1395, 13B1 | 139D |  |  |
 | E395 | 0x1 |  | 1390, 13A6 | 13A5 |  |  |
 | E396 | 0x1 |  | 24FC |  |  |  |
-| E397 | 0x1 |  | 1703, 1746 | 1706 | 012D | 00A9 |
+| E397 | 0x1 | GRID_REQUEST | 1703, 1746 | 1706 | 012D | 00A9 |
 | E398-E3E7 | 0x50 |  | 172D |  |  |  |
 | E3E9-E3EE | 0x6 |  |  |  | 00D0, 00DD, 00F7, 0104 | 00D0, 00DD, 00F7, 0104 |
 | E3EF | 0x1 |  |  |  | 00D0, 00DD, 00F7 | 00D0, 00DD, 00F7 |
@@ -669,7 +669,7 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E5A1 | 0x1 |  | 178C | 5BA3 |  |  |
 | E5A2 | 0x1 |  | 178C | bank2:86B4 |  |  |
 | E5A3 | 0x1 |  | 178C | bank2:86B6 |  |  |
-| E5A4 | 0x1 |  | 178C | bank0:8458, bank0:84A1, bank0:89C7, bank0:8A1D, bank0:B0FE, bank0:B15D |  |  |
+| E5A4 | 0x1 | ENEMY_SWAP | 178C | bank0:8458, bank0:84A1, bank0:89C7, bank0:8A1D, bank0:B0FE, bank0:B15D |  |  |
 | E5A5 | 0x1 |  | 178C | 0770, 0773 |  |  |
 | E5A6 | 0x1 |  | 178C |  |  |  |
 | E5A7 | 0x1 |  | 178C | 0876 |  |  |
@@ -690,7 +690,7 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E5BE-E5C1 | 0x4 |  | 178C | 5C11 |  |  |
 | E5C2 | 0x1 |  | 178C | bank0:87EB |  |  |
 | E5C3 | 0x1 |  | 0A18, 0A32 | 1922 |  |  |
-| E5C4 | 0x1 |  | 18E8, 1906, 190E, 1916, 191F | 18EE, 1906, 1907, 1942, 1958, 199C, 1A76, 1A93 +2 |  |  |
+| E5C4 | 0x1 | GRID_DRAW_ROW | 18E8, 1906, 190E, 1916, 191F | 18EE, 1906, 1907, 1942, 1958, 199C, 1A76, 1A93 +2 |  |  |
 | E5C5 | 0x1 |  | 1B93, 1B98 | 1B93, 1B94 |  |  |
 | E5C6 | 0x1 |  | 1B9B, 1BA2 | 1B9B, 1B9C |  |  |
 | E5C7 | 0x1 |  | 1BC2 | 1BDD |  |  |
@@ -705,8 +705,8 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E5D8 | 0x1 |  | 2033, 2049, 2B48, 2EF6 | 1DE8, 1DFD, 222B, 3998, 39FE, 3B6B, 3B95, bank0:B7A8 |  |  |
 | E5D9 | 0x1 |  | 200A, 2018, 2027, 2028 | 200A, 2018, 2027, 2028, bank2:862A |  |  |
 | E5DA | 0x1 |  | 227A | 227A, bank2:862A |  |  |
-| E5DB | 0x1 |  | 20C7 | 0B50, 1797, 1B31, 267D, 2931 |  |  |
-| E5DC | 0x1 |  | 22D2, 22FA, 230C, 2B3A, 2EE0 | 17E0, 17F7, 22F0, 22FE, bank2:861C |  |  |
+| E5DB | 0x1 | SUPER_MODE | 20C7 | 0B50, 1797, 1B31, 267D, 2931 |  |  |
+| E5DC | 0x1 | DIFFICULTY | 22D2, 22FA, 230C, 2B3A, 2EE0 | 17E0, 17F7, 22F0, 22FE, bank2:861C |  |  |
 | E5DD | 0x1 |  | 1DE2 | 2308 |  |  |
 | E5DE | 0x1 |  | 1DDF, 2318, 4087 | 2318, 231A, 2324, 232B, 2332, 2339, 2340 |  |  |
 | E5DF | 0x1 |  | 4BE5, bank2:8647 | 4BE5, bank2:862A |  |  |
@@ -964,14 +964,17 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | E742 | 0x1 |  | 1DD9, 2B42, 2EED | 630C, 6F03 |  |  |
 | E743 | 0x1 |  | 1DDC, 2B45, 2EF0 | 630C, 6F1B |  |  |
 | E744 | 0x1 |  | 06FC, 0702 | 5FDD, 64D1 |  |  |
-| E745-E748 | 0x4 |  | 5C15 | 6E47 |  |  |
-| E749 | 0x1 |  | 5C15 |  |  |  |
-| E74A-E74B | 0x2 |  | 5C15 | 6E47 |  |  |
-| E74C | 0x1 |  | 5C15 |  |  |  |
-| E74D | 0x1 |  | 5C15 | 6E47 |  |  |
-| E74E | 0x1 |  | 5C15 |  |  |  |
-| E74F-E750 | 0x2 |  | 5C15 | 6E47 |  |  |
-| E753-E754 | 0x2 |  |  | 6E47 |  |  |
+| E745-E748 | 0x4 | SPECIAL_LIST | 5C15 | 6E47 |  |  |
+| E749 | 0x1 | SPECIAL_LIST+4 | 5C15 |  |  |  |
+| E74A | 0x1 | SPECIAL_LIST+5 | 5C15 | 6E47 |  |  |
+| E74B | 0x1 | SPECIAL_LIST+6 | 5C15 | 6E47 |  |  |
+| E74C | 0x1 | SPECIAL_LIST+7 | 5C15 |  |  |  |
+| E74D | 0x1 | SPECIAL_LIST+8 | 5C15 | 6E47 |  |  |
+| E74E | 0x1 | SPECIAL_LIST+9 | 5C15 |  |  |  |
+| E74F | 0x1 | SPECIAL_LIST+10 | 5C15 | 6E47 |  |  |
+| E750 | 0x1 | SPECIAL_LIST+11 | 5C15 | 6E47 |  |  |
+| E753 | 0x1 | SPECIAL_LIST+14 |  | 6E47 |  |  |
+| E754 | 0x1 | SPECIAL_LIST+15 |  | 6E47 |  |  |
 | E755 | 0x1 |  | 60FF, 6112 | 60FC, 610C, 6112 |  |  |
 | E756 | 0x1 |  | 603C |  |  |  |
 | E757 | 0x1 |  | 603F |  |  |  |
@@ -1927,15 +1930,15 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | EB34 | 0x1 |  | 65D9, 65EF | 65EE |  |  |
 | EB35 | 0x1 |  | 2526 |  |  |  |
 | EB57 | 0x1 |  |  | 5B54, 6EFC |  |  |
-| EB99 | 0x1 |  |  |  |  | 0BDB |
-| EBAB | 0x1 |  |  |  |  | 0BDB |
-| EBBD | 0x1 |  |  |  |  | 0BDB |
-| EBCF | 0x1 |  |  |  |  | 0BDB |
-| EBE1 | 0x1 |  |  |  |  | 0BDB |
-| EBF3 | 0x1 |  |  |  |  | 0BDB |
-| EC05 | 0x1 |  |  |  |  | 0BDB |
-| EC17 | 0x1 |  |  |  |  | 0BDB |
-| EC29 | 0x1 |  |  | bank2:A274 |  | 0C52 |
+| EB99 | 0x1 | ENEMY3_SHOTS |  |  |  | 0BDB |
+| EBAB | 0x1 | ENEMY3_SHOTS+18 |  |  |  | 0BDB |
+| EBBD | 0x1 | ENEMY3_SHOTS+36 |  |  |  | 0BDB |
+| EBCF | 0x1 | ENEMY3_SHOTS+54 |  |  |  | 0BDB |
+| EBE1 | 0x1 | ENEMY3_SHOTS+72 |  |  |  | 0BDB |
+| EBF3 | 0x1 | ENEMY3_SHOTS+90 |  |  |  | 0BDB |
+| EC05 | 0x1 | ENEMY3_SHOTS+108 |  |  |  | 0BDB |
+| EC17 | 0x1 | ENEMY3_SHOTS+126 |  |  |  | 0BDB |
+| EC29 | 0x1 | ENEMY2_SHOTS |  | bank2:A274 |  | 0C52 |
 | EC39 | 0x1 |  |  | bank2:A274 |  | 0C52 |
 | EC49 | 0x1 |  |  | bank2:A274 |  | 0C52 |
 | EC59 | 0x1 |  |  | bank2:A274 |  | 0C52 |
@@ -1943,7 +1946,7 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | EC79 | 0x1 |  |  | bank2:A274 |  | 0C52 |
 | EC89 | 0x1 |  |  | bank2:A274 |  | 0C52 |
 | EC99 | 0x1 |  |  | bank2:A274 |  | 0C52 |
-| ECAA | 0x1 |  |  |  |  | 0BA4 |
+| ECAA | 0x1 | ENEMY0B_SHOTS |  |  |  | 0BA4 |
 | ECBB | 0x1 |  |  |  |  | 0BA4 |
 | ECCC | 0x1 |  |  |  |  | 0BA4 |
 | ECDD | 0x1 |  |  |  |  | 0BA4 |
@@ -1972,119 +1975,119 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | ED36-ED38 | 0x3 |  |  | bank0:8645 |  |  |
 | ED39 | 0x1 |  |  | 13C9, bank0:8645, bank2:A229 |  | 0288, 02B9 |
 | ED3A-ED3C | 0x3 |  |  | bank0:8645 |  |  |
-| ED3D | 0x1 |  | 5E8B, bank0:85F8 | 05CA, 062B, 0730, 5E8B, 5FCE, 639F, 6DA2, bank0:A1CE +2 |  |  |
-| ED3E | 0x1 |  | bank0:85E4 | bank0:8453, bank0:849C, bank0:85F4, bank0:89C2, bank0:8A14, bank0:8A18, bank0:8E3B, bank0:B0F9 +1 |  |  |
-| ED3F | 0x1 |  | bank0:85E9 | bank0:85F4, bank0:8F04, bank0:8F5C |  |  |
-| ED40 | 0x1 |  | bank0:85E4 | bank0:8295, bank0:85F4, bank0:9286, bank0:92FF, bank0:A5A6, bank0:A60D, bank0:BBD8, bank0:BC23 |  |  |
-| ED41 | 0x1 |  | bank0:85E9 | 79F2, 7A35, bank0:85F4, bank0:9642, bank0:96A3 |  |  |
-| ED42 | 0x1 |  | bank0:85E4 | bank0:85F4, bank0:989C, bank0:98F3 |  |  |
-| ED43 | 0x1 |  | bank0:85E9 | bank0:85F4, bank0:9DDB, bank0:9E41 |  |  |
+| ED3D | 0x1 | ENEMY_TOTAL | 5E8B, bank0:85F8 | 05CA, 062B, 0730, 5E8B, 5FCE, 639F, 6DA2, bank0:A1CE +2 |  |  |
+| ED3E | 0x1 | ENEMY_COUNTS | bank0:85E4 | bank0:8453, bank0:849C, bank0:85F4, bank0:89C2, bank0:8A14, bank0:8A18, bank0:8E3B, bank0:B0F9 +1 |  |  |
+| ED3F | 0x1 | ENEMY_COUNTS+1 | bank0:85E9 | bank0:85F4, bank0:8F04, bank0:8F5C |  |  |
+| ED40 | 0x1 | ENEMY_COUNTS+2 | bank0:85E4 | bank0:8295, bank0:85F4, bank0:9286, bank0:92FF, bank0:A5A6, bank0:A60D, bank0:BBD8, bank0:BC23 |  |  |
+| ED41 | 0x1 | ENEMY_COUNTS+3 | bank0:85E9 | 79F2, 7A35, bank0:85F4, bank0:9642, bank0:96A3 |  |  |
+| ED42 | 0x1 | ENEMY_COUNTS+4 | bank0:85E4 | bank0:85F4, bank0:989C, bank0:98F3 |  |  |
+| ED43 | 0x1 | ENEMY_COUNTS+5 | bank0:85E9 | bank0:85F4, bank0:9DDB, bank0:9E41 |  |  |
 | ED44-ED45 | 0x2 |  | bank0:85D4, bank0:89E2 | bank0:89D4 |  |  |
 | ED46 | 0x1 |  | bank0:89F6 | bank0:89EF |  |  |
 | ED47 | 0x1 |  | 7F25, bank0:870C | 7F25, bank0:870C |  |  |
-| ED49 | 0x1 |  | 7F5C, 7F60, bank0:86E2, bank0:8705, bank0:8833, bank0:8887, bank0:8A61 | 7C9A, 7CA5, 7F60, 7FF1, bank0:8002, bank0:86B6, bank0:8833, bank0:8865 +9 |  |  |
-| ED4A | 0x1 |  | 1540, bank0:86DA | 167C, 1688, 1697, 7D77, 7D7E, 7D8F, 7D9D, 7DFD +29 |  |  |
-| ED4B | 0x1 |  | 1548, bank0:86DE | 1676, 1685, 1691, 7D4B, 7D81, 7D89, 7D97, 7DD1 +26 |  |  |
-| ED4C | 0x1 |  | bank0:89D7 | 1529, 1537 |  |  |
-| ED4D | 0x1 |  | bank0:89DA | 152C, 153A |  |  |
-| ED4E | 0x1 |  | 1557, 15D8, 15E1, bank0:9409 | 15D8, 15DB, 15E5 |  |  |
-| ED4F | 0x1 |  | 155A, 15CA, 15D4, bank0:940C | 15CA, 15CD |  |  |
-| ED50 | 0x1 |  | bank0:87F1, bank0:8A5D, bank0:8B4F, bank0:8B62, bank0:8BF2, bank0:8C05, bank0:8CDF, bank0:8DD4 +6 | bank0:8AC6 |  |  |
-| ED51 | 0x1 |  | 7C80, 7D52, bank0:87F5, bank0:8B66, bank0:8C09, bank0:8DDC, bank0:8DE5, bank0:955B +1 | 7D44, 7EB9, 7F86, bank0:8960, bank0:8DD1, bank0:914F, bank0:95AE |  |  |
-| ED52 | 0x1 |  | bank0:89F2 | 7C91, 7D56, bank0:86BD, bank0:87C1, bank0:87E2, bank0:917D, bank0:9192, bank0:91A6 +3 |  |  |
-| ED53 | 0x1 |  | bank0:89E8 | 7CC8, 7EB6, 7F44, 7F72, bank0:8A4C, bank0:914C, bank0:9167 |  |  |
-| ED54 | 0x1 |  | 7CD7, 7F04, 7F28, bank0:884C, bank0:8856, bank0:88C7 | 7F04, 7F09, bank0:8841, bank0:8856 |  |  |
-| ED55 | 0x1 |  | bank0:8874, bank0:88B6, bank0:8A07 | bank0:8838 |  |  |
-| ED56 | 0x1 |  | 7CD4, 7F10, bank0:8853 | 7F10, 7F13, bank0:8ADB, bank0:8B7E, bank0:8C3A, bank0:8CEE |  |  |
-| ED57 | 0x1 |  | 7C72, 7CDD, 7D33, 7DB6, 7DCA, 7E3E, 7F00, 7F1A +12 | 7C0B, 7C12, 7CDD, 7CF4, 7CFB, 7D0F, 7D16, 7D33 +24 |  |  |
-| ED58 | 0x1 |  | 7EDA, 7EE1, bank0:952E, bank0:95A2 | 7F3C, bank0:9599 |  |  |
-| ED59 | 0x1 |  | 7CB9, 7D5F, 7FDA, bank0:87CE, bank0:8805, bank0:8809, bank0:89AC, bank0:93FA | 7F79, 7FD2, bank0:8805, bank0:8940, bank0:89A4 |  |  |
-| ED5A | 0x1 |  | 7CBC, 7D62, 7FDD, bank0:87D5, bank0:89AF, bank0:93FD | 7F7C, 7FD5, bank0:880D, bank0:8943, bank0:89A7 |  |  |
-| ED5B | 0x1 |  | 7CD1, 7D6A, 7FC0, 7FCA, bank0:87DE, bank0:882B, bank0:8953, bank0:8992 +2 | 7F93, 7FC0, bank0:882B, bank0:882E, bank0:896D, bank0:8992 |  |  |
-| ED5C | 0x1 |  | 7CC1, 7D67, 7FCE, 7FE2, bank0:89A0, bank0:89B4, bank0:9402 | 7FCE, bank0:89A0 |  |  |
-| ED5D | 0x1 |  | 7CDA, 7D01, 7D22, 7F1E, bank0:8AF3, bank0:8B96, bank0:8CD8 | 7D01, 7D04, 7D22, 7D25, bank0:8AF3, bank0:8B58, bank0:8B96, bank0:8BFB +2 |  |  |
-| ED5E | 0x1 |  | 7CE8, bank0:8E40, bank0:958A, bank0:95F5 | 7EAB, 7EEF, 7F30, bank0:8E40 |  |  |
-| ED5F | 0x1 |  | 7D1C, 7D2C, 7DBD, bank0:89F9 | 7D1C, bank0:95EF |  |  |
-| ED60 | 0x1 |  | bank0:8A00 | 7E9B, bank0:881A, bank0:8AF9, bank0:8B9C |  |  |
-| ED61 | 0x1 |  | bank0:894B, bank0:894F, bank0:8B3A, bank0:8BDD, bank0:8CDB, bank0:8D91, bank0:8D95, bank0:8E4D +7 | bank0:894B, bank0:894F, bank0:8AA4, bank0:8B3A, bank0:8BDD, bank0:8C4C, bank0:8C53, bank0:8CDB +13 |  |  |
-| ED62 | 0x1 |  | 7F5C, 7F60, bank0:86E2, bank0:8705, bank0:8833, bank0:8887, bank0:8A61 | 7C9A, 7CA5, 7F60, 7FF1, bank0:8002, bank0:86B6, bank0:8833, bank0:8865 +9 |  |  |
-| ED63 | 0x1 |  | 1540, bank0:86DA | 167C, 1688, 1697, 7D77, 7D7E, 7D8F, 7D9D, 7DFD +29 |  |  |
-| ED64 | 0x1 |  | 1548, bank0:86DE | 1676, 1685, 1691, 7D4B, 7D81, 7D89, 7D97, 7DD1 +26 |  |  |
-| ED65 | 0x1 |  | bank0:89D7 | 1529, 1537 |  |  |
-| ED66 | 0x1 |  | bank0:89DA | 152C, 153A |  |  |
-| ED67 | 0x1 |  | 1557, 15D8, 15E1, bank0:9409 | 15D8, 15DB, 15E5 |  |  |
-| ED68 | 0x1 |  | 155A, 15CA, 15D4, bank0:940C | 15CA, 15CD |  |  |
-| ED69 | 0x1 |  | bank0:87F1, bank0:87FC, bank0:8A5D, bank0:8B4F, bank0:8B62, bank0:8BF2, bank0:8C05, bank0:8CDF +7 | bank0:8AC6 |  |  |
-| ED6A | 0x1 |  | 7C80, 7D52, 7DD8, bank0:87F5, bank0:8800, bank0:8B66, bank0:8C09, bank0:8DDC +3 | 7D44, 7EB9, 7F86, bank0:8960, bank0:8DD1, bank0:914F, bank0:95AE |  |  |
-| ED6B | 0x1 |  | bank0:89F2 | 7C91, 7D56, 7DDC, bank0:86BD, bank0:87C1, bank0:87E2, bank0:917D, bank0:9192 +4 |  |  |
-| ED6C | 0x1 |  | bank0:89E8 | 7CC8, 7EB6, 7F44, 7F72, bank0:8A4C, bank0:914C, bank0:9167 |  |  |
-| ED6D | 0x1 |  | 7CD7, 7F04, 7F28, bank0:884C, bank0:8856, bank0:88C7 | 7F04, 7F09, bank0:8841, bank0:8856 |  |  |
-| ED6E | 0x1 |  | bank0:8874, bank0:88B6, bank0:8A07 | bank0:8838 |  |  |
-| ED6F | 0x1 |  | 7CD4, 7F10, bank0:8853 | 7F10, 7F13, bank0:8ADB, bank0:8B7E, bank0:8C3A, bank0:8CEE |  |  |
-| ED70 | 0x1 |  | 7C72, 7CDD, 7D33, 7DB6, 7DCA, 7E3E, 7F00, 7F1A +12 | 7C0B, 7C12, 7CDD, 7CF4, 7CFB, 7D0F, 7D16, 7D33 +24 |  |  |
-| ED71 | 0x1 |  | 7EDA, 7EE1, bank0:952E, bank0:95A2, bank0:95AA | 7F3C, bank0:9599 |  |  |
-| ED72 | 0x1 |  | 7CB9, 7D5F, 7DE5, 7FDA, bank0:87CE, bank0:8805, bank0:8809, bank0:89AC +1 | 7F79, 7FD2, bank0:8805, bank0:8940, bank0:89A4 |  |  |
-| ED73 | 0x1 |  | 7CBC, 7D62, 7DE8, 7FDD, bank0:87D5, bank0:89AF, bank0:93FD | 7F7C, 7FD5, bank0:880D, bank0:8943, bank0:89A7 |  |  |
-| ED74 | 0x1 |  | 7CD1, 7D6A, 7DF0, 7FC0, 7FCA, bank0:87DE, bank0:882B, bank0:8953 +3 | 7F93, 7FC0, bank0:882B, bank0:882E, bank0:896D, bank0:8992 |  |  |
-| ED75 | 0x1 |  | 7CC1, 7D67, 7DED, 7FCE, 7FE2, bank0:89A0, bank0:89B4, bank0:9402 | 7FCE, bank0:89A0 |  |  |
-| ED76 | 0x1 |  | 7CDA, 7D01, 7D22, 7F1E, bank0:8AF3, bank0:8B96, bank0:8CD8 | 7D01, 7D04, 7D22, 7D25, bank0:8AF3, bank0:8B58, bank0:8B96, bank0:8BFB +2 |  |  |
-| ED77 | 0x1 |  | 7CE8, bank0:8E40, bank0:958A, bank0:95F5 | 7EAB, 7EEF, 7F30, bank0:8E40 |  |  |
-| ED78 | 0x1 |  | 7D1C, 7D2C, 7DBD, bank0:89F9 | 7D1C, bank0:95EF |  |  |
-| ED79 | 0x1 |  | bank0:8A00 | 7E9B, bank0:881A, bank0:8AF9, bank0:8B9C |  |  |
-| ED7A | 0x1 |  | bank0:894B, bank0:894F, bank0:8B3A, bank0:8CDB, bank0:8D91, bank0:8D95, bank0:8E4D, bank0:9175 +4 | bank0:894B, bank0:894F, bank0:8AA4, bank0:8B3A, bank0:8C4C, bank0:8C53, bank0:8CDB, bank0:8D00 +10 |  |  |
-| ED7B | 0x1 |  | 7F5C, 7F60, bank0:86E2, bank0:8705, bank0:8728, bank0:8833, bank0:8887, bank0:8A61 | 7C9A, 7CA5, 7F60, 7FF1, bank0:8002, bank0:86B6, bank0:8833, bank0:8865 +9 |  |  |
-| ED7C | 0x1 |  | 1540, bank0:86DA | 167C, 1688, 1697, 7D77, 7D7E, 7D8F, 7D9D, 7DFD +31 |  |  |
-| ED7D | 0x1 |  | 1548, bank0:86DE | 1676, 1685, 1691, 7D4B, 7D81, 7D89, 7D97, 7DD1 +28 |  |  |
-| ED7E | 0x1 |  | bank0:89D7 | 1529, 1537 |  |  |
-| ED7F | 0x1 |  | bank0:89DA | 152C, 153A |  |  |
-| ED80 | 0x1 |  | 1557, 15D8, 15E1, bank0:9409 | 15D8, 15DB, 15E5 |  |  |
-| ED81 | 0x1 |  | 155A, 15CA, 15D4, bank0:940C | 15CA, 15CD |  |  |
-| ED82 | 0x1 |  | bank0:871C, bank0:87F1, bank0:87FC, bank0:8A5D, bank0:8B4F, bank0:8B62, bank0:8BF2, bank0:8C05 +8 | bank0:8AC6 |  |  |
-| ED83 | 0x1 |  | 7C80, 7D52, 7DD8, bank0:87F5, bank0:8800, bank0:8B66, bank0:8C09, bank0:8DDC +3 | 7D44, 7EB9, 7F86, bank0:8960, bank0:8DD1, bank0:914F, bank0:95AE |  |  |
-| ED84 | 0x1 |  | bank0:89F2 | 7C91, 7D56, 7DDC, bank0:86BD, bank0:87C1, bank0:87E2, bank0:917D, bank0:9192 +4 |  |  |
-| ED85 | 0x1 |  | bank0:89E8 | 7CC8, 7EB6, 7F44, 7F72, bank0:8A4C, bank0:914C, bank0:9167 |  |  |
-| ED86 | 0x1 |  | 7CD7, 7F04, 7F28, bank0:884C, bank0:8856, bank0:88C7 | 7F04, 7F09, bank0:8841, bank0:8856 |  |  |
-| ED87 | 0x1 |  | bank0:8874, bank0:88B6, bank0:8A07 | bank0:8838 |  |  |
-| ED88 | 0x1 |  | 7CD4, 7F10, bank0:8853 | 7F10, 7F13, bank0:8ADB, bank0:8B7E, bank0:8C3A, bank0:8CEE |  |  |
-| ED89 | 0x1 |  | 7C72, 7CDD, 7D33, 7DB6, 7DCA, 7E3E, 7F00, 7F1A +13 | 7C0B, 7C12, 7CDD, 7CF4, 7CFB, 7D0F, 7D16, 7D33 +24 |  |  |
-| ED8A | 0x1 |  | 7EDA, 7EE1, bank0:952E, bank0:95A2, bank0:95AA | 7F3C, bank0:9599 |  |  |
-| ED8B | 0x1 |  | 7CB9, 7D5F, 7DE5, 7FDA, bank0:87CE, bank0:8805, bank0:8809, bank0:89AC +1 | 7F79, 7FD2, bank0:8805, bank0:8940, bank0:89A4 |  |  |
-| ED8C | 0x1 |  | 7CBC, 7D62, 7DE8, 7FDD, bank0:87D5, bank0:89AF, bank0:93FD | 7F7C, 7FD5, bank0:880D, bank0:8943, bank0:89A7 |  |  |
-| ED8D | 0x1 |  | 7CD1, 7D6A, 7DF0, 7FC0, 7FCA, bank0:87DE, bank0:882B, bank0:8953 +3 | 7F93, 7FC0, bank0:882B, bank0:882E, bank0:896D, bank0:8992 |  |  |
-| ED8E | 0x1 |  | 7CC1, 7D67, 7DED, 7FCE, 7FE2, bank0:89A0, bank0:89B4, bank0:9402 | 7FCE, bank0:89A0 |  |  |
-| ED8F | 0x1 |  | 7CDA, 7D01, 7D22, 7F1E, bank0:8AF3, bank0:8B96, bank0:8CD8 | 7D01, 7D04, 7D22, 7D25, bank0:8AF3, bank0:8B58, bank0:8B96, bank0:8BFB +2 |  |  |
-| ED90 | 0x1 |  | 7CE8, bank0:8E40, bank0:958A, bank0:95F5 | 7EAB, 7EEF, 7F30, bank0:8E40 |  |  |
-| ED91 | 0x1 |  | 7D1C, 7D2C, 7DBD, bank0:89F9 | 7D1C, bank0:95EF |  |  |
-| ED92 | 0x1 |  | bank0:8A00 | 7E9B, bank0:881A, bank0:8AF9, bank0:8B9C |  |  |
-| ED93 | 0x1 |  | bank0:8724, bank0:894B, bank0:894F, bank0:8B3A, bank0:8BDD, bank0:8CDB, bank0:8D91, bank0:8D95 +6 | bank0:894B, bank0:894F, bank0:8AA4, bank0:8B3A, bank0:8BDD, bank0:8C4C, bank0:8C53, bank0:8CDB +11 |  |  |
-| ED94 | 0x1 |  | 7F5C, 7F60, bank0:86E2, bank0:8705, bank0:8833, bank0:8887, bank0:8A61 | 7C9A, 7CA5, 7F60, 7FF1, bank0:8002, bank0:86B6, bank0:8833, bank0:8865 +9 |  |  |
-| ED95 | 0x1 |  | 1540, bank0:86DA | 167C, 1688, 1697, 7D77, 7D7E, 7D8F, 7D9D, 7DFD +29 |  |  |
-| ED96 | 0x1 |  | 1548, bank0:86DE | 1676, 1685, 1691, 7D4B, 7D81, 7D89, 7D97, 7DD1 +26 |  |  |
-| ED97 | 0x1 |  | bank0:89D7 | 1529, 1537 |  |  |
-| ED98 | 0x1 |  | bank0:89DA | 152C, 153A |  |  |
-| ED99 | 0x1 |  | 1557, 15D8, 15E1, bank0:9409 | 15D8, 15DB, 15E5 |  |  |
-| ED9A | 0x1 |  | 155A, 15CA, 15D4, bank0:940C | 15CA, 15CD |  |  |
-| ED9B | 0x1 |  | bank0:87F1, bank0:87FC, bank0:8A5D, bank0:8B4F, bank0:8B62, bank0:8BF2, bank0:8C05, bank0:8CDF +5 | bank0:8AC6 |  |  |
-| ED9C | 0x1 |  | 7D52, 7DD8, bank0:87F5, bank0:8800, bank0:8B66, bank0:8C09, bank0:8DDC, bank0:955B | 7D44, 7EB9, 7F86, bank0:8960, bank0:8DD1, bank0:914F, bank0:95AE |  |  |
-| ED9D | 0x1 |  | bank0:89F2 | 7C91, 7D56, 7DDC, bank0:86BD, bank0:87C1, bank0:87E2, bank0:917D, bank0:9192 +4 |  |  |
-| ED9E | 0x1 |  | bank0:89E8 | 7CC8, 7EB6, 7F44, 7F72, bank0:8A4C, bank0:914C, bank0:9167 |  |  |
-| ED9F | 0x1 |  | 7CD7, 7F04, 7F28, bank0:884C, bank0:8856, bank0:88C7 | 7F04, 7F09, bank0:8841, bank0:8856 |  |  |
-| EDA0 | 0x1 |  | bank0:8874, bank0:88B6, bank0:8A07 | bank0:8838 |  |  |
-| EDA1 | 0x1 |  | 7CD4, 7F10, bank0:8853 | 7F10, 7F13, bank0:8ADB, bank0:8B7E, bank0:8C3A, bank0:8CEE |  |  |
-| EDA2 | 0x1 |  | 7C72, 7CDD, 7D33, 7DB6, 7DCA, 7E3E, 7F00, 7F1A +12 | 7C0B, 7C12, 7CDD, 7CF4, 7CFB, 7D0F, 7D16, 7D33 +24 |  |  |
-| EDA3 | 0x1 |  | 7EDA, 7EE1, bank0:952E, bank0:95A2, bank0:95AA | 7F3C, bank0:9599 |  |  |
-| EDA4 | 0x1 |  | 7CB9, 7D5F, 7DE5, 7FDA, bank0:87CE, bank0:8805, bank0:8809, bank0:89AC +1 | 7F79, 7FD2, bank0:8805, bank0:8940, bank0:89A4 |  |  |
-| EDA5 | 0x1 |  | 7CBC, 7D62, 7DE8, 7FDD, bank0:87D5, bank0:89AF, bank0:93FD | 7F7C, 7FD5, bank0:880D, bank0:8943, bank0:89A7 |  |  |
-| EDA6 | 0x1 |  | 7CD1, 7D6A, 7DF0, 7FC0, 7FCA, bank0:87DE, bank0:882B, bank0:8953 +3 | 7F93, 7FC0, bank0:882B, bank0:882E, bank0:896D, bank0:8992 |  |  |
-| EDA7 | 0x1 |  | 7CC1, 7D67, 7DED, 7FCE, 7FE2, bank0:89A0, bank0:89B4, bank0:9402 | 7FCE, bank0:89A0 |  |  |
-| EDA8 | 0x1 |  | 7CDA, 7D01, 7D22, 7F1E, bank0:8AF3, bank0:8B96, bank0:8CD8 | 7D01, 7D04, 7D22, 7D25, bank0:8AF3, bank0:8B58, bank0:8B96, bank0:8BFB +2 |  |  |
-| EDA9 | 0x1 |  | 7CE8, bank0:8E40, bank0:958A, bank0:95F5 | 7EAB, 7EEF, 7F30, bank0:8E40 |  |  |
-| EDAA | 0x1 |  | 7D1C, 7D2C, 7DBD, bank0:89F9 | 7D1C, bank0:95EF |  |  |
-| EDAB | 0x1 |  | bank0:8A00 | 7E9B, bank0:881A, bank0:8AF9, bank0:8B9C |  |  |
-| EDAC | 0x1 |  | bank0:894B, bank0:894F, bank0:8CDB, bank0:8D91, bank0:8D95, bank0:8E4D, bank0:9175, bank0:93F6 +3 | bank0:894B, bank0:894F, bank0:8AA4, bank0:8C4C, bank0:8C53, bank0:8CDB, bank0:8D00, bank0:8D07 +9 |  |  |
+| ED49 | 0x1 | ENEMY0_SLOTS | 7F5C, 7F60, bank0:86E2, bank0:8705, bank0:8833, bank0:8887, bank0:8A61 | 7C9A, 7CA5, 7F60, 7FF1, bank0:8002, bank0:86B6, bank0:8833, bank0:8865 +9 |  |  |
+| ED4A | 0x1 | ENEMY0_SLOTS+1 | 1540, bank0:86DA | 167C, 1688, 1697, 7D77, 7D7E, 7D8F, 7D9D, 7DFD +29 |  |  |
+| ED4B | 0x1 | ENEMY0_SLOTS+2 | 1548, bank0:86DE | 1676, 1685, 1691, 7D4B, 7D81, 7D89, 7D97, 7DD1 +26 |  |  |
+| ED4C | 0x1 | ENEMY0_SLOTS+3 | bank0:89D7 | 1529, 1537 |  |  |
+| ED4D | 0x1 | ENEMY0_SLOTS+4 | bank0:89DA | 152C, 153A |  |  |
+| ED4E | 0x1 | ENEMY0_SLOTS+5 | 1557, 15D8, 15E1, bank0:9409 | 15D8, 15DB, 15E5 |  |  |
+| ED4F | 0x1 | ENEMY0_SLOTS+6 | 155A, 15CA, 15D4, bank0:940C | 15CA, 15CD |  |  |
+| ED50 | 0x1 | ENEMY0_SLOTS+7 | bank0:87F1, bank0:8A5D, bank0:8B4F, bank0:8B62, bank0:8BF2, bank0:8C05, bank0:8CDF, bank0:8DD4 +6 | bank0:8AC6 |  |  |
+| ED51 | 0x1 | ENEMY0_SLOTS+8 | 7C80, 7D52, bank0:87F5, bank0:8B66, bank0:8C09, bank0:8DDC, bank0:8DE5, bank0:955B +1 | 7D44, 7EB9, 7F86, bank0:8960, bank0:8DD1, bank0:914F, bank0:95AE |  |  |
+| ED52 | 0x1 | ENEMY0_SLOTS+9 | bank0:89F2 | 7C91, 7D56, bank0:86BD, bank0:87C1, bank0:87E2, bank0:917D, bank0:9192, bank0:91A6 +3 |  |  |
+| ED53 | 0x1 | ENEMY0_SLOTS+10 | bank0:89E8 | 7CC8, 7EB6, 7F44, 7F72, bank0:8A4C, bank0:914C, bank0:9167 |  |  |
+| ED54 | 0x1 | ENEMY0_SLOTS+11 | 7CD7, 7F04, 7F28, bank0:884C, bank0:8856, bank0:88C7 | 7F04, 7F09, bank0:8841, bank0:8856 |  |  |
+| ED55 | 0x1 | ENEMY0_SLOTS+12 | bank0:8874, bank0:88B6, bank0:8A07 | bank0:8838 |  |  |
+| ED56 | 0x1 | ENEMY0_SLOTS+13 | 7CD4, 7F10, bank0:8853 | 7F10, 7F13, bank0:8ADB, bank0:8B7E, bank0:8C3A, bank0:8CEE |  |  |
+| ED57 | 0x1 | ENEMY0_SLOTS+14 | 7C72, 7CDD, 7D33, 7DB6, 7DCA, 7E3E, 7F00, 7F1A +12 | 7C0B, 7C12, 7CDD, 7CF4, 7CFB, 7D0F, 7D16, 7D33 +24 |  |  |
+| ED58 | 0x1 | ENEMY0_SLOTS+15 | 7EDA, 7EE1, bank0:952E, bank0:95A2 | 7F3C, bank0:9599 |  |  |
+| ED59 | 0x1 | ENEMY0_SLOTS+16 | 7CB9, 7D5F, 7FDA, bank0:87CE, bank0:8805, bank0:8809, bank0:89AC, bank0:93FA | 7F79, 7FD2, bank0:8805, bank0:8940, bank0:89A4 |  |  |
+| ED5A | 0x1 | ENEMY0_SLOTS+17 | 7CBC, 7D62, 7FDD, bank0:87D5, bank0:89AF, bank0:93FD | 7F7C, 7FD5, bank0:880D, bank0:8943, bank0:89A7 |  |  |
+| ED5B | 0x1 | ENEMY0_SLOTS+18 | 7CD1, 7D6A, 7FC0, 7FCA, bank0:87DE, bank0:882B, bank0:8953, bank0:8992 +2 | 7F93, 7FC0, bank0:882B, bank0:882E, bank0:896D, bank0:8992 |  |  |
+| ED5C | 0x1 | ENEMY0_SLOTS+19 | 7CC1, 7D67, 7FCE, 7FE2, bank0:89A0, bank0:89B4, bank0:9402 | 7FCE, bank0:89A0 |  |  |
+| ED5D | 0x1 | ENEMY0_SLOTS+20 | 7CDA, 7D01, 7D22, 7F1E, bank0:8AF3, bank0:8B96, bank0:8CD8 | 7D01, 7D04, 7D22, 7D25, bank0:8AF3, bank0:8B58, bank0:8B96, bank0:8BFB +2 |  |  |
+| ED5E | 0x1 | ENEMY0_SLOTS+21 | 7CE8, bank0:8E40, bank0:958A, bank0:95F5 | 7EAB, 7EEF, 7F30, bank0:8E40 |  |  |
+| ED5F | 0x1 | ENEMY0_SLOTS+22 | 7D1C, 7D2C, 7DBD, bank0:89F9 | 7D1C, bank0:95EF |  |  |
+| ED60 | 0x1 | ENEMY0_SLOTS+23 | bank0:8A00 | 7E9B, bank0:881A, bank0:8AF9, bank0:8B9C |  |  |
+| ED61 | 0x1 | ENEMY0_SLOTS+24 | bank0:894B, bank0:894F, bank0:8B3A, bank0:8BDD, bank0:8CDB, bank0:8D91, bank0:8D95, bank0:8E4D +7 | bank0:894B, bank0:894F, bank0:8AA4, bank0:8B3A, bank0:8BDD, bank0:8C4C, bank0:8C53, bank0:8CDB +13 |  |  |
+| ED62 | 0x1 | ENEMY0_SLOTS+25 | 7F5C, 7F60, bank0:86E2, bank0:8705, bank0:8833, bank0:8887, bank0:8A61 | 7C9A, 7CA5, 7F60, 7FF1, bank0:8002, bank0:86B6, bank0:8833, bank0:8865 +9 |  |  |
+| ED63 | 0x1 | ENEMY0_SLOTS+26 | 1540, bank0:86DA | 167C, 1688, 1697, 7D77, 7D7E, 7D8F, 7D9D, 7DFD +29 |  |  |
+| ED64 | 0x1 | ENEMY0_SLOTS+27 | 1548, bank0:86DE | 1676, 1685, 1691, 7D4B, 7D81, 7D89, 7D97, 7DD1 +26 |  |  |
+| ED65 | 0x1 | ENEMY0_SLOTS+28 | bank0:89D7 | 1529, 1537 |  |  |
+| ED66 | 0x1 | ENEMY0_SLOTS+29 | bank0:89DA | 152C, 153A |  |  |
+| ED67 | 0x1 | ENEMY0_SLOTS+30 | 1557, 15D8, 15E1, bank0:9409 | 15D8, 15DB, 15E5 |  |  |
+| ED68 | 0x1 | ENEMY0_SLOTS+31 | 155A, 15CA, 15D4, bank0:940C | 15CA, 15CD |  |  |
+| ED69 | 0x1 | ENEMY0_SLOTS+32 | bank0:87F1, bank0:87FC, bank0:8A5D, bank0:8B4F, bank0:8B62, bank0:8BF2, bank0:8C05, bank0:8CDF +7 | bank0:8AC6 |  |  |
+| ED6A | 0x1 | ENEMY0_SLOTS+33 | 7C80, 7D52, 7DD8, bank0:87F5, bank0:8800, bank0:8B66, bank0:8C09, bank0:8DDC +3 | 7D44, 7EB9, 7F86, bank0:8960, bank0:8DD1, bank0:914F, bank0:95AE |  |  |
+| ED6B | 0x1 | ENEMY0_SLOTS+34 | bank0:89F2 | 7C91, 7D56, 7DDC, bank0:86BD, bank0:87C1, bank0:87E2, bank0:917D, bank0:9192 +4 |  |  |
+| ED6C | 0x1 | ENEMY0_SLOTS+35 | bank0:89E8 | 7CC8, 7EB6, 7F44, 7F72, bank0:8A4C, bank0:914C, bank0:9167 |  |  |
+| ED6D | 0x1 | ENEMY0_SLOTS+36 | 7CD7, 7F04, 7F28, bank0:884C, bank0:8856, bank0:88C7 | 7F04, 7F09, bank0:8841, bank0:8856 |  |  |
+| ED6E | 0x1 | ENEMY0_SLOTS+37 | bank0:8874, bank0:88B6, bank0:8A07 | bank0:8838 |  |  |
+| ED6F | 0x1 | ENEMY0_SLOTS+38 | 7CD4, 7F10, bank0:8853 | 7F10, 7F13, bank0:8ADB, bank0:8B7E, bank0:8C3A, bank0:8CEE |  |  |
+| ED70 | 0x1 | ENEMY0_SLOTS+39 | 7C72, 7CDD, 7D33, 7DB6, 7DCA, 7E3E, 7F00, 7F1A +12 | 7C0B, 7C12, 7CDD, 7CF4, 7CFB, 7D0F, 7D16, 7D33 +24 |  |  |
+| ED71 | 0x1 | ENEMY0_SLOTS+40 | 7EDA, 7EE1, bank0:952E, bank0:95A2, bank0:95AA | 7F3C, bank0:9599 |  |  |
+| ED72 | 0x1 | ENEMY0_SLOTS+41 | 7CB9, 7D5F, 7DE5, 7FDA, bank0:87CE, bank0:8805, bank0:8809, bank0:89AC +1 | 7F79, 7FD2, bank0:8805, bank0:8940, bank0:89A4 |  |  |
+| ED73 | 0x1 | ENEMY0_SLOTS+42 | 7CBC, 7D62, 7DE8, 7FDD, bank0:87D5, bank0:89AF, bank0:93FD | 7F7C, 7FD5, bank0:880D, bank0:8943, bank0:89A7 |  |  |
+| ED74 | 0x1 | ENEMY0_SLOTS+43 | 7CD1, 7D6A, 7DF0, 7FC0, 7FCA, bank0:87DE, bank0:882B, bank0:8953 +3 | 7F93, 7FC0, bank0:882B, bank0:882E, bank0:896D, bank0:8992 |  |  |
+| ED75 | 0x1 | ENEMY0_SLOTS+44 | 7CC1, 7D67, 7DED, 7FCE, 7FE2, bank0:89A0, bank0:89B4, bank0:9402 | 7FCE, bank0:89A0 |  |  |
+| ED76 | 0x1 | ENEMY0_SLOTS+45 | 7CDA, 7D01, 7D22, 7F1E, bank0:8AF3, bank0:8B96, bank0:8CD8 | 7D01, 7D04, 7D22, 7D25, bank0:8AF3, bank0:8B58, bank0:8B96, bank0:8BFB +2 |  |  |
+| ED77 | 0x1 | ENEMY0_SLOTS+46 | 7CE8, bank0:8E40, bank0:958A, bank0:95F5 | 7EAB, 7EEF, 7F30, bank0:8E40 |  |  |
+| ED78 | 0x1 | ENEMY0_SLOTS+47 | 7D1C, 7D2C, 7DBD, bank0:89F9 | 7D1C, bank0:95EF |  |  |
+| ED79 | 0x1 | ENEMY0_SLOTS+48 | bank0:8A00 | 7E9B, bank0:881A, bank0:8AF9, bank0:8B9C |  |  |
+| ED7A | 0x1 | ENEMY0_SLOTS+49 | bank0:894B, bank0:894F, bank0:8B3A, bank0:8CDB, bank0:8D91, bank0:8D95, bank0:8E4D, bank0:9175 +4 | bank0:894B, bank0:894F, bank0:8AA4, bank0:8B3A, bank0:8C4C, bank0:8C53, bank0:8CDB, bank0:8D00 +10 |  |  |
+| ED7B | 0x1 | ENEMY0_SLOTS+50 | 7F5C, 7F60, bank0:86E2, bank0:8705, bank0:8728, bank0:8833, bank0:8887, bank0:8A61 | 7C9A, 7CA5, 7F60, 7FF1, bank0:8002, bank0:86B6, bank0:8833, bank0:8865 +9 |  |  |
+| ED7C | 0x1 | ENEMY0_SLOTS+51 | 1540, bank0:86DA | 167C, 1688, 1697, 7D77, 7D7E, 7D8F, 7D9D, 7DFD +31 |  |  |
+| ED7D | 0x1 | ENEMY0_SLOTS+52 | 1548, bank0:86DE | 1676, 1685, 1691, 7D4B, 7D81, 7D89, 7D97, 7DD1 +28 |  |  |
+| ED7E | 0x1 | ENEMY0_SLOTS+53 | bank0:89D7 | 1529, 1537 |  |  |
+| ED7F | 0x1 | ENEMY0_SLOTS+54 | bank0:89DA | 152C, 153A |  |  |
+| ED80 | 0x1 | ENEMY0_SLOTS+55 | 1557, 15D8, 15E1, bank0:9409 | 15D8, 15DB, 15E5 |  |  |
+| ED81 | 0x1 | ENEMY0_SLOTS+56 | 155A, 15CA, 15D4, bank0:940C | 15CA, 15CD |  |  |
+| ED82 | 0x1 | ENEMY0_SLOTS+57 | bank0:871C, bank0:87F1, bank0:87FC, bank0:8A5D, bank0:8B4F, bank0:8B62, bank0:8BF2, bank0:8C05 +8 | bank0:8AC6 |  |  |
+| ED83 | 0x1 | ENEMY0_SLOTS+58 | 7C80, 7D52, 7DD8, bank0:87F5, bank0:8800, bank0:8B66, bank0:8C09, bank0:8DDC +3 | 7D44, 7EB9, 7F86, bank0:8960, bank0:8DD1, bank0:914F, bank0:95AE |  |  |
+| ED84 | 0x1 | ENEMY0_SLOTS+59 | bank0:89F2 | 7C91, 7D56, 7DDC, bank0:86BD, bank0:87C1, bank0:87E2, bank0:917D, bank0:9192 +4 |  |  |
+| ED85 | 0x1 | ENEMY0_SLOTS+60 | bank0:89E8 | 7CC8, 7EB6, 7F44, 7F72, bank0:8A4C, bank0:914C, bank0:9167 |  |  |
+| ED86 | 0x1 | ENEMY0_SLOTS+61 | 7CD7, 7F04, 7F28, bank0:884C, bank0:8856, bank0:88C7 | 7F04, 7F09, bank0:8841, bank0:8856 |  |  |
+| ED87 | 0x1 | ENEMY0_SLOTS+62 | bank0:8874, bank0:88B6, bank0:8A07 | bank0:8838 |  |  |
+| ED88 | 0x1 | ENEMY0_SLOTS+63 | 7CD4, 7F10, bank0:8853 | 7F10, 7F13, bank0:8ADB, bank0:8B7E, bank0:8C3A, bank0:8CEE |  |  |
+| ED89 | 0x1 | ENEMY0_SLOTS+64 | 7C72, 7CDD, 7D33, 7DB6, 7DCA, 7E3E, 7F00, 7F1A +13 | 7C0B, 7C12, 7CDD, 7CF4, 7CFB, 7D0F, 7D16, 7D33 +24 |  |  |
+| ED8A | 0x1 | ENEMY0_SLOTS+65 | 7EDA, 7EE1, bank0:952E, bank0:95A2, bank0:95AA | 7F3C, bank0:9599 |  |  |
+| ED8B | 0x1 | ENEMY0_SLOTS+66 | 7CB9, 7D5F, 7DE5, 7FDA, bank0:87CE, bank0:8805, bank0:8809, bank0:89AC +1 | 7F79, 7FD2, bank0:8805, bank0:8940, bank0:89A4 |  |  |
+| ED8C | 0x1 | ENEMY0_SLOTS+67 | 7CBC, 7D62, 7DE8, 7FDD, bank0:87D5, bank0:89AF, bank0:93FD | 7F7C, 7FD5, bank0:880D, bank0:8943, bank0:89A7 |  |  |
+| ED8D | 0x1 | ENEMY0_SLOTS+68 | 7CD1, 7D6A, 7DF0, 7FC0, 7FCA, bank0:87DE, bank0:882B, bank0:8953 +3 | 7F93, 7FC0, bank0:882B, bank0:882E, bank0:896D, bank0:8992 |  |  |
+| ED8E | 0x1 | ENEMY0_SLOTS+69 | 7CC1, 7D67, 7DED, 7FCE, 7FE2, bank0:89A0, bank0:89B4, bank0:9402 | 7FCE, bank0:89A0 |  |  |
+| ED8F | 0x1 | ENEMY0_SLOTS+70 | 7CDA, 7D01, 7D22, 7F1E, bank0:8AF3, bank0:8B96, bank0:8CD8 | 7D01, 7D04, 7D22, 7D25, bank0:8AF3, bank0:8B58, bank0:8B96, bank0:8BFB +2 |  |  |
+| ED90 | 0x1 | ENEMY0_SLOTS+71 | 7CE8, bank0:8E40, bank0:958A, bank0:95F5 | 7EAB, 7EEF, 7F30, bank0:8E40 |  |  |
+| ED91 | 0x1 | ENEMY0_SLOTS+72 | 7D1C, 7D2C, 7DBD, bank0:89F9 | 7D1C, bank0:95EF |  |  |
+| ED92 | 0x1 | ENEMY0_SLOTS+73 | bank0:8A00 | 7E9B, bank0:881A, bank0:8AF9, bank0:8B9C |  |  |
+| ED93 | 0x1 | ENEMY0_SLOTS+74 | bank0:8724, bank0:894B, bank0:894F, bank0:8B3A, bank0:8BDD, bank0:8CDB, bank0:8D91, bank0:8D95 +6 | bank0:894B, bank0:894F, bank0:8AA4, bank0:8B3A, bank0:8BDD, bank0:8C4C, bank0:8C53, bank0:8CDB +11 |  |  |
+| ED94 | 0x1 | ENEMY0_SLOTS+75 | 7F5C, 7F60, bank0:86E2, bank0:8705, bank0:8833, bank0:8887, bank0:8A61 | 7C9A, 7CA5, 7F60, 7FF1, bank0:8002, bank0:86B6, bank0:8833, bank0:8865 +9 |  |  |
+| ED95 | 0x1 | ENEMY0_SLOTS+76 | 1540, bank0:86DA | 167C, 1688, 1697, 7D77, 7D7E, 7D8F, 7D9D, 7DFD +29 |  |  |
+| ED96 | 0x1 | ENEMY0_SLOTS+77 | 1548, bank0:86DE | 1676, 1685, 1691, 7D4B, 7D81, 7D89, 7D97, 7DD1 +26 |  |  |
+| ED97 | 0x1 | ENEMY0_SLOTS+78 | bank0:89D7 | 1529, 1537 |  |  |
+| ED98 | 0x1 | ENEMY0_SLOTS+79 | bank0:89DA | 152C, 153A |  |  |
+| ED99 | 0x1 | ENEMY0_SLOTS+80 | 1557, 15D8, 15E1, bank0:9409 | 15D8, 15DB, 15E5 |  |  |
+| ED9A | 0x1 | ENEMY0_SLOTS+81 | 155A, 15CA, 15D4, bank0:940C | 15CA, 15CD |  |  |
+| ED9B | 0x1 | ENEMY0_SLOTS+82 | bank0:87F1, bank0:87FC, bank0:8A5D, bank0:8B4F, bank0:8B62, bank0:8BF2, bank0:8C05, bank0:8CDF +5 | bank0:8AC6 |  |  |
+| ED9C | 0x1 | ENEMY0_SLOTS+83 | 7D52, 7DD8, bank0:87F5, bank0:8800, bank0:8B66, bank0:8C09, bank0:8DDC, bank0:955B | 7D44, 7EB9, 7F86, bank0:8960, bank0:8DD1, bank0:914F, bank0:95AE |  |  |
+| ED9D | 0x1 | ENEMY0_SLOTS+84 | bank0:89F2 | 7C91, 7D56, 7DDC, bank0:86BD, bank0:87C1, bank0:87E2, bank0:917D, bank0:9192 +4 |  |  |
+| ED9E | 0x1 | ENEMY0_SLOTS+85 | bank0:89E8 | 7CC8, 7EB6, 7F44, 7F72, bank0:8A4C, bank0:914C, bank0:9167 |  |  |
+| ED9F | 0x1 | ENEMY0_SLOTS+86 | 7CD7, 7F04, 7F28, bank0:884C, bank0:8856, bank0:88C7 | 7F04, 7F09, bank0:8841, bank0:8856 |  |  |
+| EDA0 | 0x1 | ENEMY0_SLOTS+87 | bank0:8874, bank0:88B6, bank0:8A07 | bank0:8838 |  |  |
+| EDA1 | 0x1 | ENEMY0_SLOTS+88 | 7CD4, 7F10, bank0:8853 | 7F10, 7F13, bank0:8ADB, bank0:8B7E, bank0:8C3A, bank0:8CEE |  |  |
+| EDA2 | 0x1 | ENEMY0_SLOTS+89 | 7C72, 7CDD, 7D33, 7DB6, 7DCA, 7E3E, 7F00, 7F1A +12 | 7C0B, 7C12, 7CDD, 7CF4, 7CFB, 7D0F, 7D16, 7D33 +24 |  |  |
+| EDA3 | 0x1 | ENEMY0_SLOTS+90 | 7EDA, 7EE1, bank0:952E, bank0:95A2, bank0:95AA | 7F3C, bank0:9599 |  |  |
+| EDA4 | 0x1 | ENEMY0_SLOTS+91 | 7CB9, 7D5F, 7DE5, 7FDA, bank0:87CE, bank0:8805, bank0:8809, bank0:89AC +1 | 7F79, 7FD2, bank0:8805, bank0:8940, bank0:89A4 |  |  |
+| EDA5 | 0x1 | ENEMY0_SLOTS+92 | 7CBC, 7D62, 7DE8, 7FDD, bank0:87D5, bank0:89AF, bank0:93FD | 7F7C, 7FD5, bank0:880D, bank0:8943, bank0:89A7 |  |  |
+| EDA6 | 0x1 | ENEMY0_SLOTS+93 | 7CD1, 7D6A, 7DF0, 7FC0, 7FCA, bank0:87DE, bank0:882B, bank0:8953 +3 | 7F93, 7FC0, bank0:882B, bank0:882E, bank0:896D, bank0:8992 |  |  |
+| EDA7 | 0x1 | ENEMY0_SLOTS+94 | 7CC1, 7D67, 7DED, 7FCE, 7FE2, bank0:89A0, bank0:89B4, bank0:9402 | 7FCE, bank0:89A0 |  |  |
+| EDA8 | 0x1 | ENEMY0_SLOTS+95 | 7CDA, 7D01, 7D22, 7F1E, bank0:8AF3, bank0:8B96, bank0:8CD8 | 7D01, 7D04, 7D22, 7D25, bank0:8AF3, bank0:8B58, bank0:8B96, bank0:8BFB +2 |  |  |
+| EDA9 | 0x1 | ENEMY0_SLOTS+96 | 7CE8, bank0:8E40, bank0:958A, bank0:95F5 | 7EAB, 7EEF, 7F30, bank0:8E40 |  |  |
+| EDAA | 0x1 | ENEMY0_SLOTS+97 | 7D1C, 7D2C, 7DBD, bank0:89F9 | 7D1C, bank0:95EF |  |  |
+| EDAB | 0x1 | ENEMY0_SLOTS+98 | bank0:8A00 | 7E9B, bank0:881A, bank0:8AF9, bank0:8B9C |  |  |
+| EDAC | 0x1 | ENEMY0_SLOTS+99 | bank0:894B, bank0:894F, bank0:8CDB, bank0:8D91, bank0:8D95, bank0:8E4D, bank0:9175, bank0:93F6 +3 | bank0:894B, bank0:894F, bank0:8AA4, bank0:8C4C, bank0:8C53, bank0:8CDB, bank0:8D00, bank0:8D07 +9 |  |  |
 | EEAB | 0x1 |  | 2568 |  |  |  |
 | F112 | 0x1 |  | 256E |  |  |  |
-| F1C2 | 0x1 |  | bank0:A1B8, bank0:A2CA, bank0:A2CE, bank0:A33D, bank0:A424, bank0:A446, bank0:A46D | bank0:A177, bank0:A17E, bank0:A187, bank0:A1B8, bank0:A1DF, bank0:A2CA, bank0:A2CE, bank0:A338 +5 | 02FE, 0305 | 02F1, 02FE, 0305 |
+| F1C2 | 0x1 | GHOST_SLOTS | bank0:A1B8, bank0:A2CA, bank0:A2CE, bank0:A33D, bank0:A424, bank0:A446, bank0:A46D | bank0:A177, bank0:A17E, bank0:A187, bank0:A1B8, bank0:A1DF, bank0:A2CA, bank0:A2CE, bank0:A338 +5 | 02FE, 0305 | 02F1, 02FE, 0305 |
 | F1C3 | 0x1 |  | 1540, bank0:A430 | bank0:A4E3, bank0:A587 |  | 0374, 039C |
 | F1C4 | 0x1 |  | 1548, bank0:A3FC, bank0:A433 | bank0:A525, bank0:A53F |  | 0381, 03A8 |
 | F1C5 | 0x1 |  | bank0:A125 | 1529, 1537 |  |  |
@@ -2121,35 +2124,35 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | F1E4 | 0x1 |  | bank0:A2DE, bank0:A359, bank0:A38D, bank0:A3A2, bank0:A3CA, bank0:A436, bank0:A599 | bank0:A331, bank0:A389, bank0:A39E, bank0:A3C6, bank0:A599 |  |  |
 | F1E5 | 0x1 |  | bank0:A29A | bank0:A2B7 |  |  |
 | F1E6 | 0x1 |  | bank0:A2E5, bank0:A351, bank0:A352, bank0:A353, bank0:A354, bank0:A421, bank0:A44D | bank0:A349, bank0:A351, bank0:A352, bank0:A353, bank0:A354 |  |  |
-| F296 | 0x1 |  |  |  |  | 0CD2 |
+| F296 | 0x1 | BOSS_SLOT |  |  |  | 0CD2 |
 | F359 | 0x1 |  | bank0:B748, bank0:B74D, bank0:B77C, bank0:B78C, bank0:B791, bank0:B7C8, bank0:B7CD | bank0:B748, bank0:B749, bank0:B78C, bank0:B78D, bank0:B7C8, bank0:B7C9 |  |  |
 | F35A | 0x1 |  | bank0:B750, bank0:B781, bank0:B794, bank0:B79B | bank0:B750, bank0:B751, bank0:B794, bank0:B795 |  |  |
 | F35B | 0x1 |  | 2629, bank0:B786 | bank0:B738 |  |  |
 | F366 | 0x1 |  | 2574 |  |  |  |
-| F367 | 0x1 |  |  |  |  | 0CAD |
-| F373 | 0x1 |  |  |  |  | 0CAD |
-| F37F | 0x1 |  |  |  |  | 0CAD |
-| F38B | 0x1 |  |  |  |  | 0CAD |
-| F397 | 0x1 |  |  |  |  | 0CAD |
-| F3A3 | 0x1 |  |  |  |  | 0CAD |
-| F3AF | 0x1 |  |  |  |  | 0CAD |
-| F3BB | 0x1 |  |  |  |  | 0CAD |
-| F3CE | 0x1 |  |  |  |  | 0C85 |
-| F3DF | 0x1 |  |  |  |  | 0C85 |
-| F3F0 | 0x1 |  |  |  |  | 0C85 |
-| F401 | 0x1 |  |  |  |  | 0C85 |
-| F412 | 0x1 |  |  |  |  | 0C85 |
-| F423 | 0x1 |  |  |  |  | 0C85 |
-| F434 | 0x1 |  |  |  |  | 0C85 |
+| F367 | 0x1 | BOSS_SHOTS |  |  |  | 0CAD |
+| F373 | 0x1 | BOSS_SHOTS+12 |  |  |  | 0CAD |
+| F37F | 0x1 | BOSS_SHOTS+24 |  |  |  | 0CAD |
+| F38B | 0x1 | BOSS_SHOTS+36 |  |  |  | 0CAD |
+| F397 | 0x1 | BOSS_SHOTS+48 |  |  |  | 0CAD |
+| F3A3 | 0x1 | BOSS_SHOTS+60 |  |  |  | 0CAD |
+| F3AF | 0x1 | BOSS_SHOTS+72 |  |  |  | 0CAD |
+| F3BB | 0x1 | BOSS_SHOTS+84 |  |  |  | 0CAD |
+| F3CE | 0x1 | ENEMY2B_SHOTS |  |  |  | 0C85 |
+| F3DF | 0x1 | ENEMY2B_SHOTS+17 |  |  |  | 0C85 |
+| F3F0 | 0x1 | ENEMY2B_SHOTS+34 |  |  |  | 0C85 |
+| F401 | 0x1 | ENEMY2B_SHOTS+51 |  |  |  | 0C85 |
+| F412 | 0x1 | ENEMY2B_SHOTS+68 |  |  |  | 0C85 |
+| F423 | 0x1 | ENEMY2B_SHOTS+85 |  |  |  | 0C85 |
+| F434 | 0x1 | ENEMY2B_SHOTS+102 |  |  |  | 0C85 |
 | F448 | 0x1 |  | 3E35 | 075D, bank0:BF52 |  |  |
 | F449 | 0x1 |  |  | bank2:8380, bank2:83AC |  |  |
 | F44A | 0x1 |  | bank2:8392, bank2:839D | bank2:8396 |  |  |
 | F44B | 0x1 |  | bank2:8363, bank2:8369 | bank2:8363, bank2:8364 |  |  |
-| F44C | 0x1 |  | bank2:8447 | bank2:84CF, bank2:8567, bank2:8595 |  |  |
+| F44C | 0x1 | POINTS_KIND | bank2:8447 | bank2:84CF, bank2:8567, bank2:8595 |  |  |
 | F44D | 0x1 |  | 4084 | bank2:8456, bank2:865A |  |  |
 | F44E | 0x1 |  |  | bank0:885A, bank0:888B, bank0:8DEA |  |  |
-| F44F | 0x1 |  | bank2:84F8, bank2:84FA, bank2:852E, bank2:8530, bank2:8549, bank2:854B, bank2:85A9, bank2:85AB | bank2:849F, bank2:84FA, bank2:8530, bank2:854B, bank2:854E, bank2:85AB |  |  |
-| F450-F451 | 0x2 |  | bank2:845F, bank2:84B7, bank2:84E6, bank2:8504, bank2:8513, bank2:8528, bank2:8537, bank2:85A3 | bank2:84B3, bank2:8500, bank2:850F, bank2:8533 |  |  |
+| F44F | 0x1 | POINTS_STATE | bank2:84F8, bank2:84FA, bank2:852E, bank2:8530, bank2:8549, bank2:854B, bank2:85A9, bank2:85AB | bank2:849F, bank2:84FA, bank2:8530, bank2:854B, bank2:854E, bank2:85AB |  |  |
+| F450-F451 | 0x2 | POINTS_TIMER | bank2:845F, bank2:84B7, bank2:84E6, bank2:8504, bank2:8513, bank2:8528, bank2:8537, bank2:85A3 | bank2:84B3, bank2:8500, bank2:850F, bank2:8533 |  |  |
 | F452 | 0x1 |  |  | bank2:840C |  |  |
 | F453 | 0x1 |  | 0837 | bank2:840C |  |  |
 | F454 | 0x1 |  | 0883, bank2:843D | bank2:840C |  |  |
@@ -2160,10 +2163,10 @@ Bulk sub reads: 00EA (0x150), 0111 (0x14f)
 | F45A-F45B | 0x2 |  | bank2:85BC, bank2:85D8 | bank2:85C4 |  |  |
 | F45C | 0x1 |  | bank2:85B7, bank2:85CD | bank2:85CC |  |  |
 | F45D | 0x1 |  | 252C |  |  |  |
-| F45E | 0x1 |  | bank2:8643 | bank2:86C3, bank2:8757, bank2:87A6 |  |  |
-| F45F | 0x1 |  | bank2:863A, bank2:86E0, bank2:86E2, bank2:871E, bank2:8720, bank2:8739, bank2:873B, bank2:878B +1 | bank2:863A, bank2:8686, bank2:86E2, bank2:8720, bank2:873B, bank2:873E, bank2:878D |  |  |
+| F45E | 0x1 | SPECIAL_KIND | bank2:8643 | bank2:86C3, bank2:8757, bank2:87A6 |  |  |
+| F45F | 0x1 | SPECIAL_STATE | bank2:863A, bank2:86E0, bank2:86E2, bank2:871E, bank2:8720, bank2:8739, bank2:873B, bank2:878B +1 | bank2:863A, bank2:8686, bank2:86E2, bank2:8720, bank2:873B, bank2:873E, bank2:878D |  |  |
 | F460 | 0x1 |  | bank2:877C |  |  |  |
-| F461-F462 | 0x2 |  | bank2:8663, bank2:869D, bank2:86DA, bank2:86F7, bank2:8703, bank2:8718, bank2:8727, bank2:8785 | bank2:8699, bank2:86F3, bank2:86FF, bank2:8723 |  |  |
+| F461-F462 | 0x2 | SPECIAL_TIMER | bank2:8663, bank2:869D, bank2:86DA, bank2:86F7, bank2:8703, bank2:8718, bank2:8727, bank2:8785 | bank2:8699, bank2:86F3, bank2:86FF, bank2:8723 |  |  |
 | F463 | 0x1 |  | bank2:863E |  |  |  |
 | F464 | 0x1 |  |  | 068C |  |  |
 | F466 | 0x1 |  | bank2:8B7F | bank2:8B6B |  |  |

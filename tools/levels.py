@@ -8,8 +8,9 @@ all 100 on one sheet. --check rebuilds the grid and the wall tiles of every ram_
 in a trace.py snap/ folder from the ROMs, and compares them with the RAM.
 
 A round is a 32 x 32 grid of 8 x 8 cells, ROUND_GRID (E398-E597): 16 bytes a row, two
-cells a byte, high nibble first. 0 is wall; 1-4 are open, and look like the air current
-that moves bubbles (notes/levels.md). Three sources fill it at round start:
+cells a byte, high nibble first. 0 is wall; 1-4 are open, and are the air current that
+moves bubbles: 1 up, 2 right, 3 left, 4 down (BUBBLE_DRIFT, 6175). Three sources fill it
+at round start:
 - Rows 5-28 (E3E8, 0x180 bytes) come from the sub CPU. When the main CPU sets
   GRID_REQUEST (E397) to 1, the sub CPU's GRID_UNPACK (sub 00A9) reads 0x120 bytes at
   ROUND_LAYOUTS (sub 0CFC) + round x 0x120 as a bit stream, 6 bits a byte, 3 bits a cell,
@@ -64,6 +65,17 @@ RAM_GRID = 0xE398 - RAM_BASE
 RAM_TILES = 0xCD00 - RAM_BASE
 RAM_ROUND = 0xE64B - RAM_BASE
 RAM_DRAW_ROW = 0xE5C4 - RAM_BASE  # next row to draw; 0x20 once the round is drawn
+RAM_RECORD = 0xE598 - RAM_BASE
+RAM_SUPER = 0xE5DB - RAM_BASE
+RAM_DIFFICULTY = 0xE5DC - RAM_BASE
+
+# LOAD_ROUND_REC's difficulty tables (fixed ROM): one signed step per DIFFICULTY for
+# byte 7, then one per DIFFICULTY - 0x10 for bytes 13, 15 and 8.
+DIFF_TRAP = 0x1851
+DIFF_HURRY = 0x1870
+DIFF_GHOST = 0x187F
+DIFF_SPEED = 0x188E
+DIFFICULTY_MAX = 0x1E
 
 
 def record(bank1: bytes, r: int) -> bytes:
@@ -199,31 +211,92 @@ class Painter:
         return img
 
 
+def loaded_record(fixed: bytes, rec: bytes, r: int, difficulty: int, super_mode: int) -> bytes:
+    """ROUND_RECORD as LOAD_ROUND_REC (1775) leaves it for round r (0-based, 0x64 on the
+    title), with DIFFICULTY (E5DC) and the super mode flag (E5DB) at round start."""
+    b = bytearray(rec)
+    if r == 0x64:
+        return bytes(b)
+    if super_mode:
+        # Kind swap b4 toggles, b0 clears; enemy groups 0 <-> 3 and 4 <-> 5.
+        b[12] = (b[12] ^ 0x10) & ~1
+        g = [b[4 + i // 2] >> (0 if i & 1 else 4) & 15 for i in range(6)]
+        b[4], b[5], b[6] = g[3] << 4 | g[1], g[2] << 4 | g[0], g[5] << 4 | g[4]
+
+    def signed(v: int) -> int:
+        return v - 0x100 if v & 0x80 else v
+
+    v = (b[7] + fixed[DIFF_TRAP + difficulty]) & 0xFF
+    b[7] = v if v and not v & 0x80 else 1
+    if difficulty < 0x10:
+        return bytes(b)
+    d = difficulty - 0x10
+    v = (b[13] + fixed[DIFF_HURRY + d]) & 0xFF
+    b[13] = 5 if v & 0x80 or v < 5 else v
+    v = (b[15] + fixed[DIFF_GHOST + d]) & 0xFF
+    b[15] = 2 if v & 0x80 or v < 2 else v
+    v = (b[8] + fixed[DIFF_SPEED + d]) & 0xFF
+    b[8] = min(v, 0x1E)
+    return bytes(b)
+
+
+def position(y: int, x: int) -> dict:
+    """An object position as the record holds it, and the top left of its 16 x 16 sprite on
+    the 256 x 256 frame (screen Y = -Y, as objects.py draws it)."""
+    return {"y": y, "x": x, "screen": [x, -y & 0xFF]}
+
+
+def decode_record(rec: bytes) -> dict:
+    """ROUND_RECORD's fields, as LOAD_ROUND_REC copies them. The values are the base ones:
+    LOAD_ROUND_REC then shifts bytes 7, 8, 13 and 15 by the difficulty (notes/levels.md)."""
+    counts = [rec[4 + i // 2] >> (0 if i & 1 else 4) & 15 for i in range(6)]
+    enemies = []
+    for i in range(sum(counts)):
+        delay, x, y = rec[17 + 3 * i:20 + 3 * i]
+        # bank0:87BE: X is set at once; the enemy then waits `delay` frames and moves
+        # one pixel a frame to Y. Byte 42 bit i set = ix+7/8 = 1, clear = 3.
+        enemies.append({"delay": delay, **position(y, x), "facing_bit": rec[42] >> i & 1})
+    return {
+        "palette": rec[0],
+        "points_item": position(rec[1], rec[2]),
+        "top_edge": rec[3] >> 4,
+        "bottom_edge": rec[3] & 15,
+        "enemy_counts": counts,
+        "trap_seconds": rec[7],
+        "enemy_speed": rec[8],
+        "bubble_speed": rec[9],
+        "special_item": position(rec[10], rec[11]),
+        "enemy_swap": rec[12],
+        "hurry_seconds": rec[13],
+        "super_palette": rec[14],
+        "ghost_seconds": rec[15],
+        "enemies": enemies,
+        "special_bubbles": dict(zip(("lightning", "water", "fire", "type4"), rec[38:42])),
+        "unread": {"16": rec[16], "unused_enemy_entries": rec[17 + 3 * len(enemies):38].hex(" ")},
+    }
+
+
 def round_json(r: int, rec: bytes, g: bytes, sub_offset: int) -> dict:
     c = cells(g)
-    counts = [rec[4 + i // 2] >> (0 if i & 1 else 4) & 15 for i in range(6)]
     return {
         "round": r + 1,
         "record": {
             "source": f"bank1:{0x8000 + palette.ROUND_RECORDS + r * palette.ROUND_RECORD_SIZE:04X}",
             "bytes": rec.hex(" "),
-            "palette": rec[0],
-            "top_edge": rec[3] >> 4,
-            "bottom_edge": rec[3] & 15,
-            "enemy_counts": counts,
-            "enemy_swap": rec[12],
+            **decode_record(rec),
         },
         "layout_source": f"sub:{sub_offset:04X}",
         "wall_tile": f"{WALL_TILE + TILES_PER_ROUND * r:03X}",
         "side_tiles": f"{SIDE_TILE + TILES_PER_ROUND * r:03X}",
         "colour": 15 if r & 1 else 14,
-        "cells": "0 = wall, 1-4 = open (air current); row 0 at the top, rows 4-29 on screen",
+        "cells": "0 = wall; open cells move bubbles 1 = up, 2 = right, 3 = left, 4 = down; "
+                 "row 0 at the top, rows 4-29 on screen",
         "grid": ["".join(str(v) for v in row) for row in c],
     }
 
 
 def check(images: dict[str, bytes], folder: Path) -> int:
-    bank1, sub = images["main_bank1.bin"], images["sub.bin"]
+    bank1, sub, fixed = images["main_bank1.bin"], images["sub.bin"], images["main_fixed.bin"]
     grids = [grid(bank1, sub, r) for r in range(ROUNDS)]
     blocks = [tile_block(tile_words(r, grids[r], record(bank1, r)[3])) for r in range(ROUNDS)]
     keep = [i for i in range(len(blocks[0])) if (i % (GRID_ROWS * 2)) // 2 >= FIRST_ROW]
@@ -245,7 +318,23 @@ def check(images: dict[str, bytes], folder: Path) -> int:
         block = ram[RAM_TILES:RAM_TILES + len(blocks[n])]
         same = all(block[i] == blocks[n][i] for i in keep)
         state = "tiles match" if same else ("tiles differ" if drawn else "still drawing")
-        print(f"{f.name}: round {n + 1}: grid matches, {state}")
+        rec = "record matches"
+        if n == r:
+            want = loaded_record(fixed, record(bank1, r), r, ram[RAM_DIFFICULTY], ram[RAM_SUPER])
+            got = ram[RAM_RECORD:RAM_RECORD + palette.ROUND_RECORD_SIZE]
+            if got != want:
+                # DIFFICULTY moves during the round; the record keeps the value at its start.
+                fits = [d for d in range(DIFFICULTY_MAX + 1)
+                        if loaded_record(fixed, record(bank1, r), r, d, ram[RAM_SUPER]) == got]
+                if fits:
+                    rec = f"record matches at difficulty {fits[0]} (now {ram[RAM_DIFFICULTY]})"
+                else:
+                    diff = [i for i in range(len(got)) if got[i] != want[i]]
+                    rec = f"record differs at bytes {diff}"
+                    bad += 1
+        else:
+            rec = "record not checked"
+        print(f"{f.name}: round {n + 1}: grid matches, {state}, {rec}")
     return bad
 
 

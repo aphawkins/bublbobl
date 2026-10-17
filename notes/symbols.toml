@@ -22,7 +22,22 @@ MCU_RAM       = { addr = 0xFC00, size = 0x0400, note = "RAM shared with MCU, nam
 OBJ_SHADOW    = { addr = 0xE1CD, size = 0x0168, note = "objects 0-89 as built this frame; OBJ_COPY copies it to OBJ_RAM at the next IRQ" }
 FB40_COPY     = { addr = 0xE1CB, note = "last value written to FB40" }
 BANK_SAVED    = { addr = 0xE1CC, note = "bank bits before BANK_SELECT; BANK_RESTORE puts them back" }
-ROUND_RECORD  = { addr = 0xE598, note = "0x2B bytes: the round's record from bank1:ROUND_RECORDS; byte 0 = round palette index" }
+ROUND_RECORD  = { addr = 0xE598, note = "0x2B bytes: the round's record from bank1:ROUND_RECORDS, shifted by DIFFICULTY and SUPER_MODE; fields in notes/levels.md" }
+SUPER_MODE    = { addr = 0xE5DB, note = "nonzero: LOAD_ROUND_REC swaps enemy kinds and groups, LOAD_ROUND_PAL uses record byte 14" }
+DIFFICULTY    = { addr = 0xE5DC, note = "0-1E: from DSW1 b0-1 through the table at 22D6 (22C6), or 7 (2B3A, 2EE0); raised (22F0) and lowered (22FE) in play. LOAD_ROUND_REC shifts record bytes 7, 8, 13, 15 by it" }
+ROUND_SECONDS = { addr = 0xE345, note = "seconds into the round (E344 counts the frames); HURRY UP when it reaches record byte 13" }
+HURRY         = { addr = 0xE349, note = "1 = HURRY UP has been shown (0832); FF = one enemy left (0730). The enemies speed up while it is nonzero" }
+GHOST_ON      = { addr = 0xE343, note = "FF = Skel-Monsta is out: record byte 15 seconds after HURRY UP (087E)" }
+NO_SPECIAL    = { addr = 0xE34A, note = "1 = 3 s before HURRY UP: no special item appears after that (0770)" }
+SPECIAL_LIST  = { addr = 0xE745, size = 0x10, note = "16 bubble types for SPAWN_BUBBLE to pick from: record bytes 38-41 give how many are 1 (lightning), 2 (water), 3 (fire), 4; the rest 0 (plain)" }
+POINTS_ITEM   = { addr = 0xE2AD, size = 4, note = "object: the points item, at record bytes 1-2 (Y, X)" }
+SPECIAL_ITEM  = { addr = 0xE2B1, size = 4, note = "object: the special item, at record bytes 10-11 (Y, X)" }
+POINTS_KIND   = { addr = 0xF44C, note = "the points item: entry in bank2:POINTS_ITEMS" }
+POINTS_STATE  = { addr = 0xF44F, note = "b0 shown, b1 taken (its score rises), b2 a pause, b3 done" }
+POINTS_TIMER  = { addr = 0xF450, size = 2, note = "frames: 1A4 (F0 if F44D) until it appears, then 258 on show" }
+SPECIAL_KIND  = { addr = 0xF45E, note = "the special item: entry in bank2:SPECIAL_ITEMS" }
+SPECIAL_STATE = { addr = 0xF45F, note = "as POINTS_STATE" }
+SPECIAL_TIMER = { addr = 0xF461, size = 2, note = "frames: 2D0 (F0 if F44D) until it appears, then 384 on show" }
 GRID_REQUEST  = { addr = 0xE397, note = "LOAD_GRID_EDGES sets 1 and waits; the sub CPU's GRID_UNPACK fills ROUND_GRID rows 5-28 and sets FF" }
 ROUND_GRID    = { addr = 0xE398, size = 0x200, note = "32 x 32 cells of 8 x 8, 16 bytes a row, high nibble first: 0 = wall, 1-4 = open (air current?). Rows 0-4 and 29-31 from LOAD_GRID_EDGES, 5-28 from the sub CPU" }
 GRID_DRAW_ROW = { addr = 0xE5C4, note = "next ROUND_GRID row DRAW_GRID_ROW draws at round start; 0x20 when done" }
@@ -66,7 +81,14 @@ PLAYER_SPRITE  = { addr = 0x450D, note = "player frame from PLAYER_ANIMS[(IX+12)
 LOAD_PALETTES  = { addr = 0x0B30, note = "bank1:PALETTES -> F800, 0x200 bytes" }
 LOAD_ROUND_PAL = { addr = 0x0B43, note = "bank1:ROUND_PALETTES[index] -> palette 14 (F9C0) or 15 (F9E0) by ROUND_MAIN b0" }
 GRID_CELL      = { addr = 0x174B, note = "A = the ROUND_GRID cell at object X = H, Y = L (row (-L) / 8, column H / 8); the collision probes around objects call it" }
-LOAD_ROUND_REC = { addr = 0x1775, note = "bank1:ROUND_RECORDS[ROUND_MAIN] -> ROUND_RECORD" }
+LOAD_ROUND_REC = { addr = 0x1775, note = "bank1:ROUND_RECORDS[ROUND_MAIN] -> ROUND_RECORD; then (not on the title) the SUPER_MODE swaps and the DIFFICULTY shifts" }
+HURRY_CHECK    = { addr = 0x0742, note = "HURRY UP when ROUND_SECONDS = record byte 13; NO_SPECIAL 3 s before" }
+GHOST_CLOCK    = { addr = 0x085F, note = "while HURRY = 1: seconds in E348; past record byte 15, GHOST_ON" }
+BUBBLE_SPEED   = { addr = 0x6144, note = "steps from the SPEED_PATTERNS row SPEED2_SEL (record byte 9), then BUBBLE_DRIFT for each" }
+BUBBLE_DRIFT   = { addr = 0x6175, note = "one pixel by the bubble's cell (IX+0A): 0-1 up (Y+1), 2 right, 3 left, 4 down, 5-6 stay; re-reads the cell on an 8-pixel boundary (61E4)" }
+BUBBLE_TIMER   = { addr = 0x60B6, note = "(IX+0C) frames to 3C, then (IX+0D) seconds down; at FF the bubble pops or its enemy escapes" }
+SPAWN_BUBBLE   = { addr = 0x6D9B, note = "every E75C frames, under 16 bubbles: a bubble from the floor or ceiling gaps (record byte 3), type from SPECIAL_LIST" }
+SPEED_PATTERNS = { addr = 0x11CE, note = "word table of step patterns, picked by SPEED2_SEL for bubbles and (IX+0C) for enemies" }
 LOAD_GRID_EDGES = { addr = 0x1700, note = "asks the sub CPU for ROUND_GRID rows 5-28 (GRID_REQUEST), then copies rows 0-4 and 29-31 from bank1:GRID_EDGES by ROUND_RECORD byte 3's nibbles" }
 GRID_WALL_TILE = { addr = 0x1929, note = "HL = 0x204 + 5 x ROUND_MAIN with colour 14/15: the side-wall block; +4 is the wall tile" }
 DRAW_GRID_ROW  = { addr = 0x1958, note = "ROUND_GRID row GRID_DRAW_ROW -> tile columns CD00-D4FF: wall tile where a cell is 0" }
@@ -98,6 +120,9 @@ PLAYER_FRAMES    = { addr = 0x45E4, size = 0x0D, note = "first tiles for PLAYER_
 # a78-05-1.52 page 0 (file 0x0000-0x3FFF), mapped at 8000 when FB40 = 4.
 ROUND_ENEMIES = { addr = 0x85A9, note = "round start: ENEMY_COUNTS from ROUND_RECORD, then each group's init" }
 ENEMY0_INIT   = { addr = 0x89B9, note = "clears ENEMY0_SLOTS; returns if ENEMY_SWAP b0" }
+ENEMY_ENTRY   = { addr = 0x87BE, note = "enemy (IX+9) of the round: delay, X, target Y from record bytes 17 + 3 x n; facing from byte 42 bit n. Every kind's init calls it" }
+ENEMY_DROP    = { addr = 0x8805, note = "after the delay, Y moves 1 a frame to the target; then B4 frames (not round 1) and the enemy starts" }
+ENEMY_SPEED   = { addr = 0x885A, note = "(IX+0C) = record byte 8 when calm; 8879 sets byte 8 + 6 (up to 28) when angry or HURRY" }
 ENEMY0B_INIT  = { addr = 0xB0F0, note = "returns unless ENEMY_SWAP b0" }
 ENEMY0B_SHOTS_INIT = { addr = 0x844A, note = "returns unless ENEMY_SWAP b0" }
 ENEMY1_INIT   = { addr = 0x8EFB }
@@ -128,6 +153,20 @@ ROUND_RECORDS  = { addr = 0xA73A, size = 0x10CC, note = "100 x 0x2B bytes, one p
 GRID_EDGES     = { addr = 0x95AA, size = 0x40, note = "32 pointers; LOAD_GRID_EDGES uses 0-15 for both edges: 0x50 bytes for the top, the first 0x30 for the bottom. 16-31 point at GRID_EDGE_LOW, never read there" }
 GRID_EDGE_ROWS = { addr = 0x95EA, size = 0x02D0, note = "9 x 0x50 bytes: ROUND_GRID rows 0-4; the first 0x30 also fill rows 29-31" }
 GRID_EDGE_LOW  = { addr = 0x98BA, size = 0x01B0, note = "9 x 0x30 bytes, each the same as the first 0x30 of the matching GRID_EDGE_ROWS pattern; unreferenced" }
+
+[bank2.code]
+# a78-05-1.52 page 2 (file 0x8000-0xBFFF), mapped at 8000 when FB40 = 6.
+POINTS_PICK   = { addr = 0x83E8, note = "POINTS_KIND for the round, then POINTS_TIMER" }
+POINTS_RUN    = { addr = 0x8499, note = "the points item: appears at record bytes 1-2 when POINTS_TIMER runs out" }
+POINTS_TAKE   = { addr = 0x854E, note = "a player touches the points item: score from POINTS_ITEMS" }
+SPECIAL_PICK  = { addr = 0x85AE, note = "SPECIAL_KIND: the first SPECIAL_RULES entry whose counter has reached its threshold" }
+SPECIAL_RUN   = { addr = 0x8686, note = "the special item: appears at record bytes 10-11 when SPECIAL_TIMER runs out, unless NO_SPECIAL or no enemies" }
+SPECIAL_TAKE  = { addr = 0x873E, note = "a player touches the special item: its effect through the table at 8AFF" }
+
+[bank2.data]
+POINTS_ITEMS  = { addr = 0xB389, note = "5 bytes an item: first tile, attribute, then (B38B) score tile and score" }
+SPECIAL_RULES = { addr = 0xB4F2, size = 0x17A, note = "0x36 x 7 bytes: counter address, 4 thresholds (one per DIFFICULTY class from the table at 8667), a byte for F463. Entry n gives SPECIAL_KIND 0x35 - n" }
+SPECIAL_ITEMS = { addr = 0xB66C, note = "5 bytes an item, as POINTS_ITEMS" }
 
 [bank3.data]
 

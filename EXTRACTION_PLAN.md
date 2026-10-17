@@ -370,8 +370,15 @@ Started (2026-10-17). Steps 1–4 are done for the walls:
   rebuilds the grid and wall tiles from the ROMs and compares them with RAM snapshots.
   Every grid matched (rounds 1, 2, 50, 100), and so did every fully drawn set of tile
   columns. Notes: `notes\levels.md`.
-- Still to do: what values 1–4 do, the rest of the round record (enemy start positions and
-  timings are likely in bytes 7–42), and step 5, the super mode.
+- The open values are the air current: 1 up, 2 right, 3 left, 4 down (`BUBBLE_DRIFT`,
+  `6175`).
+- The whole round record is decoded (`notes\levels.md`): item positions, the trap, HURRY UP
+  and Skel-Monsta times, enemy and bubble speeds, seven enemy entries (delay, X, Y, facing),
+  and the mix of special bubbles. `LOAD_ROUND_REC` shifts four of the fields by a
+  difficulty value (`E5DC`) and swaps enemy groups in the super mode. `--check` replays it
+  and matches the record in every RAM snapshot.
+- Still to do: step 5, the super mode (what sets `E5DB`, and a traced super round), bubble
+  type 4, and how the two items are chosen.
 
 ---
 
@@ -575,7 +582,7 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 3. Phase 6 MCU — small, complete, byte-exact.
 4. Phase 1 traces + RAM map — unlocks everything else.
 5. Phase 2.2–2.4 palettes, offline renderer and sprite frames (all done).
-6. Phase 4 levels (walls done; the rest of the round record and the super mode to go).
+6. Phase 4 levels (walls and the round record done; the super mode to go).
 7. Phase 5 main/sub disassembly. Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.
 8. Phase 7 sound.
