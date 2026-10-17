@@ -6,7 +6,8 @@ name in `symbols.toml` needs the code to agree, as for the enemy groups below.
 
 Runs so far: attract, scripted 1P and 2P play, a recorded game from round 1 (`spr_play`,
 25,452 frames, to at least round 10) and one from round 20 (`spr_r20`, 16,463 frames,
-`trace.py play --round 20`). 749 frames from 87 call sites.
+`trace.py play --round 20`), and one from round 30 (`spr_r30`, 7,115 frames). 774 frames
+from 88 call sites.
 
 ## How a sprite is drawn
 
@@ -31,7 +32,7 @@ group 2 (b4) with a second kind, which has its own tables. That gives eight kind
 |---|---|---|---|---|
 | 0 | `ENEMY0_SLOTS` `ED49` | `0x19` | 1 | Zen-chan: walk `bank0:9155`, tiles `964–988` |
 | 0, swapped | `ENEMY0B_SLOTS` `F2AA`, `ENEMY0B_AUX` `ECAA` | `0x19`, `0x11` | 60 | not yet traced |
-| 1 | `ENEMY1_SLOTS` `EDF8` | `0x19` | 30 | not yet traced |
+| 1 | `ENEMY1_SLOTS` `EDF8` | `0x19` | 30 | Banebou: `bank0:9155` (`B98–BB4`), `bank0:8F90` |
 | 2 | `ENEMY2_SLOTS` `EEAC` | `0x23` | 6 | Mighta: walk `bank0:94C3` (`1008–101C`), throw `bank0:8237`/`8260` (`1054–1098`) |
 | 2 | `ENEMY2_SHOTS` `EC29` | | 6 | Mighta's rock: roll `bank0:83BC` (`1004–1034`), break `bank0:83E7` (`10A4–10AC`) |
 | 2, swapped | `ENEMY2B_SLOTS` `F1E7` | `0x19` | 50 | not yet traced |
@@ -40,10 +41,11 @@ group 2 (b4) with a second kind, which has its own tables. That gives eight kind
 | 5 | `ENEMY5_SLOTS` `F113` | `0x19` | 10 | Monsta: `bank0:A088` (`14CC–14D8`) |
 
 Code shared by the groups:
-- `bank0:915D–9171`: one frame, used by groups 0 (`964`) and 2 (`1038`).
+- `ENEMY_ANIM_SPRITE` (`bank0:913C`, calls at `9155`/`9159`): walk frames for groups 0
+  and 1. `bank0:915D–9171`: one frame, used by groups 0 (`964`) and 2 (`1038`).
 - `7EBF`/`7EC4`: the enemy trapped in a bubble, then the food it turns into. The bubble
-  frames depend on the group: `C04–C10` group 0, `C24–C30` group 2, `C44–C50` group 4,
-  `C54–C60` group 5.
+  frames are 4 tiles from `C04 + 0x10 × group`: seen for groups 0, 1, 2, 4 and 5, so
+  group 3's should be `C34–C40`.
 - `7F47`: the score for a popped enemy (`E48–E8C`). `7F75`: sparkle (`ABC–AC4`).
 - `7CCB`, `bank0:8910`: tile `C00`, a blank frame.
 
@@ -95,6 +97,6 @@ The bubble slots are 0x28 bytes from `E76C` (IX `E76C`, `E794`, `E7BC`, …).
 
 ## Still to do
 
-- Rounds that use groups 1 and 3 and the two swapped kinds (from rounds 30, 40, 60 for
-  group 0 and 50 for group 2), the bosses and the endings.
+- Rounds that use group 3 and the two swapped kinds (from rounds 40, 60 for group 0 and
+  50 for group 2), the bosses and the endings.
 - Per-character sheets: group the frames by slot table instead of by caller.

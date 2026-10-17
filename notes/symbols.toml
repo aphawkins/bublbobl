@@ -30,7 +30,7 @@ ENEMY_COUNTS  = { addr = 0xED3E, size = 6, note = "enemies in groups 0-5: the ni
 ENEMY0_SLOTS  = { addr = 0xED49, size = 0xAF, note = "group 0, 0x19 bytes each (drew Zen-chan in the traced rounds)" }
 ENEMY0B_SLOTS = { addr = 0xF2AA, note = "group 0 when ENEMY_SWAP b0, 0x19 bytes each" }
 ENEMY0B_AUX   = { addr = 0xECAA, note = "group 0 when ENEMY_SWAP b0, 0x11 bytes each" }
-ENEMY1_SLOTS  = { addr = 0xEDF8, note = "group 1, 0x19 bytes each" }
+ENEMY1_SLOTS  = { addr = 0xEDF8, note = "group 1, 0x19 bytes each (drew Banebou in the traced rounds)" }
 ENEMY2_SLOTS  = { addr = 0xEEAC, note = "group 2, 0x23 bytes each (drew Mighta in the traced rounds)" }
 ENEMY2_SHOTS  = { addr = 0xEC29, note = "group 2's thrown objects (Mighta's rock)" }
 ENEMY2B_SLOTS = { addr = 0xF1E7, note = "group 2 when ENEMY_SWAP b4, 0x19 bytes each" }
