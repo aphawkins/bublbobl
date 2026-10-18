@@ -19,17 +19,18 @@ ENEMY2_SHOTS_INIT:      ; 81B3
         ld      bc,0x0081
         jp      ZERO_BC
 
-L_81BC:                 ; 81BC
+; group 2 attack frame: waits for open cells either side, ANIM_STEP, then (IX+25) b4 set and the attack ends
+ENEMY2_ATTACK_RUN:      ; 81BC
         ld      a,(TIMER_RUN)
         and     a
         ret     nz
-        call    0x1530
+        call    OBJ_POS
         ld      a,h
         add     a,0x1C
         ld      h,a
         call    GRID_CELL
         jr      z,L_81F4
-        call    0x1530
+        call    OBJ_POS
         ld      a,h
         sub     0x1C
         ld      h,a
@@ -44,7 +45,7 @@ L_81BC:                 ; 81BC
         inc     hl
         inc     hl
         ld      (hl),0x00
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+29),a
         ld      (ix+28),a
 L_81F4:                 ; 81F4
@@ -57,13 +58,13 @@ L_81F9:                 ; 81F9
         jr      nz,L_8213
         set     4,(ix+25)
         res     1,(ix+25)
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+29),a
         ld      (ix+28),a
         ret
 
 L_8213:                 ; 8213
-        call    0x0D6D
+        call    SHL4
         push    af
         ld      b,a
         bit     7,(ix+0)
@@ -114,7 +115,7 @@ L_8254:                 ; 8254
 L_8265:                 ; 8265
         call    SPRITE_FLIPX
 L_8268:                 ; 8268
-        call    0x1529
+        call    OBJ_PTR
         ld      e,(ix+30)
         ld      d,(ix+31)
         ld      a,(hl)
@@ -136,7 +137,8 @@ L_8285:                 ; 8285
         ld      (de),a
         ret
 
-L_8287:                 ; 8287
+; steps ENEMY2_SHOTS when group 2 is present
+ENEMY2_SHOTS_UPDATE:    ; 8287
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -156,9 +158,9 @@ L_82A2:                 ; 82A2
         ld      a,0x19
         call    ADD_HL_A
         bit     4,(hl)
-        jp      z,L_8400
+        jp      z,ENEMY2_SHOT_NEXT
         bit     2,(ix+0)
-        jp      nz,L_83D5
+        jp      nz,ENEMY2_SHOT_BURST
         bit     0,(ix+0)
         jp      nz,L_82FB
         pop     hl
@@ -197,32 +199,33 @@ L_82F7:                 ; 82F7
 L_82FB:                 ; 82FB
         ld      a,(TIMER_RUN)
         and     a
-        jp      nz,L_8400
+        jp      nz,ENEMY2_SHOT_NEXT
         call    ENEMY_SPEED
-        call    L_8838
+        call    ENEMY_SPEED_NEXT
         bit     3,(ix+0)
-        jp      nz,L_837F
+        jp      nz,ENEMY2_SHOT_LAUNCH
         ld      a,(ix+7)
-        ld      hl,0x8442
-        call    0x0DA7
+        ld      hl,L_8442
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-L_831A:                 ; 831A
+; mode 3 of the ENEMY2_SHOT table at 8442
+ENEMY2_SHOT_FLY_L:      ; 831A
         ld      a,(ix+13)
         or      a
         jp      z,L_8394
         ld      b,a
 L_8322:                 ; 8322
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         and     0x07
         jp      nz,L_8333
-        call    L_8417
-        jr      z,L_833F
+        call    ENEMY2_SHOT_WALL_PROBE
+        jr      z,ENEMY2_SHOT_HIT_WALL
 L_8333:                 ; 8333
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
@@ -230,33 +233,35 @@ L_8333:                 ; 8333
         djnz    L_8322
         jp      L_8394
 
-L_833F:                 ; 833F
+; the shot stops: state 4, sound 0E
+ENEMY2_SHOT_HIT_WALL:   ; 833F
         pop     bc
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+0),0x04
         ld      c,0x0E
         call    SOUND_PUSH
-        jp      L_8400
+        jp      ENEMY2_SHOT_NEXT
 
-L_834F:                 ; 834F
+; mode 1 of the ENEMY2_SHOT table at 8442
+ENEMY2_SHOT_FLY_R:      ; 834F
         ld      a,(ix+13)
         or      a
         jp      z,L_8394
         ld      b,a
 L_8357:                 ; 8357
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         and     0x07
         jp      nz,L_8373
-        call    0x15E9
-        jr      z,L_833F
+        call    GRID_PROBE_RIGHT
+        jr      z,ENEMY2_SHOT_HIT_WALL
         ld      a,(ix+1)
         ld      h,(ix+2)
-        call    0x174C
-        jr      z,L_833F
+        call    GRID_CELL_A
+        jr      z,ENEMY2_SHOT_HIT_WALL
 L_8373:                 ; 8373
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
@@ -264,9 +269,10 @@ L_8373:                 ; 8373
         djnz    L_8357
         jp      L_8394
 
-L_837F:                 ; 837F
-        call    0x1387
-        call    0x1529
+; mode 0 of the ENEMY2_SHOT table at 8442
+ENEMY2_SHOT_LAUNCH:     ; 837F
+        call    ROM_SUM_STEP_D
+        call    OBJ_PTR
         ld      a,(ix+1)
         ld      (hl),a
         cp      0x0A
@@ -287,7 +293,7 @@ L_83A0:                 ; 83A0
         .incbin "main_bank0.bin", 0x03A5, 0x0003
 L_83A8:                 ; 83A8
         call    ANIM_STEP
-        call    0x0D6D
+        call    SHL4
         add     a,0x04
         ld      b,a
         ld      c,0x1C
@@ -302,15 +308,16 @@ L_83C1:                 ; 83C1
 L_83C4:                 ; 83C4
         inc     (ix+15)
         bit     0,(ix+15)
-        jr      z,L_8400
+        jr      z,ENEMY2_SHOT_NEXT
         ld      e,0x04
-        call    0x13F0
-        jp      L_8400
+        call    PLAYER_NEAR_CHECK
+        jp      ENEMY2_SHOT_NEXT
 
-L_83D5:                 ; 83D5
+; state b2: ANIM_STEP frames A4 + 4 x frame; at the end ENEMY2_SHOT_END
+ENEMY2_SHOT_BURST:      ; 83D5
         ld      de,0x0A03
         call    ANIM_STEP
-        jr      z,L_83EC
+        jr      z,ENEMY2_SHOT_END
         add     a,a
         add     a,a
         add     a,0xA4
@@ -318,24 +325,26 @@ L_83D5:                 ; 83D5
         ld      c,0x1C
         ld      a,(ix+10)
         call    SPRITE
-        jr      L_8400
+        jr      ENEMY2_SHOT_NEXT
 
-L_83EC:                 ; 83EC
+; clears the owner's (+19) b4, hides the shot and its state
+ENEMY2_SHOT_END:        ; 83EC
         pop     hl
         push    hl
         ld      a,0x19
         call    ADD_HL_A
         res     4,(hl)
 L_83F5:                 ; 83F5
-        call    0x1529
+        call    OBJ_PTR
         xor     a
         ld      (hl),a
         inc     hl
         inc     hl
         ld      (hl),a
         ld      (ix+0),a
-L_8400:                 ; 8400
-        ld      de,TASK_START
+; next shot record (0x10 bytes), owner + 0x23
+ENEMY2_SHOT_NEXT:       ; 8400
+        ld      de,0x0010
         add     ix,de
         pop     hl
         ld      a,0x23
@@ -349,7 +358,8 @@ L_8400:                 ; 8400
         jp      nz,L_82A2
         ret
 
-L_8417:                 ; 8417
+; on a cell column: cells at X-9 (Y+8 and Y) and X, Y; Z at a wall
+ENEMY2_SHOT_WALL_PROBE: ; 8417
         ld      a,(ix+2)
         and     0x07
         ret     nz
@@ -358,19 +368,23 @@ L_8417:                 ; 8417
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    0x174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+1)
         ld      h,(ix+2)
-        jp      0x174C
+        jp      GRID_CELL_A
 
-        .incbin "main_bank0.bin", 0x0442, 0x0008
+L_8442:                 ; 8442
+        .word   ENEMY2_SHOT_LAUNCH
+        .word   ENEMY2_SHOT_FLY_R
+        .word   ENEMY2_SHOT_LAUNCH
+        .word   ENEMY2_SHOT_FLY_L
 ; returns unless ENEMY_SWAP b0
 ENEMY0B_SHOTS_INIT:     ; 844A
         ld      hl,ENEMY0B_SHOTS
@@ -412,7 +426,8 @@ L_8463:                 ; 8463
         jr      nz,L_8463
         ret
 
-L_848E:                 ; 848E
+; steps ENEMY0B_SHOTS when group 0 is present
+ENEMY0B_SHOTS_UPDATE:   ; 848E
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -441,7 +456,7 @@ L_84AF:                 ; 84AF
         ld      a,(0xF590)
         and     a
         jp      nz,L_8585
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jp      nz,L_8517
         bit     2,(hl)
@@ -462,7 +477,7 @@ L_84AF:                 ; 84AF
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
-        call    0x1529
+        call    OBJ_PTR
         ld      a,(de)
         sub     0x10
         ld      (hl),a
@@ -485,28 +500,28 @@ L_8517:                 ; 8517
         bit     1,(ix+0)
         jr      z,L_852E
         set     2,(ix+0)
-        call    0x1556
+        call    IX_SPEED_CLEAR
         jp      L_856B
 
 L_852E:                 ; 852E
-        call    L_8838
+        call    ENEMY_SPEED_NEXT
         ld      a,(ix+13)
         or      a
         jp      z,L_8556
         ld      b,a
 L_8539:                 ; 8539
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+1)
         cp      0x18
         jr      nc,L_854F
         pop     bc
         set     2,(ix+0)
-        call    0x1556
+        call    IX_SPEED_CLEAR
         jp      L_856B
 
 L_854F:                 ; 854F
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
         pop     bc
         djnz    L_8539
@@ -537,7 +552,7 @@ L_857B:                 ; 857B
         jr      L_8592
 
 L_8585:                 ; 8585
-        call    0x154C
+        call    OBJ_HIDE
         xor     a
         ld      (ix+1),a
         ld      (ix+2),a
@@ -574,7 +589,7 @@ ROUND_ENEMIES:          ; 85A9
         push    ix
 L_85C8:                 ; 85C8
         ld      hl,ENEMY_HITS
-        ld      bc,TASKS_CLEAR
+        ld      bc,0x0028
         call    ZERO_BC
         ld      de,0xE26D
         ld      (0xED44),de
@@ -583,7 +598,7 @@ L_85C8:                 ; 85C8
         ld      b,0x03
 L_85E0:                 ; 85E0
         ld      a,(hl)
-        call    0x0D62
+        call    SHR4
         ld      (de),a
         inc     de
         ld      a,(hl)
@@ -603,7 +618,7 @@ L_85F4:                 ; 85F4
         ld      de,0x000C
         ld      b,0x0E
         ld      hl,0xE26D
-        call    0x18A5
+        call    GFX_GRID_FILL
         call    ENEMY0_INIT
         call    ENEMY1_INIT
         call    ENEMY2_INIT
@@ -621,30 +636,32 @@ L_85F4:                 ; 85F4
         call    BOSS_INIT
         ld      a,(ROUND_MAIN)
         cp      0x63
-        jp      z,L_8673
-L_863B:                 ; 863B
+        jp      z,BOSS_ROUND
+; per-frame loop of ROUND_ENEMIES: copies ENEMY_HITS to MCU_OBJECTS, then every group's update, the shots and ROUND_TIMER_CHECK
+ENEMIES_FRAME:          ; 863B
         rst     0x20
         ld      hl,ENEMY_HITS
         ld      de,MCU_OBJECTS
         ld      bc,0x001C
         ldir
-        call    L_8A18
-        call    L_B14A
+        call    ENEMY0_UPDATE
+        call    ENEMY0B_UPDATE
         call    ENEMY1_UPDATE
         call    ENEMY2_UPDATE
-        call    L_9695
-        call    L_98E5
-        call    L_9E33
-        call    L_A150
-        call    L_A5FF
-        call    L_8287
-        call    0x7A27
-        call    L_BC15
-        call    L_848E
-        call    L_8691
-        jr      L_863B
+        call    ENEMY3_UPDATE
+        call    ENEMY4_UPDATE
+        call    ENEMY5_UPDATE
+        call    GHOST_UPDATE
+        call    ENEMY2B_UPDATE
+        call    ENEMY2_SHOTS_UPDATE
+        call    ENEMY3_SHOTS_UPDATE
+        call    ENEMY2B_SHOTS_UPDATE
+        call    ENEMY0B_SHOTS_UPDATE
+        call    ROUND_TIMER_CHECK
+        jr      ENEMIES_FRAME
 
-L_8673:                 ; 8673
+; round 100: ENEMY_TOTAL = 1, sound 09, then BOSS_UPDATE and BOSS_SHOTS_UPDATE each frame
+BOSS_ROUND:             ; 8673
         ld      a,0x00
         ld      (SOUND_CMD),a
         ld      hl,ENEMY_TOTAL
@@ -658,10 +675,11 @@ L_8673:                 ; 8673
 L_8688:                 ; 8688
         rst     0x20
         call    BOSS_UPDATE
-        call    L_B97A
+        call    BOSS_SHOTS_UPDATE
         jr      L_8688
 
-L_8691:                 ; 8691
+; TIMER_RUN b7: set to 1 and jump to 0B82; TIMER_DONE b0: cleared and LOAD_ROUND_PAL
+ROUND_TIMER_CHECK:      ; 8691
         ld      hl,TIMER_RUN
         bit     7,(hl)
         jr      z,L_869D
@@ -675,8 +693,9 @@ L_869D:                 ; 869D
         ld      (hl),0x00
         jp      LOAD_ROUND_PAL
 
-L_86A8:                 ; 86A8
-        call    L_86BD
+; the enemy's Y and X (and C unless state b1) into its ENEMY_HITS record
+ENEMY_HIT_REPORT:       ; 86A8
+        call    ENEMY_HIT_PTR
         inc     hl
         ld      a,(ix+1)
         ld      (hl),a
@@ -689,22 +708,24 @@ L_86A8:                 ; 86A8
         ld      (hl),c
         ret
 
-L_86BD:                 ; 86BD
+; HL = ENEMY_HITS + 4 x (IX+9)
+ENEMY_HIT_PTR:          ; 86BD
         ld      a,(ix+9)
         add     a,a
         add     a,a
         ld      hl,ENEMY_HITS
         jp      ADD_HL_A
 
-L_86C8:                 ; 86C8
-        call    L_86BD
+; if the record's b7 is set: hides the object, position 0, state 4, carry set
+ENEMY_REMOVE_IF_B7:     ; 86C8
+        call    ENEMY_HIT_PTR
         bit     7,(hl)
         jr      nz,L_86D1
         xor     a
         ret
 
 L_86D1:                 ; 86D1
-        call    0x1529
+        call    OBJ_PTR
         ld      (hl),0x00
         inc     hl
         inc     hl
@@ -715,8 +736,9 @@ L_86D1:                 ; 86D1
         scf
         ret
 
-L_86E8:                 ; 86E8
-        call    L_86BD
+; if the record's b6 is set: state 2 at the record's position - 8, E D47 + 1, carry set
+ENEMY_TRAP_IF_B6:       ; 86E8
+        call    ENEMY_HIT_PTR
         bit     6,(hl)
         jr      nz,L_86F1
         xor     a
@@ -725,7 +747,7 @@ L_86E8:                 ; 86E8
 L_86F1:                 ; 86F1
         ld      (ix+14),0x00
         ex      de,hl
-        call    0x1529
+        call    OBJ_PTR
         inc     de
         ld      a,(de)
         sub     0x08
@@ -742,8 +764,9 @@ L_86F1:                 ; 86F1
         scf
         ret
 
-L_870F:                 ; 870F
-        call    L_86BD
+; if the record's b5 is set: clears it, sets b0, state A1, (IX+14) 20, placed at the record's position within the playfield
+ENEMY_ANGRY_IF_B5:      ; 870F
+        call    ENEMY_HIT_PTR
         bit     5,(hl)
         jr      nz,L_8718
         xor     a
@@ -757,7 +780,7 @@ L_8718:                 ; 8718
         ld      (ix+24),0x00
         ld      (ix+0),0xA1
         ex      de,hl
-        call    0x1529
+        call    OBJ_PTR
         inc     de
         ld      a,(de)
         cp      0xF0
@@ -789,22 +812,24 @@ L_8751:                 ; 8751
         jr      nc,L_8758
         ld      (hl),0x18
 L_8758:                 ; 8758
-        call    0x1537
+        call    OBJ_POS_LOAD
         call    ROM_SUM_STEP_A
         scf
         ret
 
         .incbin "main_bank0.bin", 0x0760, 0x0001
-L_8761:                 ; 8761
+; on a cell row: the cell at X, Y-8 (Z = wall)
+ENEMY_FLOOR_BELOW:      ; 8761
         ld      a,(ix+1)
         and     0x07
         ret     nz
         ld      h,(ix+2)
         ld      a,(ix+1)
         sub     0x08
-        jp      0x174C
+        jp      GRID_CELL_A
 
-L_8772:                 ; 8772
+; on a cell row: the cell at X-9, Y-9, the floor ahead when walking left
+ENEMY_FLOOR_AHEAD_L:    ; 8772
         ld      a,(ix+1)
         and     0x07
         ret     nz
@@ -813,42 +838,45 @@ L_8772:                 ; 8772
         ld      h,a
         ld      a,(ix+1)
         sub     0x09
-        jp      0x174C
+        jp      GRID_CELL_A
 
-L_8786:                 ; 8786
+; on a cell row: the cell at X+9, Y-9, the floor ahead when walking right
+ENEMY_FLOOR_AHEAD_R:    ; 8786
         ld      a,(ix+1)
-        and     0x07
-        ret     nz
-        ld      a,(ix+2)
-        add     a,0x09
-        ld      h,a
-        ld      a,(ix+1)
-        sub     0x09
-        jp      0x174C
-
-L_879A:                 ; 879A
-        ld      a,(ix+2)
-        and     0x07
-        ret     nz
-        ld      a,(ix+2)
-        sub     0x09
-        ld      h,a
-        ld      a,(ix+1)
-        jp      0x174C
-
-L_87AC:                 ; 87AC
-        ld      a,(ix+2)
         and     0x07
         ret     nz
         ld      a,(ix+2)
         add     a,0x09
         ld      h,a
         ld      a,(ix+1)
-        jp      0x174C
+        sub     0x09
+        jp      GRID_CELL_A
+
+; on a cell column: the cell at X-9, Y
+ENEMY_WALL_L:           ; 879A
+        ld      a,(ix+2)
+        and     0x07
+        ret     nz
+        ld      a,(ix+2)
+        sub     0x09
+        ld      h,a
+        ld      a,(ix+1)
+        jp      GRID_CELL_A
+
+; on a cell column: the cell at X+9, Y
+ENEMY_WALL_R:           ; 87AC
+        ld      a,(ix+2)
+        and     0x07
+        ret     nz
+        ld      a,(ix+2)
+        add     a,0x09
+        ld      h,a
+        ld      a,(ix+1)
+        jp      GRID_CELL_A
 
 ; enemy (IX+9) of the round: delay, X, target Y from record bytes 17 + 3 x n; facing from byte 42 bit n. Every kind's init calls it
 ENEMY_ENTRY:            ; 87BE
-        call    0x0D14
+        call    ROM_SUM_STEP_C
         ld      a,(ix+9)
         ld      b,a
         add     a,a
@@ -862,7 +890,7 @@ ENEMY_ENTRY:            ; 87BE
         inc     hl
         ld      a,(hl)
         ld      (ix+17),a
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         ld      (hl),b
@@ -892,13 +920,13 @@ ENEMY_DROP:             ; 8805
         ret     nz
         ld      (ix+16),0x01
         ld      a,(ix+17)
-        call    0x1529
+        call    OBJ_PTR
         cp      (hl)
         jr      z,L_8821
         dec     (hl)
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      c,(ix+23)
-        call    L_86A8
+        call    ENEMY_HIT_REPORT
         ret
 
 L_8821:                 ; 8821
@@ -915,17 +943,18 @@ L_8833:                 ; 8833
         set     5,(ix+0)
         ret
 
-L_8838:                 ; 8838
+; (IX+13) = the next byte of SPEED_PATTERNS row (IX+12) at (IX+11); a negative byte restarts the row
+ENEMY_SPEED_NEXT:       ; 8838
         ld      a,(ix+12)
         ld      hl,SPEED_PATTERNS
-        call    0x0DA7
+        call    TABLE_WORD
         ld      a,(ix+11)
         call    ADD_DE_A
         ld      a,(de)
         or      a
         jp      p,L_8853
         ld      (ix+11),0x00
-        jp      L_8838
+        jp      ENEMY_SPEED_NEXT
 
 L_8853:                 ; 8853
         ld      (ix+13),a
@@ -937,7 +966,7 @@ ENEMY_SPEED:            ; 885A
         ld      a,(0xF44E)
         and     a
         jr      z,L_8865
-        call    L_8EDF
+        call    ENEMY_GROUND_CHECK
         xor     a
         ret
 
@@ -953,7 +982,8 @@ L_8877:                 ; 8877
         scf
         ret
 
-L_8879:                 ; 8879
+; keeps (IX+14) b6 in step with the enemy being angry (b7 of byte 0) or HURRY, and sets (IX+12) to record byte 8 + 6 (up to 28)
+ENEMY_ANGER:            ; 8879
         ld      a,(P1_REC)
         and     0x02
         ld      b,a
@@ -992,12 +1022,13 @@ L_88BB:                 ; 88BB
         ret     nz
         set     7,(ix+14)
 L_88C4:                 ; 88C4
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+11),0x00
         ret
 
-L_88CC:                 ; 88CC
-        call    L_86BD
+; reads the enemy's ENEMY_HITS record: b1 beaten, b2 trapped, b4 killed; sound 25; carry set when it reacted
+ENEMY_HIT_REACT:        ; 88CC
+        call    ENEMY_HIT_PTR
         bit     1,(hl)
         jr      z,L_88F5
         ld      a,(ix+2)
@@ -1017,7 +1048,7 @@ L_88E2:                 ; 88E2
 L_88F5:                 ; 88F5
         bit     2,(hl)
         jr      z,L_8918
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+14),0x04
         set     1,(ix+0)
         ld      c,0x25
@@ -1026,7 +1057,7 @@ L_88F5:                 ; 88F5
         ld      c,0x1C
         ld      a,(ix+10)
         call    SPRITE
-        call    0x1579
+        call    OBJ_STATE_13
         scf
         ret
 
@@ -1051,7 +1082,8 @@ L_892D:                 ; 892D
         scf
         ret
 
-L_8940:                 ; 8940
+; one step of the movement path at (IX+16): bytes move X and Y by 1 (88 ends a repeat, 99 stops)
+ENEMY_PATH_STEP:        ; 8940
         ld      l,(ix+16)
         ld      h,(ix+17)
         ld      a,(hl)
@@ -1073,12 +1105,12 @@ L_895A:                 ; 895A
         ld      a,0x20
         sub     b
 L_896A:                 ; 896A
-        call    0x109C
+        call    PATH_PTR
         ld      a,(ix+18)
         call    ADD_DE_A
         ld      a,(de)
         ld      b,a
-        call    0x1529
+        call    OBJ_PTR
         bit     0,b
         jr      z,L_8984
         bit     3,b
@@ -1162,7 +1194,7 @@ L_89D2:                 ; 89D2
         inc     a
         ld      (0xED46),a
         ld      (ix+22),0x78
-        call    L_95E8
+        call    ENEMY_TURN_DELAY
         ld      (ix+23),0x00
         ld      a,(0xE5A0)
         ld      (ix+12),a
@@ -1175,7 +1207,8 @@ L_89D2:                 ; 89D2
         jr      nz,L_89D2
         ret
 
-L_8A18:                 ; 8A18
+; group 0 (unless ENEMY_SWAP b0): steps each ENEMY0_SLOTS enemy
+ENEMY0_UPDATE:          ; 8A18
         ld      a,(ENEMY_COUNTS)
         and     a
         ret     z
@@ -1193,15 +1226,15 @@ L_8A28:                 ; 8A28
         jp      nz,L_8A68
         bit     1,a
         jp      nz,L_8A74
-        call    L_88CC
+        call    ENEMY_HIT_REACT
         jp      c,L_8E31
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jr      nz,L_8A7A
         ld      a,(ix+10)
         ld      bc,0x641D
         call    SPRITE
-        call    L_86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         ld      (ix+7),0x02
@@ -1209,31 +1242,31 @@ L_8A28:                 ; 8A28
         jp      L_8E31
 
 L_8A68:                 ; 8A68
-        call    L_86E8
+        call    ENEMY_TRAP_IF_B6
         jp      c,L_8E31
-        call    L_870F
+        call    ENEMY_ANGRY_IF_B5
         jp      L_8E31
 
 L_8A74:                 ; 8A74
-        call    0x7BFD
+        call    ENEMY_DEFEATED
         jp      L_8E31
 
 L_8A7A:                 ; 8A7A
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      c,0x00
-        call    L_86A8
-        call    L_86C8
+        call    ENEMY_HIT_REPORT
+        call    ENEMY_REMOVE_IF_B7
         jp      c,L_8E31
         call    ENEMY_SPEED
-        jp      nc,L_8DEA
-        call    L_8838
+        jp      nc,ENEMY0_ANIM
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,L_8E31
         bit     5,(ix+0)
         jr      nz,L_8AA4
         call    ENEMY_DROP
-        jp      L_8DEA
+        jp      ENEMY0_ANIM
 
 L_8AA4:                 ; 8AA4
         bit     0,(ix+24)
@@ -1250,19 +1283,24 @@ L_8ABB:                 ; 8ABB
         ld      hl,0x8E6C
 L_8ABE:                 ; 8ABE
         ld      c,0x1D
-        call    L_915D
+        call    ENEMY_ANIM_FLIP
         jp      L_8E31
 
 L_8AC6:                 ; 8AC6
         ld      a,(ix+7)
-        ld      hl,0x8E5F
-        call    0x0DA7
+        ld      hl,L_8E5F
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank0.bin", 0x0AD1, 0x0006
-L_8AD7:                 ; 8AD7
-        call    L_8C0E
+; mode 3 of the ENEMY0 table at 8E5F
+ENEMY0_WALK_L:          ; 8AD1
+        call    ENEMY_WALK_L
+        jp      ENEMY0_ANIM
+
+; walk left: (IX+13) steps of X - 1 while there is floor (cell at X-9 solid); after 3C steps ENEMY_WALK_LIMIT starts a jump; at a wall the enemy turns to mode 1 or jumps (mode 5)
+ENEMY_WALK_L:           ; 8AD7
+        call    ENEMY_WALK_LIMIT
         ret     nc
         ld      a,(ix+13)
         or      a
@@ -1270,12 +1308,12 @@ L_8AD7:                 ; 8AD7
         ld      b,a
 L_8AE1:                 ; 8AE1
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      nz,L_8AF9
         inc     (ix+20)
         jp      L_8B57
@@ -1284,23 +1322,23 @@ L_8AF9:                 ; 8AF9
         ld      a,(ix+23)
         cp      0x03
         jr      z,L_8B0E
-        call    L_91B9
+        call    ENEMY_TARGET_ALIVE
         jr      z,L_8B0E
-        call    L_917A
+        call    ENEMY_PROX_A
         jr      z,L_8B16
         bit     7,(hl)
         jr      nz,L_8B16
 L_8B0E:                 ; 8B0E
-        call    0x1676
+        call    GRID_PROBE_3
         jp      nz,L_8CD7
         jr      L_8B1B
 
 L_8B16:                 ; 8B16
-        call    L_8772
+        call    ENEMY_FLOOR_AHEAD_L
         jr      nz,L_8B2C
 L_8B1B:                 ; 8B1B
         set     1,(ix+14)
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
@@ -1311,13 +1349,13 @@ L_8B1B:                 ; 8B1B
 
 L_8B2C:                 ; 8B2C
         pop     bc
-        call    L_917A
+        call    ENEMY_PROX_A
         jr      nz,L_8B49
-        call    L_91E2
+        call    ENEMY_ABOVE_PROBE
         jr      nz,L_8B49
         ld      de,0x9625
         set     7,(ix+24)
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         ld      a,(hl)
@@ -1328,24 +1366,36 @@ L_8B2C:                 ; 8B2C
 L_8B49:                 ; 8B49
         ld      de,0x8E74
 L_8B4C:                 ; 8B4C
-        call    L_93F6
+        call    ENEMY_PATH_SET
         ld      (ix+7),0x05
-        call    L_8940
+        call    ENEMY_PATH_STEP
         ret
 
 L_8B57:                 ; 8B57
         pop     bc
         bit     0,(ix+20)
         jr      z,L_8B62
-        call    L_918F
+        call    ENEMY_PROX_B
         ret     nz
 L_8B62:                 ; 8B62
         ld      (ix+7),0x01
         ld      (ix+8),0x01
         ret
 
-        .incbin "main_bank0.bin", 0x0B6B, 0x000F
-        call    L_8C0E
+; mode 1 of the ENEMY0 table at 8E5F
+ENEMY0_WALK_R:          ; 8B6B
+        call    ENEMY_WALK_R
+        jp      ENEMY0_ANIM
+
+; as ENEMY_WALK_L, to the right (X + 1, cell at X+8); turns to mode 3 or jumps (mode 4)
+ENEMY_WALK_R:           ; 8B71
+        ld      a,(MCU_READY)
+        bit     0,a
+        jr      nz,L_8B7A
+        exx
+        ex      (sp),hl
+L_8B7A:                 ; 8B7A
+        call    ENEMY_WALK_LIMIT
         ret     nc
         ld      a,(ix+13)
         or      a
@@ -1353,12 +1403,12 @@ L_8B62:                 ; 8B62
         ld      b,a
 L_8B84:                 ; 8B84
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      nz,L_8B9C
         inc     (ix+20)
         jp      L_8BFA
@@ -1367,23 +1417,23 @@ L_8B9C:                 ; 8B9C
         ld      a,(ix+23)
         cp      0x03
         jr      z,L_8BB1
-        call    L_91B9
+        call    ENEMY_TARGET_ALIVE
         jr      z,L_8BB1
-        call    L_917A
+        call    ENEMY_PROX_A
         jr      z,L_8BB9
         bit     7,(hl)
         jr      nz,L_8BB9
 L_8BB1:                 ; 8BB1
-        call    0x1676
+        call    GRID_PROBE_3
         jp      nz,L_8CD7
         jr      L_8BBE
 
 L_8BB9:                 ; 8BB9
-        call    L_8786
+        call    ENEMY_FLOOR_AHEAD_R
         jr      nz,L_8BCF
 L_8BBE:                 ; 8BBE
         set     1,(ix+14)
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
@@ -1394,13 +1444,13 @@ L_8BBE:                 ; 8BBE
 
 L_8BCF:                 ; 8BCF
         pop     bc
-        call    L_917A
+        call    ENEMY_PROX_A
         jr      nz,L_8BEC
-        call    L_91E2
+        call    ENEMY_ABOVE_PROBE
         jr      nz,L_8BEC
         ld      de,0x9625
         set     7,(ix+24)
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         ld      a,(hl)
@@ -1411,28 +1461,29 @@ L_8BCF:                 ; 8BCF
 L_8BEC:                 ; 8BEC
         ld      de,0x8E74
 L_8BEF:                 ; 8BEF
-        call    L_93F6
+        call    ENEMY_PATH_SET
         ld      (ix+7),0x04
-        call    L_8940
+        call    ENEMY_PATH_STEP
         ret
 
 L_8BFA:                 ; 8BFA
         pop     bc
         bit     0,(ix+20)
         jr      z,L_8C05
-        call    L_918F
+        call    ENEMY_PROX_B
         ret     z
 L_8C05:                 ; 8C05
         ld      (ix+7),0x03
         ld      (ix+8),0x03
         ret
 
-L_8C0E:                 ; 8C0E
+; after 3C steps along (IX+20): the jump path 9625, mode 4 (facing 1), carry clear
+ENEMY_WALK_LIMIT:       ; 8C0E
         ld      a,(ix+20)
         cp      0x3C
         ret     c
         ld      de,0x9625
-        call    L_93F6
+        call    ENEMY_PATH_SET
         set     7,(ix+24)
         set     0,(ix+24)
         ld      (ix+20),0x00
@@ -1441,10 +1492,13 @@ L_8C0E:                 ; 8C0E
         xor     a
         ret
 
-        call    L_8C36
-        jp      L_8DEA
+; mode 5 of the ENEMY0 table at 8E5F
+ENEMY0_JUMP_L:          ; 8C30
+        call    ENEMY_JUMP_L
+        jp      ENEMY0_ANIM
 
-L_8C36:                 ; 8C36
+; jump left along the path script at (IX+16): each step moves by a path byte, checking the cells at X-9; lands as mode 3
+ENEMY_JUMP_L:           ; 8C36
         res     1,(ix+14)
         ld      a,(ix+13)
         or      a
@@ -1452,7 +1506,7 @@ L_8C36:                 ; 8C36
         ld      b,a
 L_8C40:                 ; 8C40
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         cp      0x19
         jp      c,L_8CD7
@@ -1464,38 +1518,38 @@ L_8C40:                 ; 8C40
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_8CD7
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    0x174C
+        call    GRID_CELL_A
         jp      z,L_8CD7
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    0x174C
+        call    GRID_CELL_A
         jp      z,L_8CD7
 L_8C8A:                 ; 8C8A
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      nz,L_8CA8
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_8CB1
 L_8CA8:                 ; 8CA8
-        call    L_8940
+        call    ENEMY_PATH_STEP
         jr      z,L_8CD7
         pop     bc
         djnz    L_8C40
@@ -1527,10 +1581,21 @@ L_8CD7:                 ; 8CD7
         ld      (ix+7),0x02
         ret
 
-        .incbin "main_bank0.bin", 0x0CE4, 0x0010
+; mode 4 of the ENEMY0 table at 8E5F
+ENEMY0_JUMP_R:          ; 8CE4
+        call    ENEMY_JUMP_R
+        jp      ENEMY0_ANIM
+
+; as ENEMY_JUMP_L to the right; lands as mode 1
+ENEMY_JUMP_R:           ; 8CEA
+        res     1,(ix+14)
+        ld      a,(ix+13)
+        or      a
+        ret     z
+        ld      b,a
 L_8CF4:                 ; 8CF4
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+2)
         cp      0xE8
         jp      nc,L_8CD7
@@ -1542,38 +1607,38 @@ L_8CF4:                 ; 8CF4
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_8CD7
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    0x174C
+        call    GRID_CELL_A
         jp      z,L_8CD7
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
-        call    0x174C
+        call    GRID_CELL_A
         jp      z,L_8CD7
 L_8D3D:                 ; 8D3D
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      nz,L_8D5B
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_8D65
 L_8D5B:                 ; 8D5B
-        call    L_8940
+        call    ENEMY_PATH_STEP
         jp      z,L_8CD7
         pop     bc
         djnz    L_8CF4
@@ -1598,28 +1663,31 @@ L_8D7D:                 ; 8D7D
         ld      (ix+8),0x01
         ret
 
-        call    L_8D91
-        jp      L_8DEA
+; mode 2 of the ENEMY0 table at 8E5F
+ENEMY0_FALL:            ; 8D8B
+        call    ENEMY_FALL
+        jp      ENEMY0_ANIM
 
-L_8D91:                 ; 8D91
+; Y - 1 a step while ENEMY_FLOOR_PROBE finds no floor; lands in mode (IX+8), or 1 / 3 at the side edges
+ENEMY_FALL:             ; 8D91
         res     2,(ix+24)
         res     7,(ix+24)
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+1)
         cp      0xE0
         jr      nc,L_8DAD
-        call    L_8E89
+        call    ENEMY_FLOOR_PROBE
         jr      z,L_8DAD
-        call    0x1676
+        call    GRID_PROBE_3
         jr      z,L_8DB6
 L_8DAD:                 ; 8DAD
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
         res     1,(ix+14)
         ret
 
 L_8DB6:                 ; 8DB6
-        call    0x1556
+        call    IX_SPEED_CLEAR
         set     1,(ix+14)
         res     5,(ix+14)
         ld      a,(ix+2)
@@ -1642,7 +1710,8 @@ L_8DE1:                 ; 8DE1
         ld      (ix+8),0x03
         ret
 
-L_8DEA:                 ; 8DEA
+; mode 0 of the ENEMY0 table at 8E5F
+ENEMY0_ANIM:            ; 8DEA
         ld      a,(0xF44E)
         and     a
         jr      nz,L_8E16
@@ -1660,7 +1729,7 @@ L_8E04:                 ; 8E04
         ld      de,(0x8E72)
         ld      c,0x1D
         call    ENEMY_ANIM_SPRITE
-        call    0x420B
+        call    ROM_SUM_STEP_F
         jp      L_8E31
 
 L_8E16:                 ; 8E16
@@ -1688,7 +1757,7 @@ L_8E31:                 ; 8E31
 L_8E40:                 ; 8E40
         dec     (ix+21)
         jr      nz,L_8E50
-        call    L_95E8
+        call    ENEMY_TURN_DELAY
         ld      a,(ix+24)
         xor     0x02
         ld      (ix+24),a
@@ -1702,8 +1771,16 @@ L_8E5B:                 ; 8E5B
         call    L_957A
         ret
 
-        .incbin "main_bank0.bin", 0x0E5F, 0x002A
-L_8E89:                 ; 8E89
+L_8E5F:                 ; 8E5F
+        .word   ENEMY0_ANIM
+        .word   ENEMY0_WALK_R
+        .word   ENEMY0_FALL
+        .word   ENEMY0_WALK_L
+        .word   ENEMY0_JUMP_R
+        .word   ENEMY0_JUMP_L
+        .incbin "main_bank0.bin", 0x0E6B, 0x001E
+; Z when the cells at Y - 4 under X - 4 and X + 4 are solid (only on a cell row unless (IX+14) b5)
+ENEMY_FLOOR_PROBE:      ; 8E89
         bit     5,(ix+14)
         jr      nz,L_8E99
         ld      a,(ix+1)
@@ -1719,14 +1796,14 @@ L_8E99:                 ; 8E99
         ld      h,a
         ld      a,(ix+1)
         sub     0x04
-        call    0x174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         sub     0x04
         ld      h,a
         ld      a,(ix+1)
         sub     0x04
-        call    0x174C
+        call    GRID_CELL_A
         ret     z
         bit     5,(ix+14)
         jr      nz,L_8EC1
@@ -1740,26 +1817,27 @@ L_8EC1:                 ; 8EC1
         ld      h,a
         ld      a,(ix+1)
         add     a,0x04
-        call    0x174C
+        call    GRID_CELL_A
         ret     z
         ld      a,(ix+2)
         sub     0x04
         ld      h,a
         ld      a,(ix+1)
         add     a,0x04
-        call    0x174C
+        call    GRID_CELL_A
         ret
 
-L_8EDF:                 ; 8EDF
-        call    0x1537
+; Z-flag result: probes the floor under the enemy (ENEMY_FLOOR_PROBE with (IX+14) b5 set, then GRID_PROBE_3); if none, Y - 1 and A = 1
+ENEMY_GROUND_CHECK:     ; 8EDF
+        call    OBJ_POS_LOAD
         set     5,(ix+14)
-        call    L_8E89
+        call    ENEMY_FLOOR_PROBE
         res     5,(ix+14)
         jr      z,L_8EF3
-        call    0x1676
+        call    GRID_PROBE_3
         ret     z
 L_8EF3:                 ; 8EF3
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
         ld      a,0x01
         and     a
@@ -1831,16 +1909,16 @@ L_8F66:                 ; 8F66
         jp      nz,L_8FAA
         bit     1,a
         jp      nz,L_8FB6
-        call    L_88CC
+        call    ENEMY_HIT_REACT
         jp      c,L_912D
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jr      nz,L_8FBC
         ld      a,(ix+10)
         ld      bc,0x981F
         call    SPRITE
         set     1,(ix+14)
-        call    L_86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
@@ -1848,36 +1926,36 @@ L_8F66:                 ; 8F66
         jp      L_912D
 
 L_8FAA:                 ; 8FAA
-        call    L_86E8
+        call    ENEMY_TRAP_IF_B6
         jp      c,L_912D
-        call    L_870F
+        call    ENEMY_ANGRY_IF_B5
         jp      L_912D
 
 L_8FB6:                 ; 8FB6
-        call    0x7BFD
+        call    ENEMY_DEFEATED
         jp      L_912D
 
 L_8FBC:                 ; 8FBC
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     hl
         ld      (hl),0x12
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      c,0x01
-        call    L_86A8
-        call    L_86C8
+        call    ENEMY_HIT_REPORT
+        call    ENEMY_REMOVE_IF_B7
         jp      c,L_912D
         call    ENEMY_SPEED
-        jp      nc,L_90C2
-        call    L_8838
+        jp      nc,ENEMY1_ANIM
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,L_912D
         bit     5,(ix+0)
         jr      nz,L_8FEE
         call    ENEMY_DROP
-        jp      L_90C2
+        jp      ENEMY1_ANIM
 
 L_8FEE:                 ; 8FEE
         bit     0,(ix+24)
@@ -1894,38 +1972,39 @@ L_9005:                 ; 9005
         ld      hl,0x9231
 L_9008:                 ; 9008
         ld      c,0x1F
-        call    L_915D
+        call    ENEMY_ANIM_FLIP
         jp      L_912D
 
 L_9010:                 ; 9010
         ld      a,(ix+7)
-        ld      hl,0x9218
-        call    0x0DA7
+        ld      hl,L_9218
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-L_901B:                 ; 901B
+; mode 2 of the ENEMY1 table at 9218
+ENEMY1_FALL:            ; 901B
         res     2,(ix+24)
         res     7,(ix+24)
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ix+1)
         cp      0xE0
         jr      nc,L_9038
-        call    L_8E89
+        call    ENEMY_FLOOR_PROBE
         jr      z,L_9038
-        call    0x1676
+        call    GRID_PROBE_3
         jp      z,L_903F
 L_9038:                 ; 9038
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
-        jp      L_90C2
+        jp      ENEMY1_ANIM
 
 L_903F:                 ; 903F
         res     5,(ix+14)
         set     0,(ix+14)
-        call    L_917A
+        call    ENEMY_PROX_A
         jr      nz,L_9064
-        call    L_91E2
+        call    ENEMY_ABOVE_PROBE
         jr      nz,L_9064
         ld      de,0x9625
         ld      a,(ix+1)
@@ -1943,7 +2022,7 @@ L_9064:                 ; 9064
         ld      (ix+20),0x00
         ld      de,0x9224
 L_9078:                 ; 9078
-        call    L_93F6
+        call    ENEMY_PATH_SET
         ld      a,(ix+2)
         cp      0x19
         jp      c,L_90A0
@@ -1952,29 +2031,35 @@ L_9078:                 ; 9078
         jp      nc,L_90AB
         ld      a,(ix+8)
         ld      (ix+7),a
-        jp      L_90C2
+        jp      ENEMY1_ANIM
 
 L_9094:                 ; 9094
         ld      de,0x8E74
-        call    L_93F6
-        call    L_918F
+        call    ENEMY_PATH_SET
+        call    ENEMY_PROX_B
         jp      nz,L_90AB
 L_90A0:                 ; 90A0
         ld      (ix+7),0x04
         ld      (ix+8),0x01
-        jp      L_90C2
+        jp      ENEMY1_ANIM
 
 L_90AB:                 ; 90AB
         ld      (ix+7),0x05
         ld      (ix+8),0x03
-        jp      L_90C2
+        jp      ENEMY1_ANIM
 
-L_90B6:                 ; 90B6
-        call    L_8C36
-        jp      L_90C2
+; mode 3 of the ENEMY1 table at 9218
+ENEMY1_JUMP_L:          ; 90B6
+        call    ENEMY_JUMP_L
+        jp      ENEMY1_ANIM
 
-        .incbin "main_bank0.bin", 0x10BC, 0x0006
-L_90C2:                 ; 90C2
+; mode 1 of the ENEMY1 table at 9218
+ENEMY1_JUMP_R:          ; 90BC
+        call    ENEMY_JUMP_R
+        jp      ENEMY1_ANIM
+
+; mode 0 of the ENEMY1 table at 9218
+ENEMY1_ANIM:            ; 90C2
         ld      a,(0xF44E)
         and     a
         jr      nz,L_9105
@@ -2057,7 +2142,8 @@ L_9159:                 ; 9159
         call    SPRITE_FLIPX
         ret
 
-L_915D:                 ; 915D
+; ANIM_STEP with delay 0F02, then SPRITE or SPRITE_FLIPX by the frame's b0
+ENEMY_ANIM_FLIP:        ; 915D
         ld      de,0x0F02
         call    ANIM_STEP
         jr      z,L_9175
@@ -2076,20 +2162,22 @@ L_9175:                 ; 9175
         res     0,(ix+24)
         ret
 
-L_917A:                 ; 917A
+; MCU_PROXIMITY record of this enemy (8 bytes x (IX+9)), the target player's first byte: b7 set returns NZ, else b0 (Z = not near)
+ENEMY_PROX_A:           ; 917A
         ld      hl,MCU_PROXIMITY
         ld      a,(ix+9)
         add     a,a
         add     a,a
         add     a,a
         call    ADD_HL_A
-        call    L_91A6
+        call    ENEMY_TARGET_OFFSET
         bit     7,(hl)
         ret     nz
         bit     0,(hl)
         ret
 
-L_918F:                 ; 918F
+; as ENEMY_PROX_A for the second pair of bytes (+2)
+ENEMY_PROX_B:           ; 918F
         ld      hl,MCU_PROXIMITY
         ld      a,(ix+9)
         add     a,a
@@ -2098,13 +2186,14 @@ L_918F:                 ; 918F
         call    ADD_HL_A
         inc     hl
         inc     hl
-        call    L_91A6
+        call    ENEMY_TARGET_OFFSET
         bit     7,(hl)
         ret     nz
         bit     0,(hl)
         ret
 
-L_91A6:                 ; 91A6
+; HL += 1 for the second player: an odd enemy chases P2 when two play; otherwise P1
+ENEMY_TARGET_OFFSET:    ; 91A6
         bit     0,(ix+9)
         ld      a,(0xE5D7)
         jr      z,L_91B4
@@ -2119,7 +2208,8 @@ L_91B4:                 ; 91B4
         inc     hl
         ret
 
-L_91B9:                 ; 91B9
+; b0 of P1_REC or P2_REC for this enemy's target player (even enemies P1, odd P2 when two play)
+ENEMY_TARGET_ALIVE:     ; 91B9
         bit     0,(ix+9)
         ld      a,(0xE5D7)
         jr      z,L_91D2
@@ -2146,16 +2236,17 @@ L_91DC:                 ; 91DC
         bit     0,a
         ret
 
-L_91E2:                 ; 91E2
+; cells at X above the enemy (Y+4, +C, +14, +1C): Z at the first wall; clears (IX+15) when open at +C
+ENEMY_ABOVE_PROBE:      ; 91E2
         ld      h,(ix+2)
         ld      a,(ix+1)
         add     a,0x04
-        call    0x174C
+        call    GRID_CELL_A
         ret     z
         ld      h,(ix+2)
         ld      a,(ix+1)
         add     a,0x0C
-        call    0x174C
+        call    GRID_CELL_A
         jr      nz,L_9200
         ld      (ix+15),0x00
         ret
@@ -2164,15 +2255,54 @@ L_9200:                 ; 9200
         ld      h,(ix+2)
         ld      a,(ix+1)
         add     a,0x14
-        call    0x174C
+        call    GRID_CELL_A
         ret     z
         ld      h,(ix+2)
         ld      a,(ix+1)
         add     a,0x1C
-        call    0x174C
+        call    GRID_CELL_A
         ret
 
-        .incbin "main_bank0.bin", 0x1218, 0x0065
+L_9218:                 ; 9218
+        .word   ENEMY1_ANIM
+        .word   ENEMY1_JUMP_R
+        .word   ENEMY1_FALL
+        .word   ENEMY1_JUMP_L
+        .word   ENEMY1_JUMP_R
+        .word   ENEMY1_JUMP_L
+        .incbin "main_bank0.bin", 0x1224, 0x001D
+L_9241:                 ; 9241
+        ld      a,(0xEEA7)
+        and     a
+        jr      nz,L_9257
+        ld      hl,0xEEAA
+        ld      (hl),0x00
+        ld      hl,0x8000
+        ld      (0xEEA8),hl
+        ld      hl,0xEEA7
+        ld      (hl),0x01
+L_9257:                 ; 9257
+        ld      de,(0xEEA8)
+        ld      a,(de)
+        ld      hl,0xEEAA
+        add     a,(hl)
+        ld      (hl),a
+        inc     de
+        ld      hl,OBJ_TILES
+        or      a
+        sbc     hl,de
+        jr      z,L_926F
+        ld      (0xEEA8),de
+        ret
+
+L_926F:                 ; 926F
+        ld      hl,0xEEA7
+        ld      (hl),0x00
+        ld      a,(0xEEAB)
+        ld      hl,0xEEAA
+        cp      (hl)
+        ret     z
+        push    de
 ; returns if ENEMY_SWAP b4
 ENEMY2_INIT:            ; 927D
         ld      hl,ENEMY2_SLOTS
@@ -2211,7 +2341,7 @@ L_9296:                 ; 9296
         ld      (0xED46),a
         ld      (ix+23),0x02
         ld      (ix+22),0x3C
-        call    L_95E8
+        call    ENEMY_TURN_DELAY
         ld      hl,(0xED44)
         ld      (ix+30),l
         ld      (ix+31),h
@@ -2262,7 +2392,7 @@ L_930F:                 ; 930F
         jp      nz,L_935F
         bit     1,a
         jp      nz,L_936B
-        call    L_88CC
+        call    ENEMY_HIT_REACT
         jr      nc,L_9343
         bit     1,(ix+25)
         jp      z,L_94CC
@@ -2276,30 +2406,30 @@ L_930F:                 ; 930F
         jp      L_94CC
 
 L_9343:                 ; 9343
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jr      nz,L_9371
         ld      (ix+7),0x01
-        call    L_86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
         jp      L_94CC
 
 L_935F:                 ; 935F
-        call    L_86E8
+        call    ENEMY_TRAP_IF_B6
         jp      c,L_94CC
-        call    L_870F
+        call    ENEMY_ANGRY_IF_B5
         jp      L_94CC
 
 L_936B:                 ; 936B
-        call    0x7BFD
+        call    ENEMY_DEFEATED
         jp      L_94CC
 
 L_9371:                 ; 9371
         ld      c,0x02
-        call    L_86A8
-        call    L_86C8
+        call    ENEMY_HIT_REPORT
+        call    ENEMY_REMOVE_IF_B7
         jr      nc,L_9395
         bit     1,(ix+25)
         jp      z,L_94CC
@@ -2314,20 +2444,20 @@ L_9371:                 ; 9371
 
 L_9395:                 ; 9395
         call    ENEMY_SPEED
-        jp      nc,L_9435
-        call    L_8838
+        jp      nc,ENEMY2_ANIM
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,L_94CC
         bit     5,(ix+0)
         jr      nz,L_93B1
         call    ENEMY_DROP
-        jp      L_9435
+        jp      ENEMY2_ANIM
 
 L_93B1:                 ; 93B1
         bit     1,(ix+25)
         jr      z,L_93BD
-        call    L_81BC
+        call    ENEMY2_ATTACK_RUN
         jp      L_94CC
 
 L_93BD:                 ; 93BD
@@ -2345,23 +2475,25 @@ L_93D4:                 ; 93D4
         ld      hl,0x9637
 L_93D7:                 ; 93D7
         ld      c,0x1C
-        call    L_915D
+        call    ENEMY_ANIM_FLIP
         jp      L_94CC
 
 L_93DF:                 ; 93DF
         ld      a,(ix+7)
-        ld      hl,0x95F9
-        call    0x0DA7
+        ld      hl,L_95F9
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-L_93EA:                 ; 93EA
-        call    L_8AD7
-        call    0x7B94
-        call    nz,L_95C9
-        jp      L_9435
+; mode 3 of the ENEMY2 table at 95F9
+ENEMY2_WALK_L:          ; 93EA
+        call    ENEMY_WALK_L
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY2_ATTACK_START
+        jp      ENEMY2_ANIM
 
-L_93F6:                 ; 93F6
+; movement path DE: (IX+16/17) = DE, (IX+19) = its repeat count, (IX+18), (IX+5), (IX+6) = 0
+ENEMY_PATH_SET:         ; 93F6
         res     2,(ix+24)
         ld      (ix+16),e
         ld      (ix+17),d
@@ -2374,8 +2506,31 @@ L_93F6:                 ; 93F6
         ld      (ix+6),a
         ret
 
-        .incbin "main_bank0.bin", 0x1410, 0x0025
-L_9435:                 ; 9435
+; mode 1 of the ENEMY2 table at 95F9
+ENEMY2_WALK_R:          ; 9410
+        call    ENEMY_WALK_R
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY2_ATTACK_START
+        jp      ENEMY2_ANIM
+
+; mode 5 of the ENEMY2 table at 95F9
+ENEMY2_JUMP_L:          ; 941C
+        call    ENEMY_JUMP_L
+        jp      ENEMY2_ANIM
+
+; mode 4 of the ENEMY2 table at 95F9
+ENEMY2_JUMP_R:          ; 9422
+        call    ENEMY_JUMP_R
+        jp      ENEMY2_ANIM
+
+; mode 2 of the ENEMY2 table at 95F9
+ENEMY2_FALL:            ; 9428
+        res     0,(ix+14)
+        call    ENEMY_FALL
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY2_ATTACK_START
+; mode 0 of the ENEMY2 table at 95F9
+ENEMY2_ANIM:            ; 9435
         ld      c,0x1C
         ld      a,(0xF44E)
         and     a
@@ -2393,7 +2548,7 @@ L_9451:                 ; 9451
         ld      de,0x0202
         call    ANIM_STEP
         ld      b,a
-        call    0x0D6D
+        call    SHL4
         bit     0,(ix+14)
         jr      nz,L_946F
         add     a,0x0C
@@ -2415,7 +2570,7 @@ L_9473:                 ; 9473
         jr      z,L_949A
         ld      de,0x0F02
         call    ANIM_STEP
-        call    0x0D6D
+        call    SHL4
         bit     0,(ix+14)
         jr      nz,L_9496
         add     a,0x10
@@ -2434,7 +2589,7 @@ L_9496:                 ; 9496
 L_949A:                 ; 949A
         ld      de,0x0502
         call    ANIM_STEP
-        call    0x0D6D
+        call    SHL4
         bit     0,(ix+14)
         jr      nz,L_94B7
         add     a,0x08
@@ -2471,7 +2626,7 @@ L_94CC:                 ; 94CC
 L_94DB:                 ; 94DB
         dec     (ix+21)
         jr      nz,L_94EB
-        call    L_95E8
+        call    ENEMY_TURN_DELAY
         ld      a,(ix+24)
         xor     0x02
         ld      (ix+24),a
@@ -2479,19 +2634,19 @@ L_94EB:                 ; 94EB
         bit     1,(ix+24)
         jp      nz,L_94F9
         call    L_9500
-        call    c,L_95C9
+        call    c,ENEMY2_ATTACK_START
         ret
 
 L_94F9:                 ; 94F9
         call    L_957A
-        call    c,L_95C9
+        call    c,ENEMY2_ATTACK_START
         ret
 
 L_9500:                 ; 9500
         ld      a,(ix+1)
         cp      0x20
         ret     z
-        call    L_91B9
+        call    ENEMY_TARGET_ALIVE
         ret     z
         ld      a,i
         ld      h,a
@@ -2509,12 +2664,12 @@ L_951B:                 ; 951B
         add     a,a
         add     a,a
         call    ADD_HL_A
-        call    L_91A6
+        call    ENEMY_TARGET_OFFSET
         ld      a,(hl)
         cp      0x20
         ret     nc
         ld      (ix+15),0x01
-        call    L_917A
+        call    ENEMY_PROX_A
         jr      z,L_953D
         xor     a
         bit     7,(hl)
@@ -2523,7 +2678,7 @@ L_951B:                 ; 951B
         ret
 
 L_953D:                 ; 953D
-        call    L_918F
+        call    ENEMY_PROX_B
         jr      z,L_9548
         bit     7,(hl)
         jr      z,L_9561
@@ -2567,9 +2722,9 @@ L_9570:                 ; 9570
         ret
 
 L_957A:                 ; 957A
-        call    L_91B9
+        call    ENEMY_TARGET_ALIVE
         jr      z,L_958A
-        call    L_917A
+        call    ENEMY_PROX_A
         jr      z,L_958A
         xor     a
         bit     7,(hl)
@@ -2579,7 +2734,7 @@ L_957A:                 ; 957A
 
 L_958A:                 ; 958A
         ld      (ix+21),0x02
-        call    L_91E2
+        call    ENEMY_ABOVE_PROBE
         ret     nz
         ld      de,0x9625
         set     7,(ix+24)
@@ -2596,19 +2751,20 @@ L_95AE:                 ; 95AE
         jr      nz,L_95BC
         ld      (ix+7),0x04
 L_95BC:                 ; 95BC
-        call    L_93F6
+        call    ENEMY_PATH_SET
         set     0,(ix+24)
         set     7,(ix+24)
         xor     a
         ret
 
-L_95C9:                 ; 95C9
+; unless (IX+25) b4 or the mode is jumping: stops, saves the facing in (IX+32) and sets (IX+25) b1
+ENEMY2_ATTACK_START:    ; 95C9
         bit     4,(ix+25)
         ret     nz
         bit     2,(ix+7)
         ret     nz
         xor     a
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+28),a
         ld      (ix+29),a
         ld      a,(ix+8)
@@ -2616,7 +2772,8 @@ L_95C9:                 ; 95C9
         set     1,(ix+25)
         ret
 
-L_95E8:                 ; 95E8
+; (IX+21) = 0A + (IX+22) x ((IX+9) + 1)
+ENEMY_TURN_DELAY:       ; 95E8
         ld      a,(ix+9)
         inc     a
         ld      b,a
@@ -2628,7 +2785,14 @@ L_95F2:                 ; 95F2
         ld      (ix+21),a
         ret
 
-        .incbin "main_bank0.bin", 0x15F9, 0x0040
+L_95F9:                 ; 95F9
+        .word   ENEMY2_ANIM
+        .word   ENEMY2_WALK_R
+        .word   ENEMY2_FALL
+        .word   ENEMY2_WALK_L
+        .word   ENEMY2_JUMP_R
+        .word   ENEMY2_JUMP_L
+        .incbin "main_bank0.bin", 0x1605, 0x0034
 ENEMY3_INIT:            ; 9639
         ld      hl,ENEMY3_SLOTS
         ld      bc,0x00BE
@@ -2664,7 +2828,7 @@ L_964C:                 ; 964C
         ld      (0xED46),a
         ld      (ix+23),0x03
         ld      (ix+22),0x78
-        call    L_95E8
+        call    ENEMY_TURN_DELAY
         ld      a,0x08
         call    0x189D
         ld      (ix+12),a
@@ -2677,7 +2841,8 @@ L_964C:                 ; 964C
         jr      nz,L_964C
         ret
 
-L_9695:                 ; 9695
+; group 3
+ENEMY3_UPDATE:          ; 9695
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -2699,7 +2864,7 @@ L_96AD:                 ; 96AD
         jp      nz,L_96F6
         bit     1,a
         jp      nz,L_9702
-        call    L_88CC
+        call    ENEMY_HIT_REACT
         jr      nc,L_96D5
         bit     3,(ix+24)
         jp      z,L_97DD
@@ -2707,11 +2872,11 @@ L_96AD:                 ; 96AD
         jp      L_97DD
 
 L_96D5:                 ; 96D5
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jr      nz,L_9708
         ld      (ix+7),0x02
-        call    L_86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
@@ -2720,35 +2885,35 @@ L_96D5:                 ; 96D5
         jp      L_97DD
 
 L_96F6:                 ; 96F6
-        call    L_86E8
+        call    ENEMY_TRAP_IF_B6
         jp      c,L_97DD
-        call    L_870F
+        call    ENEMY_ANGRY_IF_B5
         jp      L_97DD
 
 L_9702:                 ; 9702
-        call    0x7BFD
+        call    ENEMY_DEFEATED
         jp      L_97DD
 
 L_9708:                 ; 9708
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      c,0x03
-        call    L_86A8
-        call    L_86C8
+        call    ENEMY_HIT_REPORT
+        call    ENEMY_REMOVE_IF_B7
         jp      nc,L_971D
         set     5,(ix+24)
         jp      L_97DD
 
 L_971D:                 ; 971D
         call    ENEMY_SPEED
-        jp      nc,L_9793
-        call    L_8838
+        jp      nc,ENEMY3_ANIM
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,L_97DD
         bit     5,(ix+0)
         jr      nz,L_9739
         call    ENEMY_DROP
-        jp      L_9793
+        jp      ENEMY3_ANIM
 
 L_9739:                 ; 9739
         bit     0,(ix+24)
@@ -2765,18 +2930,47 @@ L_9750:                 ; 9750
         ld      hl,0x988A
 L_9753:                 ; 9753
         ld      c,0x1E
-        call    L_915D
+        call    ENEMY_ANIM_FLIP
         jp      L_97DD
 
 L_975B:                 ; 975B
         ld      a,(ix+7)
-        ld      hl,0x987D
-        call    0x0DA7
+        ld      hl,L_987D
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank0.bin", 0x1766, 0x002D
-L_9793:                 ; 9793
+; mode 3 of the ENEMY3 table at 987D
+ENEMY3_WALK_L:          ; 9766
+        call    ENEMY_WALK_L
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY3_ATTACK_START
+        jp      ENEMY3_ANIM
+
+; mode 1 of the ENEMY3 table at 987D
+ENEMY3_WALK_R:          ; 9772
+        call    ENEMY_WALK_R
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY3_ATTACK_START
+        jp      ENEMY3_ANIM
+
+; mode 5 of the ENEMY3 table at 987D
+ENEMY3_JUMP_L:          ; 977E
+        call    ENEMY_JUMP_L
+        jp      ENEMY3_ANIM
+
+; mode 4 of the ENEMY3 table at 987D
+ENEMY3_JUMP_R:          ; 9784
+        call    ENEMY_JUMP_R
+        jp      ENEMY3_ANIM
+
+; mode 2 of the ENEMY3 table at 987D
+ENEMY3_FALL:            ; 978A
+        call    ENEMY_FALL
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY3_ATTACK_START
+; mode 0 of the ENEMY3 table at 987D
+ENEMY3_ANIM:            ; 9793
         ld      a,(0xF44E)
         and     a
         jr      nz,L_97BF
@@ -2791,7 +2985,7 @@ L_9793:                 ; 9793
 
 L_97AD:                 ; 97AD
         ld      hl,0x988A
-        call    L_984D
+        call    ENEMY3_ATTACK_STEP
         ld      de,(0x9891)
         ld      c,0x1E
         call    ENEMY_ANIM_SPRITE
@@ -2806,7 +3000,7 @@ L_97BF:                 ; 97BF
 
 L_97CE:                 ; 97CE
         ld      hl,0x9889
-        call    L_984D
+        call    ENEMY3_ATTACK_STEP
         ld      de,(0x988D)
         ld      c,0x1E
         call    ENEMY_ANIM_SPRITE
@@ -2820,8 +3014,58 @@ L_97DD:                 ; 97DD
         jp      nz,L_96AD
         ret
 
-        .incbin "main_bank0.bin", 0x17EC, 0x0061
-L_984D:                 ; 984D
+L_97EC:                 ; 97EC
+        bit     4,(ix+24)
+        ret     nz
+        dec     (ix+21)
+        jr      nz,L_9801
+        call    ENEMY_TURN_DELAY
+        ld      a,(ix+24)
+        xor     0x02
+        ld      (ix+24),a
+L_9801:                 ; 9801
+        bit     1,(ix+24)
+        jp      nz,L_9812
+        call    L_9500
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY3_ATTACK_START
+        ret
+
+L_9812:                 ; 9812
+        call    L_957A
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY3_ATTACK_START
+        ret
+
+; when (F05E) is nonzero and the enemy is not attacking: stops, (IX+24) b4, (F05E) - 1
+ENEMY3_ATTACK_START:    ; 981C
+        bit     1,(ix+14)
+        ret     z
+        bit     4,(ix+24)
+        ret     nz
+        bit     3,(ix+24)
+        ret     nz
+        ld      a,(0xF05E)
+        and     a
+        jr      nz,L_9832
+        ret
+
+L_9832:                 ; 9832
+        call    IX_SPEED_CLEAR
+        set     4,(ix+24)
+        ld      hl,0xF05E
+        dec     (hl)
+        ld      a,i
+        ld      h,a
+        ld      a,(MCU_RAM)
+        ld      l,a
+        ld      de,IRQ_VECTOR_ENTRY
+        or      a
+        sbc     hl,de
+        ret     z
+        push    iy
+; while (IX+24) b4: at (IX+5) = 2 sound 22, b4 off and b3 on (the shot)
+ENEMY3_ATTACK_STEP:     ; 984D
         bit     4,(ix+24)
         ret     z
         bit     1,(ix+14)
@@ -2838,11 +3082,18 @@ L_984D:                 ; 984D
         ld      c,0x22
         call    SOUND_PUSH
         xor     a
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+25),a
         ret
 
-        .incbin "main_bank0.bin", 0x187D, 0x0016
+L_987D:                 ; 987D
+        .word   ENEMY3_ANIM
+        .word   ENEMY3_WALK_R
+        .word   ENEMY3_FALL
+        .word   ENEMY3_WALK_L
+        .word   ENEMY3_JUMP_R
+        .word   ENEMY3_JUMP_L
+        .incbin "main_bank0.bin", 0x1889, 0x000A
 ENEMY4_INIT:            ; 9893
         ld      hl,ENEMY4_SLOTS
         ld      bc,0x00AF
@@ -2887,7 +3138,8 @@ L_98A6:                 ; 98A6
         jr      nz,L_98A6
         ret
 
-L_98E5:                 ; 98E5
+; group 4
+ENEMY4_UPDATE:          ; 98E5
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -2913,42 +3165,42 @@ L_98FD:                 ; 98FD
 L_9913:                 ; 9913
         bit     1,a
         jp      nz,L_9957
-        call    L_88CC
+        call    ENEMY_HIT_REACT
         jp      c,L_9BA3
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jr      nz,L_995D
         ld      a,(ix+10)
         ld      bc,0x681F
         call    SPRITE
         ld      (ix+7),0x03
-        call    L_86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
         jp      L_9BA3
 
 L_9943:                 ; 9943
-        call    L_86E8
+        call    ENEMY_TRAP_IF_B6
         jp      c,L_9BA3
-        call    L_870F
+        call    ENEMY_ANGRY_IF_B5
         set     5,(ix+24)
         res     6,(ix+24)
         jp      L_9BA3
 
 L_9957:                 ; 9957
-        call    0x7BFD
+        call    ENEMY_DEFEATED
         jp      L_9BA3
 
 L_995D:                 ; 995D
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      c,0x04
-        call    L_86A8
-        call    L_86C8
+        call    ENEMY_HIT_REPORT
+        call    ENEMY_REMOVE_IF_B7
         jp      c,L_9BA3
         call    ENEMY_SPEED
         jp      nc,L_9B5A
-        call    L_8838
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,L_9BA3
@@ -2960,22 +3212,22 @@ L_995D:                 ; 995D
 L_9987:                 ; 9987
         bit     5,(ix+24)
         jr      z,L_99A2
-        call    L_8E89
+        call    ENEMY_FLOOR_PROBE
         jr      z,L_9998
         res     5,(ix+24)
         jr      L_99A2
 
 L_9998:                 ; 9998
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
-        call    0x1537
+        call    OBJ_POS_LOAD
         jp      L_9B5A
 
 L_99A2:                 ; 99A2
         ld      a,(ix+1)
         cp      0x22
         jr      nc,L_99AF
-        call    0x1529
+        call    OBJ_PTR
         inc     (hl)
         jr      L_99BA
 
@@ -2983,18 +3235,19 @@ L_99AF:                 ; 99AF
         ld      a,(ix+1)
         cp      0xD0
         jr      c,L_99BA
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
 L_99BA:                 ; 99BA
         bit     4,(ix+24)
         jp      nz,L_9B40
         ld      a,(ix+7)
-        ld      hl,0x9CCF
-        call    0x0DA7
+        ld      hl,L_9CCF
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-L_99CC:                 ; 99CC
+; flies left and up (Y + 1 every third step, X - 1)
+ENEMY4_FLY_LU:          ; 99CC
         ld      a,(ix+13)
         or      a
         jp      z,L_9B20
@@ -3005,7 +3258,7 @@ L_99D4:                 ; 99D4
         jr      z,L_9A11
         call    L_9C57
         jr      z,L_99FA
-        call    0x1529
+        call    OBJ_PTR
         inc     (ix+18)
         ld      a,(ix+18)
         cp      0x03
@@ -3037,7 +3290,131 @@ L_9A11:                 ; 9A11
         ld      de,0x9D54
         jp      L_9B20
 
-        .incbin "main_bank0.bin", 0x1A24, 0x00FC
+; flies left and down (Y - 1 every third step, X - 1)
+ENEMY4_FLY_LD:          ; 9A24
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_9B20
+        ld      b,a
+L_9A2C:                 ; 9A2C
+        push    bc
+        call    L_9CC0
+        jr      z,L_9A6C
+        call    L_9C66
+        jr      z,L_9A52
+        call    OBJ_PTR
+        inc     (ix+18)
+        ld      a,(ix+18)
+        cp      0x03
+        jr      nz,L_9A49
+        dec     (hl)
+        ld      (ix+18),0x00
+L_9A49:                 ; 9A49
+        inc     hl
+        inc     hl
+        dec     (hl)
+        pop     bc
+        djnz    L_9A2C
+        jp      L_9B5A
+
+L_9A52:                 ; 9A52
+        pop     bc
+        call    L_9D96
+        set     4,(ix+24)
+        set     1,(ix+24)
+        ld      (ix+18),0x00
+        ld      (ix+8),0x03
+        ld      de,0x9D69
+        jp      L_9B20
+
+L_9A6C:                 ; 9A6C
+        pop     bc
+        set     4,(ix+24)
+        set     3,(ix+24)
+        ld      (ix+18),0x00
+        ld      (ix+8),0x01
+        ld      de,0x9D7E
+        jp      L_9B20
+
+; flies right and up (Y + 1 every third step, X + 1)
+ENEMY4_FLY_RU:          ; 9A83
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_9B20
+        ld      b,a
+L_9A8B:                 ; 9A8B
+        push    bc
+        call    L_9C93
+        jr      z,L_9AC8
+        call    L_9C75
+        jr      z,L_9AB1
+        call    OBJ_PTR
+        inc     (ix+18)
+        ld      a,(ix+18)
+        cp      0x03
+        jr      nz,L_9AA8
+        inc     (hl)
+        ld      (ix+18),0x00
+L_9AA8:                 ; 9AA8
+        inc     hl
+        inc     hl
+        inc     (hl)
+        pop     bc
+        djnz    L_9A8B
+        jp      L_9B5A
+
+L_9AB1:                 ; 9AB1
+        pop     bc
+        set     4,(ix+24)
+        set     0,(ix+24)
+        ld      (ix+18),0x00
+        ld      (ix+8),0x01
+        ld      de,0x9CEB
+        jp      L_9B20
+
+L_9AC8:                 ; 9AC8
+        pop     bc
+        set     4,(ix+24)
+        set     2,(ix+24)
+        ld      (ix+18),0x00
+        ld      (ix+8),0x03
+        ld      de,0x9D00
+        jp      L_9B20
+
+; flies right and down (Y - 1 every third step, X + 1)
+ENEMY4_FLY_RD:          ; 9ADF
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_9B20
+        ld      b,a
+L_9AE7:                 ; 9AE7
+        push    bc
+        call    L_9CA2
+        jr      z,L_9B29
+        call    L_9C84
+        jr      z,L_9B0C
+        call    OBJ_PTR
+        inc     (ix+18)
+        ld      a,(ix+18)
+        cp      0x03
+        jr      nz,L_9B04
+        dec     (hl)
+        ld      (ix+18),0x00
+L_9B04:                 ; 9B04
+        inc     hl
+        inc     hl
+        inc     (hl)
+        pop     bc
+        djnz    L_9AE7
+        jr      L_9B5A
+
+L_9B0C:                 ; 9B0C
+        pop     bc
+        set     4,(ix+24)
+        set     0,(ix+24)
+        ld      (ix+18),0x00
+        ld      (ix+8),0x00
+        ld      de,0x9D15
 L_9B20:                 ; 9B20
         ld      (ix+16),e
         ld      (ix+17),d
@@ -3055,7 +3432,7 @@ L_9B29:                 ; 9B29
 L_9B40:                 ; 9B40
         call    L_9C0E
         call    L_9BB2
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,i
         ld      h,a
         ld      a,(MCU_RAM)
@@ -3089,7 +3466,7 @@ L_9B76:                 ; 9B76
         jr      L_9B99
 
 L_9B83:                 ; 9B83
-        ld      de,CLOCK_TICK
+        ld      de,0x0504
         call    ANIM_STEP
         add     a,a
         add     a,a
@@ -3128,17 +3505,17 @@ L_9BB2:                 ; 9BB2
         pop     hl
         ld      a,(hl)
         ld      hl,0x9CD7
-        call    0x0DA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
 L_9BCA:                 ; 9BCA
-        call    0x1529
+        call    OBJ_PTR
         inc     (hl)
         ret
 
 L_9BCF:                 ; 9BCF
-        call    0x1529
+        call    OBJ_PTR
         inc     (hl)
         inc     hl
         inc     hl
@@ -3146,14 +3523,14 @@ L_9BCF:                 ; 9BCF
         ret
 
 L_9BD7:                 ; 9BD7
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
         ret
 
 L_9BDE:                 ; 9BDE
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
         inc     hl
         inc     hl
@@ -3161,12 +3538,12 @@ L_9BDE:                 ; 9BDE
         ret
 
 L_9BE6:                 ; 9BE6
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
         ret
 
 L_9BEB:                 ; 9BEB
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
         inc     hl
         inc     hl
@@ -3174,14 +3551,14 @@ L_9BEB:                 ; 9BEB
         ret
 
 L_9BF3:                 ; 9BF3
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
         ret
 
 L_9BFA:                 ; 9BFA
-        call    0x1529
+        call    OBJ_PTR
         inc     (hl)
         inc     hl
         inc     hl
@@ -3209,12 +3586,12 @@ L_9C0E:                 ; 9C0E
         ret
 
 L_9C27:                 ; 9C27
-        call    L_87AC
+        call    ENEMY_WALL_R
         jr      z,L_9C3F
         ret
 
 L_9C2D:                 ; 9C2D
-        call    L_879A
+        call    ENEMY_WALL_L
         jr      z,L_9C3F
         ret
 
@@ -3224,7 +3601,7 @@ L_9C33:                 ; 9C33
         ret
 
 L_9C39:                 ; 9C39
-        call    L_8761
+        call    ENEMY_FLOOR_BELOW
         jr      z,L_9C3F
         ret
 
@@ -3236,7 +3613,7 @@ L_9C3F:                 ; 9C3F
         ret
 
 L_9C4C:                 ; 9C4C
-        call    0x1530
+        call    OBJ_POS
         ld      a,l
         add     a,0x08
         ld      l,a
@@ -3244,7 +3621,7 @@ L_9C4C:                 ; 9C4C
         ret
 
 L_9C57:                 ; 9C57
-        call    0x1530
+        call    OBJ_POS
         ld      a,l
         add     a,0x0C
         ld      l,a
@@ -3255,7 +3632,7 @@ L_9C57:                 ; 9C57
         ret
 
 L_9C66:                 ; 9C66
-        call    0x1530
+        call    OBJ_POS
         ld      a,l
         sub     0x0C
         ld      l,a
@@ -3266,7 +3643,7 @@ L_9C66:                 ; 9C66
         ret
 
 L_9C75:                 ; 9C75
-        call    0x1530
+        call    OBJ_POS
         ld      a,l
         add     a,0x0C
         ld      l,a
@@ -3277,7 +3654,7 @@ L_9C75:                 ; 9C75
         ret
 
 L_9C84:                 ; 9C84
-        call    0x1530
+        call    OBJ_POS
         ld      a,l
         sub     0x0C
         ld      l,a
@@ -3288,7 +3665,7 @@ L_9C84:                 ; 9C84
         ret
 
 L_9C93:                 ; 9C93
-        call    0x1530
+        call    OBJ_POS
         ld      a,l
         add     a,0x08
         ld      l,a
@@ -3299,7 +3676,7 @@ L_9C93:                 ; 9C93
         ret
 
 L_9CA2:                 ; 9CA2
-        call    0x1530
+        call    OBJ_POS
         ld      a,l
         sub     0x08
         ld      l,a
@@ -3310,7 +3687,7 @@ L_9CA2:                 ; 9CA2
         ret
 
 L_9CB1:                 ; 9CB1
-        call    0x1530
+        call    OBJ_POS
         ld      a,l
         add     a,0x08
         ld      l,a
@@ -3320,7 +3697,55 @@ L_9CB1:                 ; 9CB1
         call    GRID_CELL
         ret
 
-        .incbin "main_bank0.bin", 0x1CC0, 0x0112
+L_9CC0:                 ; 9CC0
+        call    OBJ_POS
+        ld      a,l
+        sub     0x08
+        ld      l,a
+        ld      a,h
+        sub     0x0C
+        ld      h,a
+        call    GRID_CELL
+        ret
+
+L_9CCF:                 ; 9CCF
+        .word   ENEMY4_FLY_RU
+        .word   ENEMY4_FLY_RD
+        .word   ENEMY4_FLY_LD
+        .word   ENEMY4_FLY_LU
+        .incbin "main_bank0.bin", 0x1CD7, 0x00BF
+L_9D96:                 ; 9D96
+        ld      a,(0xF10E)
+        and     a
+        jr      nz,L_9DAC
+        ld      hl,0xF111
+        ld      (hl),0x00
+        ld      hl,0x8150
+        ld      (0xF10F),hl
+        ld      hl,0xF10E
+        ld      (hl),0x01
+L_9DAC:                 ; 9DAC
+        ld      de,(0xF10F)
+        ld      a,(de)
+        ld      hl,0xF111
+        add     a,(hl)
+        ld      (hl),a
+        inc     de
+        ld      hl,0x94FE
+        or      a
+        sbc     hl,de
+        jr      z,L_9DC4
+        ld      (0xF10F),de
+        ret
+
+L_9DC4:                 ; 9DC4
+        ld      hl,0xF10E
+        ld      (hl),0x00
+        ld      a,(0xF112)
+        ld      hl,0xF111
+        cp      (hl)
+        ret     z
+        push    de
 ENEMY5_INIT:            ; 9DD2
         ld      hl,ENEMY5_SLOTS
         ld      bc,0x00AF
@@ -3372,7 +3797,8 @@ L_9DE5:                 ; 9DE5
         sbc     hl,de
         ret     z
         push    iy
-L_9E33:                 ; 9E33
+; group 5
+ENEMY5_UPDATE:          ; 9E33
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -3394,35 +3820,35 @@ L_9E4B:                 ; 9E4B
         jp      nz,L_9E7E
         bit     1,a
         jp      nz,L_9E8A
-        call    L_88CC
+        call    ENEMY_HIT_REACT
         jp      c,L_A094
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jr      nz,L_9E90
-        call    L_86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
         jp      L_A094
 
 L_9E7E:                 ; 9E7E
-        call    L_86E8
+        call    ENEMY_TRAP_IF_B6
         jp      c,L_A094
-        call    L_870F
+        call    ENEMY_ANGRY_IF_B5
         jp      L_A094
 
 L_9E8A:                 ; 9E8A
-        call    0x7BFD
+        call    ENEMY_DEFEATED
         jp      L_A094
 
 L_9E90:                 ; 9E90
         ld      c,0x05
-        call    L_86A8
-        call    L_86C8
+        call    ENEMY_HIT_REPORT
+        call    ENEMY_REMOVE_IF_B7
         jp      c,L_A094
         call    ENEMY_SPEED
         jp      nc,L_A045
-        call    L_8838
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,L_A094
@@ -3433,12 +3859,210 @@ L_9E90:                 ; 9E90
 
 L_9EB7:                 ; 9EB7
         ld      a,(ix+7)
-        ld      hl,0xA0FB
-        call    0x0DA7
+        ld      hl,L_A0FB
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank0.bin", 0x1EC2, 0x0183
+; flies left and up (Y + 1, X - 1) until a wall
+ENEMY5_FLY_LU:          ; 9EC2
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_A045
+        ld      b,a
+L_9ECA:                 ; 9ECA
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      h,(ix+2)
+        sub     0x08
+        ld      h,a
+        ld      a,(ix+1)
+        add     a,0x07
+        call    GRID_CELL_A
+        jr      z,L_9F0A
+        ld      a,(ix+2)
+        sub     0x08
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jr      z,L_9F0A
+        ld      a,(ix+2)
+        sub     0x07
+        ld      h,a
+        ld      a,(ix+1)
+        add     a,0x08
+        call    GRID_CELL_A
+        jp      z,L_9F19
+        call    OBJ_PTR
+        inc     (hl)
+        inc     hl
+        inc     hl
+        dec     (hl)
+        pop     bc
+        djnz    L_9ECA
+        jp      L_A045
+
+L_9F0A:                 ; 9F0A
+        pop     bc
+        ld      (ix+7),0x01
+        ld      (ix+8),0x01
+        call    L_A0A3
+        jp      L_A045
+
+L_9F19:                 ; 9F19
+        pop     bc
+        ld      (ix+7),0x03
+        call    L_A0A3
+        jp      L_A045
+
+; flies right and up (Y + 1, X + 1) until a wall
+ENEMY5_FLY_RU:          ; 9F24
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_A045
+        ld      b,a
+L_9F2C:                 ; 9F2C
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      h,(ix+2)
+        add     a,0x08
+        ld      h,a
+        ld      a,(ix+1)
+        add     a,0x07
+        call    GRID_CELL_A
+        jr      z,L_9F6B
+        ld      a,(ix+2)
+        add     a,0x08
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jr      z,L_9F6B
+        ld      a,(ix+2)
+        add     a,0x07
+        ld      h,a
+        ld      a,(ix+1)
+        add     a,0x08
+        call    GRID_CELL_A
+        jr      z,L_9F7A
+        call    OBJ_PTR
+        inc     (hl)
+        inc     hl
+        inc     hl
+        inc     (hl)
+        pop     bc
+        djnz    L_9F2C
+        jp      L_A045
+
+L_9F6B:                 ; 9F6B
+        pop     bc
+        ld      (ix+7),0x04
+        ld      (ix+8),0x03
+        call    L_A0A3
+        jp      L_A045
+
+L_9F7A:                 ; 9F7A
+        pop     bc
+        ld      (ix+7),0x00
+        call    L_A0A3
+        jp      L_A045
+
+; flies left and down (Y - 1, X - 1) until a wall
+ENEMY5_FLY_LD:          ; 9F85
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_A045
+        ld      b,a
+L_9F8D:                 ; 9F8D
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      h,(ix+2)
+        sub     0x08
+        ld      h,a
+        ld      a,(ix+1)
+        sub     0x07
+        call    GRID_CELL_A
+        jp      z,L_9FCF
+        ld      a,(ix+2)
+        sub     0x08
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jp      z,L_9FCF
+        ld      a,(ix+2)
+        sub     0x07
+        ld      h,a
+        ld      a,(ix+1)
+        sub     0x08
+        call    GRID_CELL_A
+        jp      z,L_9F6B
+        call    OBJ_PTR
+        dec     (hl)
+        inc     hl
+        inc     hl
+        dec     (hl)
+        pop     bc
+        djnz    L_9F8D
+        jp      L_A045
+
+L_9FCF:                 ; 9FCF
+        pop     bc
+        ld      (ix+7),0x00
+        ld      (ix+8),0x01
+        call    L_A0A3
+        jp      L_A045
+
+; flies right and down (Y - 1, X + 1) until a wall, then mode 1 or 3
+ENEMY5_FLY_RD:          ; 9FDE
+        ld      a,(ix+13)
+        or      a
+        jp      z,L_A045
+        ld      b,a
+L_9FE6:                 ; 9FE6
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      h,(ix+2)
+        add     a,0x08
+        ld      h,a
+        ld      a,(ix+1)
+        sub     0x07
+        call    GRID_CELL_A
+        jp      z,L_A028
+        ld      a,(ix+2)
+        add     a,0x08
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jp      z,L_A028
+        ld      a,(ix+2)
+        add     a,0x07
+        ld      h,a
+        ld      a,(ix+1)
+        sub     0x08
+        call    GRID_CELL_A
+        jp      z,L_9F0A
+        call    OBJ_PTR
+        dec     (hl)
+        inc     hl
+        inc     hl
+        inc     (hl)
+        pop     bc
+        djnz    L_9FE6
+        jp      L_A045
+
+L_A028:                 ; A028
+        pop     bc
+        ld      (ix+7),0x03
+        ld      (ix+8),0x03
+        call    L_A0A3
+        jp      L_A045
+
+; falls until ENEMY_GROUND_CHECK finds ground, then mode (IX+8)
+ENEMY5_FALL:            ; A037
+        call    OBJ_POS_LOAD
+        call    ENEMY_GROUND_CHECK
+        jr      nz,L_A045
+        ld      a,(ix+8)
+        ld      (ix+7),a
 L_A045:                 ; A045
         ld      c,0x1C
         ld      a,(0xF44E)
@@ -3496,7 +4120,60 @@ L_A094:                 ; A094
         jp      nz,L_9E4B
         ret
 
-        .incbin "main_bank0.bin", 0x20A3, 0x0065
+L_A0A3:                 ; A0A3
+        inc     (ix+20)
+        ld      a,(ix+20)
+        cp      0x01
+        jr      nz,L_A0BA
+        ld      a,(ix+1)
+        ld      (ix+16),a
+        ld      a,(ix+2)
+        ld      (ix+15),a
+        ret
+
+L_A0BA:                 ; A0BA
+        cp      0x03
+        ret     nz
+        ld      (ix+20),0x00
+        ld      a,(ix+1)
+        ld      b,(ix+16)
+        cp      b
+        ld      (ix+16),0x00
+        ret     nz
+        ld      a,(ix+2)
+        ld      b,(ix+15)
+        cp      b
+        ld      (ix+15),0x00
+        ret     nz
+        ld      a,(ix+7)
+        cp      0x01
+        jr      z,L_A0E7
+        cp      0x04
+        jr      z,L_A0EF
+        inc     a
+        jr      L_A0F4
+
+L_A0E7:                 ; A0E7
+        inc     a
+        inc     a
+        ld      (ix+8),0x03
+        jr      L_A0F4
+
+L_A0EF:                 ; A0EF
+        xor     a
+        ld      (ix+8),0x01
+L_A0F4:                 ; A0F4
+        ld      (ix+7),a
+        call    L_9241
+        ret
+
+L_A0FB:                 ; A0FB
+        .word   ENEMY5_FLY_RD
+        .word   ENEMY5_FLY_RU
+        .word   ENEMY5_FALL
+        .word   ENEMY5_FLY_LD
+        .word   ENEMY5_FLY_LU
+        .incbin "main_bank0.bin", 0x2105, 0x0003
 ; GHOST_SLOTS; no count in ENEMY_COUNTS
 GHOST_INIT:             ; A108
         ld      hl,GHOST_SLOTS
@@ -3516,7 +4193,7 @@ L_A119:                 ; A119
         ld      (ix+4),h
         inc     hl
         ld      a,d
-        call    0x0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         ld      (ix+10),a
@@ -3540,7 +4217,8 @@ L_A13E:                 ; A13E
         jr      nz,L_A119
         ret
 
-L_A150:                 ; A150
+; Skel-Monsta (GHOST_SLOTS)
+GHOST_UPDATE:           ; A150
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -3555,7 +4233,7 @@ L_A163:                 ; A163
         ld      a,(GHOST_ON)
         and     a
         jr      nz,L_A170
-        call    0x154C
+        call    OBJ_HIDE
         jp      L_A4B1
 
 L_A170:                 ; A170
@@ -3594,9 +4272,9 @@ L_A1B8:                 ; A1B8
         ld      a,(0xE723)
         and     a
         jr      nz,L_A1C5
-        call    0x1579
+        call    OBJ_STATE_13
 L_A1C5:                 ; A1C5
-        call    0x1556
+        call    IX_SPEED_CLEAR
         jp      L_A3FC
 
 L_A1CB:                 ; A1CB
@@ -3605,8 +4283,8 @@ L_A1CB:                 ; A1CB
         and     a
         jr      nz,L_A1DF
         set     2,(ix+0)
-        call    0x1579
-        call    0x1556
+        call    OBJ_STATE_13
+        call    IX_SPEED_CLEAR
         jp      L_A3FC
 
 L_A1DF:                 ; A1DF
@@ -3626,7 +4304,7 @@ L_A1FB:                 ; A1FB
         ld      a,(0xE723)
         and     a
         jr      z,L_A210
-        call    0x1529
+        call    OBJ_PTR
         ld      (hl),0x78
         inc     hl
         inc     hl
@@ -3719,7 +4397,7 @@ L_A29A:                 ; A29A
         ld      (ix+17),0x04
 L_A2B7:                 ; A2B7
         ld      a,(ix+17)
-        call    0x1529
+        call    OBJ_PTR
         ld      bc,0xA2FE
         call    0x0D7F
         ld      a,(bc)
@@ -3752,13 +4430,13 @@ L_A2F6:                 ; A2F6
 
         .incbin "main_bank0.bin", 0x22FE, 0x0008
 L_A306:                 ; A306
-        call    0x1537
+        call    OBJ_POS_LOAD
         bit     2,(ix+14)
         jp      nz,L_A3FC
 L_A310:                 ; A310
         ld      a,(ix+12)
         ld      hl,SPEED_PATTERNS
-        call    0x0DA7
+        call    TABLE_WORD
         ld      a,(ix+11)
         call    ADD_DE_A
         ld      a,(de)
@@ -3799,13 +4477,19 @@ L_A367:                 ; A367
         call    L_A4C6
         jp      z,L_A3CD
         ld      a,(ix+7)
-        ld      hl,0xA4BE
-        call    0x0DA7
+        ld      hl,L_A4BE
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank0.bin", 0x2378, 0x0008
-        call    0x1529
+; Skel-Monsta: Y + (IX+13)
+GHOST_FLY_UP:           ; A378
+        ld      a,(MCU_READY)
+        bit     5,a
+        jr      nz,L_A380
+        push    hl
+L_A380:                 ; A380
+        call    OBJ_PTR
         ld      a,(hl)
         ld      b,(ix+13)
         add     a,b
@@ -3815,7 +4499,44 @@ L_A367:                 ; A367
         ld      (ix+16),a
         jp      L_A3CD
 
-        .incbin "main_bank0.bin", 0x2393, 0x003A
+; Skel-Monsta: X + (IX+13)
+GHOST_FLY_R:            ; A393
+        call    OBJ_PTR
+        inc     hl
+        inc     hl
+        ld      a,(hl)
+        ld      b,(ix+13)
+        add     a,b
+        ld      (hl),a
+        ld      a,(ix+16)
+        add     a,b
+        ld      (ix+16),a
+        jp      L_A3CD
+
+; Skel-Monsta: Y - (IX+13)
+GHOST_FLY_DOWN:         ; A3A8
+        call    OBJ_PTR
+        ld      a,(hl)
+        ld      b,(ix+13)
+        sub     b
+        ld      (hl),a
+        ld      a,(ix+16)
+        add     a,b
+        ld      (ix+16),a
+        jp      L_A3CD
+
+; Skel-Monsta: X - (IX+13)
+GHOST_FLY_L:            ; A3BB
+        call    OBJ_PTR
+        inc     hl
+        inc     hl
+        ld      a,(hl)
+        ld      b,(ix+13)
+        sub     b
+        ld      (hl),a
+        ld      a,(ix+16)
+        add     a,b
+        ld      (ix+16),a
 L_A3CD:                 ; A3CD
         ld      de,0x0802
         call    ANIM_STEP
@@ -3859,7 +4580,7 @@ L_A40C:                 ; A40C
         jr      L_A481
 
 L_A41D:                 ; A41D
-        call    0x154C
+        call    OBJ_HIDE
         xor     a
         ld      (0xF1E6),a
         ld      (ix+0),a
@@ -3905,9 +4626,9 @@ L_A481:                 ; A481
         ld      a,(0xE723)
         and     a
         jr      nz,L_A48A
-        call    0x158B
+        call    OBJ_STATE_15
 L_A48A:                 ; A48A
-        call    0x1556
+        call    IX_SPEED_CLEAR
 L_A48D:                 ; A48D
         bit     2,(ix+0)
         jr      z,L_A497
@@ -3940,7 +4661,11 @@ L_A4B1:                 ; A4B1
         jp      nz,L_A163
         ret
 
-        .incbin "main_bank0.bin", 0x24BE, 0x0008
+L_A4BE:                 ; A4BE
+        .word   GHOST_FLY_UP
+        .word   GHOST_FLY_R
+        .word   GHOST_FLY_DOWN
+        .word   GHOST_FLY_L
 L_A4C6:                 ; A4C6
         ld      a,(ix+9)
         and     a
@@ -4108,7 +4833,7 @@ L_A5B6:                 ; A5B6
         ld      (0xED46),a
         ld      (ix+23),0x07
         ld      (ix+22),0x00
-        call    L_95E8
+        call    ENEMY_TURN_DELAY
         ld      a,0x08
         call    0x189D
         ld      (ix+12),a
@@ -4121,7 +4846,8 @@ L_A5B6:                 ; A5B6
         jr      nz,L_A5B6
         ret
 
-L_A5FF:                 ; A5FF
+; group 2 as ENEMY2B (when ENEMY_SWAP b4)
+ENEMY2B_UPDATE:         ; A5FF
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -4146,12 +4872,12 @@ L_A61D:                 ; A61D
         jp      nz,L_A654
         bit     1,a
         jp      nz,L_A660
-        call    L_88CC
+        call    ENEMY_HIT_REACT
         jp      c,L_A7AA
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jr      nz,L_A666
-        call    L_86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
@@ -4159,45 +4885,79 @@ L_A61D:                 ; A61D
         jp      L_A7AA
 
 L_A654:                 ; A654
-        call    L_86E8
+        call    ENEMY_TRAP_IF_B6
         jp      c,L_A7AA
-        call    L_870F
+        call    ENEMY_ANGRY_IF_B5
         jp      L_A7AA
 
 L_A660:                 ; A660
-        call    0x7BFD
+        call    ENEMY_DEFEATED
         jp      L_A7AA
 
 L_A666:                 ; A666
         ld      c,0x07
-        call    L_86A8
-        call    L_86C8
+        call    ENEMY_HIT_REPORT
+        call    ENEMY_REMOVE_IF_B7
         jp      c,L_A7AA
         call    ENEMY_SPEED
-        jp      nc,L_A6E4
-        call    L_8838
+        jp      nc,ENEMY2B_ANIM
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,L_A7AA
         bit     5,(ix+0)
         jr      nz,L_A68D
         call    ENEMY_DROP
-        jp      L_A6E4
+        jp      ENEMY2B_ANIM
 
 L_A68D:                 ; A68D
         ld      a,(ix+24)
         bit     4,a
-        jp      nz,L_A6E4
+        jp      nz,ENEMY2B_ANIM
         bit     3,a
-        jp      nz,L_A6E4
+        jp      nz,ENEMY2B_ANIM
         ld      a,(ix+7)
-        ld      hl,0xA80C
-        call    0x0DA7
+        ld      hl,L_A80C
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank0.bin", 0x26A5, 0x003F
-L_A6E4:                 ; A6E4
+; mode 3 of the ENEMY2B table at A80C
+ENEMY2B_WALK_L:         ; A6A5
+        call    ENEMY_WALK_L
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY2B_ATTACK_START
+        jp      ENEMY2B_ANIM
+
+; mode 1 of the ENEMY2B table at A80C
+ENEMY2B_WALK_R:         ; A6B1
+        call    ENEMY_WALK_R
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY2B_ATTACK_START
+        jp      ENEMY2B_ANIM
+
+; mode 5 of the ENEMY2B table at A80C
+ENEMY2B_JUMP_L:         ; A6BD
+        set     5,(ix+24)
+        call    ENEMY_JUMP_L
+        jp      ENEMY2B_ANIM
+
+; mode 4 of the ENEMY2B table at A80C
+ENEMY2B_JUMP_R:         ; A6C7
+        set     5,(ix+24)
+        call    ENEMY_JUMP_R
+        jp      ENEMY2B_ANIM
+
+; mode 2 of the ENEMY2B table at A80C
+ENEMY2B_FALL:           ; A6D1
+        call    ENEMY_FALL
+        bit     1,(ix+14)
+        jr      z,ENEMY2B_ANIM
+        res     5,(ix+24)
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY2B_ATTACK_START
+; mode 0 of the ENEMY2B table at A80C
+ENEMY2B_ANIM:           ; A6E4
         ld      hl,0xA82E
         ld      a,(0xF44E)
         and     a
@@ -4240,7 +5000,7 @@ L_A724:                 ; A724
         jr      nz,L_A74D
         res     6,(ix+24)
         ld      de,0x9625
-        call    L_93F6
+        call    ENEMY_PATH_SET
         bit     1,(ix+8)
         ld      (ix+7),0x04
         jr      z,L_A7AA
@@ -4282,7 +5042,7 @@ L_A779:                 ; A779
         jr      z,L_A791
 L_A788:                 ; A788
         res     4,(ix+24)
-        call    0x1556
+        call    IX_SPEED_CLEAR
         jr      L_A7AA
 
 L_A791:                 ; A791
@@ -4309,7 +5069,57 @@ L_A7AA:                 ; A7AA
         jp      nz,L_A61D
         ret
 
-        .incbin "main_bank0.bin", 0x27B9, 0x008E
+L_A7B9:                 ; A7B9
+        dec     (ix+21)
+        jr      nz,L_A7C9
+        call    ENEMY_TURN_DELAY
+        ld      a,(ix+24)
+        xor     0x02
+        ld      (ix+24),a
+L_A7C9:                 ; A7C9
+        bit     1,(ix+24)
+        jp      nz,L_A7DA
+        call    L_9500
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY2B_ATTACK_START
+        ret
+
+L_A7DA:                 ; A7DA
+        call    L_957A
+        call    ENEMY_ATTACK_CHECK
+        call    nz,ENEMY2B_ATTACK_START
+        ret
+
+; group 2B as ENEMY2_ATTACK_START: unless (IX+7) b2 or (IX+24) b4, starts the throw
+ENEMY2B_ATTACK_START:   ; A7E4
+        ld      a,i
+        ld      h,a
+        ld      a,(MCU_RAM)
+        ld      l,a
+        ld      de,IRQ_VECTOR_ENTRY
+        or      a
+        sbc     hl,de
+        jr      z,L_A7F5
+        push    iy
+L_A7F5:                 ; A7F5
+        bit     2,(ix+7)
+        ret     nz
+        bit     4,(ix+24)
+        ret     nz
+        bit     3,(ix+24)
+        ret     nz
+        call    IX_SPEED_CLEAR
+        set     4,(ix+24)
+        ret
+
+L_A80C:                 ; A80C
+        .word   ENEMY2B_ANIM
+        .word   ENEMY2B_WALK_R
+        .word   ENEMY2B_FALL
+        .word   ENEMY2B_WALK_L
+        .word   ENEMY2B_JUMP_R
+        .word   ENEMY2B_JUMP_L
+        .incbin "main_bank0.bin", 0x2818, 0x002F
 ; clears BOSS_SLOT; returns unless ROUND_MAIN = 0x63 (round 100)
 BOSS_INIT:              ; A847
         ld      hl,BOSS_SLOT
@@ -4322,8 +5132,8 @@ BOSS_INIT:              ; A847
         ld      hl,0xE275
         ld      de,0x000C
         ld      b,0x10
-        call    0x18A5
-        ld      de,BOSS_PIECE_XY
+        call    GFX_GRID_FILL
+        ld      de,0xAF0C
         ld      hl,0xE275
         ld      b,0x10
         ld      c,0x18
@@ -4369,14 +5179,14 @@ L_A8D5:                 ; A8D5
         ret
 
 L_A906:                 ; A906
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9DE),hl
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9FE),hl
         ret
 
 L_A913:                 ; A913
-        call    0x1556
+        call    IX_SPEED_CLEAR
         set     0,(ix+0)
         ret
 
@@ -4435,7 +5245,7 @@ L_A980:                 ; A980
         inc     hl
         inc     hl
         djnz    L_A980
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ret
 
 L_A98E:                 ; A98E
@@ -4447,9 +5257,9 @@ L_A98E:                 ; A98E
 L_A99A:                 ; A99A
         ld      de,0x0502
         call    ANIM_STEP
-        call    0x0D6D
+        call    SHL4
         ld      b,a
-        ld      hl,BOSS_POSES
+        ld      hl,0xAF4C
         call    ADD_HL_A
         ld      c,0x30
         bit     0,(ix+8)
@@ -4463,13 +5273,13 @@ L_A9B9:                 ; A9B9
         ld      b,0x10
         jr      nz,L_A9F0
         ld      a,(ix+5)
-        call    0x0D6D
+        call    SHL4
         ld      hl,0xAF6C
         call    ADD_HL_A
         bit     0,(ix+8)
         jr      z,L_A9E1
         ld      a,(ix+5)
-        call    0x0D6D
+        call    SHL4
         ld      hl,0xAFAC
         call    ADD_HL_A
 L_A9E1:                 ; A9E1
@@ -4484,18 +5294,23 @@ L_A9EB:                 ; A9EB
 L_A9F0:                 ; A9F0
         call    L_AE73
         jr      nc,L_A9FA
-        ld      hl,BOSS_POSES
+        ld      hl,0xAF4C
         ld      c,0x29
 L_A9FA:                 ; A9FA
-        call    0x14C0
+        call    SPRITE_GRID
 L_A9FD:                 ; A9FD
         ld      a,(ix+7)
-        ld      hl,0xAAA8
-        call    0x0DA7
+        ld      hl,L_AAA8
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank0.bin", 0x2A08, 0x0008
+; the boss flies diagonally (mode in (IX+7)); bounces off the edges with BOSS_EDGE_* (BOSS table at AAA8)
+BOSS_MOVE_RU:           ; AA08
+        call    BOSS_EDGE_RIGHT
+        ret     nc
+        call    BOSS_EDGE_TOP
+        ret     nc
 L_AA10:                 ; AA10
         ld      b,0x10
         ld      hl,0xE275
@@ -4519,7 +5334,73 @@ L_AA29:                 ; AA29
         djnz    L_AA15
         ret
 
-        .incbin "main_bank0.bin", 0x2A2E, 0x005C
+; the boss flies diagonally (mode in (IX+7)); bounces off the edges with BOSS_EDGE_* (BOSS table at AAA8)
+BOSS_MOVE_RD:           ; AA2E
+        ld      a,(MCU_READY)
+        bit     2,a
+        jr      nz,L_AA36
+        push    de
+L_AA36:                 ; AA36
+        call    BOSS_EDGE_RIGHT
+        ret     nc
+        call    BOSS_EDGE_BOTTOM
+        ret     c
+        ld      b,0x10
+        ld      hl,0xE275
+L_AA43:                 ; AA43
+        dec     (hl)
+        bit     3,(ix+0)
+        jr      z,L_AA4C
+        dec     (hl)
+        dec     (hl)
+L_AA4C:                 ; AA4C
+        inc     hl
+        inc     hl
+        inc     (hl)
+        bit     3,(ix+0)
+        jr      z,L_AA57
+        inc     (hl)
+        inc     (hl)
+L_AA57:                 ; AA57
+        inc     hl
+        inc     hl
+        djnz    L_AA43
+        ret
+
+; the boss flies diagonally (mode in (IX+7)); bounces off the edges with BOSS_EDGE_* (BOSS table at AAA8)
+BOSS_MOVE_LD:           ; AA5C
+        call    BOSS_EDGE_LEFT
+        ret     c
+        call    BOSS_EDGE_BOTTOM
+        ret     c
+        ld      b,0x10
+        ld      hl,0xE275
+L_AA69:                 ; AA69
+        dec     (hl)
+        bit     3,(ix+0)
+        jr      z,L_AA72
+        dec     (hl)
+        dec     (hl)
+L_AA72:                 ; AA72
+        inc     hl
+        inc     hl
+        dec     (hl)
+        bit     3,(ix+0)
+        jr      z,L_AA7D
+        dec     (hl)
+        dec     (hl)
+L_AA7D:                 ; AA7D
+        inc     hl
+        inc     hl
+        djnz    L_AA69
+        ret
+
+; the boss flies diagonally (mode in (IX+7)); bounces off the edges with BOSS_EDGE_* (BOSS table at AAA8)
+BOSS_MOVE_LU:           ; AA82
+        call    BOSS_EDGE_LEFT
+        ret     c
+        call    BOSS_EDGE_TOP
+        ret     nc
 L_AA8A:                 ; AA8A
         ld      b,0x10
         ld      hl,0xE275
@@ -4543,12 +5424,16 @@ L_AAA3:                 ; AAA3
         djnz    L_AA8F
         ret
 
-        .incbin "main_bank0.bin", 0x2AA8, 0x0008
+L_AAA8:                 ; AAA8
+        .word   BOSS_MOVE_RU
+        .word   BOSS_MOVE_RD
+        .word   BOSS_MOVE_LD
+        .word   BOSS_MOVE_LU
 L_AAB0:                 ; AAB0
         call    L_AB27
         ld      de,0x0A02
         call    ANIM_STEP
-        call    0x0D6D
+        call    SHL4
         ld      hl,0xAF8C
         call    ADD_HL_A
         ld      c,0x32
@@ -4557,14 +5442,14 @@ L_AAB0:                 ; AAB0
         bit     1,(ix+7)
         jr      nz,L_AADF
         ld      a,(ix+5)
-        call    0x0D6D
+        call    SHL4
         ld      hl,0xAFAC
         call    ADD_HL_A
         call    0x14E4
         jr      L_AAE2
 
 L_AADF:                 ; AADF
-        call    0x14C0
+        call    SPRITE_GRID
 L_AAE2:                 ; AAE2
         bit     2,(ix+0)
         jr      z,L_AB00
@@ -4576,7 +5461,7 @@ L_AAE2:                 ; AAE2
         jr      c,L_AAFC
         ld      (ix+0),0x10
 L_AAFC:                 ; AAFC
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ret
 
 L_AB00:                 ; AB00
@@ -4590,7 +5475,7 @@ L_AB00:                 ; AB00
         sub     0x06
         ret     c
         ld      (ix+0),0x09
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+12),a
         ld      (ix+14),a
         ld      (ix+11),a
@@ -4600,7 +5485,7 @@ L_AB27:                 ; AB27
         ld      de,0x0505
         call    L_AB42
         ld      hl,0xAB38
-        call    0x0DA7
+        call    TABLE_WORD
         ld      (0xF998),de
         ret
 
@@ -4626,8 +5511,8 @@ L_AB5E:                 ; AB5E
 L_AB62:                 ; AB62
         ld      de,0x0A02
         call    ANIM_STEP
-        call    0x0D6D
-        ld      hl,BOSS_POSES
+        call    SHL4
+        ld      hl,0xAF4C
         call    ADD_HL_A
         ld      c,0x26
         ld      b,0x10
@@ -4635,7 +5520,7 @@ L_AB62:                 ; AB62
         bit     1,(ix+7)
         jr      nz,L_AB97
         ld      a,(ix+5)
-        call    0x0D6D
+        call    SHL4
         ld      hl,0xAF6C
         call    ADD_HL_A
         call    L_AE73
@@ -4649,10 +5534,10 @@ L_AB93:                 ; AB93
 L_AB97:                 ; AB97
         call    L_AE73
         jr      nc,L_ABA1
-        ld      hl,BOSS_POSES
+        ld      hl,0xAF4C
         ld      c,0x29
 L_ABA1:                 ; ABA1
-        call    0x14C0
+        call    SPRITE_GRID
         ret
 
 L_ABA5:                 ; ABA5
@@ -4671,7 +5556,7 @@ L_ABB2:                 ; ABB2
         inc     hl
         ld      a,(hl)
         ld      (ix+2),a
-        ld      de,CLOCK_TICK
+        ld      de,0x0504
         call    ANIM_STEP
         cp      0x02
         jr      z,L_ABD0
@@ -4680,9 +5565,9 @@ L_ABB2:                 ; ABB2
 L_ABD0:                 ; ABD0
         sub     0x02
 L_ABD2:                 ; ABD2
-        call    0x0D6D
+        call    SHL4
         ld      b,a
-        ld      hl,BOSS_POSES
+        ld      hl,0xAF4C
         ld      a,(ix+5)
         sub     0x02
         jr      c,L_ABE3
@@ -4693,7 +5578,7 @@ L_ABE3:                 ; ABE3
         ld      c,0x29
         ld      b,0x10
         ld      e,0x0C
-        call    0x14C0
+        call    SPRITE_GRID
         ld      a,(ix+2)
         sub     0x20
         jr      c,L_AC05
@@ -4737,7 +5622,7 @@ L_AC22:                 ; AC22
         ld      hl,0xE2D5
         ld      de,0x0012
         ld      b,0x04
-        call    0x18A5
+        call    GFX_GRID_FILL
         ld      hl,0xE2D5
         ld      b,0x04
 L_AC58:                 ; AC58
@@ -4761,7 +5646,7 @@ L_AC58:                 ; AC58
         ret
 
 L_AC7E:                 ; AC7E
-        call    0x14C0
+        call    SPRITE_GRID
         ret
 
 L_AC82:                 ; AC82
@@ -4779,7 +5664,7 @@ L_AC92:                 ; AC92
         inc     hl
         inc     hl
         djnz    L_AC92
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+19),0x03
         ret
 
@@ -4856,7 +5741,7 @@ L_AD18:                 ; AD18
         ld      hl,0xB018
 L_AD24:                 ; AD24
         call    ADD_HL_A
-        call    0x14C0
+        call    SPRITE_GRID
         ret
 
 L_AD2B:                 ; AD2B
@@ -4867,7 +5752,7 @@ L_AD2B:                 ; AD2B
         ld      hl,0xE295
         ld      de,0x000C
         ld      b,0x04
-        call    0x18A5
+        call    GFX_GRID_FILL
         ld      hl,0xE295
         ld      de,0xAF34
         ld      b,0x04
@@ -4877,11 +5762,11 @@ L_AD2B:                 ; AD2B
         ld      b,0x04
         ld      c,0x0F
         ld      hl,0xB02C
-        call    0x14C0
+        call    SPRITE_GRID
         ld      hl,0xE2A5
         ld      de,0x000D
         ld      b,0x04
-        call    0x18A5
+        call    GFX_GRID_FILL
         ld      hl,0xE2A5
         ld      de,0xAF2C
         ld      b,0x04
@@ -4891,7 +5776,7 @@ L_AD2B:                 ; AD2B
         ld      b,0x04
         ld      c,0x0F
         ld      hl,0xB028
-        call    0x14C0
+        call    SPRITE_GRID
         set     3,(ix+18)
         xor     a
         ld      (ix+1),a
@@ -4976,13 +5861,13 @@ L_AE0A:                 ; AE0A
         ld      de,0x050A
         call    ANIM_STEP
         jr      z,L_AE25
-        call    0x0D6D
+        call    SHL4
         ld      hl,0xB030
         call    ADD_HL_A
         ld      e,0x0C
         ld      b,0x10
         ld      c,0x24
-        call    0x14C0
+        call    SPRITE_GRID
         ret
 
 L_AE25:                 ; AE25
@@ -5001,7 +5886,7 @@ L_AE2C:                 ; AE2C
         bit     1,(ix+18)
         jr      nz,L_AE4F
         set     1,(ix+18)
-        call    0x1556
+        call    IX_SPEED_CLEAR
         jr      L_AE66
 
 L_AE4F:                 ; AE4F
@@ -5017,7 +5902,7 @@ L_AE58:                 ; AE58
         inc     hl
         inc     hl
         djnz    L_AE58
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ret
 
 L_AE66:                 ; AE66
@@ -5025,7 +5910,7 @@ L_AE66:                 ; AE66
         ld      b,0x04
         ld      c,0x1F
         ld      hl,0xB014
-        call    0x14C0
+        call    SPRITE_GRID
         ret
 
 L_AE73:                 ; AE73
@@ -5079,7 +5964,54 @@ L_AEAD:                 ; AEAD
         djnz    L_AEAD
         ret
 
-        .incbin "main_bank0.bin", 0x2EBC, 0x0050
+; X below 2C: flips (IX+7) b0-1
+BOSS_EDGE_LEFT:         ; AEBC
+        ld      a,(ix+2)
+        sub     0x20
+        sub     0x0C
+        ret     nc
+        ld      a,(ix+7)
+        xor     0x03
+        ld      (ix+7),a
+        ret
+
+; X + 20 below F0: nothing; else flips (IX+7) b0-1 and counts in F3CA
+BOSS_EDGE_RIGHT:        ; AECD
+        ld      a,(ix+2)
+        add     a,0x20
+        sub     0xF0
+        ret     c
+        ld      a,(ix+7)
+        xor     0x03
+        ld      (ix+7),a
+        ld      hl,0xF3CA
+        inc     (hl)
+        ret
+
+; Y + 20 below D8: nothing; else flips (IX+7) b0, facing 1
+BOSS_EDGE_TOP:          ; AEE2
+        ld      a,(ix+1)
+        add     a,0x20
+        sub     0xD8
+        ret     c
+        ld      a,(ix+7)
+        xor     0x01
+        ld      (ix+7),a
+        ld      (ix+8),0x01
+        ret
+
+; Y below 38: flips (IX+7) b0, facing 0
+BOSS_EDGE_BOTTOM:       ; AEF7
+        ld      a,(ix+1)
+        sub     0x20
+        sub     0x18
+        ret     nc
+        ld      a,(ix+7)
+        xor     0x01
+        ld      (ix+7),a
+        ld      (ix+8),0x00
+        ret
+
 ; 16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces
 BOSS_PIECE_XY:          ; AF0C
         .incbin "main_bank0.bin", 0x2F0C, 0x0040
@@ -5135,7 +6067,8 @@ L_B109:                 ; B109
         jr      nz,L_B109
         ret
 
-L_B14A:                 ; B14A
+; group 0 as ENEMY0B (when ENEMY_SWAP b0)
+ENEMY0B_UPDATE:         ; B14A
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -5160,45 +6093,45 @@ L_B168:                 ; B168
         jp      nz,L_B1A4
         bit     1,a
         jp      nz,L_B1B0
-        call    L_88CC
+        call    ENEMY_HIT_REACT
         jp      c,L_B32F
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jr      nz,L_B1B6
         ld      a,(ix+10)
         ld      bc,0x741D
         call    SPRITE
-        call    L_86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
         jp      L_B32F
 
 L_B1A4:                 ; B1A4
-        call    L_86E8
+        call    ENEMY_TRAP_IF_B6
         jp      c,L_B32F
-        call    L_870F
+        call    ENEMY_ANGRY_IF_B5
         jp      L_B32F
 
 L_B1B0:                 ; B1B0
-        call    0x7BFD
+        call    ENEMY_DEFEATED
         jp      L_B32F
 
 L_B1B6:                 ; B1B6
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      c,0x06
-        call    L_86A8
-        call    L_86C8
+        call    ENEMY_HIT_REPORT
+        call    ENEMY_REMOVE_IF_B7
         jp      c,L_B32F
         call    ENEMY_SPEED
-        jp      nc,L_B2EB
+        jp      nc,ENEMY0B_ANIM
         bit     5,(ix+0)
         jr      nz,L_B1D6
         call    ENEMY_DROP
-        jp      L_B2EB
+        jp      ENEMY0B_ANIM
 
 L_B1D6:                 ; B1D6
-        call    L_8838
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,L_B32F
@@ -5208,7 +6141,7 @@ L_B1D6:                 ; B1D6
         ld      a,(ix+22)
         cp      0x78
         jr      c,L_B203
-        call    0x1529
+        call    OBJ_PTR
         ld      a,(hl)
         cp      0xD0
         jr      nc,L_B203
@@ -5218,12 +6151,129 @@ L_B1D6:                 ; B1D6
 L_B203:                 ; B203
         ld      a,(ix+7)
         ld      hl,L_B33E
-        call    0x0DA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank0.bin", 0x320E, 0x00DD
-L_B2EB:                 ; B2EB
+; walks left (X - 1); at a wall turns to mode 1
+ENEMY0B_WALK_L:         ; B20E
+        ld      a,(ix+13)
+        or      a
+        jp      z,ENEMY0B_ANIM
+        ld      b,a
+L_B216:                 ; B216
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      a,(ix+2)
+        sub     0x08
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jr      z,L_B239
+        call    GRID_PROBE_3
+        jr      nz,L_B245
+        call    OBJ_PTR
+        inc     hl
+        inc     hl
+        dec     (hl)
+        pop     bc
+        djnz    L_B216
+        jp      ENEMY0B_ANIM
+
+L_B239:                 ; B239
+        pop     bc
+        ld      (ix+7),0x01
+        ld      (ix+8),0x01
+        jp      ENEMY0B_ANIM
+
+L_B245:                 ; B245
+        pop     bc
+        ld      (ix+7),0x02
+        jp      ENEMY0B_ANIM
+
+; walks right (X + 1) while the cell ahead is open; at a wall turns to mode 3
+ENEMY0B_WALK_R:         ; B24D
+        ld      a,(ix+13)
+        or      a
+        jp      z,ENEMY0B_ANIM
+        ld      b,a
+L_B255:                 ; B255
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      a,(ix+2)
+        add     a,0x08
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jr      z,L_B278
+        call    GRID_PROBE_3
+        jr      nz,L_B284
+        call    OBJ_PTR
+        inc     hl
+        inc     hl
+        inc     (hl)
+        pop     bc
+        djnz    L_B255
+        jp      ENEMY0B_ANIM
+
+L_B278:                 ; B278
+        pop     bc
+        ld      (ix+7),0x03
+        ld      (ix+8),0x03
+        jp      ENEMY0B_ANIM
+
+L_B284:                 ; B284
+        pop     bc
+        ld      (ix+7),0x02
+        jp      ENEMY0B_ANIM
+
+; falls (Y - 1) until there is floor
+ENEMY0B_FALL:           ; B28C
+        ld      a,i
+        ld      h,a
+        ld      a,(MCU_RAM)
+        ld      l,a
+        ld      de,IRQ_VECTOR_ENTRY
+        or      a
+        sbc     hl,de
+        jr      z,L_B29D
+        push    iy
+L_B29D:                 ; B29D
+        call    OBJ_POS_LOAD
+        ld      a,(ix+1)
+        cp      0xE0
+        jr      nc,L_B2BD
+        and     0x07
+        jr      nz,L_B2BD
+        ld      a,(ix+1)
+        ld      h,(ix+2)
+        call    GRID_CELL_A
+        jp      z,L_B2BD
+        call    GRID_PROBE_3
+        jp      z,L_B2D6
+L_B2BD:                 ; B2BD
+        call    OBJ_PTR
+        dec     (hl)
+        bit     7,(ix+0)
+        jr      z,ENEMY0B_ANIM
+        ld      a,(HURRY)
+        and     a
+        jr      z,ENEMY0B_ANIM
+        ld      a,(hl)
+        and     0x07
+        jp      z,ENEMY0B_ANIM
+        dec     (hl)
+        jr      ENEMY0B_ANIM
+
+L_B2D6:                 ; B2D6
+        call    ENEMY_PROX_B
+        ld      (ix+7),0x01
+        ld      (ix+8),0x01
+        jr      z,ENEMY0B_ANIM
+        ld      (ix+7),0x03
+        ld      (ix+8),0x03
+; mode 0 of the ENEMY0B table at B33E
+ENEMY0B_ANIM:           ; B2EB
         ld      a,(0xF44E)
         and     a
         jr      nz,L_B314
@@ -5266,13 +6316,10 @@ L_B32F:                 ; B32F
         ret
 
 L_B33E:                 ; B33E
-        ex      de,hl
-        or      d
-        ld      c,l
-        or      d
-        adc     a,h
-        or      d
-        ld      c,0xB2
+        .word   ENEMY0B_ANIM
+        .word   ENEMY0B_WALK_R
+        .word   ENEMY0B_FALL
+        .word   ENEMY0B_WALK_L
         ld      (hl),h
         adc     a,h
         and     h
@@ -5338,7 +6385,7 @@ L_B3A3:                 ; B3A3
         .incbin "main_bank0.bin", 0x33AF, 0x0006
         call    VIDEO_OFF
         ld      hl,0xF960
-        ld      bc,TASK_YIELD
+        ld      bc,0x0020
         call    ZERO_BC
         call    SET_E1D0_1A
         rst     0x20
@@ -5346,17 +6393,17 @@ L_B3A3:                 ; B3A3
         ld      de,0xB3F2
         ld      bc,0x1A0C
         ld      a,0x2D
-        call    0x0EC6
+        call    TILE_RECT
         ld      hl,0xD008
         ld      de,0xB52A
         ld      bc,0x1A0C
         ld      a,0x2D
-        call    0x0EC6
+        call    TILE_RECT
         ld      hl,0xD308
         ld      de,0xB662
         ld      bc,0x1A08
         ld      a,0x2E
-        call    0x0EC6
+        call    TILE_RECT
         jp      VIDEO_ON
 
         .incbin "main_bank0.bin", 0x33F2, 0x0346
@@ -5469,18 +6516,18 @@ L_B7E5:                 ; B7E5
         ld      a,(hl)
         and     0xF0
         jr      z,L_B7F2
-        call    0x0D62
+        call    SHR4
         dec     a
-        call    0x0D6D
+        call    SHL4
         ld      (hl),a
 L_B7F2:                 ; B7F2
         inc     hl
         ld      a,(hl)
         and     0xF0
         ret     z
-        call    0x0D62
+        call    SHR4
         dec     a
-        call    0x0D6D
+        call    SHL4
         ld      (hl),a
         ret
 
@@ -5528,7 +6575,7 @@ BOSS_SHOTS_INIT:        ; B939
         ld      hl,0xE2D5
         ld      de,0x0012
         ld      b,0x08
-        call    0x18A5
+        call    GFX_GRID_FILL
         ld      hl,0xE2D5
         ld      ix,BOSS_SHOTS
         ld      b,0x08
@@ -5550,7 +6597,8 @@ L_B95C:                 ; B95C
         djnz    L_B95C
         ret
 
-L_B97A:                 ; B97A
+; steps BOSS_SHOTS
+BOSS_SHOTS_UPDATE:      ; B97A
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -5616,19 +6664,72 @@ L_B9F6:                 ; B9F6
         set     0,(ix+0)
         ld      (ix+5),0x00
         ld      (ix+6),0x00
-        call    L_BAC5
+        call    BOSS_SHOT_SPRITE
         jp      L_BA98
 
 L_BA09:                 ; BA09
-        call    0x1537
-        call    L_BAC5
+        call    OBJ_POS_LOAD
+        call    BOSS_SHOT_SPRITE
         ld      a,(ix+7)
-        ld      hl,0xBBA7
-        call    0x0DA7
+        ld      hl,L_BBA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank0.bin", 0x3A1A, 0x007E
+; mode 0 of the BOSS_SHOT table at BBA7
+BOSS_SHOT_MODE0:        ; BA1A
+        call    L_BB0E
+        jp      c,L_BA98
+        call    L_BB2C
+        jp      c,L_BA98
+        call    L_BAF4
+        jp      c,L_BA98
+        ld      a,(ix+9)
+        ld      hl,0xBBAF
+        call    ADD_HL_A
+        call    L_BB4A
+        jr      L_BA98
+
+; mode 1 of the BOSS_SHOT table at BBA7
+BOSS_SHOT_MODE1:        ; BA3A
+        call    L_BB0E
+        jp      c,L_BA98
+        call    L_BAD9
+        jp      c,L_BA98
+        call    L_BAF4
+        jp      c,L_BA98
+        ld      a,(ix+9)
+        ld      hl,0xBBB7
+        call    ADD_HL_A
+        call    L_BB4A
+        jr      L_BA98
+
+; mode 2 of the BOSS_SHOT table at BBA7
+BOSS_SHOT_MODE2:        ; BA5A
+        call    L_BAD9
+        jp      c,L_BA98
+        call    L_BB2C
+        jp      c,L_BA98
+        call    L_BAF4
+        jp      c,L_BA98
+        ld      a,(ix+9)
+        ld      hl,0xBBBF
+        call    ADD_HL_A
+        call    L_BB4A
+        jr      L_BA98
+
+; mode 3 of the BOSS_SHOT table at BBA7
+BOSS_SHOT_MODE3:        ; BA7A
+        call    L_BB0E
+        jp      c,L_BA98
+        call    L_BAD9
+        jp      c,L_BA98
+        call    L_BB2C
+        jp      c,L_BA98
+        ld      a,(ix+9)
+        ld      hl,0xBBC7
+        call    ADD_HL_A
+        call    L_BB4A
 L_BA98:                 ; BA98
         ld      de,0x000C
         add     ix,de
@@ -5652,8 +6753,9 @@ L_BAAF:                 ; BAAF
         ld      (hl),0x00
         ret
 
-L_BAC5:                 ; BAC5
-        ld      de,CLOCK_TICK
+; the shot's frame from ANIM_STEP: tiles 40 + 4 x frame, colour 33
+BOSS_SHOT_SPRITE:       ; BAC5
+        ld      de,0x0504
         call    ANIM_STEP
         add     a,a
         add     a,a
@@ -5664,7 +6766,135 @@ L_BAC5:                 ; BAC5
         call    SPRITE
         ret
 
-        .incbin "main_bank0.bin", 0x3AD9, 0x00F6
+L_BAD9:                 ; BAD9
+        ld      a,(ix+2)
+        cp      0x1A
+        ret     nc
+        call    OBJ_HIDE
+        ld      (ix+1),0x00
+        ld      (ix+2),0x00
+        ld      (ix+0),0x02
+        ld      hl,0xF3C7
+        dec     (hl)
+        scf
+        ret
+
+L_BAF4:                 ; BAF4
+        ld      a,(ix+1)
+        cp      0x22
+        ret     nc
+        call    OBJ_HIDE
+        ld      (ix+1),0x00
+        ld      (ix+2),0x00
+        ld      (ix+0),0x02
+        ld      hl,0xF3C7
+        dec     (hl)
+        ret
+
+L_BB0E:                 ; BB0E
+        ld      a,(ix+2)
+        cp      0xE6
+        jr      nc,L_BB17
+        xor     a
+        ret
+
+L_BB17:                 ; BB17
+        call    OBJ_HIDE
+        ld      (ix+1),0x00
+        ld      (ix+2),0x00
+        ld      (ix+0),0x02
+        ld      hl,0xF3C7
+        dec     (hl)
+        scf
+        ret
+
+L_BB2C:                 ; BB2C
+        ld      a,(ix+1)
+        cp      0xCE
+        jr      nc,L_BB35
+        xor     a
+        ret
+
+L_BB35:                 ; BB35
+        call    OBJ_HIDE
+        ld      (ix+1),0x00
+        ld      (ix+2),0x00
+        ld      (ix+0),0x02
+        ld      hl,0xF3C7
+        dec     (hl)
+        scf
+        ret
+
+L_BB4A:                 ; BB4A
+        push    hl
+        ld      a,(hl)
+        call    PATH_PTR
+        ld      a,(ix+11)
+        inc     (ix+11)
+        call    ADD_DE_A
+        pop     hl
+        ld      a,(de)
+        cp      0x88
+        jr      nz,L_BB64
+        ld      (ix+11),0x00
+        jr      L_BB4A
+
+L_BB64:                 ; BB64
+        call    OBJ_PTR
+        bit     0,a
+        jr      z,L_BB87
+        bit     3,a
+        jr      z,L_BB7C
+        dec     (hl)
+        dec     (hl)
+        dec     (hl)
+        ld      a,(BOSS_SLOT)
+        bit     3,a
+        jr      z,L_BB87
+        dec     (hl)
+        jr      L_BB87
+
+L_BB7C:                 ; BB7C
+        inc     (hl)
+        inc     (hl)
+        inc     (hl)
+        ld      a,(BOSS_SLOT)
+        bit     3,a
+        jr      z,L_BB87
+        inc     (hl)
+L_BB87:                 ; BB87
+        ld      a,(de)
+        bit     4,a
+        ret     z
+        inc     hl
+        inc     hl
+        bit     7,a
+        jr      z,L_BB9C
+        dec     (hl)
+        dec     (hl)
+        dec     (hl)
+        ld      a,(BOSS_SLOT)
+        bit     3,a
+        ret     z
+        dec     (hl)
+        ret
+
+L_BB9C:                 ; BB9C
+        inc     (hl)
+        inc     (hl)
+        inc     (hl)
+        ld      a,(BOSS_SLOT)
+        bit     3,a
+        ret     z
+        inc     (hl)
+        ret
+
+L_BBA7:                 ; BBA7
+        .word   BOSS_SHOT_MODE0
+        .word   BOSS_SHOT_MODE1
+        .word   BOSS_SHOT_MODE2
+        .word   BOSS_SHOT_MODE3
+        .incbin "main_bank0.bin", 0x3BAF, 0x0020
 ; clears ENEMY2B_SHOTS; sets them up only if group 2 is nonzero and ENEMY_SWAP b4
 ENEMY2B_SHOTS_INIT:     ; BBCF
         ld      hl,ENEMY2B_SHOTS
@@ -5707,7 +6937,8 @@ L_BBEA:                 ; BBEA
         jr      nz,L_BBEA
         ret
 
-L_BC15:                 ; BC15
+; steps ENEMY2B_SHOTS
+ENEMY2B_SHOTS_UPDATE:   ; BC15
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
         or      a
@@ -5746,7 +6977,7 @@ L_BC42:                 ; BC42
         call    ADD_HL_A
         bit     3,(hl)
         jp      z,L_BE78
-        call    L_8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jp      nz,L_BCBB
         ld      (ix+12),0x1E
@@ -5766,7 +6997,7 @@ L_BC42:                 ; BC42
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
-        call    0x1529
+        call    OBJ_PTR
         ld      a,(de)
         ld      (hl),a
         inc     hl
@@ -5794,9 +7025,9 @@ L_BCAA:                 ; BCAA
         jp      L_BE78
 
 L_BCBB:                 ; BCBB
-        call    L_8838
+        call    ENEMY_SPEED_NEXT
         bit     3,(ix+0)
-        jp      nz,L_BDEC
+        jp      nz,ENEMY2B_SHOT_ANIM
         bit     2,(ix+0)
         jr      z,L_BCD1
         bit     1,(ix+0)
@@ -5812,25 +7043,26 @@ L_BCD1:                 ; BCD1
         and     a
         jp      nz,L_BE78
         bit     2,(ix+0)
-        jp      z,L_BDEC
+        jp      z,ENEMY2B_SHOT_ANIM
 L_BCEB:                 ; BCEB
         ld      a,(ix+7)
-        ld      hl,0xBE8F
-        call    0x0DA7
+        ld      hl,L_BE8F
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-L_BCF6:                 ; BCF6
+; the shot flies left (cells at X-0D, X-9)
+ENEMY2B_SHOT_FLY_L:     ; BCF6
         ld      a,(ix+13)
         or      a
-        jp      z,L_BDEC
+        jp      z,ENEMY2B_SHOT_ANIM
         ld      b,a
 L_BCFE:                 ; BCFE
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         bit     1,(ix+0)
         jr      z,L_BD15
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         ld      b,(hl)
@@ -5842,21 +7074,21 @@ L_BD15:                 ; BD15
         sub     0x0D
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_BD3D
         ld      a,(ix+2)
         sub     0x09
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_BD3D
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
         pop     bc
         djnz    L_BCFE
-        jp      L_BDEC
+        jp      ENEMY2B_SHOT_ANIM
 
 L_BD3D:                 ; BD3D
         pop     bc
@@ -5871,19 +7103,20 @@ L_BD3D:                 ; BD3D
         jp      nz,L_BE60
         bit     1,(hl)
         jp      nz,L_BE60
-        jp      L_BDEC
+        jp      ENEMY2B_SHOT_ANIM
 
-L_BD5E:                 ; BD5E
+; the shot flies right (cells at X+0C, X+8)
+ENEMY2B_SHOT_FLY_R:     ; BD5E
         ld      a,(ix+13)
         or      a
-        jp      z,L_BDEC
+        jp      z,ENEMY2B_SHOT_ANIM
         ld      b,a
 L_BD66:                 ; BD66
         push    bc
-        call    0x1537
+        call    OBJ_POS_LOAD
         bit     1,(ix+0)
         jr      z,L_BD7D
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         ld      a,(hl)
@@ -5895,21 +7128,21 @@ L_BD7D:                 ; BD7D
         add     a,0x0C
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_BDA5
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_BDA5
-        call    0x1529
+        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
         pop     bc
         djnz    L_BD66
-        jp      L_BDEC
+        jp      ENEMY2B_SHOT_ANIM
 
 L_BDA5:                 ; BDA5
         pop     bc
@@ -5924,12 +7157,12 @@ L_BDA5:                 ; BDA5
         jp      nz,L_BE60
         bit     1,(hl)
         jp      nz,L_BE60
-        jp      L_BDEC
+        jp      ENEMY2B_SHOT_ANIM
 
 L_BDC6:                 ; BDC6
         pop     bc
         set     3,(ix+0)
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      a,(ix+8)
         xor     0x02
         ld      (ix+8),a
@@ -5945,7 +7178,8 @@ L_BDC6:                 ; BDC6
         set     6,(hl)
         jp      L_BE78
 
-L_BDEC:                 ; BDEC
+; animation and launch of the shot
+ENEMY2B_SHOT_ANIM:      ; BDEC
         ld      hl,0xBE97
         bit     7,(ix+0)
         jr      nz,L_BDFB
@@ -5974,7 +7208,7 @@ L_BE1D:                 ; BE1D
         call    ANIM_STEP
         jr      nz,L_BE31
         set     2,(ix+0)
-        call    0x1556
+        call    IX_SPEED_CLEAR
         jr      L_BE78
 
 L_BE31:                 ; BE31
@@ -6006,8 +7240,8 @@ L_BE5B:                 ; BE5B
         jr      L_BE78
 
 L_BE60:                 ; BE60
-        call    0x154C
-        call    0x1556
+        call    OBJ_HIDE
+        call    IX_SPEED_CLEAR
         ld      (ix+1),a
         ld      (ix+2),a
         ld      (ix+0),a
@@ -6031,7 +7265,12 @@ L_BE78:                 ; BE78
         jp      nz,L_BC38
         ret
 
-        .incbin "main_bank0.bin", 0x3E8F, 0x001A
+L_BE8F:                 ; BE8F
+        .word   ENEMY2B_SHOT_ANIM
+        .word   ENEMY2B_SHOT_FLY_R
+        .word   ENEMY2B_SHOT_ANIM
+        .word   ENEMY2B_SHOT_FLY_L
+        .incbin "main_bank0.bin", 0x3E97, 0x0012
 L_BEA9:                 ; BEA9
         ld      hl,0xF446
         ld      (hl),0x04
@@ -6051,7 +7290,7 @@ L_BEC6:                 ; BEC6
         rst     0x18
 L_BEC9:                 ; BEC9
         ld      a,(0xF445)
-        call    0x0D8E
+        call    MUL64_DE
         ld      a,(0xF446)
         add     a,a
         ld      hl,0xCD00
@@ -6098,7 +7337,7 @@ L_BF03:                 ; BF03
         jr      nz,L_BEB8
         ld      (hl),0x00
         ld      a,(0xF445)
-        call    0x0D8E
+        call    MUL64_DE
         ld      a,(0xF446)
         add     a,a
         ld      hl,0xCD00
@@ -6143,7 +7382,7 @@ L_BF75:                 ; BF75
         ld      hl,0xE2D5
         ld      de,0x0004
         ld      b,0x07
-        call    0x18A5
+        call    GFX_GRID_FILL
         ld      de,0xBFE3
         ld      hl,0xE2D5
         ld      b,0x07
@@ -6168,7 +7407,7 @@ L_BF88:                 ; BF88
 L_BFA3:                 ; BFA3
         ld      bc,0x071D
         ld      e,0x04
-        call    0x14C0
+        call    SPRITE_GRID
         ld      hl,0xF448
         set     1,(hl)
         ld      c,0x13

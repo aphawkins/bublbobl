@@ -21,6 +21,7 @@ Three stages take Taito's 1986 arcade Bubble Bobble from ROMs to a C# game in
 | 2026-10-15 | The repo holds no ROM bytes. `src\` contains only disassembled code and labels; every other range is pulled in with `.incbin` from the user's verified ROM images at build time. |
 | 2026-10-15 | The assembler is GNU Binutils (`z80-elf`, `m68hc11-elf`), built in WSL, instead of the Macroassembler AS. |
 | 2026-10-15 | The project owner reviews every commit. Agents leave their work uncommitted for review and commit only when the project owner asks. |
+| 2026-10-17 | The 16-bit rendition's arcade sound starts with a **generic FM synthesiser** in `SharpKind.Audio` (§3.5 D), driven by the patches and sequences decoded in EXTRACTION_PLAN Phase 7. It does not copy the YM chips' internals. Chip-accurate emulation (C) stays an option for later. This replaces the earlier recommendation of A first. |
 
 These decisions need entries in the repo's `docs/decisions.md`, with the old rule marked
 as superseded (see §3.1).
@@ -132,9 +133,12 @@ SoundFont, and WAV. Options:
 | A. WAV per sound command, recorded from MAME (`-wavwrite`, with each command written to `FA00`) | Exact | Small | Fits the 16-bit tier's WAV support. Loops need loop points |
 | B. MIDI from the decoded sequences (EXTRACTION_PLAN Phase 7) | Notes are exact, the FM voices are not | Medium | Can be edited. Plays through the existing SoundFont path |
 | C. FM chip emulation in `SharpKind.Emulation`, which plays the sound CPU's data | Exact | Large | Needs a Z80 (§3.6) and two FM chip models |
+| D. A generic FM synthesiser in `SharpKind.Audio`, playing the decoded sequences and patches | Notes and patch parameters are exact; the timbre is close, not the same | Medium | Operators, algorithms and envelopes only, with no chip lookup tables. Written clean room from public FM documentation. Needs Phase 7's decode |
 
-Recommendation: A first, so the rendition has sound early. Choose B or C later, if they
-are needed.
+Recommendation (2026-10-17): D first. It needs Phase 7's sequence format and the FM patch
+tables decoded, and it will sound like FM but not like the YM2203 and YM3526. Compare it with
+MAME recordings (A) as the reference, and tighten the parts that differ. Move to C only if D
+cannot get close enough. A stays a quick way to have sound before D is ready.
 
 ### 3.6 Proof: the oracle and golden captures
 The existing port proves each routine against `Rebb64Machine`, which runs the real C64 game

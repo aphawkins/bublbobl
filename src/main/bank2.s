@@ -116,7 +116,7 @@ L_8132:                 ; 8132
 L_8192:                 ; 8192
         ld      iy,0x819B
         ld      b,0x16
-        jp      0x0EAA
+        jp      PRINT_TEXTS
 
         .incbin "main_bank2.bin", 0x019B, 0x0128
 L_82C3:                 ; 82C3
@@ -185,7 +185,7 @@ L_837C:                 ; 837C
 L_8380:                 ; 8380
         ld      a,(0xF449)
         ld      iy,0xC46E
-        call    0x0FC2
+        call    DECIMAL3_DRAW
         ld      a,(IN1_COPY)
         bit     6,a
         jr      z,L_8396
@@ -257,7 +257,7 @@ L_83F6:                 ; 83F6
 
 L_8404:                 ; 8404
         ld      b,0x03
-        ld      hl,POINTS_FLAGS
+        ld      hl,0x8463
 L_8409:                 ; 8409
         ld      e,(hl)
         inc     hl
@@ -351,8 +351,8 @@ POINTS_RUN:             ; 8499
         ld      (hl),0x13
         ld      a,(POINTS_KIND)
         ld      b,0x05
-        call    0x0DB1
-        ld      de,POINTS_ITEMS
+        call    MUL8
+        ld      de,0xB389
         add     hl,de
         ld      b,(hl)
         inc     hl
@@ -374,7 +374,7 @@ L_84F5:                 ; 84F5
         ret
 
 L_84FD:                 ; 84FD
-        call    L_A2C0
+        call    ROM_SUM_STEP_N
         ld      hl,(POINTS_TIMER)
         dec     hl
         ld      (POINTS_TIMER),hl
@@ -443,7 +443,7 @@ POINTS_TAKE:            ; 854E
         ret     nc
         ld      a,(POINTS_KIND)
         ld      b,0x05
-        call    0x0DB1
+        call    MUL8
         ld      de,0xB38B
         add     hl,de
         push    hl
@@ -461,7 +461,7 @@ L_857F:                 ; 857F
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
-        call    0x41EC
+        call    PLAYER_SCORE_UPDATE
         ld      c,0x20
         call    SOUND_PUSH
         ld      hl,0xE5F7
@@ -536,7 +536,7 @@ SPECIAL_PICK:           ; 85EB
 
 L_8611:                 ; 8611
         ld      b,0x36
-        ld      hl,SPECIAL_RULES
+        ld      hl,0xB4F2
 L_8616:                 ; 8616
         ld      e,(hl)
         inc     hl
@@ -545,7 +545,7 @@ L_8616:                 ; 8616
         push    hl
         push    hl
         ld      a,(DIFFICULTY)
-        ld      hl,SPECIAL_CLASS
+        ld      hl,0x8667
         call    ADD_HL_A
         ld      a,(hl)
         pop     hl
@@ -632,8 +632,8 @@ SPECIAL_RUN:            ; 8686
         ld      (hl),0x13
         ld      a,(SPECIAL_KIND)
         ld      b,0x05
-        call    0x0DB1
-        ld      de,SPECIAL_ITEMS
+        call    MUL8
+        ld      de,0xB66C
         add     hl,de
         ld      b,(hl)
         inc     hl
@@ -721,7 +721,7 @@ SPECIAL_TAKE:           ; 873E
         ret     nc
         ld      a,(SPECIAL_KIND)
         ld      b,0x05
-        call    0x0DB1
+        call    MUL8
         ld      de,0xB66E
         add     hl,de
         push    hl
@@ -741,7 +741,7 @@ L_876F:                 ; 876F
         ld      d,(hl)
         ld      a,(ix+9)
         ld      (0xF460),a
-        call    0x41EC
+        call    PLAYER_SCORE_UPDATE
         ld      hl,0x0078
         ld      (SPECIAL_TIMER),hl
         ld      hl,SPECIAL_STATE
@@ -761,15 +761,570 @@ L_876F:                 ; 876F
 L_87A6:                 ; 87A6
         ld      a,(SPECIAL_KIND)
         ld      hl,SPECIAL_EFFECTS
-        call    0x0DA7
+        call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-        .incbin "main_bank2.bin", 0x07B1, 0x034E
+L_87B1:                 ; 87B1
+        call    BANK2_CHECK
+        ld      hl,0xE5EB
+        inc     (hl)
+        ld      (ix+49),0x80
+        ret
+
+L_87BD:                 ; 87BD
+        call    ROM_SUM_STEP_H
+        ld      hl,0xE5E9
+        inc     (hl)
+        ld      (ix+47),0x06
+        ret
+
+L_87C9:                 ; 87C9
+        call    ROM_SUM_STEP_I
+        ld      hl,0xE5EA
+        inc     (hl)
+        ld      (ix+46),0x05
+        ld      a,(0x0004)
+        ld      de,START
+        sub     e
+        ret     z
+        push    af
+        push    ix
+L_87DF:                 ; 87DF
+        call    ROM_SUM_STEP_J
+        ld      b,0x03
+        xor     a
+        ld      hl,0x0000
+L_87E8:                 ; 87E8
+        add     a,(hl)
+        inc     hl
+        djnz    L_87E8
+        sub     0x3E
+        jr      z,L_87F2
+        push    ix
+L_87F2:                 ; 87F2
+        ld      (ix+48),0x13
+        ld      (ix+44),0x01
+        xor     a
+        ld      (ix+31),a
+        ret
+
+L_87FF:                 ; 87FF
+        call    ROM_SUM_STEP_L
+        ld      a,(0x0002)
+        bit     3,a
+        jr      nz,L_880A
+        push    hl
+L_880A:                 ; 880A
+        ld      hl,0xE5ED
+        inc     (hl)
+        ld      hl,0xE341
+        ld      (hl),0xFF
+        ld      hl,TIMER_RUN
+        ld      (hl),0xFF
+        ret
+
+L_8819:                 ; 8819
+        call    ROM_SUM_STEP_K
+        ld      hl,0xF59E
+        ld      (hl),0x01
+        ret
+
+L_8822:                 ; 8822
+        call    ROM_SUM_STEP_M
+        ld      hl,0xE350
+        ld      (hl),0x03
+        jr      L_883E
+
+L_882C:                 ; 882C
+        call    ROM_SUM_STEP_N
+        ld      hl,0xE350
+        ld      (hl),0x05
+        jr      L_883E
+
+L_8836:                 ; 8836
+        call    ROM_SUM_STEP_O
+        ld      hl,0xE350
+        ld      (hl),0x07
+L_883E:                 ; 883E
+        ld      hl,0xE5EC
+        inc     (hl)
+        ld      a,0x04
+        rst     0x08
+        ld      a,0x05
+        rst     0x08
+        ld      a,0x02
+        rst     0x08
+        call    0x18BB
+        ld      a,0x02
+        rst     0x10
+        ld      hl,0xE34F
+        ld      (hl),0x01
+        ld      hl,POINTS_FLAG_U
+        ld      (hl),0x01
+        ret
+
+L_885C:                 ; 885C
+        call    ROM_SUM_STEP_P
+        ld      hl,0xF523
+        ld      (hl),0x01
+        ld      hl,0xF521
+        ld      (hl),0xFF
+        ld      hl,0xE737
+        ld      (hl),0x01
+        ld      hl,0xE739
+        ld      (hl),0x03
+        ld      hl,0xE341
+        ld      (hl),0x01
+        ret
+
+L_8879:                 ; 8879
+        ld      hl,0xF523
+        ld      (hl),0x02
+        ld      hl,0xF521
+        ld      (hl),0xFF
+        ld      hl,0xE737
+        ld      (hl),0x01
+        ld      hl,0xE739
+        ld      (hl),0x02
+        ld      hl,0xE341
+        ld      (hl),0x01
+        ret
+
+L_8893:                 ; 8893
+        ld      b,0x03
+        xor     a
+        ld      hl,0x0000
+L_8899:                 ; 8899
+        add     a,(hl)
+        inc     hl
+        djnz    L_8899
+        sub     0x3E
+        jr      z,L_88A3
+        push    ix
+L_88A3:                 ; 88A3
+        ld      hl,0xF523
+        ld      (hl),0x00
+        ld      hl,0xF521
+        ld      (hl),0xFF
+        ld      hl,0xE737
+        ld      (hl),0x01
+        ld      hl,0xE739
+        ld      (hl),0x01
+        ld      hl,0xE341
+        ld      (hl),0x01
+        ret
+
+L_88BD:                 ; 88BD
+        ld      hl,0xF531
+        ld      (hl),0xFF
+        ld      hl,0xE737
+        ld      (hl),0x01
+        ld      hl,0xE739
+        ld      (hl),0x04
+        ld      hl,0xE341
+        ld      (hl),0x01
+        ret
+
+L_88D2:                 ; 88D2
+        ld      a,i
+        ld      d,a
+        ld      a,(MCU_RAM)
+        ld      e,a
+        ld      hl,IRQ_VECTOR_ENTRY
+        xor     a
+        sbc     hl,de
+        jr      z,L_88E3
+        xor     a
+        rst     0x18
+L_88E3:                 ; 88E3
+        ld      hl,0xF52B
+        ld      (hl),0xFF
+        ld      hl,0xE737
+        ld      (hl),0x01
+        ld      hl,0xE739
+        ld      (hl),0x00
+        ld      hl,0xE341
+        ld      (hl),0x01
+        ret
+
+L_88F8:                 ; 88F8
+        ret
+
+L_88F9:                 ; 88F9
+        call    ROM_SUM_STEP_A
+        set     0,(ix+45)
+        ret
+
+L_8901:                 ; 8901
+        call    ROM_SUM_STEP_C
+        set     1,(ix+45)
+        ret
+
+L_8909:                 ; 8909
+        call    ROM_SUM_STEP_D
+        set     2,(ix+45)
+        ret
+
+L_8911:                 ; 8911
+        call    ROM_SUM_STEP_E
+        ld      hl,0xF590
+        ld      (hl),0x01
+        ld      hl,0xE600
+        inc     (hl)
+        ret
+
+L_891E:                 ; 891E
+        call    EFFECT_C_START
+        ld      hl,0xF595
+        ld      (hl),0x01
+        set     4,(ix+45)
+        ld      hl,0xE5FF
+        inc     (hl)
+        ret
+
+L_892F:                 ; 892F
+        set     6,(ix+45)
+        ld      (ix+40),0x10
+        ret
+
+L_8938:                 ; 8938
+        call    L_8901
+        call    L_8909
+        jp      L_88F9
+
+L_8941:                 ; 8941
+        call    L_8901
+        call    L_8909
+        call    L_88F9
+        call    L_87B1
+        call    L_87BD
+        jp      L_87C9
+
+L_8953:                 ; 8953
+        ld      b,0x03
+        xor     a
+        ld      hl,0x0000
+L_8959:                 ; 8959
+        add     a,(hl)
+        inc     hl
+        djnz    L_8959
+        sub     0x3E
+        jr      z,L_8963
+        push    ix
+L_8963:                 ; 8963
+        ld      a,0x05
+        rst     0x08
+        ld      hl,0xE341
+        ld      (hl),0x01
+        ld      hl,0xE20D
+        ld      a,(BUBBLE_COUNT)
+        add     a,a
+        add     a,a
+        ld      c,a
+        ld      b,0x00
+        call    ZERO_BC
+        push    ix
+        call    L_AA5E
+        pop     ix
+        ld      hl,0xF5B6
+        ld      (hl),0x01
+        set     5,(ix+45)
+        ld      hl,0xE602
+        inc     (hl)
+        ret
+
+L_898E:                 ; 898E
+        call    L_87B1
+        call    L_87BD
+        jp      L_87C9
+
+L_8997:                 ; 8997
+        ld      hl,0xE720
+        ld      (hl),0x01
+        ld      hl,0xE601
+        inc     (hl)
+        ld      a,(0x0005)
+        ld      de,START
+        sub     d
+        ret     z
+        pop     af
+        pop     bc
+L_89AA:                 ; 89AA
+        push    ix
+        ld      hl,0xF47B
+        ld      (hl),0x00
+        call    EFFECT_A_START
+        pop     ix
+        ld      hl,0xF47C
+        ld      (hl),0x01
+        ret
+
+L_89BC:                 ; 89BC
+        ld      hl,0xF676
+        ld      (hl),0x0A
+        ret
+
+L_89C2:                 ; 89C2
+        ld      hl,0xF5AC
+        ld      (hl),0x01
+        ret
+
+L_89C8:                 ; 89C8
+        ld      b,0x03
+        xor     a
+        ld      hl,0x0000
+L_89CE:                 ; 89CE
+        add     a,(hl)
+        inc     hl
+        djnz    L_89CE
+        sub     0x3E
+        jr      z,L_89D8
+        push    ix
+L_89D8:                 ; 89D8
+        push    ix
+        call    EFFECT_B_START
+        pop     ix
+        ld      hl,0xF4CB
+        ld      (hl),0x01
+        ret
+
+L_89E5:                 ; 89E5
+        ld      hl,0xF46D
+        ld      (hl),0x0A
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_89F0:                 ; 89F0
+        ld      hl,0xF46D
+        ld      (hl),0x09
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_89FB:                 ; 89FB
+        ld      hl,0xF46D
+        ld      (hl),0x08
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_8A06:                 ; 8A06
+        ld      hl,0xF46D
+        ld      (hl),0x07
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_8A11:                 ; 8A11
+        ld      hl,0xF46D
+        ld      (hl),0x06
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ld      hl,(0x0004)
+        ld      de,START
+        xor     a
+        sbc     hl,de
+        ret     z
+        exx
+        ex      (sp),hl
+        ret
+
+L_8A28:                 ; 8A28
+        ld      hl,0xF46D
+        ld      (hl),0x05
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_8A33:                 ; 8A33
+        ld      hl,0xF46D
+        ld      (hl),0x04
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_8A3E:                 ; 8A3E
+        ld      hl,0xF46D
+        ld      (hl),0x03
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_8A49:                 ; 8A49
+        ld      hl,0xF46D
+        ld      (hl),0x02
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_8A54:                 ; 8A54
+        ld      hl,0xF46D
+        ld      (hl),0x01
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_8A5F:                 ; 8A5F
+        ld      hl,0xF46D
+        ld      (hl),0x00
+        ld      hl,0xF46B
+        ld      (hl),0x01
+        ret
+
+L_8A6A:                 ; 8A6A
+        ld      hl,0xE603
+        ld      (hl),0x01
+        ret
+
+L_8A70:                 ; 8A70
+        ld      hl,0xF464
+        ld      (hl),0x01
+        ld      hl,0xF465
+        ld      (hl),0x30
+        ret
+
+L_8A7B:                 ; 8A7B
+        ld      hl,0xF464
+        ld      (hl),0x01
+        ld      hl,0xF465
+        ld      (hl),0x31
+        ret
+
+L_8A86:                 ; 8A86
+        ld      hl,0xF464
+        ld      (hl),0x01
+        ld      hl,0xF465
+        ld      (hl),0x32
+        ret
+
+L_8A91:                 ; 8A91
+        push    ix
+        call    EFFECT_B_START
+        pop     ix
+        ld      hl,0xF4CB
+        ld      (hl),0x01
+        ld      hl,0xF4CD
+        ld      (hl),0x01
+        ret
+
+L_8AA3:                 ; 8AA3
+        ld      hl,0xF44D
+        ld      (hl),0x01
+        ret
+
+L_8AA9:                 ; 8AA9
+        ld      hl,SKIP_KINDS
+        ld      (hl),0x03
+        jp      L_88BD
+
+L_8AB1:                 ; 8AB1
+        ld      hl,0xF448
+        ld      (hl),0x81
+        ret
+
+L_8AB7:                 ; 8AB7
+        ld      hl,0xE724
+        ld      (hl),0x00
+        ld      hl,0xE723
+        ld      (hl),0x29
+        ret
+
+L_8AC2:                 ; 8AC2
+        ld      hl,0xE724
+        ld      (hl),0x01
+        ld      hl,0xE723
+        ld      (hl),0x29
+        ret
+
+L_8ACD:                 ; 8ACD
+        ld      hl,0xE724
+        ld      (hl),0x02
+        ld      hl,0xE723
+        ld      (hl),0x29
+        ret
+
+L_8AD8:                 ; 8AD8
+        ld      a,(ROUND_MAIN)
+        cp      0x45
+        ret     nc
+        ld      b,a
+        ld      a,0x45
+        sub     b
+        ld      (0xE350),a
+        ld      hl,DIFFICULTY
+        ld      (hl),0x1E
+        jp      L_883E
+
+L_8AED:                 ; 8AED
+        push    ix
+        call    EFFECT_B_START
+        pop     ix
+        ld      hl,0xF4CB
+        ld      (hl),0x01
+        ld      hl,0xF4CD
+        ld      (hl),0xFF
+        ret
+
 ; word table: SPECIAL_TAKE jumps to entry SPECIAL_KIND
 SPECIAL_EFFECTS:        ; 8AFF
-        .incbin "main_bank2.bin", 0x0AFF, 0x006C
-L_8B6B:                 ; 8B6B
+        .word   L_87B1
+        .word   L_87BD
+        .word   L_87C9
+        .word   L_87DF
+        .word   L_87FF
+        .word   L_8819
+        .word   L_8822
+        .word   L_882C
+        .word   L_8836
+        .word   L_885C
+        .word   L_8879
+        .word   L_8893
+        .word   L_88BD
+        .word   L_88D2
+        .word   L_88F8
+        .word   L_88F9
+        .word   L_8901
+        .word   L_8909
+        .word   L_8911
+        .word   L_891E
+        .word   L_892F
+        .word   L_8938
+        .word   L_8941
+        .word   L_8953
+        .word   L_898E
+        .word   L_8997
+        .word   L_89AA
+        .word   L_89BC
+        .word   L_89C2
+        .word   L_89C8
+        .word   L_89E5
+        .word   L_89F0
+        .word   L_89FB
+        .word   L_8A06
+        .word   L_8A11
+        .word   L_8A28
+        .word   L_8A33
+        .word   L_8A3E
+        .word   L_8A49
+        .word   L_8A54
+        .word   L_8A5F
+        .word   L_8A6A
+        .word   L_8A70
+        .word   L_8A7B
+        .word   L_8A86
+        .word   L_8A91
+        .word   L_8AA3
+        .word   L_8AA9
+        .word   L_8AB1
+        .word   L_8AB7
+        .word   L_8AC2
+        .word   L_8ACD
+        .word   L_8AD8
+        .word   L_8AED
+; one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the REC_F46B code)
+ROM_SUM_STEP_H:         ; 8B6B
         ld      a,(0xF466)
         and     a
         jr      nz,L_8B81
@@ -801,13 +1356,13 @@ L_8B99:                 ; 8B99
         cp      (hl)
         ret     z
         push    hl
-; round start, called by OBJECTS_TASK: clears the state record at F46B
+; round start, called by OBJECTS_TASK: clears the state record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0
 REC_F46B_INIT:          ; 8BA7
         ld      hl,0xF46B
         ld      bc,0x000B
         jp      ZERO_BC
 
-; each frame: steps the record at F46B
+; each frame: steps the record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0
 REC_F46B_RUN:           ; 8BB0
         ld      a,(ATTRACT)
         and     a
@@ -828,9 +1383,9 @@ REC_F46B_RUN:           ; 8BB0
         bit     1,a
         ret     nz
         ld      hl,0xE2E5
-        ld      de,TASK_KILL
+        ld      de,0x0008
         ld      b,0x04
-        call    0x18A5
+        call    GFX_GRID_FILL
         ld      de,0x8D5C
         ld      hl,0xE2E5
         ld      b,0x04
@@ -859,7 +1414,7 @@ L_8BE7:                 ; 8BE7
         ld      c,a
         ld      b,0x04
         ld      e,0x08
-        call    0x14C0
+        call    SPRITE_GRID
         ld      c,0x1B
         call    SOUND_PUSH
         ld      hl,0xF46C
@@ -877,7 +1432,7 @@ L_8C22:                 ; 8C22
         inc     hl
         inc     hl
         djnz    L_8C22
-        call    L_909A
+        call    ROM_SUM_STEP_K
         ld      a,(0xE2E5)
         cp      0x28
         ret     nz
@@ -970,7 +1525,7 @@ L_8CAF:                 ; 8CAF
 
 L_8CB8:                 ; 8CB8
         ld      hl,0xE2E5
-        ld      bc,TASK_START
+        ld      bc,0x0010
         call    ZERO_BC
         ld      hl,0xF46B
         ld      (hl),0x00
@@ -996,8 +1551,8 @@ L_8CD1:                 ; 8CD1
         ret     nc
         ld      a,(0xF46D)
         ld      hl,0x8D46
-        call    0x0DA7
-        call    0x41EC
+        call    TABLE_WORD
+        call    PLAYER_SCORE_UPDATE
         ld      a,(ix+9)
         ld      (0xF46F),a
         ld      c,0x25
@@ -1007,7 +1562,8 @@ L_8CD1:                 ; 8CD1
         ret
 
         .incbin "main_bank2.bin", 0x0D01, 0x0063
-L_8D64:                 ; 8D64
+; as ROM_SUM_STEP_H: pointer F477, sum F479, flag F476
+ROM_SUM_STEP_I:         ; 8D64
         ld      a,(0xF476)
         and     a
         jr      nz,L_8D7A
@@ -1042,6 +1598,8 @@ L_8D95:                 ; 8D95
         cp      (hl)
         ret     z
         push    de
+; unless ATTRACT: clears the effect A records at F47C (0x4A bytes) and builds the 8 records at F47E (6 bytes each)
+EFFECT_A_START:         ; 8DA3
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -1062,7 +1620,7 @@ L_8DBA:                 ; 8DBA
         ld      (ix+4),h
         inc     hl
         ld      a,d
-        call    0x0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         ld      (ix+7),a
@@ -1127,7 +1685,7 @@ L_8E14:                 ; 8E14
         bit     0,(hl)
         jp      nz,L_8F0C
         set     0,(hl)
-        call    0x1529
+        call    OBJ_PTR
         ld      (hl),0xF0
         inc     hl
         inc     hl
@@ -1148,8 +1706,8 @@ L_8E60:                 ; 8E60
         jp      L_8F0C
 
 L_8E67:                 ; 8E67
-        call    0x1537
-        call    L_B4B5
+        call    OBJ_POS_LOAD
+        call    ROM_SUM_STEP_P
         ld      a,(0xF47B)
         and     a
         jr      nz,L_8E93
@@ -1181,7 +1739,7 @@ L_8E93:                 ; 8E93
         ld      a,(ix+7)
         call    SPRITE
 L_8EA6:                 ; 8EA6
-        call    0x1529
+        call    OBJ_PTR
         dec     (hl)
         dec     (hl)
         dec     (hl)
@@ -1216,16 +1774,16 @@ L_8ED0:                 ; 8ED0
         cp      0xF0
         jr      nc,L_8F0C
 L_8EDC:                 ; 8EDC
-        call    0x154C
+        call    OBJ_HIDE
         ld      (ix+0),0x00
         ld      (ix+6),0x01
         jr      L_8F0C
 
 L_8EE9:                 ; 8EE9
         ld      a,(0xF460)
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      de,0x0250
-        call    0x2FB3
+        call    SCORE_UPDATE
         ld      (ix+0),0x01
         ld      hl,(IRQ_VECTOR_ENTRY)
         ld      de,IRQ_HANDLER
@@ -1245,7 +1803,8 @@ L_8F0C:                 ; 8F0C
         jp      nz,L_8E14
         ret
 
-L_8F17:                 ; 8F17
+; as ROM_SUM_STEP_H: pointer F4C7, sum F4C9, flag F4C6
+ROM_SUM_STEP_J:         ; 8F17
         ld      a,(0xF4C6)
         and     a
         jr      nz,L_8F2D
@@ -1279,7 +1838,8 @@ L_8F45:                 ; 8F45
         ex      de,hl
         jp      (hl)
 
-L_8F54:                 ; 8F54
+; unless ATTRACT: clears F4CB (0x43 bytes) and builds the 8 effect B records at F4CE
+EFFECT_B_START:         ; 8F54
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -1300,7 +1860,7 @@ L_8F6B:                 ; 8F6B
         ld      (ix+4),h
         inc     hl
         ld      a,d
-        call    0x0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         ld      (ix+6),a
@@ -1319,7 +1879,7 @@ L_8F8D:                 ; 8F8D
         add     a,0x14
         ld      b,a
         ex      de,hl
-        ld      de,TASK_KILL
+        ld      de,0x0008
         add     ix,de
         ex      de,hl
         pop     af
@@ -1357,7 +1917,7 @@ L_8FBB:                 ; 8FBB
         bit     0,(hl)
         jp      nz,L_908F
         set     0,(hl)
-        call    0x1529
+        call    OBJ_PTR
         ld      (hl),0xF0
         inc     hl
         inc     hl
@@ -1402,8 +1962,8 @@ L_9025:                 ; 9025
         jp      L_908F
 
 L_9037:                 ; 9037
-        call    0x1537
-        call    0x1529
+        call    OBJ_POS_LOAD
+        call    OBJ_PTR
         dec     (hl)
         dec     (hl)
         dec     (hl)
@@ -1438,28 +1998,29 @@ L_9064:                 ; 9064
         cp      0xF0
         jr      nc,L_908F
 L_9070:                 ; 9070
-        call    0x154C
+        call    OBJ_HIDE
         ld      (ix+0),0x00
         ld      (ix+5),0x01
         jr      L_908F
 
 L_907D:                 ; 907D
         ld      a,(0xF460)
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      de,0x1000
-        call    0x2FB3
+        call    SCORE_UPDATE
         ld      (ix+0),0x01
         jr      L_9037
 
 L_908F:                 ; 908F
-        ld      de,TASK_KILL
+        ld      de,0x0008
         add     ix,de
         pop     bc
         dec     b
         jp      nz,L_8FBB
         ret
 
-L_909A:                 ; 909A
+; as ROM_SUM_STEP_H: pointer F50F, sum F511, flag F50E
+ROM_SUM_STEP_K:         ; 909A
         ld      a,(0xF50E)
         and     a
         jr      nz,L_90B0
@@ -1498,7 +2059,7 @@ L_90CF:                 ; 90CF
         cp      (hl)
         ret     z
         push    af
-; round start, called by OBJECTS_TASK: clears the state record at F513
+; round start, called by OBJECTS_TASK: clears the state record at F513. Part of the effect started by special kind 0E (F513 = FF, per notes/levels.md)
 REC_F513_INIT:          ; 90DD
         ld      hl,0xF513
         ld      bc,0x0006
@@ -1645,9 +2206,9 @@ L_9192:                 ; 9192
         ld      (ix+22),0x00
         pop     ix
         ld      a,(ix+9)
-        ld      (0xE5D6),a
-        ld      de,SET_E2F8_1A
-        call    0x2FB3
+        ld      (PLAYER_NOW),a
+        ld      de,0x0300
+        call    SCORE_UPDATE
         ld      hl,0xE2B4
         ld      (hl),0x13
         ld      b,0x7C
@@ -1682,7 +2243,7 @@ L_9207:                 ; 9207
         jr      z,L_9248
         res     1,(ix+19)
         ld      de,0x0100
-        call    0x41EC
+        call    PLAYER_SCORE_UPDATE
 L_9248:                 ; 9248
         ld      l,(ix+20)
         ld      h,(ix+21)
@@ -1701,7 +2262,7 @@ L_9248:                 ; 9248
         ld      a,0x30
         ld      (SOUND_CMD),a
 L_926B:                 ; 926B
-        call    L_8F17
+        call    ROM_SUM_STEP_J
         inc     (ix+22)
         ld      a,(ix+22)
         cp      0x03
@@ -1788,9 +2349,9 @@ L_92ED:                 ; 92ED
         ret
 
 L_9312:                 ; 9312
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9DE),hl
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9FE),hl
         ret
 
@@ -1803,7 +2364,8 @@ L_931F:                 ; 931F
         dec     hl
         bit     0,(hl)
         ret     nz
-L_932D:                 ; 932D
+; as ROM_SUM_STEP_H: pointer F51D, sum F51F, flag F51C
+ROM_SUM_STEP_L:         ; 932D
         ld      a,(0xF51C)
         and     a
         jr      nz,L_9343
@@ -1837,20 +2399,492 @@ L_935B:                 ; 935B
         exx
         jp      (hl)
 
-; round start, called by OBJECTS_TASK: clears the state record at F521
+; round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A
 REC_F521_INIT:          ; 936A
         ld      hl,0xF521
         ld      bc,0x0005
         jp      ZERO_BC
 
-        .incbin "main_bank2.bin", 0x1373, 0x0373
-; round start, called by OBJECTS_TASK: clears the state record at F52B
+L_9373:                 ; 9373
+        ld      a,(0xF521)
+        and     a
+        ret     z
+        ld      a,(0xF522)
+        bit     0,a
+        jr      nz,L_93F1
+        bit     1,a
+        jp      nz,L_9442
+        bit     2,a
+        jp      nz,L_9499
+        bit     3,a
+        jp      nz,L_9579
+        bit     4,a
+        jp      nz,L_95C7
+        bit     5,a
+        jp      nz,L_9615
+        ld      hl,0xF524
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x05
+        ret     nz
+        ld      (hl),0x00
+        ld      b,0x0B
+        ld      iy,0xCDC6
+L_93A8:                 ; 93A8
+        push    bc
+        push    iy
+        ld      b,0x0D
+L_93AD:                 ; 93AD
+        ld      a,(iy+0)
+        or      (iy+1)
+        or      (iy+64)
+        or      (iy+65)
+        or      (iy+2)
+        or      (iy+3)
+        or      (iy+66)
+        or      (iy+67)
+        jr      nz,L_93D5
+        ld      hl,0xE73C
+        inc     (hl)
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0xAA
+        call    L_968B
+L_93D5:                 ; 93D5
+        ld      de,0x0080
+        add     iy,de
+        djnz    L_93AD
+        pop     iy
+        pop     bc
+        inc     iy
+        inc     iy
+        inc     iy
+        inc     iy
+        djnz    L_93A8
+        ld      hl,0xF522
+        ld      (hl),0x00
+        set     0,(hl)
+        ret
+
+L_93F1:                 ; 93F1
+        call    ROM_SUM_STEP_M
+        ld      hl,0xF524
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x05
+        ret     nz
+        ld      (hl),0x00
+        ld      b,0x0B
+        ld      iy,0xCDC6
+L_9404:                 ; 9404
+        push    bc
+        push    iy
+        ld      b,0x0D
+L_9409:                 ; 9409
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0xAA
+        cp      (iy+0)
+        jr      nz,L_9426
+        ld      a,0x00
+        cp      (iy+1)
+        jr      nz,L_9426
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0x9E
+        call    L_968B
+L_9426:                 ; 9426
+        ld      de,0x0080
+        add     iy,de
+        djnz    L_9409
+        pop     iy
+        pop     bc
+        inc     iy
+        inc     iy
+        inc     iy
+        inc     iy
+        djnz    L_9404
+        ld      hl,0xF522
+        ld      (hl),0x00
+        set     1,(hl)
+        ret
+
+L_9442:                 ; 9442
+        call    ROM_SUM_STEP_M
+        ld      hl,0xF524
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x05
+        ret     nz
+        ld      (hl),0x00
+        ld      b,0x0B
+        ld      iy,0xCDC6
+L_9455:                 ; 9455
+        push    bc
+        push    iy
+        ld      b,0x0D
+L_945A:                 ; 945A
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0x9E
+        cp      (iy+0)
+        jr      nz,L_9477
+        ld      a,0x00
+        cp      (iy+1)
+        jr      nz,L_9477
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0x92
+        call    L_968B
+L_9477:                 ; 9477
+        ld      de,0x0080
+        add     iy,de
+        djnz    L_945A
+        pop     iy
+        pop     bc
+        inc     iy
+        inc     iy
+        inc     iy
+        inc     iy
+        djnz    L_9455
+        ld      hl,0x0708
+        ld      (0xF524),hl
+        ld      hl,0xF522
+        ld      (hl),0x00
+        set     2,(hl)
+        ret
+
+L_9499:                 ; 9499
+        ld      hl,(0xF524)
+        dec     hl
+        ld      (0xF524),hl
+        ld      a,l
+        or      h
+        jr      nz,L_94AC
+        ld      hl,0xF522
+        ld      (hl),0x00
+        set     3,(hl)
+        ret
+
+L_94AC:                 ; 94AC
+        ld      ix,P1_REC
+        bit     0,(ix+0)
+        jr      z,L_94C6
+        call    L_94EF
+        jr      nc,L_94C6
+        ld      hl,0xE73A
+        inc     (hl)
+        ld      hl,PLAYER_NOW
+        ld      (hl),0x00
+        jr      L_94DC
+
+L_94C6:                 ; 94C6
+        ld      ix,P2_REC
+        bit     0,(ix+0)
+        ret     z
+        call    L_94EF
+        ret     nc
+        ld      hl,0xE73B
+        inc     (hl)
+        ld      hl,PLAYER_NOW
+        ld      (hl),0x01
+L_94DC:                 ; 94DC
+        ld      de,0x0050
+        call    SCORE_UPDATE
+        ld      c,0x11
+        call    SOUND_PUSH
+        ld      hl,0xFC86
+        dec     hl
+        ld      a,(hl)
+        sub     0x37
+        ret     z
+L_94EF:                 ; 94EF
+        call    OBJ_POS
+        inc     l
+        call    0x16C5
+        inc     hl
+        ld      a,(hl)
+        cp      0x00
+        jr      nz,L_950C
+        dec     hl
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0x92
+        ld      b,0x04
+L_9506:                 ; 9506
+        cp      (hl)
+        jr      z,L_950E
+        inc     a
+        djnz    L_9506
+L_950C:                 ; 950C
+        xor     a
+        ret
+
+L_950E:                 ; 950E
+        push    hl
+        pop     iy
+        xor     a
+        ld      (iy+0),a
+        ld      (iy+1),a
+        ld      a,b
+        cp      0x04
+        jr      z,L_953A
+        cp      0x03
+        jr      z,L_954F
+        cp      0x02
+        jr      z,L_9564
+        xor     a
+        ld      (iy-1),a
+        ld      (iy-2),a
+        ld      (iy-63),a
+        ld      (iy-64),a
+        ld      (iy-65),a
+        ld      (iy-66),a
+        scf
+        ret
+
+L_953A:                 ; 953A
+        xor     a
+        ld      (iy+2),a
+        ld      (iy+3),a
+        ld      (iy+64),a
+        ld      (iy+65),a
+        ld      (iy+66),a
+        ld      (iy+67),a
+        scf
+        ret
+
+L_954F:                 ; 954F
+        xor     a
+        ld      (iy+2),a
+        ld      (iy+3),a
+        ld      (iy-61),a
+        ld      (iy-62),a
+        ld      (iy-63),a
+        ld      (iy-64),a
+        scf
+        ret
+
+L_9564:                 ; 9564
+        xor     a
+        ld      (iy-2),a
+        ld      (iy-1),a
+        ld      (iy+62),a
+        ld      (iy+63),a
+        ld      (iy+64),a
+        ld      (iy+65),a
+        scf
+        ret
+
+L_9579:                 ; 9579
+        ld      hl,0xF524
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x05
+        ret     nz
+        ld      (hl),0x00
+        ld      b,0x0B
+        ld      iy,0xCDC6
+L_9589:                 ; 9589
+        push    bc
+        push    iy
+        ld      b,0x0D
+L_958E:                 ; 958E
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0x92
+        cp      (iy+0)
+        jr      nz,L_95AB
+        ld      a,0x00
+        cp      (iy+1)
+        jr      nz,L_95AB
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0x9E
+        call    L_968B
+L_95AB:                 ; 95AB
+        ld      de,0x0080
+        add     iy,de
+        djnz    L_958E
+        pop     iy
+        pop     bc
+        inc     iy
+        inc     iy
+        inc     iy
+        inc     iy
+        djnz    L_9589
+        ld      hl,0xF522
+        ld      (hl),0x00
+        set     4,(hl)
+        ret
+
+L_95C7:                 ; 95C7
+        ld      hl,0xF524
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x05
+        ret     nz
+        ld      (hl),0x00
+        ld      b,0x0B
+        ld      iy,0xCDC6
+L_95D7:                 ; 95D7
+        push    bc
+        push    iy
+        ld      b,0x0D
+L_95DC:                 ; 95DC
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0x9E
+        cp      (iy+0)
+        jr      nz,L_95F9
+        ld      a,0x00
+        cp      (iy+1)
+        jr      nz,L_95F9
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0xAA
+        call    L_968B
+L_95F9:                 ; 95F9
+        ld      de,0x0080
+        add     iy,de
+        djnz    L_95DC
+        pop     iy
+        pop     bc
+        inc     iy
+        inc     iy
+        inc     iy
+        inc     iy
+        djnz    L_95D7
+        ld      hl,0xF522
+        ld      (hl),0x00
+        set     5,(hl)
+        ret
+
+L_9615:                 ; 9615
+        ld      hl,0xF524
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x05
+        ret     nz
+        ld      (hl),0x00
+        ld      b,0x0B
+        ld      iy,0xCDC6
+L_9625:                 ; 9625
+        push    bc
+        push    iy
+        ld      b,0x0D
+L_962A:                 ; 962A
+        ld      a,(0xF523)
+        add     a,a
+        add     a,a
+        add     a,0xAA
+        cp      (iy+0)
+        jr      nz,L_9656
+        ld      a,0x00
+        cp      (iy+1)
+        jr      nz,L_9656
+        xor     a
+        ld      (iy+0),a
+        ld      (iy+1),a
+        ld      (iy+64),a
+        ld      (iy+65),a
+        ld      (iy+2),a
+        ld      (iy+3),a
+        ld      (iy+66),a
+        ld      (iy+67),a
+L_9656:                 ; 9656
+        ld      de,0x0080
+        add     iy,de
+        djnz    L_962A
+        pop     iy
+        pop     bc
+        inc     iy
+        inc     iy
+        inc     iy
+        inc     iy
+        djnz    L_9625
+        ld      hl,0xF521
+        ld      (hl),0x00
+        ld      hl,0xF522
+        ld      (hl),0x00
+        ld      a,(0xE73E)
+        and     a
+        ret     nz
+        ld      a,0x05
+        rst     0x08
+        ld      hl,0xE20D
+        ld      bc,0x0060
+        call    ZERO_BC
+        ld      hl,0xE738
+        ld      (hl),0x02
+        ret
+
+L_968B:                 ; 968B
+        ld      l,0x00
+        ld      (iy+0),a
+        ld      (iy+1),l
+        inc     a
+        ld      (iy+64),a
+        ld      (iy+65),l
+        inc     a
+        ld      (iy+2),a
+        ld      (iy+3),l
+        inc     a
+        ld      (iy+66),a
+        ld      (iy+67),l
+        ret
+
+; as ROM_SUM_STEP_H: pointer F527, sum F529, flag F526
+ROM_SUM_STEP_M:         ; 96A9
+        ld      a,(0xF526)
+        and     a
+        jr      nz,L_96BF
+        ld      hl,0xF529
+        ld      (hl),0x00
+        ld      hl,0x8000
+        ld      (0xF527),hl
+        ld      hl,0xF526
+        ld      (hl),0x01
+L_96BF:                 ; 96BF
+        ld      de,(0xF527)
+        ld      a,(de)
+        ld      hl,0xF529
+        add     a,(hl)
+        ld      (hl),a
+        inc     de
+        inc     de
+        ld      hl,0x8FCC
+        or      a
+        sbc     hl,de
+        jr      z,L_96D8
+        ld      (0xF527),de
+        ret
+
+L_96D8:                 ; 96D8
+        ld      hl,0xF526
+        ld      (hl),0x00
+        ld      a,(0xF52A)
+        ld      hl,0xF529
+        cp      (hl)
+        ret     z
+        push    de
+; round start, called by OBJECTS_TASK: clears the state record at F52B. Part of the effect started by special kind 0D
 REC_F52B_INIT:          ; 96E6
         ld      hl,0xF52B
         ld      bc,0x0006
         jp      ZERO_BC
 
-; each frame: steps the record at F52B
+; each frame: steps the record at F52B. Part of the effect started by special kind 0D
 REC_F52B_RUN:           ; 96EF
         ld      a,(0xF52B)
         and     a
@@ -2029,7 +3063,7 @@ L_9827:                 ; 9827
         jr      nc,L_9841
         ld      hl,0xE73A
         inc     (hl)
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x00
         jr      L_9857
 
@@ -2041,11 +3075,11 @@ L_9841:                 ; 9841
         ret     nc
         ld      hl,0xE73B
         inc     (hl)
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x01
 L_9857:                 ; 9857
         ld      de,0x0050
-        call    0x2FB3
+        call    SCORE_UPDATE
         ld      c,0x11
         call    SOUND_PUSH
         ret
@@ -2060,7 +3094,7 @@ L_9863:                 ; 9863
         ret
 
 L_9873:                 ; 9873
-        call    0x1530
+        call    OBJ_POS
         inc     l
         call    0x16C5
         inc     hl
@@ -2260,13 +3294,13 @@ L_99C4:                 ; 99C4
         ld      (iy+67),l
         ret
 
-; round start, called by OBJECTS_TASK: clears the state record at F531
+; round start, called by OBJECTS_TASK: clears the state record at F531. Part of the effect started by special kind 0C
 REC_F531_INIT:          ; 99E2
         ld      hl,0xF531
         ld      bc,0x0005
         jp      ZERO_BC
 
-; each frame: steps the record at F531
+; each frame: steps the record at F531. Part of the effect started by special kind 0C
 REC_F531_RUN:           ; 99EB
         ld      a,(0xF531)
         and     a
@@ -2401,7 +3435,7 @@ L_9AD7:                 ; 9AD7
         jr      nc,L_9AF1
         ld      hl,0xE73A
         inc     (hl)
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x00
         jr      L_9B07
 
@@ -2413,17 +3447,17 @@ L_9AF1:                 ; 9AF1
         ret     nc
         ld      hl,0xE73B
         inc     (hl)
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x01
 L_9B07:                 ; 9B07
         ld      de,0x0050
-        call    0x2FB3
+        call    SCORE_UPDATE
         ld      c,0x11
         call    SOUND_PUSH
         ret
 
 L_9B13:                 ; 9B13
-        call    0x1530
+        call    OBJ_POS
         inc     l
         call    0x16C5
         inc     hl
@@ -2639,13 +3673,13 @@ L_9C5F:                 ; 9C5F
         ld      bc,0x0078
         call    ZERO_BC
         ld      hl,0xE20D
-        ld      de,RESET
+        ld      de,0x0000
         ld      b,0x0F
-        call    0x18A5
+        call    GFX_GRID_FILL
         ld      hl,0xE249
         ld      de,0x0004
         ld      b,0x0F
-        call    0x18A5
+        call    GFX_GRID_FILL
         ld      de,0x9E94
         ld      hl,0xE20D
         ld      b,0x1E
@@ -2674,7 +3708,7 @@ L_9CC5:                 ; 9CC5
         ld      c,0x1C
         ld      b,0x06
         ld      e,0x01
-        call    0x14C0
+        call    SPRITE_GRID
         ld      b,0x34
         ld      c,0x1C
         ld      a,0x43
@@ -2689,7 +3723,7 @@ L_9CC5:                 ; 9CC5
         ld      c,0x1C
         ld      b,0x06
         ld      e,0x05
-        call    0x14C0
+        call    SPRITE_GRID
         ld      b,0x38
         ld      c,0x1C
         ld      a,0x47
@@ -2709,7 +3743,7 @@ L_9D41:                 ; 9D41
         push    bc
         bit     2,(ix+0)
         jp      nz,L_9E64
-        call    L_A2C0
+        call    ROM_SUM_STEP_N
         ld      de,0x0508
         call    ANIM_STEP
         bit     0,(ix+9)
@@ -2725,7 +3759,7 @@ L_9D41:                 ; 9D41
         ld      c,0x0F
         ld      b,0x04
         ld      e,0x00
-        call    0x14C0
+        call    SPRITE_GRID
         ld      hl,0x9EF6
         ld      a,(0xE5F5)
         cp      0x03
@@ -2739,8 +3773,8 @@ L_9D80:                 ; 9D80
         add     a,a
         push    af
         ld      a,(0xE5F5)
-        ld      hl,0x9F22
-        call    0x0DA7
+        ld      hl,L_9F22
+        call    TABLE_WORD
         ex      de,hl
         pop     af
         call    ADD_HL_A
@@ -2766,7 +3800,7 @@ L_9DAC:                 ; 9DAC
         ld      c,0x1B
         ld      b,0x04
         ld      e,0x04
-        call    0x14C0
+        call    SPRITE_GRID
         ld      hl,0x9EF6
         ld      a,(0xE5F5)
         cp      0x03
@@ -2780,8 +3814,8 @@ L_9DD4:                 ; 9DD4
         add     a,a
         push    af
         ld      a,(0xE5F5)
-        ld      hl,0x9F22
-        call    0x0DA7
+        ld      hl,L_9F22
+        call    TABLE_WORD
         ex      de,hl
         pop     af
         call    ADD_HL_A
@@ -2814,7 +3848,7 @@ L_9E1A:                 ; 9E1A
         push    de
 L_9E28:                 ; 9E28
         ld      b,0x0F
-        call    0x1529
+        call    OBJ_PTR
 L_9E2D:                 ; 9E2D
         inc     (hl)
         inc     hl
@@ -2822,7 +3856,7 @@ L_9E2D:                 ; 9E2D
         inc     hl
         inc     hl
         djnz    L_9E2D
-        call    0x1529
+        call    OBJ_PTR
         ld      a,(hl)
         cp      0x70
         jr      nz,L_9E64
@@ -2831,7 +3865,7 @@ L_9E2D:                 ; 9E2D
 
 L_9E42:                 ; 9E42
         ld      b,0x0F
-        call    0x1529
+        call    OBJ_PTR
 L_9E47:                 ; 9E47
         ld      a,(hl)
         cp      0xF0
@@ -2843,7 +3877,7 @@ L_9E4D:                 ; 9E4D
         inc     hl
         inc     hl
         djnz    L_9E47
-        call    0x1529
+        call    OBJ_PTR
         ld      a,0x28
         call    ADD_HL_A
         ld      a,(hl)
@@ -2874,7 +3908,26 @@ L_9E64:                 ; 9E64
         or      a
         sbc     hl,de
         ret     z
-        .incbin "main_bank2.bin", 0x1E94, 0x00E2
+        .incbin "main_bank2.bin", 0x1E94, 0x008E
+L_9F22:                 ; 9F22
+        .word   L_9F2E
+        .word   L_9F3E
+        .word   L_9F4E
+        .word   L_9F5E
+        .word   L_9F66
+        .word   L_9F6E
+L_9F2E:                 ; 9F2E
+        .incbin "main_bank2.bin", 0x1F2E, 0x0010
+L_9F3E:                 ; 9F3E
+        .incbin "main_bank2.bin", 0x1F3E, 0x0010
+L_9F4E:                 ; 9F4E
+        .incbin "main_bank2.bin", 0x1F4E, 0x0010
+L_9F5E:                 ; 9F5E
+        .incbin "main_bank2.bin", 0x1F5E, 0x0008
+L_9F66:                 ; 9F66
+        .incbin "main_bank2.bin", 0x1F66, 0x0008
+L_9F6E:                 ; 9F6E
+        .incbin "main_bank2.bin", 0x1F6E, 0x0008
 ; round start, called by OBJECTS_TASK: clears the state record at F54B
 REC_F54B_INIT:          ; 9F76
         ld      hl,0xF54B
@@ -2934,8 +3987,8 @@ L_9FD9:                 ; 9FD9
         call    L_A1A2
         call    L_A224
         call    L_A26D
-        call    L_8D64
-        call    0x166B
+        call    ROM_SUM_STEP_I
+        call    GRID_PROBE_BELOW
         jp      nz,L_A05C
         ld      a,(ix+3)
 L_9FF6:                 ; 9FF6
@@ -2954,7 +4007,7 @@ L_A006:                 ; A006
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jp      nz,L_A026
         ld      (ix+3),0x01
         ret
@@ -2973,7 +4026,7 @@ L_A031:                 ; A031
         sub     0x08
         ld      h,a
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jp      nz,L_A051
         ld      (ix+3),0x00
         ret
@@ -3026,7 +4079,7 @@ L_A082:                 ; A082
         ld      a,b
         cp      0x1C
         jp      nz,L_A0AE
-        ld      bc,RESET
+        ld      bc,0x0000
 L_A0AE:                 ; A0AE
         ld      (hl),c
         inc     hl
@@ -3341,20 +4394,21 @@ L_A296:                 ; A296
         sbc     hl,de
         jp      nz,L_A2BF
 L_A2B7:                 ; A2B7
-        ld      de,TASK_START
+        ld      de,0x0010
         add     iy,de
         pop     bc
         djnz    L_A273
 L_A2BF:                 ; A2BF
         ret
 
-L_A2C0:                 ; A2C0
+; as ROM_SUM_STEP_H: pointer F58C, sum F58E, flag F58B
+ROM_SUM_STEP_N:         ; A2C0
         ld      a,(0xF58B)
         and     a
         jr      nz,L_A2D6
         ld      hl,0xF58E
         ld      (hl),0x00
-        ld      hl,L_9FC0
+        ld      hl,0x9FC0
         ld      (0xF58C),hl
         ld      hl,0xF58B
         ld      (hl),0x01
@@ -3380,7 +4434,7 @@ L_A2EE:                 ; A2EE
         cp      (hl)
         ret     z
         push    de
-; round start, called by OBJECTS_TASK: clears the state record at F590
+; round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12
 REC_F590_INIT:          ; A2FC
         ld      hl,0xF590
         ld      bc,0x0005
@@ -3422,7 +4476,7 @@ L_A32E:                 ; A32E
         call    GRID_CELL
         jr      z,L_A386
         ld      a,(0xF591)
-        call    0x0D8E
+        call    MUL64_DE
         ld      a,(0xF592)
         add     a,a
         ld      hl,0xCD00
@@ -3446,7 +4500,7 @@ L_A32E:                 ; A32E
         call    GRID_CELL
         jr      z,L_A386
         ld      a,(0xF591)
-        call    0x0D8E
+        call    MUL64_DE
         ld      a,(0xF592)
         dec     a
         add     a,a
@@ -3469,7 +4523,7 @@ L_A386:                 ; A386
         cp      0x04
         ret     nz
         ld      a,0x07
-        call    0x18CF
+        call    ENEMY_HITS_STATE
         ld      hl,0xE76A
         ld      (hl),0xFF
         ld      hl,0xF590
@@ -3520,7 +4574,7 @@ L_A3F5:                 ; A3F5
         ld      a,0x40
         call    ADD_HL_A
         djnz    L_A3F5
-        call    L_932D
+        call    ROM_SUM_STEP_L
         ret
 
 L_A402:                 ; A402
@@ -3547,10 +4601,11 @@ L_A426:                 ; A426
         ld      a,0x40
         call    ADD_HL_A
         djnz    L_A426
-        call    L_8B6B
+        call    ROM_SUM_STEP_H
         ret
 
-L_A433:                 ; A433
+; clears F595 (9 bytes) and sets up the effect C point at F597/F596 with 8 sprite slots
+EFFECT_C_START:         ; A433
         push    ix
         ld      hl,0xF595
         ld      bc,0x0009
@@ -3565,7 +4620,7 @@ L_A433:                 ; A433
 L_A454:                 ; A454
         inc     hl
         ld      a,d
-        call    0x0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         inc     d
@@ -3601,7 +4656,7 @@ L_A464:                 ; A464
         jp      nz,L_A501
         bit     1,a
         jp      nz,L_A541
-        call    L_8F17
+        call    ROM_SUM_STEP_J
         ld      a,(ENEMY_TOTAL)
         and     a
         jp      z,L_A55C
@@ -3620,14 +4675,14 @@ L_A464:                 ; A464
         ret
 
 L_A4C1:                 ; A4C1
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9DE),hl
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9FE),hl
         ret
 
 L_A4CE:                 ; A4CE
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+1),0xE8
         ld      a,r
         add     a,a
@@ -3692,14 +4747,14 @@ L_A525:                 ; A525
 
 L_A541:                 ; A541
         ld      a,(0xF460)
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      de,0x0500
-        call    0x2FB3
+        call    SCORE_UPDATE
         ld      (ix+0),0x01
         jr      L_A501
 
 L_A553:                 ; A553
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+0),a
         jp      L_A4C1
 
@@ -3709,13 +4764,13 @@ L_A55C:                 ; A55C
         jp      L_A4C1
 
         .incbin "main_bank2.bin", 0x2564, 0x0037
-; round start, called by OBJECTS_TASK: clears the state record at F59E
+; round start, called by OBJECTS_TASK: clears the state record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs
 REC_F59E_INIT:          ; A59B
         ld      hl,0xF59E
         ld      bc,0x0009
         jp      ZERO_BC
 
-; each frame: steps the record at F59E
+; each frame: steps the record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs
 REC_F59E_RUN:           ; A5A4
         ld      a,(0xF59E)
         and     a
@@ -3733,7 +4788,7 @@ REC_F59E_RUN:           ; A5A4
         bit     4,a
         jp      nz,L_A798
         ld      a,0x0A
-        call    0x18CF
+        call    ENEMY_HITS_STATE
         ld      c,0x12
         call    SOUND_PUSH
         ld      hl,(0x0004)
@@ -3790,7 +4845,7 @@ L_A624:                 ; A624
         ld      hl,0xA674
         ld      bc,0x041C
         ld      e,0x00
-        call    0x14C0
+        call    SPRITE_GRID
         ld      a,0x0A
         call    0x189D
         ld      e,(hl)
@@ -3842,7 +4897,7 @@ L_A684:                 ; A684
         ld      hl,0xA6D4
         ld      bc,0x091C
         ld      e,0x00
-        call    0x14C0
+        call    SPRITE_GRID
         ld      a,0x0A
         call    0x189D
         ld      e,(hl)
@@ -3894,7 +4949,7 @@ L_A6F8:                 ; A6F8
         ld      hl,0xA748
         ld      bc,0x141C
         ld      e,0x00
-        call    0x14C0
+        call    SPRITE_GRID
         ld      a,0x0A
         call    0x189D
         ld      e,(hl)
@@ -3960,9 +5015,9 @@ L_A7B5:                 ; A7B5
         ret
 
 L_A7C2:                 ; A7C2
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9DE),hl
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9FE),hl
         ret
 
@@ -3976,13 +5031,14 @@ L_A7CF:                 ; A7CF
         ld      (hl),0x00
         ret
 
-L_A7E3:                 ; A7E3
+; as ROM_SUM_STEP_H: pointer F5A8, sum F5AA, flag F5A7
+ROM_SUM_STEP_O:         ; A7E3
         ld      a,(0xF5A7)
         and     a
         jr      nz,L_A7F9
         ld      hl,0xF5AA
         ld      (hl),0x00
-        ld      hl,L_8016
+        ld      hl,0x8016
         ld      (0xF5A8),hl
         ld      hl,0xF5A7
         ld      (hl),0x01
@@ -4010,13 +5066,336 @@ L_A811:                 ; A811
         ex      de,hl
         jp      (hl)
 
-; round start, called by OBJECTS_TASK: clears the state record at F5AC
+; round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)
 REC_F5AC_INIT:          ; A820
         ld      hl,0xF5AC
         ld      bc,0x000A
         jp      ZERO_BC
 
-        .incbin "main_bank2.bin", 0x2829, 0x029C
+L_A829:                 ; A829
+        ld      a,(0xF5AC)
+        and     a
+        ret     z
+        ld      a,(ATTRACT)
+        and     a
+        ret     nz
+        ld      ix,0xF5AD
+        ld      a,(ix+0)
+        bit     0,a
+        jp      nz,L_A867
+        bit     1,a
+        jp      nz,L_A9F7
+        ld      hl,0xE2E5
+        ld      (ix+3),l
+        ld      (ix+4),h
+        ld      a,(0xE5A2)
+        ld      (hl),a
+        inc     hl
+        ld      (hl),0x06
+        inc     hl
+        ld      a,(0xE5A3)
+        ld      (hl),a
+        inc     hl
+        ld      (hl),0x13
+        call    OBJ_POS_LOAD
+        ld      (ix+8),0x03
+        set     0,(ix+0)
+L_A867:                 ; A867
+        ld      a,(ENEMY_TOTAL)
+        and     a
+        jp      z,L_AA19
+        ld      de,0x0405
+        call    ANIM_STEP
+        add     a,a
+        add     a,a
+        add     a,0xD4
+        ld      b,a
+        ld      c,0x1E
+        ld      a,0x06
+        call    SPRITE
+        ld      a,(ix+8)
+        cp      0x1B
+        jp      nc,L_A895
+        cp      0x13
+        jp      nc,L_A92D
+        cp      0x0B
+        jp      nc,L_A97C
+        jp      L_A8E1
+
+L_A895:                 ; A895
+        ld      b,0x03
+L_A897:                 ; A897
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      a,(ix+2)
+        sub     0x03
+        ld      h,a
+        ld      a,(ix+1)
+        add     a,0x02
+        call    GRID_CELL_A
+        jp      z,L_A9C8
+        ld      a,(ix+2)
+        sub     0x03
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jp      z,L_A9C8
+        ld      h,(ix+2)
+        ld      a,(ix+1)
+        add     a,0x03
+        call    GRID_CELL_A
+        jp      z,L_A9D1
+        ld      a,(ix+2)
+        sub     0x02
+        ld      h,a
+        ld      a,(ix+1)
+        add     a,0x03
+        call    GRID_CELL_A
+        jp      z,L_A9D1
+        call    PATH_NEXT_BYTE
+        pop     bc
+        djnz    L_A897
+        ret
+
+L_A8E1:                 ; A8E1
+        ld      b,0x03
+L_A8E3:                 ; A8E3
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      a,(ix+2)
+        add     a,0x03
+        ld      h,a
+        ld      a,(ix+1)
+        add     a,0x02
+        call    GRID_CELL_A
+        jp      z,L_A9DA
+        ld      a,(ix+2)
+        add     a,0x03
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jp      z,L_A9DA
+        ld      h,(ix+2)
+        ld      a,(ix+1)
+        add     a,0x03
+        call    GRID_CELL_A
+        jp      z,L_A9E3
+        ld      a,(ix+2)
+        add     a,0x02
+        ld      h,a
+        ld      a,(ix+1)
+        add     a,0x03
+        call    GRID_CELL_A
+        jp      z,L_A9E3
+        call    PATH_NEXT_BYTE
+        pop     bc
+        djnz    L_A8E3
+        ret
+
+L_A92D:                 ; A92D
+        ld      b,0x03
+L_A92F:                 ; A92F
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      a,(ix+2)
+        sub     0x03
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jp      z,L_A9E3
+        ld      a,(ix+2)
+        sub     0x03
+        ld      h,a
+        ld      a,(ix+1)
+        sub     0x02
+        call    GRID_CELL_A
+        jp      z,L_A9E3
+        ld      h,(ix+2)
+        ld      a,(ix+1)
+        sub     0x03
+        call    GRID_CELL_A
+        jp      z,L_A9DA
+        ld      a,(ix+2)
+        sub     0x02
+        ld      h,a
+        ld      a,(ix+1)
+        sub     0x03
+        call    GRID_CELL_A
+        jp      z,L_A9DA
+        call    PATH_NEXT_BYTE
+        pop     bc
+        djnz    L_A92F
+        call    BANK2_CHECK
+        ret
+
+L_A97C:                 ; A97C
+        ld      b,0x03
+L_A97E:                 ; A97E
+        push    bc
+        call    OBJ_POS_LOAD
+        ld      a,(ix+2)
+        add     a,0x03
+        ld      h,a
+        ld      a,(ix+1)
+        call    GRID_CELL_A
+        jp      z,L_A9D1
+        ld      a,(ix+2)
+        add     a,0x03
+        ld      h,a
+        ld      a,(ix+1)
+        sub     0x02
+        call    GRID_CELL_A
+        jp      z,L_A9D1
+        ld      h,(ix+2)
+        ld      a,(ix+1)
+        sub     0x03
+        call    GRID_CELL_A
+        jp      z,L_A9C8
+        ld      a,(ix+2)
+        add     a,0x02
+        ld      h,a
+        ld      a,(ix+1)
+        sub     0x03
+        call    GRID_CELL_A
+        jp      z,L_A9C8
+        call    PATH_NEXT_BYTE
+        pop     bc
+        djnz    L_A97E
+        ret
+
+L_A9C8:                 ; A9C8
+        ld      a,r
+        and     0x03
+        add     a,0x03
+        jp      L_A9E9
+
+L_A9D1:                 ; A9D1
+        ld      a,r
+        and     0x03
+        add     a,0x13
+        jp      L_A9E9
+
+L_A9DA:                 ; A9DA
+        ld      a,r
+        and     0x03
+        add     a,0x1B
+        jp      L_A9E9
+
+L_A9E3:                 ; A9E3
+        ld      a,r
+        and     0x03
+        add     a,0x0B
+L_A9E9:                 ; A9E9
+        ld      (ix+8),a
+        ld      (ix+7),0x00
+        ld      c,0x24
+        call    SOUND_PUSH
+        pop     bc
+        ret
+
+L_A9F7:                 ; A9F7
+        ld      hl,IRQ_HANDLER
+        ld      de,(IRQ_VECTOR_ENTRY)
+        or      a
+        sbc     hl,de
+        jp      z,L_AA06
+        push    bc
+        push    de
+L_AA06:                 ; AA06
+        ld      a,(0xF460)
+        ld      (PLAYER_NOW),a
+        ld      de,0x0800
+        call    SCORE_UPDATE
+        ld      (ix+0),0x01
+        jp      L_A867
+
+L_AA19:                 ; AA19
+        call    OBJ_HIDE
+        ld      hl,0xF5AC
+        ld      (hl),0x00
+        ret
+
+; A = the next byte of movement path (IX+8), position (IX+7); 88 wraps to the start
+PATH_NEXT_BYTE:         ; AA22
+        ld      a,(ix+8)
+        call    PATH_PTR
+        ld      a,(ix+7)
+        inc     (ix+7)
+        call    ADD_DE_A
+        ld      a,(de)
+        cp      0x88
+        jp      nz,L_AA3E
+        ld      (ix+7),0x00
+        jp      PATH_NEXT_BYTE
+
+L_AA3E:                 ; AA3E
+        call    OBJ_PTR
+        bit     0,a
+        jp      z,L_AA50
+        bit     3,a
+        jp      nz,L_AA4F
+        inc     (hl)
+        jp      L_AA50
+
+L_AA4F:                 ; AA4F
+        dec     (hl)
+L_AA50:                 ; AA50
+        inc     hl
+        inc     hl
+        bit     4,a
+        ret     z
+        bit     7,a
+        jp      nz,L_AA5C
+        inc     (hl)
+        ret
+
+L_AA5C:                 ; AA5C
+        dec     (hl)
+        ret
+
+L_AA5E:                 ; AA5E
+        ld      a,(ATTRACT)
+        and     a
+        ret     nz
+        ld      hl,0xF5B6
+        ld      bc,0x0059
+        call    ZERO_BC
+        ld      ix,0xF5B7
+        xor     a
+L_AA71:                 ; AA71
+        push    af
+        add     a,a
+        add     a,a
+        ld      hl,0xAAA5
+        call    ADD_HL_A
+        ld      a,(hl)
+        ld      (ix+8),a
+        inc     hl
+        ld      e,(hl)
+        inc     hl
+        ld      d,(hl)
+        ld      (ix+3),e
+        ld      (ix+4),d
+        inc     hl
+        ld      a,(de)
+        inc     hl
+        inc     de
+        ld      (de),a
+        ld      (ix+7),a
+        inc     de
+        inc     de
+        ld      a,0x15
+        ld      (de),a
+        ld      de,0x000B
+        add     ix,de
+        pop     af
+        inc     a
+        cp      0x08
+        jr      nz,L_AA71
+        ld      a,0x09
+        jp      ENEMY_HITS_STATE
+
+        .incbin "main_bank2.bin", 0x2AA5, 0x0020
         ld      a,(0xF5B6)
         and     a
         ret     z
@@ -4028,7 +5407,7 @@ REC_F5AC_INIT:          ; A820
         ld      hl,0xF5B6
         ld      (hl),0xFF
         ld      ix,0xF5B7
-        jp      0x1556
+        jp      IX_SPEED_CLEAR
 
 L_AAE2:                 ; AAE2
         ld      ix,0xF5B7
@@ -4053,9 +5432,9 @@ L_AB03:                 ; AB03
         ret
 
 L_AB10:                 ; AB10
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9DE),hl
-        ld      hl,RESET
+        ld      hl,0x0000
         ld      (0xF9FE),hl
         ld      hl,0x0002
         bit     3,(hl)
@@ -4080,20 +5459,20 @@ L_AB34:                 ; AB34
         jp      nz,L_ABC9
         bit     4,a
         jp      nz,L_AC72
-        call    0x1529
+        call    OBJ_PTR
         ld      b,0x04
         ld      (hl),0x70
         inc     hl
         inc     hl
         ld      (hl),0x78
-        call    0x1529
+        call    OBJ_PTR
         ld      e,(ix+7)
         ld      d,0x00
         ld      b,0x04
 L_AB5C:                 ; AB5C
         inc     hl
         ld      a,d
-        call    0x0D6C
+        call    SHL5
         or      e
         ld      (hl),a
         inc     d
@@ -4110,7 +5489,7 @@ L_AB6C:                 ; AB6C
         djnz    L_AB5C
         ld      c,0x12
         call    SOUND_PUSH
-        call    0x1537
+        call    OBJ_POS_LOAD
         set     1,(ix+0)
         jp      L_AC72
 
@@ -4128,7 +5507,7 @@ L_AB82:                 ; AB82
         jp      L_AC72
 
 L_AB9A:                 ; AB9A
-        call    0x1529
+        call    OBJ_PTR
         ld      de,0xABC1
         ld      b,0x04
 L_ABA2:                 ; ABA2
@@ -4145,7 +5524,7 @@ L_ABA2:                 ; ABA2
         inc     hl
         inc     de
         djnz    L_ABA2
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+0),a
         set     2,(ix+0)
         jp      L_AC72
@@ -4161,7 +5540,7 @@ L_ABD4:                 ; ABD4
         ld      a,(ix+10)
         cp      0x20
         jp      z,L_AC61
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      de,0xF002
         call    ANIM_STEP
         add     a,a
@@ -4180,7 +5559,7 @@ L_ABD4:                 ; ABD4
         ld      (ix+9),0x00
 L_AC0A:                 ; AC0A
         ld      a,(ix+8)
-        call    0x109C
+        call    PATH_PTR
         ld      a,(ix+9)
         call    ADD_DE_A
         ld      a,(de)
@@ -4190,7 +5569,7 @@ L_AC0A:                 ; AC0A
         jr      L_AC0A
 
 L_AC21:                 ; AC21
-        call    0x1529
+        call    OBJ_PTR
         ld      b,0x04
 L_AC26:                 ; AC26
         push    hl
@@ -4239,13 +5618,13 @@ L_AC4D:                 ; AC4D
 
         .incbin "main_bank2.bin", 0x2C59, 0x0008
 L_AC61:                 ; AC61
-        call    0x1529
-        ld      bc,TASK_START
+        call    OBJ_PTR
+        ld      bc,0x0010
         call    ZERO_BC
         ld      (ix+0),0x00
         set     4,(ix+0)
 L_AC72:                 ; AC72
-        call    L_8D64
+        call    ROM_SUM_STEP_I
         ld      de,0x000B
         add     ix,de
         pop     bc
@@ -4315,24 +5694,24 @@ L_ACD1:                 ; ACD1
 L_AD0E:                 ; AD0E
         ld      hl,0xAD78
         ld      de,0xF9C0
-        ld      bc,TASK_YIELD
+        ld      bc,0x0020
         ldir
         set     0,(ix+0)
         jr      L_AD61
 
 L_AD1F:                 ; AD1F
         ld      bc,0x0C0C
-        call    0x13F0
+        call    PLAYER_NEAR_CHECK
         jr      nc,L_AD61
         and     a
         jr      nz,L_AD34
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      hl,0xF60F
         ld      (hl),0x01
         jr      L_AD3C
 
 L_AD34:                 ; AD34
-        ld      (0xE5D6),a
+        ld      (PLAYER_NOW),a
         ld      hl,0xF610
         ld      (hl),0x01
 L_AD3C:                 ; AD3C
@@ -4374,7 +5753,7 @@ L_AD61:                 ; AD61
         ld      a,(0xE6FF)
         and     a
         ret     p
-        ld      bc,TASK_START
+        ld      bc,0x0010
         bit     0,(ix+9)
         jp      nz,L_ADD1
         ld      hl,0xB14F
@@ -4387,14 +5766,14 @@ L_ADD1:                 ; ADD1
         ld      de,0xE2B5
         ldir
 L_ADD9:                 ; ADD9
-        call    0x1556
+        call    IX_SPEED_CLEAR
         set     0,(ix+29)
 L_ADE0:                 ; ADE0
         ld      a,(0xE366)
         and     a
         jp      nz,L_AF74
-        call    L_8B6B
-        call    0x1537
+        call    ROM_SUM_STEP_H
+        call    OBJ_POS_LOAD
         ld      de,0x0A02
         call    ANIM_STEP
         bit     0,(ix+9)
@@ -4449,7 +5828,7 @@ L_AE43:                 ; AE43
         cp      0xC8
         ret     nz
 L_AE4E:                 ; AE4E
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+29),a
         set     2,(ix+29)
         ret
@@ -4458,16 +5837,16 @@ L_AE59:                 ; AE59
         ld      a,(0xE366)
         and     a
         jp      nz,L_AF74
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      de,0x0704
         call    ANIM_STEP
         jp      z,L_AE8B
         ld      hl,0xB0DF
         bit     0,(ix+9)
         jp      z,L_AE79
-        ld      hl,0xB0E7
+        ld      hl,L_B0E7
 L_AE79:                 ; AE79
-        call    0x0DA7
+        call    TABLE_WORD
         ex      de,hl
         ld      c,0x21
         bit     0,(ix+9)
@@ -4477,7 +5856,7 @@ L_AE88:                 ; AE88
         jp      L_B072
 
 L_AE8B:                 ; AE8B
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+29),a
         set     3,(ix+29)
         ret
@@ -4486,7 +5865,7 @@ L_AE96:                 ; AE96
         ld      a,(0xE366)
         and     a
         jp      nz,L_AF74
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      a,(ATTRACT)
         and     a
         jp      nz,L_AEB2
@@ -4532,7 +5911,7 @@ L_AEFB:                 ; AEFB
         jp      L_B072
 
 L_AEFE:                 ; AEFE
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+29),a
         ld      (ix+30),a
         set     4,(ix+29)
@@ -4542,7 +5921,7 @@ L_AF0C:                 ; AF0C
         ld      a,(0xE366)
         and     a
         jp      nz,L_AF74
-        call    0x1537
+        call    OBJ_POS_LOAD
         ld      de,0x0A02
         call    ANIM_STEP
         bit     0,(ix+9)
@@ -4595,7 +5974,7 @@ L_AF69:                 ; AF69
         cp      0x10
         ret     nz
 L_AF74:                 ; AF74
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+29),a
         set     5,(ix+29)
         ret
@@ -4604,19 +5983,19 @@ L_AF7F:                 ; AF7F
         ld      a,(0xE366)
         and     a
         ret     z
-        call    0x1537
+        call    OBJ_POS_LOAD
         bit     0,(ix+9)
         jp      nz,L_AF9C
         ld      hl,0xB16F
         ld      de,0xE2C5
-        ld      bc,TASK_START
+        ld      bc,0x0010
         ldir
         jp      L_AFA7
 
 L_AF9C:                 ; AF9C
         ld      hl,0xB17F
         ld      de,0xE2B5
-        ld      bc,TASK_START
+        ld      bc,0x0010
         ldir
 L_AFA7:                 ; AFA7
         ld      de,0x0A02
@@ -4643,24 +6022,24 @@ L_AFD1:                 ; AFD1
         jp      SPRITE_LIST
 
 L_AFD8:                 ; AFD8
-        call    0x1537
+        call    OBJ_POS_LOAD
         bit     0,(ix+29)
         jp      nz,L_B009
         bit     0,(ix+9)
         jp      nz,L_AFF7
         ld      hl,0xB16F
         ld      de,0xE2C5
-        ld      bc,TASK_START
+        ld      bc,0x0010
         ldir
         jp      L_B002
 
 L_AFF7:                 ; AFF7
         ld      hl,0xB17F
         ld      de,0xE2B5
-        ld      bc,TASK_START
+        ld      bc,0x0010
         ldir
 L_B002:                 ; B002
-        call    0x1556
+        call    IX_SPEED_CLEAR
         set     0,(ix+29)
 L_B009:                 ; B009
         ld      a,(ix+30)
@@ -4691,7 +6070,7 @@ L_B03F:                 ; B03F
         jp      SPRITE_LIST
 
 L_B044:                 ; B044
-        call    0x1556
+        call    IX_SPEED_CLEAR
         ld      (ix+29),a
         ld      (ix+30),a
         ld      (ix+0),a
@@ -4699,15 +6078,15 @@ L_B044:                 ; B044
         bit     0,(ix+9)
         jp      nz,L_B066
         ld      hl,0xE2C5
-        ld      bc,TASK_START
+        ld      bc,0x0010
         call    ZERO_BC
-        jp      0x3EB5
+        jp      P1_REC_INIT
 
 L_B066:                 ; B066
         ld      hl,0xE2B5
-        ld      bc,TASK_START
+        ld      bc,0x0010
         call    ZERO_BC
-        jp      0x3F39
+        jp      P2_REC_INIT
 
 L_B072:                 ; B072
         ld      e,(ix+7)
@@ -4715,7 +6094,7 @@ L_B072:                 ; B072
         ld      b,0x02
 L_B079:                 ; B079
         ld      a,d
-        call    0x0D6C
+        call    SHL5
         or      e
         ex      af,af'
         inc     d
@@ -4739,7 +6118,7 @@ L_B089:                 ; B089
         ld      b,0x02
 L_B099:                 ; B099
         ld      a,d
-        call    0x0D6C
+        call    SHL5
         or      e
         ex      af,af'
         inc     d
@@ -4781,7 +6160,107 @@ L_B0D8:                 ; B0D8
         djnz    L_B099
         ret
 
-        .incbin "main_bank2.bin", 0x30DF, 0x00B0
+        .incbin "main_bank2.bin", 0x30DF, 0x0008
+L_B0E7:                 ; B0E7
+        .word   L_B0FF
+        .word   L_B103
+        .word   L_B107
+        .word   L_B10B
+        .incbin "main_bank2.bin", 0x30EF, 0x0010
+L_B0FF:                 ; B0FF
+        inc     d
+        jr      L_B12E
+
+        .incbin "main_bank2.bin", 0x3102, 0x0001
+L_B103:                 ; B103
+        inc     (hl)
+        jr      c,L_B152
+        ld      d,b
+L_B107:                 ; B107
+        inc     a
+        ld      b,b
+        ld      d,h
+        ld      e,b
+L_B10B:                 ; B10B
+        ld      b,h
+        ld      c,b
+        ld      e,h
+        ld      h,b
+        inc     b
+        ex      af,af'
+        add     a,b
+        ld      a,h
+        inc     b
+        ex      af,af'
+        adc     a,b
+        add     a,h
+        inc     b
+        ex      af,af'
+        ld      a,h
+        add     a,b
+        inc     b
+        ex      af,af'
+        add     a,h
+        adc     a,b
+        ld      h,h
+        ld      l,b
+        ld      a,h
+        add     a,b
+        ld      l,h
+        ld      (hl),b
+        add     a,h
+        adc     a,b
+        ld      (hl),h
+        ld      a,b
+        sub     b
+        adc     a,h
+        sub     h
+        sbc     a,b
+        or      b
+L_B12E:                 ; B12E
+        xor     h
+        ld      (hl),h
+        ld      a,b
+        adc     a,h
+        sub     b
+        sub     h
+        sbc     a,b
+        xor     h
+        or      b
+        sbc     a,h
+        and     b
+        or      h
+        cp      b
+        and     h
+        xor     b
+        cp      h
+        ret     nz
+        call    nz,0xDCC8
+        ret     po
+        call    nz,0xE4C8
+        ret     pe
+        call    z,0xDCD0
+        ret     po
+        call    z,0xE4D0
+        ret     pe
+        jr      z,L_B169
+        ret     nc
+L_B152:                 ; B152
+        ld      d,h
+        jr      z,L_B18D
+        ret     po
+        ld      d,h
+        .incbin "main_bank2.bin", 0x3157, 2        ; jr 0xB1B1 (target is inside an instruction)
+
+        .incbin "main_bank2.bin", 0x3159, 0x0010
+L_B169:                 ; B169
+        .incbin "main_bank2.bin", 0x3169, 2        ; djnz 0xB1BF (target is inside an instruction)
+        .incbin "main_bank2.bin", 0x316B, 2        ; jr 0xB1E6 (target is inside an instruction)
+
+        .incbin "main_bank2.bin", 0x316D, 0x0020
+L_B18D:                 ; B18D
+        ret     c
+        inc     d
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -4860,13 +6339,13 @@ L_B227:                 ; B227
         set     0,(hl)
         ld      hl,0xF61B
         ld      (hl),0x01
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x00
         call    0x35FF
         call    0x22DA
-        call    0x205E
-        call    0x3EB5
-        call    0x3FBD
+        call    P1_SCORE_RESET
+        call    P1_REC_INIT
+        call    P1_STATS_INIT
         call    CLOCK_RESET
         ld      hl,P1_REC
         ld      (hl),0x04
@@ -4945,7 +6424,7 @@ L_B2F0:                 ; B2F0
         dec     (hl)
         ld      hl,0xE5D7
         set     1,(hl)
-        ld      hl,0xE5D6
+        ld      hl,PLAYER_NOW
         ld      (hl),0x01
         call    0x35FF
         call    0x22DA
@@ -4953,9 +6432,9 @@ L_B2F0:                 ; B2F0
         ld      (hl),0x01
         ld      hl,0xF61C
         ld      (hl),0x01
-        call    0x207B
-        call    0x3F39
-        call    0x3FFA
+        call    P2_SCORE_RESET
+        call    P2_REC_INIT
+        call    P2_STATS_INIT
         call    CLOCK_RESET
         ld      hl,P2_REC
         ld      (hl),0x04
@@ -4972,7 +6451,8 @@ L_B2F0:                 ; B2F0
 ; 5 bytes an item: first tile, attribute, then (B38B) score tile and score
 POINTS_ITEMS:           ; B389
         .incbin "main_bank2.bin", 0x3389, 0x012C
-L_B4B5:                 ; B4B5
+; as ROM_SUM_STEP_H: pointer F620, sum F622, flag F61F
+ROM_SUM_STEP_P:         ; B4B5
         ld      a,(0xF61F)
         and     a
         jr      nz,L_B4CB
@@ -5205,7 +6685,7 @@ L_B9D3:                 ; B9D3
         ld      a,(0xF590)
         and     a
         jp      nz,L_BAAA
-        call    L_A7E3
+        call    ROM_SUM_STEP_O
         ld      hl,0xF624
         bit     0,(hl)
         jp      z,L_BAAA
@@ -5220,7 +6700,7 @@ L_B9D3:                 ; B9D3
         inc     hl
         ld      a,(hl)
         ld      (ix+4),a
-        call    0x1556
+        call    IX_SPEED_CLEAR
         set     0,(ix+0)
         ld      a,(0x0004)
         ld      de,START
@@ -5264,17 +6744,17 @@ L_BA52:                 ; BA52
 L_BA60:                 ; BA60
         add     a,(ix+3)
         ld      (ix+2),a
-        call    0x166B
+        call    GRID_PROBE_BELOW
         jr      nz,L_BAAA
         ld      h,(ix+2)
         ld      a,(ix+1)
-        call    0x174C
+        call    GRID_CELL_A
         jr      z,L_BAAA
         call    0x16E1
         push    hl
         ld      a,(ix+5)
         ld      hl,0xBB40
-        call    0x0DA7
+        call    TABLE_WORD
         pop     hl
         ld      (hl),e
         inc     hl
@@ -5297,7 +6777,7 @@ L_BA9A:                 ; BA9A
 L_BAA6:                 ; BAA6
         ld      (ix+0),0x00
 L_BAAA:                 ; BAAA
-        ld      de,TASK_KILL
+        ld      de,0x0008
         add     ix,de
         pop     af
         dec     a
@@ -5306,7 +6786,7 @@ L_BAAA:                 ; BAAA
 
 L_BAB5:                 ; BAB5
         ld      bc,0x0808
-        call    0x13F0
+        call    PLAYER_NEAR_CHECK
         ret     nc
         and     a
         jr      nz,L_BAD2
@@ -5430,7 +6910,7 @@ L_BBB3:                 ; BBB3
         cp      (hl)
         jr      z,L_BBC5
         ld      c,0xEF
-        call    L_BC2F
+        call    PALETTE0_SET
 L_BBC5:                 ; BBC5
         pop     af
         inc     a
@@ -5457,7 +6937,7 @@ L_BBDA:                 ; BBDA
         cp      (hl)
         jr      z,L_BBEC
         ld      c,0xEF
-        call    L_BC2F
+        call    PALETTE0_SET
 L_BBEC:                 ; BBEC
         pop     af
         inc     a
@@ -5503,7 +6983,8 @@ L_BC1E:                 ; BC1E
         ld      (hl),a
         jp      L_BB9E
 
-L_BC2F:                 ; BC2F
+; video off, the first byte of PALETTE_RAM = C, video on
+PALETTE0_SET:           ; BC2F
         push    af
         call    VIDEO_OFF
         ld      a,c

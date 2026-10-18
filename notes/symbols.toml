@@ -246,6 +246,130 @@ GRID_DRAW_START = { addr = 0x18E7, note = "GRID_DRAW_ROW = 0, then LOAD_GRID_EDG
 GRID_DRAW_NEXT = { addr = 0x18EE, note = "draws ROUND_GRID rows until GRID_DRAW_ROW = 0x20 (one row if E5C3 is set): clear the row's tiles, DRAW_GRID_ROW, L_6065, SHADE_GRID_ROW, L_1A93; after row 31, SIDE_WALL_ROW for rows 30 and 31" }
 ROM_SUM_STEP_B = { addr = 0x6065, note = "as ROM_SUM_STEP_A, one byte of every 2nd from 2642 to 731B into EB2F, then compared with EB30" }
 ROUND_NUMBER_DRAW = { addr = 0x30DF, note = "tiles at D508/D548: the round number ROUND_MAIN + 1 (tens, units); nothing in the attract loop; round 100 has its own tiles (8A)" }
+BOSS_RECS_INIT = { addr = 0x0339, note = "round 100: 16 four-byte records at E2F5, each a zero, a word from the table at 0352 and a zero" }
+BANK3_ROW_COPY = { addr = 0x0BC8, note = "bank 3: 16 bytes from BFDF + 16 x (BFFF) to E36A" }
+COIN_ADD = { addr = 0x0C39, note = "adds the credits a coin switch earns (table at DE) to E366 and CREDITS; the COIN_SCAN helper" }
+ROM_SUM_STEP_C = { addr = 0x0D14, note = "one byte a call of a sum from 0030 up to 314F, in E37D (E37A starts it, E37B is the pointer)" }
+ROM_SUM_STEP_D = { addr = 0x1387, note = "one byte a call of a sum from 0000, in E395 (E392 starts it, E393 is the pointer); the end compares with E396" }
+MUL64_DE = { addr = 0x0D8E, note = "DE = A x 64" }
+MUL32_DE = { addr = 0x0D99, note = "DE = A x 32" }
+DECIMAL_ASCII = { addr = 0x1028, note = "A (0-99x) to ASCII digits in B, C, A: hundreds, tens, units, via DECIMAL_SPLIT" }
+DECIMAL_SPLIT = { addr = 0x1008, note = "A divided by the table at 1025 (100, 10): B = quotient and C, A the remainders" }
+DECIMAL_DIGITS = { addr = 0x1040, note = "as DECIMAL_ASCII, digits 0-9 and not ASCII" }
+DECIMAL3_DRAW = { addr = 0x0FC2, note = "A as three digits to the tile RAM at IY: hundreds, tens, units in the tile columns; a leading zero is blanked" }
+ENEMY_HITS_NEAR = { addr = 0x13C4, note = "first ENEMY_HITS record within C of E and B of the Y in range (B = index)" }
+PLAYER_NEAR_CHECK = { addr = 0x13F0, note = "P1_REC, then P2_REC, if active and within C (X) and B (Y) of the object at IX; A = 0 and C = the player's byte (E698) on a hit" }
+SPRITE_GRID = { addr = 0x14C0, note = "B sprites from the tile list at HL laid out in a grid 4 wide: gfx_num = column x 32 | E; SPRITE_LIST with D = 0" }
+GFX_GRID_FILL = { addr = 0x18A5, note = "B records of 4 bytes at HL+1 (stride 4) get gfx_num = D x 32 | E, 4 to a row" }
+ENEMY_HITS_STATE = { addr = 0x18CF, note = "each active ENEMY_HITS record: state 10, A in byte 3" }
+OBJ_STATE_10 = { addr = 0x155E, note = "object A: byte 3 = 10" }
+OBJ_STATE_12 = { addr = 0x1570, note = "object A: byte 3 = 12" }
+OBJ_STATE_13 = { addr = 0x1579, note = "object A: byte 3 = 13" }
+OBJ_STATE_15 = { addr = 0x158B, note = "object A: byte 3 = 15" }
+OBJ_STATE_17 = { addr = 0x159D, note = "object A: byte 3 = 17" }
+GRID_PROBE_RIGHT = { addr = 0x15E9, note = "cells at X+8, Y+8 and X+8, Y of the object at IX; Z if a wall" }
+GRID_PROBE_LEFT = { addr = 0x1604, note = "cells at X-8, Y+8 and X-8, Y of the object at IX" }
+GRID_PROBE_BELOW = { addr = 0x166B, note = "cell at X, Y-8 of the object at IX" }
+GRID_PROBE_UNDER3 = { addr = 0x169F, note = "cells at X-7, X and X+7 on the object's Y" }
+TITLE_INIT = { addr = 0x1AED, note = "title start: TITLE_CODE_RESET, VIDEO_OFF, ROM_SUM_STEP_D, then compares the IM 2 vector entry with IRQ_HANDLER" }
+GAME_VARS_CLEAR = { addr = 0x1FEE, note = "clears 0x35 bytes at E5DF" }
+P1_SCORE_RESET = { addr = 0x205E, note = "SCORE_P1 to 0 and its text at CD46" }
+P2_SCORE_RESET = { addr = 0x207B, note = "SCORE_P2 to 0 and, if E5D7 b1 (P2 playing), its text at D286" }
+CREDITS_DRAW = { addr = 0x2117, note = "CREDITS as three digits at DC7A and the text at 212C" }
+START_PROMPT_DRAW = { addr = 0x2133, note = "texts at 215B and, with fewer than 2 credits, at 2160" }
+BANK3_CALL_BE00 = { addr = 0x21C4, note = "calls bank 3 BE00 and restores the bank" }
+DIFFICULTY_INIT = { addr = 0x22C6, note = "DIFFICULTY from the table at 22D6 by DSW1 b0-1" }
+DIFFICULTY_UP = { addr = 0x22F0, note = "DIFFICULTY += C, to at most 1E" }
+DIFFICULTY_DOWN = { addr = 0x22FE, note = "DIFFICULTY -= C, to at least E5DD" }
+DIFFICULTY_TICK = { addr = 0x2310, note = "E5DE counts up (unless E34F); every second count DIFFICULTY_UP 1; at 1E it jumps up by 1E" }
+ROM_SUM_STEP_E = { addr = 0x24B1, note = "one byte a call of a sum from 0020, in E617 (E614 starts it, E615 is the pointer)" }
+TAMPER_CONSTS_LOAD = { addr = 0x24ED, note = "copies bytes 9380-9386 of the page-2 data to E35D, E37E, E396, E618, E653, E6F9, E6FE" }
+BUBBLE_SLOTS_SETUP = { addr = 0x264B, note = "BUBBLE_SLOTS: object number (IX+9), object pointers into E20D" }
+BUBBLE_SLOTS_STEP = { addr = 0x269E, note = "steps the 32 BUBBLE_SLOTS" }
+PAIR_OBJS_SETUP = { addr = 0x2776, note = "two objects at E61E and E629: (IX+8) = 0 and 1, sprite pointers into E28D and E29D" }
+PAIR_OBJS_DRAW = { addr = 0x27BB, note = "steps the two objects at E61E: sprite tiles from 2919 or, with (IX+8) b0, 2921" }
+MODE_NOMAL_SHOW = { addr = 0x29CC, note = "SELECT GAME MODE screen with the NOMAL GAME choice (TILE_RECT blocks)" }
+MODE_SUPER_SHOW = { addr = 0x29FC, note = "as MODE_NOMAL_SHOW with the SUPER GAME choice; sets SUPER_MODE" }
+P1_BONUS_RESET = { addr = 0x314E, note = "E63F = 0; BONUS_NEXT_P1 from BONUS_TABLE_PTR" }
+P2_BONUS_RESET = { addr = 0x315F, note = "E640 = 0; BONUS_NEXT_P2 from BONUS_TABLE_PTR" }
+HIGH_SCORE_INIT = { addr = 0x31E1, note = "HIGH_SCORE from BONUS_TABLE_PTR entry 0" }
+BONUS_INFO_DRAW = { addr = 0x31ED, note = "the three bonus life values of BONUS_TABLE_PTR, as texts at 320D and scores" }
+P1_LIVES_INIT = { addr = 0x32BE, note = "LIVES_P1 from LIVES_START" }
+P2_LIVES_INIT = { addr = 0x32C5, note = "LIVES_P2 from LIVES_START" }
+LIVES_START = { addr = 0x32CC, note = "A = start lives from the table at 32DC by DSW1 b4-5" }
+P1_LIFE_ADD = { addr = 0x32E0, note = "LIVES_P1 + 1 (not above 0x64): EXTEND sound 2D, DIFFICULTY_UP 1, redraws via P1_LIVES_DRAW" }
+P2_LIFE_ADD = { addr = 0x32F4, note = "as P1_LIFE_ADD for LIVES_P2" }
+P1_LIVES_DRAW = { addr = 0x3308, note = "unless ATTRACT or round 100: P1's life icons at D53A" }
+P2_LIVES_DRAW = { addr = 0x3353, note = "unless ATTRACT or round 100: P2's life icons at DCFA" }
+P2_LABEL_DRAW = { addr = 0x33B1, note = "text at 33DE to D244" }
+P1_LABEL_DRAW = { addr = 0x33BC, note = "text at 33C7 to CD04" }
+SCORE_LABELS_DRAW = { addr = 0x3395, note = "the score line texts and both scores" }
+HIGH_TABLE_INIT = { addr = 0x3449, note = "E654: 0x23 bytes from 347C, then BONUS_TABLE_PTR entries into its five score slots" }
+HIGH_ENTRY_BOTH = { addr = 0x361D, note = "name entry for both players: HIGH_BEST_OF, then HIGH_ENTRY for player 0 and 1" }
+HIGH_ENTRY = { addr = 0x363C, note = "one player's high score entry" }
+HIGH_BEST_OF = { addr = 0x36AC, note = "E67B/E67C: the larger of the two players' E644 and E649 groups" }
+HIGH_ENTRY_PTR = { addr = 0x3811, note = "HL = E658 + 7 x (E677)" }
+ENTRY_LETTER_DRAW = { addr = 0x38A4, note = "unless E678 = 3: the letter ENTRY_ALPHABET[E679] to the tile row of the name entry" }
+ENTRY_COLUMN_CLEAR = { addr = 0x38BD, note = "clears 24 tiles down a column at D663 + 4 x E677" }
+HIGH_ENTRY_SETUP = { addr = 0x38F0, note = "clears E67E (0x12 bytes), LOAD_PAL_7_8, sets up the entry record at E682 from E644 (E67C in the attract loop)" }
+PLAYERS_CLEAR = { addr = 0x3EAC, note = "P1_REC, 0x64 bytes to 0" }
+P1_REC_INIT = { addr = 0x3EB5, note = "clears P1_REC (0x2A); with E5D7 b0 clear (P1 not playing) the record is state 80, player 0, sprite 18" }
+P2_REC_INIT = { addr = 0x3F39, note = "as P1_REC_INIT for P2_REC (player 1, sprite 19)" }
+P1_STATS_INIT = { addr = 0x3FBD, note = "P1_REC stats: (IX+48) 0C, 49 40, 46 14, 47 03 (POWER_UP_STATS if POWER_UP or round 100)" }
+P2_STATS_INIT = { addr = 0x3FFA, note = "as P1_STATS_INIT for P2_REC" }
+POWER_UP_STATS = { addr = 0x3FDC, note = "unless ATTRACT: with POWER_UP or in round 100 (IX+48) = 14 and (IX+47) = 06" }
+PLAYER_SHIELD_START = { addr = 0x4000, note = "if (IX+42) is nonzero: counts it down and starts the blink: (IX+45) b6, (IX+40) = 10" }
+PLAYERS_STEP = { addr = 0x4012, note = "each frame: the two player records, by the state bits of byte 0" }
+PLAYER_SCORE_UPDATE = { addr = 0x41EC, note = "PLAYER_NOW = (IX+9), then SCORE_UPDATE" }
+PLAYER_PROX_SET = { addr = 0x41F5, note = "P1_PROX_X or P2_PROX_X (by (IX+9) b0) = (IX+1), (IX+2)" }
+ROM_SUM_STEP_F = { addr = 0x420B, note = "one byte a call of a sum from 147E to 7ACD, in E6F8 (E6F5 starts it)" }
+ROM_SUM_STEP_G = { addr = 0x482C, note = "one byte a call of a sum from 0001 to 0EDC, in E6FD (E6FA starts it)" }
+PLAYER_FLAGS_GET = { addr = 0x43B5, note = "A = E33F (P1) or E340 (P2) by (IX+9) b0" }
+PLAYER_SPEED_SET = { addr = 0x44FE, note = "unless (IX+10) b2: (IX+18) = A when different, then IX_SPEED_CLEAR" }
+PLAYER_SPEED_STEP = { addr = 0x46D4, note = "reads SPEED_PATTERNS[(IX+48), or 16 if (IX+19) b0] at offset (IX+31)" }
+PLAYER_TICK_37 = { addr = 0x46FD, note = "counts (IX+37) down; ROM_SUM_STEP_C" }
+OBJECTS_FRAME = { addr = 0x3E5B, note = "OBJECTS_TASK's per-frame loop: the page-2 RUN routines, PLAYERS_STEP, then back to the yield" }
+BUBBLE_SCORE_UPDATE = { addr = 0x604C, note = "PLAYER_NOW = (IX+22), then SCORE_UPDATE" }
+BUBBLE_OWNER_SAVE = { addr = 0x60A2, note = "(IX+14) = (IX+22)" }
+TILE_PAIR_PUT = { addr = 0x5AC9, note = "HL: two tile columns, A and A + 0B, with attribute E" }
+BONUS_COUNT_DRAW = { addr = 0x5A34, note = "E73A (up to 99) as two digits with TILE_PAIR_PUT at D048" }
+GHOST_COUNTDOWN = { addr = 0x52A6, note = "E72E counts down; at 0 GHOST_ON = 1" }
+BUBBLES_INIT = { addr = 0x5B6E, note = "BUBBLES_TASK start: clears E744 (0x3E8) and POP_FLAG..., then the round's bubbles" }
+BUBBLES_STEP = { addr = 0x5C2B, note = "each frame: steps the BUBBLE_SLOTS from the first, E75D counting down" }
+ENEMY3_SHOTS_UPDATE = { addr = 0x7A27, note = "steps ENEMY3_SHOTS when group 3 is present" }
+PATH_PTR = { addr = 0x109C, note = "DE = the word at 10A2 + 2 x A: a movement path (bytes 88 end a repeat, 99 stop; see ENEMY_PATH_STEP)" }
+ATTRACT_COIN = { addr = 0x1D70, note = "a credit is present: back to normal, ATTRACT = 0, BANK3_CALL_BE00, then START_WAIT" }
+START_WAIT = { addr = 0x1DA3, note = "each frame: CREDITS_DRAW, BONUS_INFO_DRAW, START_PROMPT_DRAW and START_BUTTON_CHECK until a start button is pressed" }
+ROUND_LOOP = { addr = 0x1E2F, note = "one round of the game: ROUND_MAIN + 1 (the 100th round goes to ROUND_100_DONE), DIFFICULTY_TICK, then the round tasks run" }
+ROUND_100_DONE = { addr = 0x1E64, note = "ROUND_MAIN reached 0x64: the ending, then ZAP_ROUND (one player) or HIGH_SCORE_SCREEN" }
+HIGH_SCORE_SCREEN = { addr = 0x1EEA, note = "GAME OVER sequence: sound 02, HIGH_ENTRY_BOTH, HIGH_ENTRY_SETUP, GAME_OVER_SHOW, SWB7_SCORE_A/B, then back to the attract loop (1D1E)" }
+ZAP_ROUND = { addr = 0x1F30, note = "text 'YOU ZAPPED TO .....': ROUND_MAIN = one of eight values from the table at 1F88 (picked with R), DIFFICULTY 1E; then ROUND_LOOP" }
+DEMO_END = { addr = 0x1F90, note = "no player in the game (the demo is over): a tamper compare of (0001) with START, then HIGH_SCORE_SCREEN's steps" }
+HIGH_SCORE_SCREEN_DEMO = { addr = 0x1FA9, note = "as HIGH_SCORE_SCREEN, after DEMO_END" }
+START_BUTTON_CHECK = { addr = 0x1FF7, note = "credit and start buttons: 1 credit and P1 start (IN1_COPY b6) = 1 player (E5D7 = 1), 2 credits and P2 start (IN2_COPY b6) = 2 players (E5D7 = 3, E5D8 = 1); SWB7_OUT; carry set when a game starts" }
+GAME_OVER_SHOW = { addr = 0x20C1, note = "SUPER_MODE = 0, sound 0B, text 'GAME OVER' at D820, waits C8 frames, sound 00" }
+INTRO_STORY = { addr = 0x2578, note = "after the start: the story text 'NOW,IT IS BEGINNING OF A FANTASTIC STORY ...' with the two players' objects" }
+DEMO_SELECT = { addr = 0x2B15, note = "attract demo: E635 b0 picks the how-to-play round (this routine) or the 2-player demo game (DEMO_GAME)" }
+HOWTO_BASIC = { addr = 0x2C83, note = "how-to-play text 'BASIC SKILL ... TRAP ENEMIES INSIDE BUBBLES'" }
+HOWTO_ADVANCED = { addr = 0x2CAF, note = "how-to-play text 'BURST BUBBLES WITH YOUR HORNS OR FINS', 'ADVANCED SKILL ...'" }
+HOWTO_GOAL = { addr = 0x2D2F, note = "how-to-play text 'ONE STAGE CLEARED WHEN ALL ENEMIES ARE DESTROYED'" }
+DEMO_GAME = { addr = 0x2ECA, note = "attract demo game: ROUND_MAIN from the table at 2FAC by E634, both players (E5D7 = 3, 5 lives); ends with 'GAME OVER' (2FA2)" }
+BEST5_SCREEN = { addr = 0x2F54, note = "ends the demo: clears the game, BEST5_DRAW, CREDITS_DRAW, waits 0x96 frames, tamper compare, HIGH_ENTRY_SETUP" }
+BEST5_DRAW = { addr = 0x349F, note = "the 'BEST 5' table: texts at 3574, and the five scores" }
+ENTRY_SCREEN_DRAW = { addr = 0x34BB, note = "'SCORE ROUND  NAME' and 'ENTER 1UP/2UP INITIALS !'" }
+HIGH_ENTRY_NEW_ROW = { addr = 0x36D1, note = "zeroes the new row's score (7 bytes x E677 + E658), redraws, then fills it from the player's score" }
+INITIALS_ENTRY = { addr = 0x372B, note = "E679, E678, E67A = 0, ENTRY_LETTER_DRAW; loop for 0x12C x 8 frames reading the player's inputs for 3 letters" }
+INITIALS_STORE = { addr = 0x3876, note = "the letter ENTRY_ALPHABET[E679] into the row at E658 + 7 x E677 + E678" }
+HIGH_ENTRY_END = { addr = 0x37D1, note = "BEST5_DRAW, ENTRY_COLUMN_CLEAR, E677 = 0, waits 0x78 frames" }
+RECORD_SHOW = { addr = 0x39DB, note = "text 'TODAY'S RECORD IS' at D54A while E67E = 3" }
+RECORD_ROUND_SHOW = { addr = 0x3A0C, note = "text '\"ROUND    \"' and the round number (or 'AL' at 101) at DBCA" }
+SECRET_WELCOME_SHOW = { addr = 0x55E5, note = "E729 = FF, E72A = 78, text 'WELCOME TO SECRET ROUND' at D65E" }
+SECRET_WELCOME_STEP = { addr = 0x55FA, note = "E72A counts down; at 0 E729 = 1 and the text at 5627 replaces it" }
+STATE29_INIT = { addr = 0x50CB, note = "E723 = 29 (see L_5046): bank 2 effect starter for E724 (3 kinds: 50FC, 510B, 5115), sound 29; the text at 55E5 comes with it, so it may be the secret round" }
+STATE29_FRAME = { addr = 0x5127, note = "per frame: 55DB, 52B6, 5353, 5416, GHOST_COUNTDOWN, the Skel-Monsta update, 541E and 0x24 BUBBLE_SLOTS records" }
+ENEMY_ATTACK_CHECK = { addr = 0x7B94, note = "NZ when this enemy may attack: (IX+14) b1, target alive, the MCU proximity bytes near enough (FC2B record: first under 8, second 40 or more) and open cells ahead" }
+ENEMY_DEFEATED = { addr = 0x7BFD, note = "tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along a path from the table at 80C9" }
+ENEMY3_SHOT_LOOP = { addr = 0x7A42, note = "each ENEMY3_SHOTS record with its owner in ENEMY3_SLOTS" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }
@@ -293,6 +417,124 @@ BOSS_INIT     = { addr = 0xA847, note = "clears BOSS_SLOT; returns unless ROUND_
 BOSS_UPDATE   = { addr = 0xA8C7, note = "draws at A99A-A9FD: ANIM_STEP picks pose 0-1 (or 2-3 if (IX+8) b0) from BOSS_POSES, 16 pieces into gfx blocks 0C-0F" }
 BOSS_SHOTS_INIT = { addr = 0xB939, note = "clears BOSS_SHOTS; returns unless ROUND_MAIN = 0x63" }
 ENEMY_ANIM_SPRITE = { addr = 0x913C, note = "ANIM_STEP, then SPRITE or SPRITE_FLIPX with B = frame x 4 + (HL); flip from (IX+8) b1" }
+ENEMIES_FRAME = { addr = 0x863B, note = "per-frame loop of ROUND_ENEMIES: copies ENEMY_HITS to MCU_OBJECTS, then every group's update, the shots and ROUND_TIMER_CHECK" }
+BOSS_ROUND = { addr = 0x8673, note = "round 100: ENEMY_TOTAL = 1, sound 09, then BOSS_UPDATE and BOSS_SHOTS_UPDATE each frame" }
+ROUND_TIMER_CHECK = { addr = 0x8691, note = "TIMER_RUN b7: set to 1 and jump to 0B82; TIMER_DONE b0: cleared and LOAD_ROUND_PAL" }
+ENEMY_HIT_PTR = { addr = 0x86BD, note = "HL = ENEMY_HITS + 4 x (IX+9)" }
+ENEMY_HIT_REPORT = { addr = 0x86A8, note = "the enemy's Y and X (and C unless state b1) into its ENEMY_HITS record" }
+ENEMY_REMOVE_IF_B7 = { addr = 0x86C8, note = "if the record's b7 is set: hides the object, position 0, state 4, carry set" }
+ENEMY_TRAP_IF_B6 = { addr = 0x86E8, note = "if the record's b6 is set: state 2 at the record's position - 8, E D47 + 1, carry set" }
+ENEMY_ANGRY_IF_B5 = { addr = 0x870F, note = "if the record's b5 is set: clears it, sets b0, state A1, (IX+14) 20, placed at the record's position within the playfield" }
+ENEMY0_UPDATE = { addr = 0x8A18, note = "group 0 (unless ENEMY_SWAP b0): steps each ENEMY0_SLOTS enemy" }
+ENEMY0B_UPDATE = { addr = 0xB14A, note = "group 0 as ENEMY0B (when ENEMY_SWAP b0)" }
+ENEMY3_UPDATE = { addr = 0x9695, note = "group 3" }
+ENEMY4_UPDATE = { addr = 0x98E5, note = "group 4" }
+ENEMY5_UPDATE = { addr = 0x9E33, note = "group 5" }
+GHOST_UPDATE = { addr = 0xA150, note = "Skel-Monsta (GHOST_SLOTS)" }
+ENEMY2B_UPDATE = { addr = 0xA5FF, note = "group 2 as ENEMY2B (when ENEMY_SWAP b4)" }
+ENEMY2_SHOTS_UPDATE = { addr = 0x8287, note = "steps ENEMY2_SHOTS when group 2 is present" }
+ENEMY2B_SHOTS_UPDATE = { addr = 0xBC15, note = "steps ENEMY2B_SHOTS" }
+ENEMY0B_SHOTS_UPDATE = { addr = 0x848E, note = "steps ENEMY0B_SHOTS when group 0 is present" }
+BOSS_SHOTS_UPDATE = { addr = 0xB97A, note = "steps BOSS_SHOTS" }
+ENEMY0_ANIM = { addr = 0x8DEA, note = "mode 0 of the ENEMY0 table at 8E5F" }
+ENEMY0_WALK_R = { addr = 0x8B6B, note = "mode 1 of the ENEMY0 table at 8E5F" }
+ENEMY0_FALL = { addr = 0x8D8B, note = "mode 2 of the ENEMY0 table at 8E5F" }
+ENEMY0_WALK_L = { addr = 0x8AD1, note = "mode 3 of the ENEMY0 table at 8E5F" }
+ENEMY0_JUMP_R = { addr = 0x8CE4, note = "mode 4 of the ENEMY0 table at 8E5F" }
+ENEMY0_JUMP_L = { addr = 0x8C30, note = "mode 5 of the ENEMY0 table at 8E5F" }
+ENEMY1_ANIM = { addr = 0x90C2, note = "mode 0 of the ENEMY1 table at 9218" }
+ENEMY1_JUMP_R = { addr = 0x90BC, note = "mode 1 of the ENEMY1 table at 9218" }
+ENEMY1_FALL = { addr = 0x901B, note = "mode 2 of the ENEMY1 table at 9218" }
+ENEMY1_JUMP_L = { addr = 0x90B6, note = "mode 3 of the ENEMY1 table at 9218" }
+ENEMY2_ANIM = { addr = 0x9435, note = "mode 0 of the ENEMY2 table at 95F9" }
+ENEMY2_WALK_R = { addr = 0x9410, note = "mode 1 of the ENEMY2 table at 95F9" }
+ENEMY2_FALL = { addr = 0x9428, note = "mode 2 of the ENEMY2 table at 95F9" }
+ENEMY2_WALK_L = { addr = 0x93EA, note = "mode 3 of the ENEMY2 table at 95F9" }
+ENEMY2_JUMP_R = { addr = 0x9422, note = "mode 4 of the ENEMY2 table at 95F9" }
+ENEMY2_JUMP_L = { addr = 0x941C, note = "mode 5 of the ENEMY2 table at 95F9" }
+ENEMY3_ANIM = { addr = 0x9793, note = "mode 0 of the ENEMY3 table at 987D" }
+ENEMY3_WALK_R = { addr = 0x9772, note = "mode 1 of the ENEMY3 table at 987D" }
+ENEMY3_FALL = { addr = 0x978A, note = "mode 2 of the ENEMY3 table at 987D" }
+ENEMY3_WALK_L = { addr = 0x9766, note = "mode 3 of the ENEMY3 table at 987D" }
+ENEMY3_JUMP_R = { addr = 0x9784, note = "mode 4 of the ENEMY3 table at 987D" }
+ENEMY3_JUMP_L = { addr = 0x977E, note = "mode 5 of the ENEMY3 table at 987D" }
+ENEMY4_FLY_RU = { addr = 0x9A83, note = "flies right and up (Y + 1 every third step, X + 1)" }
+ENEMY4_FLY_RD = { addr = 0x9ADF, note = "flies right and down (Y - 1 every third step, X + 1)" }
+ENEMY4_FLY_LD = { addr = 0x9A24, note = "flies left and down (Y - 1 every third step, X - 1)" }
+ENEMY4_FLY_LU = { addr = 0x99CC, note = "flies left and up (Y + 1 every third step, X - 1)" }
+ENEMY5_FLY_RD = { addr = 0x9FDE, note = "flies right and down (Y - 1, X + 1) until a wall, then mode 1 or 3" }
+ENEMY5_FLY_RU = { addr = 0x9F24, note = "flies right and up (Y + 1, X + 1) until a wall" }
+ENEMY5_FALL = { addr = 0xA037, note = "falls until ENEMY_GROUND_CHECK finds ground, then mode (IX+8)" }
+ENEMY5_FLY_LD = { addr = 0x9F85, note = "flies left and down (Y - 1, X - 1) until a wall" }
+ENEMY5_FLY_LU = { addr = 0x9EC2, note = "flies left and up (Y + 1, X - 1) until a wall" }
+GHOST_FLY_UP = { addr = 0xA378, note = "Skel-Monsta: Y + (IX+13)" }
+GHOST_FLY_R = { addr = 0xA393, note = "Skel-Monsta: X + (IX+13)" }
+GHOST_FLY_DOWN = { addr = 0xA3A8, note = "Skel-Monsta: Y - (IX+13)" }
+GHOST_FLY_L = { addr = 0xA3BB, note = "Skel-Monsta: X - (IX+13)" }
+ENEMY2B_ANIM = { addr = 0xA6E4, note = "mode 0 of the ENEMY2B table at A80C" }
+ENEMY2B_WALK_R = { addr = 0xA6B1, note = "mode 1 of the ENEMY2B table at A80C" }
+ENEMY2B_FALL = { addr = 0xA6D1, note = "mode 2 of the ENEMY2B table at A80C" }
+ENEMY2B_WALK_L = { addr = 0xA6A5, note = "mode 3 of the ENEMY2B table at A80C" }
+ENEMY2B_JUMP_R = { addr = 0xA6C7, note = "mode 4 of the ENEMY2B table at A80C" }
+ENEMY2B_JUMP_L = { addr = 0xA6BD, note = "mode 5 of the ENEMY2B table at A80C" }
+BOSS_MOVE_RU = { addr = 0xAA08, note = "the boss flies diagonally (mode in (IX+7)); bounces off the edges with BOSS_EDGE_* (BOSS table at AAA8)" }
+BOSS_MOVE_RD = { addr = 0xAA2E, note = "the boss flies diagonally (mode in (IX+7)); bounces off the edges with BOSS_EDGE_* (BOSS table at AAA8)" }
+BOSS_MOVE_LD = { addr = 0xAA5C, note = "the boss flies diagonally (mode in (IX+7)); bounces off the edges with BOSS_EDGE_* (BOSS table at AAA8)" }
+BOSS_MOVE_LU = { addr = 0xAA82, note = "the boss flies diagonally (mode in (IX+7)); bounces off the edges with BOSS_EDGE_* (BOSS table at AAA8)" }
+ENEMY0B_ANIM = { addr = 0xB2EB, note = "mode 0 of the ENEMY0B table at B33E" }
+ENEMY0B_WALK_R = { addr = 0xB24D, note = "walks right (X + 1) while the cell ahead is open; at a wall turns to mode 3" }
+ENEMY0B_FALL = { addr = 0xB28C, note = "falls (Y - 1) until there is floor" }
+ENEMY0B_WALK_L = { addr = 0xB20E, note = "walks left (X - 1); at a wall turns to mode 1" }
+BOSS_SHOT_MODE0 = { addr = 0xBA1A, note = "mode 0 of the BOSS_SHOT table at BBA7" }
+BOSS_SHOT_MODE1 = { addr = 0xBA3A, note = "mode 1 of the BOSS_SHOT table at BBA7" }
+BOSS_SHOT_MODE2 = { addr = 0xBA5A, note = "mode 2 of the BOSS_SHOT table at BBA7" }
+BOSS_SHOT_MODE3 = { addr = 0xBA7A, note = "mode 3 of the BOSS_SHOT table at BBA7" }
+ENEMY2B_SHOT_ANIM = { addr = 0xBDEC, note = "animation and launch of the shot" }
+ENEMY2B_SHOT_FLY_R = { addr = 0xBD5E, note = "the shot flies right (cells at X+0C, X+8)" }
+ENEMY2B_SHOT_FLY_L = { addr = 0xBCF6, note = "the shot flies left (cells at X-0D, X-9)" }
+ENEMY2_SHOT_LAUNCH = { addr = 0x837F, note = "mode 0 of the ENEMY2_SHOT table at 8442" }
+ENEMY2_SHOT_FLY_R = { addr = 0x834F, note = "mode 1 of the ENEMY2_SHOT table at 8442" }
+ENEMY2_SHOT_FLY_L = { addr = 0x831A, note = "mode 3 of the ENEMY2_SHOT table at 8442" }
+ENEMY_WALK_L = { addr = 0x8AD7, note = "walk left: (IX+13) steps of X - 1 while there is floor (cell at X-9 solid); after 3C steps ENEMY_WALK_LIMIT starts a jump; at a wall the enemy turns to mode 1 or jumps (mode 5)" }
+ENEMY_WALK_R = { addr = 0x8B71, note = "as ENEMY_WALK_L, to the right (X + 1, cell at X+8); turns to mode 3 or jumps (mode 4)" }
+ENEMY_WALK_LIMIT = { addr = 0x8C0E, note = "after 3C steps along (IX+20): the jump path 9625, mode 4 (facing 1), carry clear" }
+ENEMY_JUMP_L = { addr = 0x8C36, note = "jump left along the path script at (IX+16): each step moves by a path byte, checking the cells at X-9; lands as mode 3" }
+ENEMY_JUMP_R = { addr = 0x8CEA, note = "as ENEMY_JUMP_L to the right; lands as mode 1" }
+ENEMY_FALL = { addr = 0x8D91, note = "Y - 1 a step while ENEMY_FLOOR_PROBE finds no floor; lands in mode (IX+8), or 1 / 3 at the side edges" }
+ENEMY_FLOOR_PROBE = { addr = 0x8E89, note = "Z when the cells at Y - 4 under X - 4 and X + 4 are solid (only on a cell row unless (IX+14) b5)" }
+ENEMY_SPEED_NEXT = { addr = 0x8838, note = "(IX+13) = the next byte of SPEED_PATTERNS row (IX+12) at (IX+11); a negative byte restarts the row" }
+ENEMY_ANGER = { addr = 0x8879, note = "keeps (IX+14) b6 in step with the enemy being angry (b7 of byte 0) or HURRY, and sets (IX+12) to record byte 8 + 6 (up to 28)" }
+ENEMY_HIT_REACT = { addr = 0x88CC, note = "reads the enemy's ENEMY_HITS record: b1 beaten, b2 trapped, b4 killed; sound 25; carry set when it reacted" }
+ENEMY_PATH_STEP = { addr = 0x8940, note = "one step of the movement path at (IX+16): bytes move X and Y by 1 (88 ends a repeat, 99 stops)" }
+ENEMY_FLOOR_BELOW = { addr = 0x8761, note = "on a cell row: the cell at X, Y-8 (Z = wall)" }
+ENEMY_FLOOR_AHEAD_L = { addr = 0x8772, note = "on a cell row: the cell at X-9, Y-9, the floor ahead when walking left" }
+ENEMY_FLOOR_AHEAD_R = { addr = 0x8786, note = "on a cell row: the cell at X+9, Y-9, the floor ahead when walking right" }
+ENEMY_WALL_L = { addr = 0x879A, note = "on a cell column: the cell at X-9, Y" }
+ENEMY_WALL_R = { addr = 0x87AC, note = "on a cell column: the cell at X+9, Y" }
+ENEMY_ANIM_FLIP = { addr = 0x915D, note = "ANIM_STEP with delay 0F02, then SPRITE or SPRITE_FLIPX by the frame's b0" }
+ENEMY_PROX_A = { addr = 0x917A, note = "MCU_PROXIMITY record of this enemy (8 bytes x (IX+9)), the target player's first byte: b7 set returns NZ, else b0 (Z = not near)" }
+ENEMY_PROX_B = { addr = 0x918F, note = "as ENEMY_PROX_A for the second pair of bytes (+2)" }
+ENEMY_TARGET_OFFSET = { addr = 0x91A6, note = "HL += 1 for the second player: an odd enemy chases P2 when two play; otherwise P1" }
+ENEMY_TARGET_ALIVE = { addr = 0x91B9, note = "b0 of P1_REC or P2_REC for this enemy's target player (even enemies P1, odd P2 when two play)" }
+ENEMY_ABOVE_PROBE = { addr = 0x91E2, note = "cells at X above the enemy (Y+4, +C, +14, +1C): Z at the first wall; clears (IX+15) when open at +C" }
+ENEMY_PATH_SET = { addr = 0x93F6, note = "movement path DE: (IX+16/17) = DE, (IX+19) = its repeat count, (IX+18), (IX+5), (IX+6) = 0" }
+ENEMY2_ATTACK_START = { addr = 0x95C9, note = "unless (IX+25) b4 or the mode is jumping: stops, saves the facing in (IX+32) and sets (IX+25) b1" }
+ENEMY_TURN_DELAY = { addr = 0x95E8, note = "(IX+21) = 0A + (IX+22) x ((IX+9) + 1)" }
+BOSS_EDGE_RIGHT = { addr = 0xAECD, note = "X + 20 below F0: nothing; else flips (IX+7) b0-1 and counts in F3CA" }
+BOSS_EDGE_LEFT = { addr = 0xAEBC, note = "X below 2C: flips (IX+7) b0-1" }
+BOSS_EDGE_TOP = { addr = 0xAEE2, note = "Y + 20 below D8: nothing; else flips (IX+7) b0, facing 1" }
+BOSS_EDGE_BOTTOM = { addr = 0xAEF7, note = "Y below 38: flips (IX+7) b0, facing 0" }
+BOSS_SHOT_SPRITE = { addr = 0xBAC5, note = "the shot's frame from ANIM_STEP: tiles 40 + 4 x frame, colour 33" }
+ENEMY2_ATTACK_RUN = { addr = 0x81BC, note = "group 2 attack frame: waits for open cells either side, ANIM_STEP, then (IX+25) b4 set and the attack ends" }
+ENEMY2_SHOT_HIT_WALL = { addr = 0x833F, note = "the shot stops: state 4, sound 0E" }
+ENEMY2_SHOT_WALL_PROBE = { addr = 0x8417, note = "on a cell column: cells at X-9 (Y+8 and Y) and X, Y; Z at a wall" }
+ENEMY2_SHOT_BURST = { addr = 0x83D5, note = "state b2: ANIM_STEP frames A4 + 4 x frame; at the end ENEMY2_SHOT_END" }
+ENEMY2_SHOT_END = { addr = 0x83EC, note = "clears the owner's (+19) b4, hides the shot and its state" }
+ENEMY2_SHOT_NEXT = { addr = 0x8400, note = "next shot record (0x10 bytes), owner + 0x23" }
+ENEMY3_ATTACK_START = { addr = 0x981C, note = "when (F05E) is nonzero and the enemy is not attacking: stops, (IX+24) b4, (F05E) - 1" }
+ENEMY3_ATTACK_STEP = { addr = 0x984D, note = "while (IX+24) b4: at (IX+5) = 2 sound 22, b4 off and b3 on (the shot)" }
+ENEMY2B_ATTACK_START = { addr = 0xA7E4, note = "group 2B as ENEMY2_ATTACK_START: unless (IX+7) b2 or (IX+24) b4, starts the throw" }
+ENEMY_GROUND_CHECK = { addr = 0x8EDF, note = "Z-flag result: probes the floor under the enemy (ENEMY_FLOOR_PROBE with (IX+14) b5 set, then GRID_PROBE_3); if none, Y - 1 and A = 1" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
@@ -316,23 +558,37 @@ BANK2_CHECK   = { addr = 0x85AE, note = "one step a call of a sum over bank2 (F4
 SPECIAL_PICK  = { addr = 0x85EB, note = "at round start (3E0E): SPECIAL_KIND from SKIP_KINDS, else the first SPECIAL_RULES entry whose counter has reached its threshold (clearing it); none in the attract demo or round 100" }
 SPECIAL_RUN   = { addr = 0x8686, note = "the special item: appears at record bytes 10-11 when SPECIAL_TIMER runs out, unless NO_SPECIAL or no enemies" }
 SPECIAL_TAKE  = { addr = 0x873E, note = "a player touches the special item: its effect through the table at 8AFF" }
-REC_F46B_INIT = { addr = 0x8BA7, note = "round start, called by OBJECTS_TASK: clears the state record at F46B" }
-REC_F46B_RUN = { addr = 0x8BB0, note = "each frame: steps the record at F46B" }
-REC_F513_INIT = { addr = 0x90DD, note = "round start, called by OBJECTS_TASK: clears the state record at F513" }
+REC_F46B_INIT = { addr = 0x8BA7, note = "round start, called by OBJECTS_TASK: clears the state record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0" }
+REC_F46B_RUN = { addr = 0x8BB0, note = "each frame: steps the record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0" }
+REC_F513_INIT = { addr = 0x90DD, note = "round start, called by OBJECTS_TASK: clears the state record at F513. Part of the effect started by special kind 0E (F513 = FF, per notes/levels.md)" }
 REC_F519_INIT = { addr = 0x92B6, note = "round start, called by OBJECTS_TASK: clears the state record at F519" }
-REC_F521_INIT = { addr = 0x936A, note = "round start, called by OBJECTS_TASK: clears the state record at F521" }
-REC_F52B_INIT = { addr = 0x96E6, note = "round start, called by OBJECTS_TASK: clears the state record at F52B" }
-REC_F52B_RUN = { addr = 0x96EF, note = "each frame: steps the record at F52B" }
-REC_F531_INIT = { addr = 0x99E2, note = "round start, called by OBJECTS_TASK: clears the state record at F531" }
-REC_F531_RUN = { addr = 0x99EB, note = "each frame: steps the record at F531" }
+REC_F521_INIT = { addr = 0x936A, note = "round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A" }
+REC_F52B_INIT = { addr = 0x96E6, note = "round start, called by OBJECTS_TASK: clears the state record at F52B. Part of the effect started by special kind 0D" }
+REC_F52B_RUN = { addr = 0x96EF, note = "each frame: steps the record at F52B. Part of the effect started by special kind 0D" }
+REC_F531_INIT = { addr = 0x99E2, note = "round start, called by OBJECTS_TASK: clears the state record at F531. Part of the effect started by special kind 0C" }
+REC_F531_RUN = { addr = 0x99EB, note = "each frame: steps the record at F531. Part of the effect started by special kind 0C" }
 REC_F54B_INIT = { addr = 0x9F76, note = "round start, called by OBJECTS_TASK: clears the state record at F54B" }
 REC_F54B_RUN = { addr = 0x9F7F, note = "each frame: steps the record at F54B" }
-REC_F590_INIT = { addr = 0xA2FC, note = "round start, called by OBJECTS_TASK: clears the state record at F590" }
-REC_F59E_INIT = { addr = 0xA59B, note = "round start, called by OBJECTS_TASK: clears the state record at F59E" }
-REC_F59E_RUN = { addr = 0xA5A4, note = "each frame: steps the record at F59E" }
-REC_F5AC_INIT = { addr = 0xA820, note = "round start, called by OBJECTS_TASK: clears the state record at F5AC" }
+REC_F590_INIT = { addr = 0xA2FC, note = "round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12" }
+REC_F59E_INIT = { addr = 0xA59B, note = "round start, called by OBJECTS_TASK: clears the state record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
+REC_F59E_RUN = { addr = 0xA5A4, note = "each frame: steps the record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
+REC_F5AC_INIT = { addr = 0xA820, note = "round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)" }
 REC_F60F_INIT = { addr = 0xAC80, note = "round start, called by OBJECTS_TASK: clears the state record at F60F" }
 REC_F624_INIT = { addr = 0xB9C4, note = "round start, called by OBJECTS_TASK: clears the state record at F624" }
+ROM_SUM_STEP_H = { addr = 0x8B6B, note = "one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the REC_F46B code)" }
+ROM_SUM_STEP_I = { addr = 0x8D64, note = "as ROM_SUM_STEP_H: pointer F477, sum F479, flag F476" }
+ROM_SUM_STEP_J = { addr = 0x8F17, note = "as ROM_SUM_STEP_H: pointer F4C7, sum F4C9, flag F4C6" }
+ROM_SUM_STEP_K = { addr = 0x909A, note = "as ROM_SUM_STEP_H: pointer F50F, sum F511, flag F50E" }
+ROM_SUM_STEP_L = { addr = 0x932D, note = "as ROM_SUM_STEP_H: pointer F51D, sum F51F, flag F51C" }
+ROM_SUM_STEP_M = { addr = 0x96A9, note = "as ROM_SUM_STEP_H: pointer F527, sum F529, flag F526" }
+ROM_SUM_STEP_N = { addr = 0xA2C0, note = "as ROM_SUM_STEP_H: pointer F58C, sum F58E, flag F58B" }
+ROM_SUM_STEP_O = { addr = 0xA7E3, note = "as ROM_SUM_STEP_H: pointer F5A8, sum F5AA, flag F5A7" }
+ROM_SUM_STEP_P = { addr = 0xB4B5, note = "as ROM_SUM_STEP_H: pointer F620, sum F622, flag F61F" }
+EFFECT_A_START = { addr = 0x8DA3, note = "unless ATTRACT: clears the effect A records at F47C (0x4A bytes) and builds the 8 records at F47E (6 bytes each)" }
+EFFECT_B_START = { addr = 0x8F54, note = "unless ATTRACT: clears F4CB (0x43 bytes) and builds the 8 effect B records at F4CE" }
+EFFECT_C_START = { addr = 0xA433, note = "clears F595 (9 bytes) and sets up the effect C point at F597/F596 with 8 sprite slots" }
+PATH_NEXT_BYTE = { addr = 0xAA22, note = "A = the next byte of movement path (IX+8), position (IX+7); 88 wraps to the start" }
+PALETTE0_SET = { addr = 0xBC2F, note = "video off, the first byte of PALETTE_RAM = C, video on" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

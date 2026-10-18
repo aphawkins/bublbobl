@@ -515,13 +515,37 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `HIGH_SCORE`, `LIVES_P1/P2` and `BONUS_NEXT_P1/P2`. `BONUS_TABLE_PTR` (`3170`) is the bonus
   life table picked by DSW1 b2-3 (8 entries of 3 BCD bytes), first taken for a coinage table.
   Entry 0 is the start value of `HIGH_SCORE` (`31E1`): confirm this in MAME.
+- Renaming pass (2026-10-18): `tools/addnames.py` appends `TABLE|ADDR|NAME|NOTE` lines to
+  `notes/symbols.toml`; then run `tools/redo_fixed.sh` and `tools/redo_banks.sh` and `tools/build.py`.
+  `redo_banks.sh` now follows the jump tables in banks 0 and 2 (the enemy mode tables, among
+  others), which decoded about 900 more instructions: bank 0 is 6035 instructions, bank 2 5953,
+  and the set is still byte-exact. A 16-bit constant that equals a routine's address now prints
+  as a number, except for `START`, `IRQ_HANDLER` and jump table entries, so `ld hl,0x4000` is no
+  longer shown as a label. Named: the per-frame enemy updates and the shared enemy movers
+  (`ENEMY_WALK_L/R`, `ENEMY_JUMP_L/R`, `ENEMY_FALL`, and each group's `ENEMYn_<mode>` entries in
+  the mode tables), the player record setup, the lives/bonus/score-entry code, the game flow
+  from `ATTRACT_TASK` to `HIGH_SCORE_SCREEN`, the how-to-play and demo screens, and the ROM
+  checksum steps (`ROM_SUM_STEP_C`..`P`). Those steps are called in play (the enemy and player
+  code), so they are tamper checks and not only start-up checks. Names that rest on a guess say
+  so in their note. About 1130 `L_xxxx` labels remain in the fixed ROM, 620 in bank 0 and 560
+  in bank 2; nearly all are branch targets inside a routine.
+- Attack code (2026-10-18): `ENEMY_ATTACK_CHECK` (`7B94`), `ENEMY_DEFEATED` (`7BFD`), group 2's
+  attack and shots (`ENEMY2_ATTACK_RUN`, `ENEMY2_SHOT_LAUNCH/FLY_L/FLY_R/BURST`), group 3's attack
+  start and step, and the boss's four diagonal moves (`BOSS_MOVE_RU/RD/LD/LU`, directions read
+  from which edges flip them). The bank 2 `REC_*` routines are special-item effects: the
+  `SPECIAL_EFFECTS` handlers that start them are in the notes, but the item kinds still have no
+  names, so the `REC_*` names stay until MAME shows each effect. Groups 4, 5, the ghost, `ENEMY2B`
+  and the boss attack code are still `L_xxxx`. Since then the mode tables of groups 4, 5, 0B and
+  the ghost are named by direction (`ENEMY4_FLY_RU`.., `ENEMY5_FLY_*`, `GHOST_FLY_*`,
+  `ENEMY0B_WALK_*`) and the 2B shots fly left or right; the boss's shots (`BOSS_SHOT_MODE0`-`3`) stay numbered.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
      `tools/trace.lua`, then rename them.
   3. Check some `--probe` regions, and the score code above, against a MAME trace.
-  4. Name the bank 0 and bank 2 routines (`[bank0.code]`, `[bank2.code]`), the enemy AI first.
+  4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
+     named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines, are not.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---
@@ -575,6 +599,11 @@ Only the data ranges are still `.incbin`. Findings that change this plan:
    - per-song decoded event lists (JSON),
    - optional MIDI conversion,
    - reference audio/VGM captured from MAME for validation.
+
+Decision (2026-10-17): the FM patches and sequences decoded here feed a generic FM synthesiser in
+`SharpKind.Audio` (PLAN §3.5 D), so decode the patch parameters (operator levels, multipliers,
+envelopes, algorithm, feedback) for both chips and not just the notes. MAME recordings are the
+reference to compare against.
 
 Deliverable: `src\sound\*.s`, `build\sound\`, `notes\data_formats.md#sound`.
 

@@ -265,11 +265,14 @@ class Names:
                 if base <= v["addr"] < end:
                     self.code[v["addr"]] = (k, v.get("note"))
         self.ext: dict[int, str] = {}  # names in another image's code (the fixed ROM, for a bank)
+        self.ext_value: dict[int, str] = {}  # those a 16-bit constant may print as: data, not routines
         if cpu in EXTRA_INCLUDE:
             for path in ("main.code", "main.data"):
                 for k, v in table(path).items():
                     if v["addr"] < 0x8000:
                         self.ext[v["addr"]] = k
+                        if path == "main.data" or k in VALUE_LABELS:
+                            self.ext_value[v["addr"]] = k
         self.ram: dict[int, str] = {}
         for path in includes:
             for k, v in table(path).items():
@@ -392,10 +395,14 @@ class Dasm:
             if self.base <= a < self.end and not self.inside(a):
                 labels[a] = names.code[a][0] if a in names.code else f"L_{a:04X}"
 
+        # a 16-bit constant that equals a code label's address is that label only for a jump table
+        # entry or an address the code compares with (the tamper checks); any other is a number
+        value_labels = {names.code[a][0]: a for a in names.code if names.code[a][0] in VALUE_LABELS}
+
         def num(v: int) -> str:
-            if v in labels:
+            if v in labels and (v in self.tables or v in value_labels.values()):
                 return labels[v]
-            return names.ram.get(v) or names.ext.get(v) or f"0x{v:04X}"
+            return names.ram.get(v) or names.ext_value.get(v) or f"0x{v:04X}"
 
         out = [
             f"; {cpu} - first pass by tools/dasmz80.py",
@@ -446,6 +453,9 @@ class Dasm:
                 out.append(f'        .incbin "{img}", 0x{a - self.base:04X}, 0x{end - a:04X}')
                 a = end
         return "\n".join(out) + "\n"
+
+
+VALUE_LABELS = ("START", "IRQ_HANDLER")
 
 
 def traced_starts(cpu: str) -> list[int]:
