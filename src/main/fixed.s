@@ -2410,15 +2410,16 @@ L_0FE8:                 ; 0FE8
         push    af
         and     0xF0
         call    SHR4
-        call    L_0FFE
+        call    HEX_CHAR
         ld      (iy+0),a
         pop     af
         and     0x0F
-        call    L_0FFE
+        call    HEX_CHAR
         ld      (iy+64),a
         ret
 
-L_0FFE:                 ; 0FFE
+; A (0-F) to its ASCII digit or letter
+HEX_CHAR:               ; 0FFE
         cp      0x0A
         jr      nc,L_1005
         add     a,0x30
@@ -7354,11 +7355,11 @@ LOAD_PAL_7_8:           ; 3C60
         ld      hl,0xCD08
         ld      de,0xD01D
         ld      bc,0x0320
-        call    L_3CAD
+        call    TILE_COLS_FILL
         ld      hl,0xCD0E
         ld      de,0xDA1D
         ld      bc,0x1720
-        call    L_3CAD
+        call    TILE_COLS_FILL
         ld      a,0x03
         call    BANK_SELECT
         ld      hl,0xCD0C
@@ -7373,7 +7374,8 @@ LOAD_PAL_7_8:           ; 3C60
         call    TILE_RECT
         jp      BANK_RESTORE
 
-L_3CAD:                 ; 3CAD
+; B columns of C tile words D, E at HL, 0x40 bytes a column
+TILE_COLS_FILL:         ; 3CAD
         push    bc
         push    hl
         ld      b,c
@@ -7389,7 +7391,7 @@ L_3CB0:                 ; 3CB0
         pop     bc
         inc     hl
         inc     hl
-        djnz    L_3CAD
+        djnz    TILE_COLS_FILL
         ret
 
 PALETTES_7_8:           ; 3CC2
@@ -11458,7 +11460,8 @@ L_61F4:                 ; 61F4
         .word   L_61E3
         .word   L_61E3
         .incbin "main_fixed.bin", 0x6202, 0x0012
-L_6214:                 ; 6214
+; (IX+13) = the byte at 622A + SPEED2_SEL, plus R & 7; (IX+12) = 1
+RAND_TIMER_SET:         ; 6214
         ld      a,(SPEED2_SEL)
         ld      hl,0x622A
         call    ADD_HL_A
@@ -11671,7 +11674,7 @@ L_6365:                 ; 6365
         inc     hl
         ld      (hl),0x12
         call    BUBBLE_OWNER_SAVE
-        call    L_6214
+        call    RAND_TIMER_SET
         ld      hl,0xE75B
         inc     (hl)
         ld      a,(ENEMY_TOTAL)
@@ -12791,7 +12794,7 @@ L_6E02:                 ; 6E02
 L_6E16:                 ; 6E16
         call    OBJ_POS_LOAD
         call    OBJ_POS
-        call    L_6214
+        call    RAND_TIMER_SET
         call    GRID_CELL
         ld      (ix+10),a
         ld      a,(0xE75C)
@@ -15084,7 +15087,7 @@ L_7F90:                 ; 7F90
         jr      z,L_7FAE
         bit     3,b
         jr      nz,L_7FAB
-        call    L_7FE7
+        call    STEP_TO_8_UP
         jr      L_7FAE
 
 L_7FAB:                 ; 7FAB
@@ -15096,7 +15099,7 @@ L_7FAE:                 ; 7FAE
         inc     hl
         bit     7,b
         jr      nz,L_7FBD
-        call    L_7FE7
+        call    STEP_TO_8_UP
         jr      L_7FC0
 
 L_7FBD:                 ; 7FBD
@@ -15125,7 +15128,8 @@ L_7FCA:                 ; 7FCA
         inc     a
         ret
 
-L_7FE7:                 ; 7FE7
+; (HL) + 1 up to three times, stopping at a multiple of 8; the third step only if (IX+0) b4
+STEP_TO_8_UP:           ; 7FE7
         inc     (hl)
         ld      a,(hl)
         and     0x07

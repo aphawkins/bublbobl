@@ -380,6 +380,10 @@ FILL_CHECKED = { addr = 0x5C11, note = "(DE) bytes of C at HL; a hidden tamper c
 BUBBLE_EDGE_CHECK = { addr = 0x6249, note = "carry = a bubble at X < 08 or >= F8 is stopped by the edge bits in E59B (round record byte 3)" }
 BUBBLE_RISE = { addr = 0x6283, note = "moves a bubble by (IX+19) and moves it back if the grid probe hits a wall" }
 COUNTER_STEP = { addr = 0x7900, note = "(HL)+1; at D it goes to 0 and (BC) steps mod E; A = (BC)" }
+HEX_CHAR = { addr = 0x0FFE, note = "A (0-F) to its ASCII digit or letter" }
+TILE_COLS_FILL = { addr = 0x3CAD, note = "B columns of C tile words D, E at HL, 0x40 bytes a column" }
+RAND_TIMER_SET = { addr = 0x6214, note = "(IX+13) = the byte at 622A + SPEED2_SEL, plus R & 7; (IX+12) = 1" }
+STEP_TO_8_UP = { addr = 0x7FE7, note = "(HL) + 1 up to three times, stopping at a multiple of 8; the third step only if (IX+0) b4" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }

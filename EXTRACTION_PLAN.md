@@ -541,7 +541,9 @@ Started (2026-10-17) with the sub CPU, which is now done:
 - Most-called helpers (2026-10-18): `SCREEN_FLASH`, `MUL16`, `ROUND_x19A`, `TILE_COLS_COPY`,
   `COUNTER_STEP`, `BUBBLE_RISE`, `BUBBLE_EDGE_CHECK`, `SPRITE_GRID_D`, `TILE_PAIR_PUT_A7` and
   `FILL_CHECKED` (`5C11`), which hides one more tamper check: bytes `0000–0002` must sum to
-  `3E`. Not checked in MAME yet.
+  `3E`. Then `HEX_CHAR`, `TILE_COLS_FILL`, `RAND_TIMER_SET` and `STEP_TO_8_UP`. Not checked
+  in MAME yet. The fixed ROM's remaining `L_xxxx` routines with more than one caller are
+  unclear without a trace (`4195`, `43A0`, `21CF`, `6B80`, `62FB`).
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
