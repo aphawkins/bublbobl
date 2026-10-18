@@ -370,6 +370,16 @@ STATE29_FRAME = { addr = 0x5127, note = "per frame: 55DB, 52B6, 5353, 5416, GHOS
 ENEMY_ATTACK_CHECK = { addr = 0x7B94, note = "NZ when this enemy may attack: (IX+14) b1, target alive, the MCU proximity bytes near enough (FC2B record: first under 8, second 40 or more) and open cells ahead" }
 ENEMY_DEFEATED = { addr = 0x7BFD, note = "tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along a path from the table at 80C9" }
 ENEMY3_SHOT_LOOP = { addr = 0x7A42, note = "each ENEMY3_SHOTS record with its owner in ENEMY3_SLOTS" }
+SPRITE_GRID_D = { addr = 0x14C2, note = "SPRITE_GRID with D already set" }
+SCREEN_FLASH = { addr = 0x18BB, note = "video off and on 7 times, 6 frames each" }
+MUL16 = { addr = 0x0DC1, note = "DE x BC -> DE:HL, read from the code" }
+ROUND_x19A = { addr = 0x3C57, note = "A (round, capped at 64) x 0x019A through MUL16" }
+TILE_COLS_COPY = { addr = 0x5543, note = "B columns of C tile words from DE to HL, 0x40 bytes a column" }
+TILE_PAIR_PUT_A7 = { addr = 0x5AC7, note = "TILE_PAIR_PUT with A + A7" }
+FILL_CHECKED = { addr = 0x5C11, note = "(DE) bytes of C at HL; a hidden tamper check: bytes 0000-0002 must sum to 3E, or it wrecks the return address" }
+BUBBLE_EDGE_CHECK = { addr = 0x6249, note = "carry = a bubble at X < 08 or >= F8 is stopped by the edge bits in E59B (round record byte 3)" }
+BUBBLE_RISE = { addr = 0x6283, note = "moves a bubble by (IX+19) and moves it back if the grid probe hits a wall" }
+COUNTER_STEP = { addr = 0x7900, note = "(HL)+1; at D it goes to 0 and (BC) steps mod E; A = (BC)" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }

@@ -538,6 +538,10 @@ Started (2026-10-17) with the sub CPU, which is now done:
   and the boss attack code are still `L_xxxx`. Since then the mode tables of groups 4, 5, 0B and
   the ghost are named by direction (`ENEMY4_FLY_RU`.., `ENEMY5_FLY_*`, `GHOST_FLY_*`,
   `ENEMY0B_WALK_*`) and the 2B shots fly left or right; the boss's shots (`BOSS_SHOT_MODE0`-`3`) stay numbered.
+- Most-called helpers (2026-10-18): `SCREEN_FLASH`, `MUL16`, `ROUND_x19A`, `TILE_COLS_COPY`,
+  `COUNTER_STEP`, `BUBBLE_RISE`, `BUBBLE_EDGE_CHECK`, `SPRITE_GRID_D`, `TILE_PAIR_PUT_A7` and
+  `FILL_CHECKED` (`5C11`), which hides one more tamper check: bytes `0000–0002` must sum to
+  `3E`. Not checked in MAME yet.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).

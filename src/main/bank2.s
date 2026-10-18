@@ -855,7 +855,7 @@ L_883E:                 ; 883E
         rst     0x08
         ld      a,0x02
         rst     0x08
-        call    0x18BB
+        call    SCREEN_FLASH
         ld      a,0x02
         rst     0x10
         ld      hl,0xE34F
@@ -1500,7 +1500,7 @@ L_8C7F:                 ; 8C7F
         ld      c,0x23
 L_8C93:                 ; 8C93
         ld      de,0x0108
-        call    0x14C2
+        call    SPRITE_GRID_D
         ld      hl,0xF46E
         ld      (hl),0x64
         ld      hl,0xF46C
@@ -3787,7 +3787,7 @@ L_9DA3:                 ; 9DA3
         ld      b,0x04
         ld      d,0x02
         ld      e,0x02
-        call    0x14C2
+        call    SPRITE_GRID_D
 L_9DAC:                 ; 9DAC
         ld      a,(ix+5)
         ld      hl,0x9EEE

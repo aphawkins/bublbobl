@@ -2067,7 +2067,8 @@ L_0DBD:                 ; 0DBD
         jr      nz,L_0DB9
         ret
 
-L_0DC1:                 ; 0DC1
+; DE x BC -> DE:HL, read from the code
+MUL16:                  ; 0DC1
         ld      a,e
         call    L_0DD9
         ex      af,af'
@@ -2747,7 +2748,8 @@ SPRITE_LIST:            ; 14BD
 ; B sprites from the tile list at HL laid out in a grid 4 wide: gfx_num = column x 32 | E; SPRITE_LIST with D = 0
 SPRITE_GRID:            ; 14C0
         ld      d,0x00
-L_14C2:                 ; 14C2
+; SPRITE_GRID with D already set
+SPRITE_GRID_D:          ; 14C2
         ld      a,d
         call    SHL5
         or      e
@@ -2769,7 +2771,7 @@ L_14D2:                 ; 14D2
         pop     bc
         pop     de
         inc     hl
-        djnz    L_14C2
+        djnz    SPRITE_GRID_D
         ret
 
 ; as SPRITE_LIST through SPRITE_FLIPX
@@ -3369,7 +3371,8 @@ L_18B5:                 ; 18B5
         djnz    GFX_GRID_FILL
         ret
 
-L_18BB:                 ; 18BB
+; video off and on 7 times, 6 frames each
+SCREEN_FLASH:           ; 18BB
         ld      b,0x0E
 L_18BD:                 ; 18BD
         ld      a,0x06
@@ -4237,7 +4240,7 @@ ZAP_ROUND:              ; 1F30
         call    PRINT_TEXT
         ld      a,0x3C
         rst     0x18
-        call    L_18BB
+        call    SCREEN_FLASH
         call    CLEAR_ROWS_B
         ld      hl,DIFFICULTY
         ld      (hl),0x1E
@@ -6748,7 +6751,7 @@ L_378A:                 ; 378A
         ld      (hl),0x21
         ld      c,0x12
         call    SOUND_PUSH
-        call    L_18BB
+        call    SCREEN_FLASH
         ld      hl,0xF457
         inc     (hl)
         ld      iy,0x0061
@@ -7004,7 +7007,7 @@ L_397C:                 ; 397C
         jr      nz,L_398C
         ld      a,0x64
 L_398C:                 ; 398C
-        call    L_3C57
+        call    ROUND_x19A
         ld      a,0xBA
         sub     h
         ld      (0xE241),a
@@ -7155,7 +7158,7 @@ L_3AC8:                 ; 3AC8
         jr      nz,L_3AD4
         ld      a,0x64
 L_3AD4:                 ; 3AD4
-        call    L_3C57
+        call    ROUND_x19A
         ld      a,0xBA
         sub     h
         ld      (0xE23D),a
@@ -7201,7 +7204,7 @@ L_3AD4:                 ; 3AD4
         call    ADD_HL_A
         ld      bc,0x021F
         ld      de,0x0200
-        call    L_14C2
+        call    SPRITE_GRID_D
         jp      L_3C4A
 
 L_3B47:                 ; 3B47
@@ -7264,7 +7267,7 @@ L_3BB4:                 ; 3BB4
         jr      nz,L_3BC0
         ld      a,0x64
 L_3BC0:                 ; 3BC0
-        call    L_3C57
+        call    ROUND_x19A
         ld      a,0xBA
         sub     h
         ld      (0xE28D),a
@@ -7310,7 +7313,7 @@ L_3BC0:                 ; 3BC0
         call    ADD_HL_A
         ld      bc,0x0223
         ld      de,0x0205
-        call    L_14C2
+        call    SPRITE_GRID_D
         jr      L_3C4A
 
 L_3C32:                 ; 3C32
@@ -7333,11 +7336,12 @@ L_3C4A:                 ; 3C4A
         jp      nz,L_3A7F
         jp      L_39D8
 
-L_3C57:                 ; 3C57
+; A (round, capped at 64) x 0x019A through MUL16
+ROUND_x19A:             ; 3C57
         ld      b,0x00
         ld      c,a
         ld      de,0x019A
-        jp      L_0DC1
+        jp      MUL16
 
 ; PALETTES_7_8 -> F8E0
 LOAD_PAL_7_8:           ; 3C60
@@ -8365,7 +8369,7 @@ L_464A:                 ; 464A
         jr      z,L_4671
         ld      c,0x22
 L_4671:                 ; 4671
-        call    L_14C2
+        call    SPRITE_GRID_D
 L_4674:                 ; 4674
         ld      a,(ix+39)
         and     a
@@ -9513,7 +9517,7 @@ L_5046:                 ; 5046
         ld      hl,0xE5D7
         bit     1,(hl)
         call    nz,P2_LIVES_DRAW
-        call    L_18BB
+        call    SCREEN_FLASH
         ld      hl,ROUND_MAIN
         inc     (hl)
         ld      a,(hl)
@@ -9890,7 +9894,7 @@ L_53B9:                 ; 53B9
 L_53CF:                 ; 53CF
         ld      a,0x03
         rst     0x08
-        call    L_18BB
+        call    SCREEN_FLASH
         call    CLEAR_ROWS_A
         call    SET_E1D0_10
         ld      a,(0xE726)
@@ -10006,11 +10010,11 @@ L_54C2:                 ; 54C2
         ld      hl,0xCD08
         ld      de,BANK_WINDOW
         ld      bc,0x1A10
-        call    L_5543
+        call    TILE_COLS_COPY
         ld      hl,0xD108
         ld      de,0x8340
         ld      bc,0x1A10
-        call    L_5543
+        call    TILE_COLS_COPY
         jp      BANK_RESTORE
 
 L_54ED:                 ; 54ED
@@ -10023,11 +10027,11 @@ L_54ED:                 ; 54ED
         ld      hl,0xCD08
         ld      de,0x8680
         ld      bc,0x1A10
-        call    L_5543
+        call    TILE_COLS_COPY
         ld      hl,0xD108
         ld      de,0x89C0
         ld      bc,0x1A10
-        call    L_5543
+        call    TILE_COLS_COPY
         jp      BANK_RESTORE
 
 L_5518:                 ; 5518
@@ -10040,14 +10044,15 @@ L_5518:                 ; 5518
         ld      hl,0xCD08
         ld      de,0x8D00
         ld      bc,0x1A10
-        call    L_5543
+        call    TILE_COLS_COPY
         ld      hl,0xD108
         ld      de,0x9040
         ld      bc,0x1A10
-        call    L_5543
+        call    TILE_COLS_COPY
         jp      BANK_RESTORE
 
-L_5543:                 ; 5543
+; B columns of C tile words from DE to HL, 0x40 bytes a column
+TILE_COLS_COPY:         ; 5543
         push    bc
         push    hl
         ld      b,c
@@ -10066,7 +10071,7 @@ L_5546:                 ; 5546
         pop     bc
         inc     hl
         inc     hl
-        djnz    L_5543
+        djnz    TILE_COLS_COPY
         ret
 
         .incbin "main_fixed.bin", 0x555B, 0x0080
@@ -10240,7 +10245,7 @@ L_5882:                 ; 5882
         ld      bc,0x0321
         ld      e,0x01
         ld      d,0x01
-        call    L_14C2
+        call    SPRITE_GRID_D
         ld      a,(0xE73B)
         cp      0x64
         jr      c,L_589F
@@ -10313,7 +10318,7 @@ L_58F0:                 ; 58F0
         ld      bc,0x0A1D
         ld      e,0x02
         ld      d,0x02
-        call    L_14C2
+        call    SPRITE_GRID_D
         jr      L_594A
 
 L_5923:                 ; 5923
@@ -10321,17 +10326,17 @@ L_5923:                 ; 5923
         ld      bc,0x0A1D
         ld      e,0x02
         ld      d,0x02
-        call    L_14C2
+        call    SPRITE_GRID_D
         ld      hl,0x5B37
         ld      bc,0x021E
         ld      d,0x03
         ld      e,0x03
-        call    L_14C2
+        call    SPRITE_GRID_D
         ld      hl,0x5B39
         ld      bc,0x031F
         ld      d,0x01
         ld      e,0x04
-        call    L_14C2
+        call    SPRITE_GRID_D
 L_594A:                 ; 594A
         ld      hl,0xE5D7
         bit     1,(hl)
@@ -10366,12 +10371,12 @@ L_597E:                 ; 597E
         ld      bc,0x0222
         ld      d,0x01
         ld      e,0x06
-        call    L_14C2
+        call    SPRITE_GRID_D
         ld      hl,0x5B39
         ld      bc,0x0323
         ld      d,0x03
         ld      e,0x06
-        jp      L_14C2
+        jp      SPRITE_GRID_D
 
 L_59A3:                 ; 59A3
         ld      hl,0xE73F
@@ -10483,12 +10488,12 @@ L_5A3D:                 ; 5A3D
 L_5A50:                 ; 5A50
         ld      hl,0xD048
         ld      e,0x1D
-        call    L_5AC7
+        call    TILE_PAIR_PUT_A7
 L_5A58:                 ; 5A58
         ld      a,c
         ld      hl,0xD088
         ld      e,0x1D
-        call    L_5AC7
+        call    TILE_PAIR_PUT_A7
         ld      a,(0xE73B)
         cp      0x64
         jr      c,L_5A6A
@@ -10507,12 +10512,12 @@ L_5A6A:                 ; 5A6A
 L_5A7D:                 ; 5A7D
         ld      hl,0xD148
         ld      e,0x21
-        call    L_5AC7
+        call    TILE_PAIR_PUT_A7
 L_5A85:                 ; 5A85
         ld      a,c
         ld      hl,0xD188
         ld      e,0x21
-        call    L_5AC7
+        call    TILE_PAIR_PUT_A7
         ld      hl,0xE73D
         inc     (hl)
         bit     4,(hl)
@@ -10543,7 +10548,8 @@ L_5AB2:                 ; 5AB2
         call    TILE_PAIR_PUT
         ret
 
-L_5AC7:                 ; 5AC7
+; TILE_PAIR_PUT with A + A7
+TILE_PAIR_PUT_A7:       ; 5AC7
         add     a,0xA7
 ; HL: two tile columns, A and A + 0B, with attribute E
 TILE_PAIR_PUT:          ; 5AC9
@@ -10636,16 +10642,16 @@ L_5B9F:                 ; 5B9F
         ld      de,0xE5BE
         ld      hl,SPECIAL_LIST
         ld      c,0x01
-        call    L_5C11
+        call    FILL_CHECKED
         inc     de
         ld      c,0x02
-        call    L_5C11
+        call    FILL_CHECKED
         inc     de
         ld      c,0x03
-        call    L_5C11
+        call    FILL_CHECKED
         inc     de
         ld      c,0x04
-        call    L_5C11
+        call    FILL_CHECKED
         ld      ix,BUBBLE_SLOTS
         xor     a
         ld      de,0x0000
@@ -10685,7 +10691,8 @@ L_5BFD:                 ; 5BFD
         jr      nz,L_5BD8
         ret
 
-L_5C11:                 ; 5C11
+; (DE) bytes of C at HL; a hidden tamper check: bytes 0000-0002 must sum to 3E, or it wrecks the return address
+FILL_CHECKED:           ; 5C11
         ld      a,(de)
         or      a
         ret     z
@@ -10763,8 +10770,8 @@ L_5C78:                 ; 5C78
         ld      a,(ix+7)
         call    SPRITE
         call    BUBBLE_SPEED
-        call    L_6283
-        call    L_6249
+        call    BUBBLE_RISE
+        call    BUBBLE_EDGE_CHECK
         jp      nc,L_602A
         jp      L_5FE4
 
@@ -10864,8 +10871,8 @@ L_5D57:                 ; 5D57
         ld      a,(ix+14)
         and     a
         jp      m,L_5F7B
-        call    L_6283
-        call    L_6249
+        call    BUBBLE_RISE
+        call    BUBBLE_EDGE_CHECK
         jp      nc,L_602A
         jp      L_5FE4
 
@@ -10947,7 +10954,7 @@ L_5E10:                 ; 5E10
         jr      nz,L_5E94
         bit     2,(ix+26)
         jr      nz,L_5E66
-        call    L_6283
+        call    BUBBLE_RISE
         ld      a,(0xE76A)
         and     a
         jr      nz,L_5E6C
@@ -11024,8 +11031,8 @@ L_5EB1:                 ; 5EB1
 
 L_5EC4:                 ; 5EC4
         call    BUBBLE_SPEED
-        call    L_6283
-        call    L_6249
+        call    BUBBLE_RISE
+        call    BUBBLE_EDGE_CHECK
         jp      nc,L_602A
         jp      L_5FE4
 
@@ -11058,7 +11065,7 @@ L_5EDD:                 ; 5EDD
 L_5F0B:                 ; 5F0B
         bit     4,(ix+26)
         jp      nz,L_5F5C
-        call    L_6283
+        call    BUBBLE_RISE
         ld      a,(0xE76A)
         and     a
         jp      nz,L_5F7B
@@ -11090,7 +11097,7 @@ L_5F0B:                 ; 5F0B
         ld      a,(ix+7)
         ld      c,0x1C
         call    SPRITE
-        call    L_6249
+        call    BUBBLE_EDGE_CHECK
         jp      nc,L_602A
         jp      L_5FE4
 
@@ -11463,7 +11470,8 @@ L_6214:                 ; 6214
         ret
 
         .incbin "main_fixed.bin", 0x622A, 0x001F
-L_6249:                 ; 6249
+; carry = a bubble at X < 08 or >= F8 is stopped by the edge bits in E59B (round record byte 3)
+BUBBLE_EDGE_CHECK:      ; 6249
         ld      hl,0xE59B
         ld      a,(ix+1)
         cp      0xF8
@@ -11501,7 +11509,8 @@ L_6281:                 ; 6281
         xor     a
         ret
 
-L_6283:                 ; 6283
+; moves a bubble by (IX+19) and moves it back if the grid probe hits a wall
+BUBBLE_RISE:            ; 6283
         ld      a,(ix+19)
         and     a
         jr      z,L_62BD
@@ -13205,7 +13214,7 @@ L_7196:                 ; 7196
         ld      hl,0xEB6B
         ld      bc,0xEB6C
         ld      de,0x0A02
-        call    L_7900
+        call    COUNTER_STEP
         add     a,a
         add     a,a
         ld      hl,0xEB6E
@@ -13330,7 +13339,7 @@ L_7265:                 ; 7265
         ld      hl,0xEB6B
         ld      bc,0xEB6C
         ld      de,0x0A02
-        call    L_7900
+        call    COUNTER_STEP
         add     a,a
         add     a,a
         ld      hl,0xEB6E
@@ -13370,7 +13379,7 @@ L_72A7:                 ; 72A7
         ld      hl,0xEB63
         ld      bc,0xEB64
         ld      de,0x0F04
-        call    L_7900
+        call    COUNTER_STEP
         or      a
         jr      z,L_72D5
         cp      0x01
@@ -13405,7 +13414,7 @@ L_72F3:                 ; 72F3
         ld      hl,0xEB61
         ld      bc,0xEB62
         ld      de,0x0A02
-        call    L_7900
+        call    COUNTER_STEP
         cp      0x01
         jr      z,L_7312
         ld      hl,0xD55A
@@ -13696,7 +13705,7 @@ L_7525:                 ; 7525
         ld      hl,0xEB63
         ld      bc,0xEB64
         ld      de,0x0F04
-        call    L_7900
+        call    COUNTER_STEP
         or      a
         jr      z,L_7553
         cp      0x01
@@ -13731,7 +13740,7 @@ L_7571:                 ; 7571
         ld      hl,0xEB61
         ld      bc,0xEB62
         ld      de,0x0A02
-        call    L_7900
+        call    COUNTER_STEP
         cp      0x01
         jr      z,L_7590
         ld      hl,0xDB9A
@@ -14192,7 +14201,8 @@ L_78F1:                 ; 78F1
         inc     a
         ret
 
-L_7900:                 ; 7900
+; (HL)+1; at D it goes to 0 and (BC) steps mod E; A = (BC)
+COUNTER_STEP:           ; 7900
         inc     (hl)
         ld      a,(hl)
         cp      d
@@ -14214,7 +14224,7 @@ L_7911:                 ; 7911
 
 L_7913:                 ; 7913
         call    BANK_RESTORE
-        call    L_18BB
+        call    SCREEN_FLASH
         ld      hl,ENEMY_TOTAL
         ld      (hl),0x00
         call    VIDEO_OFF
