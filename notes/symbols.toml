@@ -576,17 +576,17 @@ REC_F46B_INIT = { addr = 0x8BA7, note = "round start, called by OBJECTS_TASK: cl
 REC_F46B_RUN = { addr = 0x8BB0, note = "each frame: steps the record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0" }
 REC_F513_INIT = { addr = 0x90DD, note = "round start, called by OBJECTS_TASK: clears the state record at F513. Part of the effect started by special kind 0E (F513 = FF, per notes/levels.md)" }
 REC_F519_INIT = { addr = 0x92B6, note = "round start, called by OBJECTS_TASK: clears the state record at F519" }
-REC_F521_INIT = { addr = 0x936A, note = "round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A" }
-REC_F52B_INIT = { addr = 0x96E6, note = "round start, called by OBJECTS_TASK: clears the state record at F52B. Part of the effect started by special kind 0D" }
-REC_F52B_RUN = { addr = 0x96EF, note = "each frame: steps the record at F52B. Part of the effect started by special kind 0D" }
-REC_F531_INIT = { addr = 0x99E2, note = "round start, called by OBJECTS_TASK: clears the state record at F531. Part of the effect started by special kind 0C" }
-REC_F531_RUN = { addr = 0x99EB, note = "each frame: steps the record at F531. Part of the effect started by special kind 0C" }
+PICKUP_RUSH_A_INIT = { addr = 0x936A, note = "Seen in MAME (--special 09, 0A, 0B): the playfield fills with pickups, with a timer and a P1 vs P2 count at the top. round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A" }
+PICKUP_RUSH_B_INIT = { addr = 0x96E6, note = "Seen in MAME (--special 0D): as PICKUP_RUSH_A with notes as the pickups. round start, called by OBJECTS_TASK: clears the state record at F52B. Part of the effect started by special kind 0D" }
+PICKUP_RUSH_B_RUN = { addr = 0x96EF, note = "Seen in MAME (--special 0D): as PICKUP_RUSH_A with notes as the pickups. each frame: steps the record at F52B. Part of the effect started by special kind 0D" }
+PICKUP_RUSH_C_INIT = { addr = 0x99E2, note = "Seen in MAME (--special 0C, 2F): as PICKUP_RUSH_A with arches as the pickups. round start, called by OBJECTS_TASK: clears the state record at F531. Part of the effect started by special kind 0C" }
+PICKUP_RUSH_C_RUN = { addr = 0x99EB, note = "Seen in MAME (--special 0C, 2F): as PICKUP_RUSH_A with arches as the pickups. each frame: steps the record at F531. Part of the effect started by special kind 0C" }
 REC_F54B_INIT = { addr = 0x9F76, note = "round start, called by OBJECTS_TASK: clears the state record at F54B" }
 REC_F54B_RUN = { addr = 0x9F7F, note = "each frame: steps the record at F54B" }
-REC_F590_INIT = { addr = 0xA2FC, note = "round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12" }
-REC_F59E_INIT = { addr = 0xA59B, note = "round start, called by OBJECTS_TASK: clears the state record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
-REC_F59E_RUN = { addr = 0xA5A4, note = "each frame: steps the record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
-REC_F5AC_INIT = { addr = 0xA820, note = "round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)" }
+ROUND_SKIP_INIT = { addr = 0xA2FC, note = "Seen in MAME (--special 12): the playfield scrolls on to a later round. round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12" }
+KILL_ALL_A_INIT = { addr = 0xA59B, note = "Seen in MAME (trace.py --special 05): every enemy turns into a gem. round start, called by OBJECTS_TASK: clears the state record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
+KILL_ALL_A_RUN = { addr = 0xA5A4, note = "Seen in MAME (trace.py --special 05): every enemy turns into a gem. each frame: steps the record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
+KILL_ALL_B_INIT = { addr = 0xA820, note = "Seen in MAME (--special 1C): every enemy turns into a gem, by another path than KILL_ALL_A. round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)" }
 REC_F60F_INIT = { addr = 0xAC80, note = "round start, called by OBJECTS_TASK: clears the state record at F60F" }
 REC_F624_INIT = { addr = 0xB9C4, note = "round start, called by OBJECTS_TASK: clears the state record at F624" }
 ROM_SUM_STEP_H = { addr = 0x8B6B, note = "one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the REC_F46B code)" }

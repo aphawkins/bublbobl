@@ -2399,8 +2399,8 @@ L_935B:                 ; 935B
         exx
         jp      (hl)
 
-; round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A
-REC_F521_INIT:          ; 936A
+; Seen in MAME (--special 09, 0A, 0B): the playfield fills with pickups, with a timer and a P1 vs P2 count at the top. round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A
+PICKUP_RUSH_A_INIT:     ; 936A
         ld      hl,0xF521
         ld      bc,0x0005
         jp      ZERO_BC
@@ -2878,14 +2878,14 @@ L_96D8:                 ; 96D8
         cp      (hl)
         ret     z
         push    de
-; round start, called by OBJECTS_TASK: clears the state record at F52B. Part of the effect started by special kind 0D
-REC_F52B_INIT:          ; 96E6
+; Seen in MAME (--special 0D): as PICKUP_RUSH_A with notes as the pickups. round start, called by OBJECTS_TASK: clears the state record at F52B. Part of the effect started by special kind 0D
+PICKUP_RUSH_B_INIT:     ; 96E6
         ld      hl,0xF52B
         ld      bc,0x0006
         jp      ZERO_BC
 
-; each frame: steps the record at F52B. Part of the effect started by special kind 0D
-REC_F52B_RUN:           ; 96EF
+; Seen in MAME (--special 0D): as PICKUP_RUSH_A with notes as the pickups. each frame: steps the record at F52B. Part of the effect started by special kind 0D
+PICKUP_RUSH_B_RUN:      ; 96EF
         ld      a,(0xF52B)
         and     a
         ret     z
@@ -3294,14 +3294,14 @@ L_99C4:                 ; 99C4
         ld      (iy+67),l
         ret
 
-; round start, called by OBJECTS_TASK: clears the state record at F531. Part of the effect started by special kind 0C
-REC_F531_INIT:          ; 99E2
+; Seen in MAME (--special 0C, 2F): as PICKUP_RUSH_A with arches as the pickups. round start, called by OBJECTS_TASK: clears the state record at F531. Part of the effect started by special kind 0C
+PICKUP_RUSH_C_INIT:     ; 99E2
         ld      hl,0xF531
         ld      bc,0x0005
         jp      ZERO_BC
 
-; each frame: steps the record at F531. Part of the effect started by special kind 0C
-REC_F531_RUN:           ; 99EB
+; Seen in MAME (--special 0C, 2F): as PICKUP_RUSH_A with arches as the pickups. each frame: steps the record at F531. Part of the effect started by special kind 0C
+PICKUP_RUSH_C_RUN:      ; 99EB
         ld      a,(0xF531)
         and     a
         ret     z
@@ -4434,8 +4434,8 @@ L_A2EE:                 ; A2EE
         cp      (hl)
         ret     z
         push    de
-; round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12
-REC_F590_INIT:          ; A2FC
+; Seen in MAME (--special 12): the playfield scrolls on to a later round. round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12
+ROUND_SKIP_INIT:        ; A2FC
         ld      hl,0xF590
         ld      bc,0x0005
         call    ZERO_BC
@@ -4764,14 +4764,14 @@ L_A55C:                 ; A55C
         jp      L_A4C1
 
         .incbin "main_bank2.bin", 0x2564, 0x0037
-; round start, called by OBJECTS_TASK: clears the state record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs
-REC_F59E_INIT:          ; A59B
+; Seen in MAME (trace.py --special 05): every enemy turns into a gem. round start, called by OBJECTS_TASK: clears the state record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs
+KILL_ALL_A_INIT:        ; A59B
         ld      hl,0xF59E
         ld      bc,0x0009
         jp      ZERO_BC
 
-; each frame: steps the record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs
-REC_F59E_RUN:           ; A5A4
+; Seen in MAME (trace.py --special 05): every enemy turns into a gem. each frame: steps the record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs
+KILL_ALL_A_RUN:         ; A5A4
         ld      a,(0xF59E)
         and     a
         ret     z
@@ -5066,8 +5066,8 @@ L_A811:                 ; A811
         ex      de,hl
         jp      (hl)
 
-; round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)
-REC_F5AC_INIT:          ; A820
+; Seen in MAME (--special 1C): every enemy turns into a gem, by another path than KILL_ALL_A. round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)
+KILL_ALL_B_INIT:        ; A820
         ld      hl,0xF5AC
         ld      bc,0x000A
         jp      ZERO_BC

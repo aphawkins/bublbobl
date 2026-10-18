@@ -544,6 +544,13 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `3E`. Then `HEX_CHAR`, `TILE_COLS_FILL`, `RAND_TIMER_SET` and `STEP_TO_8_UP`. Not checked
   in MAME yet. The fixed ROM's remaining `L_xxxx` routines with more than one caller are
   unclear without a trace (`4195`, `43A0`, `21CF`, `6B80`, `62FB`).
+- Special items in MAME (2026-10-18): `trace.py --special K` makes every special item kind K and
+  moves player 1's object onto it, so `SPECIAL_TAKE` runs. A sweep of kinds 01–35 (not 0E) in
+  `build/traces/specialKK/` gave: 05 `KILL_ALL_A` and 1C `KILL_ALL_B` (every enemy becomes a
+  gem); 09–0B `PICKUP_RUSH_A`, 0D `PICKUP_RUSH_B` and 0C/2F `PICKUP_RUSH_C` (the playfield fills
+  with pickups, with a timer and a P1 vs P2 count); 12 `ROUND_SKIP`. Kinds 13/32, 1A/31/33 and
+  1D/2D/35 reach `EFFECT_C/A/B_START`. Kinds 1E–28 reach only the start of `REC_F46B_RUN`
+  (which needs `ENEMY_TOTAL` = 0). No kind reached `REC_F519`, `REC_F54B`, `REC_F60F` or `REC_F624`.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
