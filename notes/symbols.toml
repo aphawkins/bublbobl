@@ -591,8 +591,8 @@ GRID_EDGES     = { addr = 0x95AA, size = 0x40, note = "32 pointers; LOAD_GRID_ED
 GRID_EDGE_ROWS = { addr = 0x95EA, size = 0x02D0, note = "9 x 0x50 bytes: ROUND_GRID rows 0-4; the first 0x30 also fill rows 29-31" }
 GRID_EDGE_LOW  = { addr = 0x98BA, size = 0x01B0, note = "9 x 0x30 bytes, each the same as the first 0x30 of the matching GRID_EDGE_ROWS pattern; unreferenced" }
 ENDING_TEXT_2P = { addr = 0x8D42, size = 0x3A8, note = "0x8B rows for ENDING_SCROLL, two players: CONGRATULATIONS! / NOW,YOU FOUND THE MOST IMPORTANT MAGIC IN THE WORLD. IT'S \"LOVE\" & \"FRIENDSHIP\"!, then the staff and the characters (seen in MAME)" }
-ENDING_TEXT_1P = { addr = 0x90EA, size = 0xD5, note = "0x1A rows, one player: CONGRATULATIONS! / BUT THIS IS NOT A TRUE ENDING! / COME HERE WITH YOUR FRIENDS! ..." }
-ENDING_TEXT_SUPER = { addr = 0x91BF, size = 0x3EB, note = "0x8B rows, two players in super mode: CONGRATULATIONS! / YOU COULD HELP YOUR FATHER & MOTHER! ..." }
+ENDING_TEXT_1P = { addr = 0x90EA, size = 0xD5, note = "0x1A rows, one player: CONGRATULATIONS! / BUT THIS IS NOT A TRUE ENDING! / COME HERE WITH YOUR FRIENDS! ... TRY AGAIN !!; seen in MAME (--boss-pop), then ZAP_ROUND" }
+ENDING_TEXT_SUPER = { addr = 0x91BF, size = 0x3EB, note = "0x8B rows, two players in super mode: CONGRATULATIONS! / YOU COULD HELP YOUR FATHER & MOTHER! ... THE END !, then the staff; seen in MAME (--boss-pop --poke E5DB=1), where the captives are the parents and HIGH_SCORE_SCREEN follows" }
 
 [bank2.code]
 # a78-05-1.52 page 2 (file 0x8000-0xBFFF), mapped at 8000 when FB40 = 6.
@@ -657,7 +657,7 @@ HELP_SCENE_RUN = { addr = 0x9D35, note = "each frame while F536 is 01-7F: animat
 BOMB_RUN = { addr = 0xAAC5, note = "Seen in MAME (--special 17): each frame while F5B6: a ring of fireballs bursts out from the middle (AB2E), then the screen flashes yellow (F9DE/F9FE 00F7) and every enemy dies. Kind 17's handler (8953) starts it" }
 IDLE_PLAYER_RUN = { addr = 0xAD98, note = "the player loop for a player in state 80 (not playing, 4070): the dragon waits in the corner with the PUSH 2P balloon (B14F, B15F for player 2)" }
 JOIN_PROMPT = { addr = 0xB18F, note = "each frame of a game, not in the attract loop: the top-corner text for a player who is not playing (PUSH 2P / TO START, INSERT COIN from B339), switched every 3C frames" }
-ENDING_HINT_SCREEN = { addr = 0xB77A, note = "after the ending with two players outside super mode (1ED3): BUT IT WAS NOT A TRUE ENDING! / WRITE 8 BIG WORDS ON A PAPER. / THIS IS A KEY OF SECRET GAME. and the hint words" }
+ENDING_HINT_SCREEN = { addr = 0xB77A, note = "Seen in MAME (--boss-pop): after the ending with two players outside super mode (1ED3): BUT IT WAS NOT A TRUE ENDING! / WRITE 8 BIG WORDS ON A PAPER. / THIS IS A KEY OF SECRET GAME. and the hint words" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

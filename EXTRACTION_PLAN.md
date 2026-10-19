@@ -603,15 +603,19 @@ Started (2026-10-17) with the sub CPU, which is now done:
   turn into the players' girlfriends, `HEART_DRAW` puts a big heart between two HAPPY END!!
   (`HEART_CYCLE` turns it yellow, orange, pink), `ROUND_WIPE` (`BEA9`, one more tamper check, on
   `0004`) clears the walls, the stars come in (`STARFIELD_DRAW_2P`), and `ENDING_TEXT_2P` scrolls
-  up into the staff list. Bank 0 is 6052 instructions,
+  up into the staff list. The other endings, seen the same way: one player gets
+  `ENDING_TEXT_1P` (TRY AGAIN !!) and `ZAP_ROUND`; two players get `ENDING_HINT_SCREEN` after the
+  staff list (8 coded words, and the hint: no miss in rounds 1-20, then the silver door); two
+  players in super mode (`--poke E5DB=1`) free their parents, get `ENDING_TEXT_SUPER` (THE END !)
+  and go straight to the high score table. Bank 0 is 6052 instructions,
   the fixed ROM 12754; the set is still byte-exact.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
      `tools/trace.lua`, then rename them. Done: every `REC_*` record, the 17 new entries and
-     the fixed ROM's calls into a bank chosen further away. The one-player and super mode
-     endings (`ENDING_TEXT_1P`, `_SUPER`) and `ENDING_HINT_SCREEN` are not seen yet.
+     the fixed ROM's calls into a bank chosen further away. All three endings and the hint
+     screen have been seen in MAME.
   3. Check some `--probe` regions, and the score code above, against a MAME trace.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.

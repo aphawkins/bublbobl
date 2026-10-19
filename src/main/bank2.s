@@ -6543,7 +6543,7 @@ SPECIAL_RULES:          ; B4F2
 ; 5 bytes an item, as POINTS_ITEMS
 SPECIAL_ITEMS:          ; B66C
         .incbin "main_bank2.bin", 0x366C, 0x010E
-; after the ending with two players outside super mode (1ED3): BUT IT WAS NOT A TRUE ENDING! / WRITE 8 BIG WORDS ON A PAPER. / THIS IS A KEY OF SECRET GAME. and the hint words
+; Seen in MAME (--boss-pop): after the ending with two players outside super mode (1ED3): BUT IT WAS NOT A TRUE ENDING! / WRITE 8 BIG WORDS ON A PAPER. / THIS IS A KEY OF SECRET GAME. and the hint words
 ENDING_HINT_SCREEN:     ; B77A
         call    CLEAR_ROWS_A
         call    CLEAR_ROWS_B
