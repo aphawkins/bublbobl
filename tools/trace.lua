@@ -216,7 +216,7 @@ TRACE_FRAME_SUB = emu.add_machine_frame_notifier(function()
     if f then f:write(tostring(frame), "\n"); f:close() end
   end
   -- Snapshots: a screenshot and the main CPU's RAM (C000-FFFF) every CFG.snap frames.
-  if CFG.snap > 0 and frame % CFG.snap == 0 then
+  if CFG.snap > 0 and frame >= (CFG.snap_from or 0) and frame % CFG.snap == 0 then
     machine.video:snapshot()
     local f = io.open(string.format("%s/snap/ram_%06d.bin", out, frame), "wb")
     if f then

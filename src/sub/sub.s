@@ -59,11 +59,11 @@ VBLANK:                 ; 0068
         call    PLAYER_ENEMY_MARKS
         call    BUBBLE_HITS
         call    POP_CHAIN
-        call    EFFECT_A_HITS
-        call    EFFECT_B_HITS
+        call    STARS_HITS
+        call    FOOD_RAIN_HITS
         call    ENEMY2_SHOT_HITS
         call    ENEMY3_SHOT_HITS
-        call    EFFECT_C_HITS
+        call    LIGHTNING_HITS
         call    EFFECT_D_HITS
         call    ENEMY2B_SHOT_HITS
         call    BOSS_SHOT_HITS
@@ -1491,9 +1491,9 @@ POP_BY_PLAYER_NO:       ; 0A2E
         xor     a
         ret
 
-; Effect A (F47E, 8 x 9 bytes while F47C is nonzero): each record with b0 set
+; The stars (F47E, 8 x 9 bytes while F47C is nonzero): each record with b0 set
 ; kills an enemy within 0x0F (+0 = 0x10, +3 = 6) and ends (its +0 = 2).
-EFFECT_A_HITS:          ; 0A30
+STARS_HITS:             ; 0A30
         ld      a,(0xF47C)
         and     a
         ret     z
@@ -1523,8 +1523,8 @@ L_0A5E:                 ; 0A5E
         djnz    L_0A3B
         ret
 
-; As EFFECT_A_HITS: effect B (F4CE, 8 x 8 bytes while F4CB).
-EFFECT_B_HITS:          ; 0A67
+; As STARS_HITS: the falling food (F4CE, 8 x 8 bytes while F4CB).
+FOOD_RAIN_HITS:         ; 0A67
         ld      a,(0xF4CB)
         and     a
         ret     z
@@ -1554,8 +1554,8 @@ L_0A95:                 ; 0A95
         djnz    L_0A72
         ret
 
-; Effect C (while F595 is 01-7F, at Y, X in F597): an enemy within 0x18 (+3 = 8).
-EFFECT_C_HITS:          ; 0A9E
+; The lightning bolt (while F595 is 01-7F, at Y, X in F597): an enemy within 0x18 (+3 = 8).
+LIGHTNING_HITS:         ; 0A9E
         ld      a,(0xF595)
         and     a
         ret     z
@@ -1657,7 +1657,7 @@ L_0B49:                 ; 0B49
         cp      0x10
         ret
 
-; Effect D (F5AD while F5AC): as EFFECT_A_HITS.
+; Effect D (F5AD while F5AC): as STARS_HITS.
 EFFECT_D_HITS:          ; 0B4C
         ld      a,(0xF5AC)
         and     a

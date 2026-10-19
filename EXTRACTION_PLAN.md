@@ -563,16 +563,25 @@ Started (2026-10-17) with the sub CPU, which is now done:
   (among them `8000`, the test-mode start): bank 2 is 5998 instructions, still byte-exact. Calls
   whose bank is set further away (bank 0 enemy code calling `8879`, `91A6`.., and `A150`, `B34F`,
   the `B3xx`–`BExx` calls) still need their bank checked before they are added.
+- Stars, food and lightning (2026-10-19): `trace.py --snap` now takes fractions of a second, with
+  `--snap-from` to skip the start (`--snap 0.1 --snap-from 61` catches a fast effect). Effect A is
+  `STARS` (kind 1A; 31 and 33 through `E724`): 8 stars fly about, 2500 an enemy. Effect B is
+  `FOOD_RAIN` (kind 1D; 2D and 35 change the picture by `F4CD`): food falls from the top, 10000 an
+  enemy. Effect C is `LIGHTNING` (kind 13; 32 through `E724`): the screen flashes and a bolt strikes
+  down and to the left, 5000 an enemy. Their sub CPU hit tests are now `STARS_HITS`,
+  `FOOD_RAIN_HITS` and `LIGHTNING_HITS`. Kinds 2D, 35 and the `E724` path (31–33, which set
+  `E723` = 29 and start the effect from the fixed ROM at `50EE`) were not looked at.
+  Kind 29 sets `E603`, one of the two conditions for `REC_F519`.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
-     `tools/trace.lua`, then rename them. Done: `F46B` (big items). Left: `EFFECT_A/B/C`, and
+     `tools/trace.lua`, then rename them. Done: `F46B` (big items), stars, food, lightning. Left:
      `F519` (needs `E603` and the `SPECIAL_RULES` byte in `F463`, which the cheat does not set),
      `F54B`, `F60F`, `F624`. Name the 17 new bank 2 entries.
   3. Check some `--probe` regions, and the score code above, against a MAME trace.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
-     named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines, are not.
+     named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

@@ -976,7 +976,7 @@ L_8911:                 ; 8911
         ret
 
 L_891E:                 ; 891E
-        call    EFFECT_C_START
+        call    LIGHTNING_START
         ld      hl,0xF595
         ld      (hl),0x01
         set     4,(ix+45)
@@ -1055,7 +1055,7 @@ L_89AA:                 ; 89AA
         push    ix
         ld      hl,0xF47B
         ld      (hl),0x00
-        call    EFFECT_A_START
+        call    STARS_START
         pop     ix
         ld      hl,0xF47C
         ld      (hl),0x01
@@ -1084,7 +1084,7 @@ L_89CE:                 ; 89CE
         push    ix
 L_89D8:                 ; 89D8
         push    ix
-        call    EFFECT_B_START
+        call    FOOD_RAIN_START
         pop     ix
         ld      hl,0xF4CB
         ld      (hl),0x01
@@ -1202,7 +1202,7 @@ L_8A86:                 ; 8A86
 
 L_8A91:                 ; 8A91
         push    ix
-        call    EFFECT_B_START
+        call    FOOD_RAIN_START
         pop     ix
         ld      hl,0xF4CB
         ld      (hl),0x01
@@ -1260,7 +1260,7 @@ L_8AD8:                 ; 8AD8
 
 L_8AED:                 ; 8AED
         push    ix
-        call    EFFECT_B_START
+        call    FOOD_RAIN_START
         pop     ix
         ld      hl,0xF4CB
         ld      (hl),0x01
@@ -1619,8 +1619,8 @@ L_8D95:                 ; 8D95
         cp      (hl)
         ret     z
         push    de
-; unless ATTRACT: clears the effect A records at F47C (0x4A bytes) and builds the 8 records at F47E (6 bytes each)
-EFFECT_A_START:         ; 8DA3
+; Seen in MAME (--special 1A): 8 coloured stars fly about the screen, one launched every 14 frames, and kill the enemies they touch. unless ATTRACT: clears the star records at F47C (0x4A bytes) and builds the 8 records at F47E (6 bytes each)
+STARS_START:            ; 8DA3
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -1677,7 +1677,8 @@ L_8DEA:                 ; 8DEA
         jr      nz,L_8DBA
         ret
 
-L_8DFF:                 ; 8DFF
+; each frame while F47C: launches each star when its delay (+6) runs out, then moves it; a star hit by the sub CPU (STARS_HITS sets +0 = 2) goes to STARS_HIT
+STARS_RUN:              ; 8DFF
         ld      a,(0xF47C)
         and     a
         ret     z
@@ -1694,7 +1695,7 @@ L_8E14:                 ; 8E14
         bit     0,a
         jp      nz,L_8E67
         bit     1,a
-        jp      nz,L_8EE9
+        jp      nz,STARS_HIT
         dec     (ix+6)
         jp      nz,L_8F0C
         ld      a,(ENEMY_TOTAL)
@@ -1801,7 +1802,8 @@ L_8EDC:                 ; 8EDC
         ld      (ix+6),0x01
         jr      L_8F0C
 
-L_8EE9:                 ; 8EE9
+; the player who took the item (F460) scores 250 BCD (2500 on screen), then a tamper check of the IRQ vector
+STARS_HIT:              ; 8EE9
         ld      a,(0xF460)
         ld      (PLAYER_NOW),a
         ld      de,0x0250
@@ -1860,8 +1862,8 @@ L_8F45:                 ; 8F45
         ex      de,hl
         jp      (hl)
 
-; unless ATTRACT: clears F4CB (0x43 bytes) and builds the 8 effect B records at F4CE
-EFFECT_B_START:         ; 8F54
+; Seen in MAME (--special 1D): food falls from the top, one piece every 14 frames at a random X, and kills the enemies it touches. unless ATTRACT: clears F4CB (0x43 bytes) and builds the 8 food records at F4CE
+FOOD_RAIN_START:        ; 8F54
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -1910,7 +1912,8 @@ L_8F8D:                 ; 8F8D
         jr      nz,L_8F6B
         ret
 
-L_8FA6:                 ; 8FA6
+; each frame while F4CB: drops the next food every 14 frames from Y F0 at a random X, while enemies are left and not NO_SPECIAL. The picture by F4CD: 0 a food tile (4C + 4 x (E380 & 0F)), 1 an end-of-round item sprite from 64F3 (kind 2D), FF sprite EC02 (kind 35)
+FOOD_RAIN_RUN:          ; 8FA6
         ld      a,(0xF4CB)
         and     a
         ret     z
@@ -1925,9 +1928,9 @@ L_8FBB:                 ; 8FBB
         push    bc
         ld      a,(ix+0)
         bit     0,a
-        jp      nz,L_9037
+        jp      nz,FOOD_RAIN_FALL
         bit     1,a
-        jp      nz,L_907D
+        jp      nz,FOOD_RAIN_HIT
         dec     (ix+5)
         jp      nz,L_908F
         ld      a,(ENEMY_TOTAL)
@@ -1984,7 +1987,8 @@ L_9025:                 ; 9025
         set     0,(ix+0)
         jp      L_908F
 
-L_9037:                 ; 9037
+; moves one food down 3 a frame, drifting left or right (+7); hides it at the bottom
+FOOD_RAIN_FALL:         ; 9037
         call    OBJ_POS_LOAD
         call    OBJ_PTR
         dec     (hl)
@@ -2026,13 +2030,14 @@ L_9070:                 ; 9070
         ld      (ix+5),0x01
         jr      L_908F
 
-L_907D:                 ; 907D
+; a food hit by the sub CPU (FOOD_RAIN_HITS sets +0 = 2): the player who took the item (F460) scores 1000 BCD (10000 on screen)
+FOOD_RAIN_HIT:          ; 907D
         ld      a,(0xF460)
         ld      (PLAYER_NOW),a
         ld      de,0x1000
         call    SCORE_UPDATE
         ld      (ix+0),0x01
-        jr      L_9037
+        jr      FOOD_RAIN_FALL
 
 L_908F:                 ; 908F
         ld      de,0x0008
@@ -4632,8 +4637,8 @@ L_A426:                 ; A426
         call    ROM_SUM_STEP_H
         ret
 
-; clears F595 (9 bytes) and sets up the effect C point at F597/F596 with 8 sprite slots
-EFFECT_C_START:         ; A433
+; Seen in MAME (--special 13): the screen flashes, then a lightning bolt strikes down and to the left from a random X at the top, again and again until no enemies are left. clears F595 (9 bytes) and sets up the bolt at F597/F596 with 8 sprite slots
+LIGHTNING_START:        ; A433
         push    ix
         ld      hl,0xF595
         ld      bc,0x0009
@@ -4674,7 +4679,8 @@ L_A464:                 ; A464
         pop     ix
         ret
 
-L_A480:                 ; A480
+; each frame while F595 is 01-7F: the screen flashes (F9DE/F9FE 00FF and 0000) for a while, then LIGHTNING_STRIKE; ends (F595 = FF) when no enemies are left or NO_SPECIAL
+LIGHTNING_RUN:          ; A480
         ld      a,(0xF595)
         and     a
         ret     z
@@ -4682,9 +4688,9 @@ L_A480:                 ; A480
         ld      ix,0xF596
         ld      a,(ix+0)
         bit     0,a
-        jp      nz,L_A501
+        jp      nz,LIGHTNING_FLY
         bit     1,a
-        jp      nz,L_A541
+        jp      nz,LIGHTNING_HIT
         call    ROM_SUM_STEP_J
         ld      a,(ENEMY_TOTAL)
         and     a
@@ -4694,7 +4700,7 @@ L_A480:                 ; A480
         jp      nz,L_A55C
         ld      de,0x0604
         call    ANIM_STEP
-        jr      z,L_A4CE
+        jr      z,LIGHTNING_STRIKE
         bit     0,a
         jr      nz,L_A4C1
         ld      hl,0x00FF
@@ -4710,7 +4716,8 @@ L_A4C1:                 ; A4C1
         ld      (0xF9FE),hl
         ret
 
-L_A4CE:                 ; A4CE
+; starts a bolt: 8 sprites from A58B at Y E8 and a random X, sound 23
+LIGHTNING_STRIKE:       ; A4CE
         call    IX_SPEED_CLEAR
         ld      (ix+1),0xE8
         ld      a,r
@@ -4739,7 +4746,8 @@ L_A4E9:                 ; A4E9
         ld      c,0x23
         call    SOUND_PUSH
         set     0,(ix+0)
-L_A501:                 ; A501
+; moves the bolt down 6 and left 2 a frame, animating it, until it leaves the bottom
+LIGHTNING_FLY:          ; A501
         ld      de,0x0A04
         call    ANIM_STEP
         ld      hl,0xA564
@@ -4774,13 +4782,14 @@ L_A525:                 ; A525
         dec     (ix+2)
         ret
 
-L_A541:                 ; A541
+; the bolt hit an enemy (LIGHTNING_HITS sets +0 = 2): the player who took the item (F460) scores 500 BCD (5000 on screen)
+LIGHTNING_HIT:          ; A541
         ld      a,(0xF460)
         ld      (PLAYER_NOW),a
         ld      de,0x0500
         call    SCORE_UPDATE
         ld      (ix+0),0x01
-        jr      L_A501
+        jr      LIGHTNING_FLY
 
 L_A553:                 ; A553
         call    IX_SPEED_CLEAR

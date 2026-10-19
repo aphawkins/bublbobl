@@ -598,13 +598,22 @@ ROM_SUM_STEP_M = { addr = 0x96A9, note = "as ROM_SUM_STEP_H: pointer F527, sum F
 ROM_SUM_STEP_N = { addr = 0xA2C0, note = "as ROM_SUM_STEP_H: pointer F58C, sum F58E, flag F58B" }
 ROM_SUM_STEP_O = { addr = 0xA7E3, note = "as ROM_SUM_STEP_H: pointer F5A8, sum F5AA, flag F5A7" }
 ROM_SUM_STEP_P = { addr = 0xB4B5, note = "as ROM_SUM_STEP_H: pointer F620, sum F622, flag F61F" }
-EFFECT_A_START = { addr = 0x8DA3, note = "unless ATTRACT: clears the effect A records at F47C (0x4A bytes) and builds the 8 records at F47E (6 bytes each)" }
-EFFECT_B_START = { addr = 0x8F54, note = "unless ATTRACT: clears F4CB (0x43 bytes) and builds the 8 effect B records at F4CE" }
-EFFECT_C_START = { addr = 0xA433, note = "clears F595 (9 bytes) and sets up the effect C point at F597/F596 with 8 sprite slots" }
+STARS_START = { addr = 0x8DA3, note = "Seen in MAME (--special 1A): 8 coloured stars fly about the screen, one launched every 14 frames, and kill the enemies they touch. unless ATTRACT: clears the star records at F47C (0x4A bytes) and builds the 8 records at F47E (6 bytes each)" }
+FOOD_RAIN_START = { addr = 0x8F54, note = "Seen in MAME (--special 1D): food falls from the top, one piece every 14 frames at a random X, and kills the enemies it touches. unless ATTRACT: clears F4CB (0x43 bytes) and builds the 8 food records at F4CE" }
+LIGHTNING_START = { addr = 0xA433, note = "Seen in MAME (--special 13): the screen flashes, then a lightning bolt strikes down and to the left from a random X at the top, again and again until no enemies are left. clears F595 (9 bytes) and sets up the bolt at F597/F596 with 8 sprite slots" }
 PATH_NEXT_BYTE = { addr = 0xAA22, note = "A = the next byte of movement path (IX+8), position (IX+7); 88 wraps to the start" }
 PALETTE0_SET = { addr = 0xBC2F, note = "video off, the first byte of PALETTE_RAM = C, video on" }
 BIG_ITEM_BURST = { addr = 0x8C39, note = "state 8, after BIG_ITEM_TAKE: the 4 sprites move apart, the points sprite (BIG_ITEM_POINTS_SPRITE) shows for 100 frames (F46E) as they sink, then the record is cleared" }
 BIG_ITEM_TAKE = { addr = 0x8CC7, note = "called for each player by the player loop (41CA): while the big item falls or waits, a player within 18 x 18 of it scores BIG_ITEM_POINTS, sound 25, F46F = the player, state 8 (BIG_ITEM_BURST). Not seen in MAME: the cheat does not walk the player onto it" }
+STARS_RUN = { addr = 0x8DFF, note = "each frame while F47C: launches each star when its delay (+6) runs out, then moves it; a star hit by the sub CPU (STARS_HITS sets +0 = 2) goes to STARS_HIT" }
+STARS_HIT = { addr = 0x8EE9, note = "the player who took the item (F460) scores 250 BCD (2500 on screen), then a tamper check of the IRQ vector" }
+FOOD_RAIN_RUN = { addr = 0x8FA6, note = "each frame while F4CB: drops the next food every 14 frames from Y F0 at a random X, while enemies are left and not NO_SPECIAL. The picture by F4CD: 0 a food tile (4C + 4 x (E380 & 0F)), 1 an end-of-round item sprite from 64F3 (kind 2D), FF sprite EC02 (kind 35)" }
+FOOD_RAIN_FALL = { addr = 0x9037, note = "moves one food down 3 a frame, drifting left or right (+7); hides it at the bottom" }
+FOOD_RAIN_HIT = { addr = 0x907D, note = "a food hit by the sub CPU (FOOD_RAIN_HITS sets +0 = 2): the player who took the item (F460) scores 1000 BCD (10000 on screen)" }
+LIGHTNING_RUN = { addr = 0xA480, note = "each frame while F595 is 01-7F: the screen flashes (F9DE/F9FE 00FF and 0000) for a while, then LIGHTNING_STRIKE; ends (F595 = FF) when no enemies are left or NO_SPECIAL" }
+LIGHTNING_STRIKE = { addr = 0xA4CE, note = "starts a bolt: 8 sprites from A58B at Y E8 and a random X, sound 23" }
+LIGHTNING_FLY = { addr = 0xA501, note = "moves the bolt down 6 and left 2 a frame, animating it, until it leaves the bottom" }
+LIGHTNING_HIT = { addr = 0xA541, note = "the bolt hit an enemy (LIGHTNING_HITS sets +0 = 2): the player who took the item (F460) scores 500 BCD (5000 on screen)" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

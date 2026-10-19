@@ -25,7 +25,7 @@ Output, in build/traces/<scenario>/ (or --name):
   sound.csv      every write to the sound latch FA00: frame, instruction address, value
   sprites.csv    every 16 x 16 sprite drawn through 147D / 149C: caller, gfx_num, tile bank,
                  first tile, attribute, count (read by tools/sprites.py)
-  snap/          with --snap N: a screenshot every N seconds, and ram_<frame>.bin, the
+  snap/          with --snap N (from --snap-from S): a screenshot every N seconds, and ram_<frame>.bin, the
                  main CPU's C000-FFFF at the same moment
 
 MAME_DIR in config.local.toml gives the folder holding mame.exe. The ROMs come from the
@@ -264,7 +264,8 @@ def main() -> int:
     ap.add_argument("--keep", action="store_true", help="keep the raw trace files")
     ap.add_argument("--cpus", default=DEFAULT_CPUS, help=f"CPUs to trace (default {DEFAULT_CPUS})")
     ap.add_argument("--name", help="output folder under build/traces (default: the scenario)")
-    ap.add_argument("--snap", type=int, default=0, help="screenshot and RAM dump every N seconds")
+    ap.add_argument("--snap", type=float, default=0, help="screenshot and RAM dump every N seconds (0.1 is every 6 frames)")
+    ap.add_argument("--snap-from", type=float, default=0, help="no snapshots before this many seconds")
     ap.add_argument("--inp", type=Path, help="play: trace this recording instead of a new one")
     ap.add_argument("--round", type=int, help="start each game on this round (1-100)")
     ap.add_argument("--boss-hits", type=int, help="hits the round 100 boss has taken at the start (0-80)")
@@ -299,7 +300,8 @@ def main() -> int:
         "frames": seconds * FPS,
         "start": 1,
         "chunk": args.chunk,
-        "snap": args.snap * FPS,
+        "snap": max(1, round(args.snap * FPS)) if args.snap else 0,
+        "snap_from": round(args.snap_from * FPS),
         "reads": not args.no_reads,
         "cpus": [{"tag": t, "name": n, "trace": tr and n in traced, "main": n == "main",
                   "taps": [[lo, hi] for lo, hi in taps]} for t, n, tr, taps in CPUS],

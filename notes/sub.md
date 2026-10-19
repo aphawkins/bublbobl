@@ -40,9 +40,9 @@ Distances are boxes: `|dY|` and `|dX|` both under the limit. Y is larger higher 
 | `PLAYER_ENEMY_MARKS` | `0266` | each player against `ENEMY_HITS` b3, within 0x10 | the enemy's +3 = 1 or FF (which player) |
 | `BUBBLE_HITS` | `03BB` | each bubble by state, against the players and effects | flags in the bubble (+1A, +26), pushes (`BUBBLE_PUSH`), pops (`POP_BY_PLAYER`) |
 | `POP_CHAIN` | `08F0` | bubbles within 0x14 of last frame's pop | they pop too: the chain |
-| `EFFECT_A_HITS` | `0A30` | records at `F47E` (8 × 9) against enemies, within 0x0F | enemy killed, +3 = 6 |
-| `EFFECT_B_HITS` | `0A67` | records at `F4CE` (8 × 8) | as A |
-| `EFFECT_C_HITS` | `0A9E` | the point at `F597`, within 0x18 | enemy killed, +3 = 8 |
+| `STARS_HITS` | `0A30` | records at `F47E` (8 × 9) against enemies, within 0x0F | enemy killed, +3 = 6 |
+| `FOOD_RAIN_HITS` | `0A67` | records at `F4CE` (8 × 8) | as A |
+| `LIGHTNING_HITS` | `0A9E` | the point at `F597`, within 0x18 | enemy killed, +3 = 8 |
 | `EFFECT_D_HITS` | `0B4C` | the record at `F5AD` | as A |
 | `ENEMY2_SHOT_HITS` | `0C46` | `ENEMY2_SHOTS` against the players, within 8 | player killed |
 | `ENEMY3_SHOT_HITS` | `0BCF` | `ENEMY3_SHOTS` | player killed, +19 = 1 |
