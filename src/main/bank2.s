@@ -5,7 +5,8 @@
         .include "fixed.inc"
         .section .text
 
-L_8000:                 ; 8000
+; jumped to from 0168 when DSW0 b2 is clear: with DSW0 b0 and b2 both clear goes to BB7E, else clears the palette and loops on the test screens (82CB, 83B3, 8360)
+TEST_MODE:              ; 8000
         ld      a,(DSW0_COPY)
         and     0x05
         jp      z,L_BB7E
@@ -578,7 +579,7 @@ L_863D:                 ; 863D
         ld      a,b
         cp      0x0F
         jr      nz,L_8657
-        call    REC_F513_INIT
+        call    INVINCIBLE_ITEM_INIT
         ld      hl,0xF513
         ld      (hl),0xFF
         jr      L_8637
@@ -2087,8 +2088,8 @@ L_90CF:                 ; 90CF
         cp      (hl)
         ret     z
         push    af
-; round start, called by OBJECTS_TASK: clears the state record at F513. Part of the effect started by special kind 0E (F513 = FF, per notes/levels.md)
-REC_F513_INIT:          ; 90DD
+; Seen in MAME (--special 0E). round start, called by OBJECTS_TASK, and by SPECIAL_PICK for kind 0E (which then sets F513 = FF and shows no normal item): clears F513 (6 bytes) and sets the timer F516 to 258 frames
+INVINCIBLE_ITEM_INIT:   ; 90DD
         ld      hl,0xF513
         ld      bc,0x0006
         call    ZERO_BC
@@ -2096,7 +2097,8 @@ REC_F513_INIT:          ; 90DD
         ld      (0xF516),hl
         ret
 
-L_90ED:                 ; 90ED
+; each frame while F513: after 258 frames an animated item (sprite tiles 94 + 4 x F515, colour 26) appears at SPECIAL_ITEM's place (E5A2) for 384 frames; once taken it shows its points and moves (F514 b1), then is cleared (b3)
+INVINCIBLE_ITEM_RUN:    ; 90ED
         ld      a,(0xF513)
         and     a
         ret     z
@@ -2203,7 +2205,8 @@ L_9192:                 ; 9192
         set     3,(hl)
         ret
 
-L_91A3:                 ; 91A3
+; called for each player by the player loop (41C7): a player who touches the item makes both players invincible for 384 frames (P1_REC and P2_REC +19 = 1, +20 the timer), scores 3000, sound 0A; F44E = 1 (enemies stop shooting), F518 = 1 (a player who comes back gets it again, 4044; enemy code reads it at 7CB0)
+INVINCIBLE_ITEM_TAKE:   ; 91A3
         ld      a,(0xF514)
         bit     0,a
         ret     z
@@ -2266,7 +2269,8 @@ L_9207:                 ; 9207
         set     1,(hl)
         ret
 
-L_9233:                 ; 9233
+; called for each player by the player loop: while +19 b0, 1000 points for each enemy the player touches (the sub CPU's PLAYER_ENEMY_HITS beats it and sets +19 b1), the player's colour flashes (1E/22 and 2E every 3 frames), sound 30 at 78 frames left; at 0 clears +19, F44E, F518 and E341
+PLAYER_INVINCIBLE_TICK: ; 9233
         bit     0,(ix+19)
         ret     z
         bit     1,(ix+19)
@@ -3686,7 +3690,8 @@ L_9C5F:                 ; 9C5F
         ld      (iy+67),l
         ret
 
-L_9C7D:                 ; 9C7D
+; Seen in MAME (round 16). round start (4C35): clears F536 (0x15 bytes); in a game, when ROUND_MAIN reaches the entry for E5F5 in 9D2E (0F 1F 2F 3F 4F 5F: rounds 16, 32, 48, 64, 80, 96), shows the two captives with their guards and HELP!! bubbles (F536 = 1); while F536 = 1 the player loop and ITEM_HINT_RUN wait
+HELP_SCENE_INIT:        ; 9C7D
         ld      hl,0xF536
         ld      bc,0x0015
         call    ZERO_BC
@@ -3766,7 +3771,8 @@ L_9CC5:                 ; 9CC5
         ret
 
         .incbin "main_bank2.bin", 0x1D2E, 0x0007
-L_9D35:                 ; 9D35
+; each frame while F536 is 01-7F: animates the two HELP!! records at F537; at the end F536 = FF and E5F5 + 1
+HELP_SCENE_RUN:         ; 9D35
         ld      a,(0xF536)
         and     a
         ret     z
@@ -5435,7 +5441,8 @@ L_AA71:                 ; AA71
         jp      ENEMY_HITS_STATE
 
         .incbin "main_bank2.bin", 0x2AA5, 0x0020
-L_AAC5:                 ; AAC5
+; Seen in MAME (--special 17): each frame while F5B6: a ring of fireballs bursts out from the middle (AB2E), then the screen flashes yellow (F9DE/F9FE 00F7) and every enemy dies. Kind 17's handler (8953) starts it
+BOMB_RUN:               ; AAC5
         ld      a,(0xF5B6)
         and     a
         ret     z
@@ -5779,7 +5786,8 @@ L_AD61:                 ; AD61
         ret
 
         .incbin "main_bank2.bin", 0x2D6C, 0x002C
-L_AD98:                 ; AD98
+; the player loop for a player in state 80 (not playing, 4070): the dragon waits in the corner with the PUSH 2P balloon (B14F, B15F for player 2)
+IDLE_PLAYER_RUN:        ; AD98
         ld      a,(ix+29)
         bit     7,a
         ret     nz
@@ -6304,7 +6312,8 @@ L_B169:                 ; B169
 L_B18D:                 ; B18D
         ret     c
         inc     d
-L_B18F:                 ; B18F
+; each frame of a game, not in the attract loop: the top-corner text for a player who is not playing (PUSH 2P / TO START, INSERT COIN from B339), switched every 3C frames
+JOIN_PROMPT:            ; B18F
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -6534,7 +6543,8 @@ SPECIAL_RULES:          ; B4F2
 ; 5 bytes an item, as POINTS_ITEMS
 SPECIAL_ITEMS:          ; B66C
         .incbin "main_bank2.bin", 0x366C, 0x010E
-L_B77A:                 ; B77A
+; after the ending with two players outside super mode (1ED3): BUT IT WAS NOT A TRUE ENDING! / WRITE 8 BIG WORDS ON A PAPER. / THIS IS A KEY OF SECRET GAME. and the hint words
+ENDING_HINT_SCREEN:     ; B77A
         call    CLEAR_ROWS_A
         call    CLEAR_ROWS_B
         call    SET_E1D2_SEQ
@@ -6910,6 +6920,4 @@ PALETTE0_SET:           ; BC2F
         pop     af
         ret
 
-        .incbin "main_bank2.bin", 0x3C3D, 0x030B
-L_BF48:                 ; BF48
-        .incbin "main_bank2.bin", 0x3F48, 0x00B8
+        .incbin "main_bank2.bin", 0x3C3D, 0x03C3

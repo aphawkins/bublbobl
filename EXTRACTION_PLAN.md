@@ -582,12 +582,20 @@ Started (2026-10-17) with the sub CPU, which is now done:
   lightning bubbles (`POTION_BUBBLE`). A potion being taken, and a lightning bubble popping, were not
   seen. `SPECIAL_RULES` (`B4F2–B66B`) is now data in the class map: a ROM sum at `B4CB` runs into it on
   a mismatch, and the tracer had read 174 instructions there.
+- Kind 0E and the new entries (2026-10-19): `--special 0E` now starts kind 0E's own path (`F513`
+  = FF). `REC_F513` is `INVINCIBLE_ITEM`: an item that, when touched, makes both players
+  invincible for 900 frames. Enemies they touch are beaten for 1000 each (the sub CPU's
+  `PLAYER_ENEMY_HITS`, through player byte +19, which `sub.s` calls +13 hex). All 17 new
+  entries are now named: `HELP_SCENE` (the HELP!! captives at rounds 16, 32 .. 96), `BOMB_RUN` (kind
+  17), `HURRY_HAND_RUN` (kind 30, a hand with a star that brings on HURRY UP), `IDLE_PLAYER_RUN`,
+  `JOIN_PROMPT`, `ENDING_HINT_SCREEN`, `TEST_MODE`. `BF48` was in bank 0 (it is called after
+  `BANK_RESTORE`), not bank 2, so it moved to `BANK0_ENTRIES`.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
-     `tools/trace.lua`, then rename them. Done except `REC_F513` (kind 0E). Name the rest of the
-     17 new bank 2 entries.
+     `tools/trace.lua`, then rename them. Done: every `REC_*` record and the 17 new entries.
+     Left: the fixed ROM's calls into a bank chosen further away (see above).
   3. Check some `--probe` regions, and the score code above, against a MAME trace.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.

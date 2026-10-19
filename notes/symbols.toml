@@ -61,7 +61,7 @@ SKIP_KINDS    = { addr = 0xE612, note = "set to 3 by special kind 2F (bank2:8AA9
 SPECIAL_STATE = { addr = 0xF45F, note = "as POINTS_STATE" }
 SPECIAL_TIMER = { addr = 0xF461, size = 2, note = "frames: 2D0 (F0 if F44D) until it appears, then 384 on show" }
 MAIN_FRAME    = { addr = 0xE338, note = "stepped by the main CPU's interrupt (04D3); the sub CPU's MAIN_WATCHDOG wrecks RAM if it stops for 0x3C frames" }
-P1_REC        = { addr = 0xE691, size = 0x32, note = "player 1: +0 b0 alive (the sub CPU writes 0x10 when it is hit), +1 Y, +2 X, +8 b0 facing, +9 player number; fields the sub CPU reads in src/sub/sub.s" }
+P1_REC        = { addr = 0xE691, size = 0x32, note = "player 1: +0 b0 alive (the sub CPU writes 0x10 when it is hit), +1 Y, +2 X, +8 b0 facing, +9 player number, +19 (0x13) b0 invincible (INVINCIBLE_ITEM_TAKE) and b1 an enemy touched, +20 the invincible timer; fields the sub CPU reads in src/sub/sub.s" }
 P2_REC        = { addr = 0xE6C3, size = 0x32, note = "player 2, as P1_REC" }
 BUBBLE_COUNT  = { addr = 0xE76B, note = "bubble slots in use (BUBBLE_SLOTS)" }
 BUBBLE_SLOTS  = { addr = 0xE76C, note = "0x28 bytes each: +0 state (b0-b7, main dispatch at 5C37), +1 Y, +2 X, +0F direction, +13/+14 pushes in Y/X, +1A hit flags from the sub CPU" }
@@ -555,6 +555,7 @@ ENEMY3_ATTACK_START = { addr = 0x981C, note = "when (F05E) is nonzero and the en
 ENEMY3_ATTACK_STEP = { addr = 0x984D, note = "while (IX+24) b4: at (IX+5) = 2 sound 22, b4 off and b3 on (the shot)" }
 ENEMY2B_ATTACK_START = { addr = 0xA7E4, note = "group 2B as ENEMY2_ATTACK_START: unless (IX+7) b2 or (IX+24) b4, starts the throw" }
 ENEMY_GROUND_CHECK = { addr = 0x8EDF, note = "Z-flag result: probes the floor under the enemy (ENEMY_FLOOR_PROBE with (IX+14) b5 set, then GRID_PROBE_3); if none, Y - 1 and A = 1" }
+HURRY_HAND_RUN = { addr = 0xBF48, note = "Seen in MAME (--special 30): each frame while F448 (kind 30 sets 81): a hand holding a star sweeps down across the screen (b0, 7 sprites from BFE3), then HURRY UP!! rises from the bottom (b1) and the enemies turn angry; b2 done. Not in the attract loop or with NO_SPECIAL" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
@@ -580,7 +581,7 @@ SPECIAL_RUN   = { addr = 0x8686, note = "the special item: appears at record byt
 SPECIAL_TAKE  = { addr = 0x873E, note = "a player touches the special item: its effect through the table at 8AFF" }
 BIG_ITEM_INIT = { addr = 0x8BA7, note = "Seen in MAME (--special 1E, 23, 28 with --clear). round start, called by OBJECTS_TASK: clears the big item record at F46B (F46B on, F46C state, F46D variant, F46E timer, F46F player)" }
 BIG_ITEM_RUN = { addr = 0x8BB0, note = "Seen in MAME. Special kinds 1E-28 set F46B and F46D = 28 - kind; once ENEMY_TOTAL is 0 a big 32 x 32 copy of the item (4 sprites at E2E5, tiles BIG_ITEM_TILES) falls from the top to the floor in the middle, with sound 1B, and waits there for BIG_ITEM_TAKE. Seen: 28 an ice lolly, 23 a cake, 1E a diamond. ROUND_END_PICK then makes E744 = F46D + 25" }
-REC_F513_INIT = { addr = 0x90DD, note = "round start, called by OBJECTS_TASK: clears the state record at F513. Part of the effect started by special kind 0E (F513 = FF, per notes/levels.md)" }
+INVINCIBLE_ITEM_INIT = { addr = 0x90DD, note = "Seen in MAME (--special 0E). round start, called by OBJECTS_TASK, and by SPECIAL_PICK for kind 0E (which then sets F513 = FF and shows no normal item): clears F513 (6 bytes) and sets the timer F516 to 258 frames" }
 ITEM_HINT_INIT = { addr = 0x92B6, note = "Seen in MAME (--poke E603=1 --poke F463=1). round start, called by OBJECTS_TASK: clears F519 (3 bytes), then F519 = 1 when E603 (special kind 29 was taken this game; cleared at game over) and F463 (the round's SPECIAL_RULES byte: 1 for the effect items 05, 0E, 12-14, 17, 19, 1A, 1C, 1D, 2D, 35) are both set" }
 PICKUP_RUSH_A_INIT = { addr = 0x936A, note = "Seen in MAME (--special 09, 0A, 0B): the playfield fills with pickups, with a timer and a P1 vs P2 count at the top. round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A" }
 PICKUP_RUSH_B_INIT = { addr = 0x96E6, note = "Seen in MAME (--special 0D): as PICKUP_RUSH_A with notes as the pickups. round start, called by OBJECTS_TASK: clears the state record at F52B. Part of the effect started by special kind 0D" }
@@ -623,6 +624,16 @@ LIGHTNING_HIT = { addr = 0xA541, note = "the bolt hit an enemy (LIGHTNING_HITS s
 ITEM_HINT_RUN = { addr = 0x92CF, note = "each frame while F519: when play starts (E6FF negative), sound 28, then the palette word at F9DE/F9FE switches between 80F0 and 0000 every 3 frames, 10 times, so the screen flashes: a sign that this round's special item is an effect item" }
 POTIONS_RUN = { addr = 0xACBA, note = "round 100, once play starts: draws each potion (tiles and the palette at F9C0); a player within 0C x 0C takes it: F60F (P1) or F610 (P2) = 1, and the tiles are cleared. Taking one not seen in MAME" }
 FIRE_RUN = { addr = 0xB9CD, note = "each frame: the 8 flame records at F628; when a fire bubble's fireball lands (F624 b0, set by BUBBLE_FIRE_DROP with its position), flames spread along the platform" }
+INVINCIBLE_ITEM_RUN = { addr = 0x90ED, note = "each frame while F513: after 258 frames an animated item (sprite tiles 94 + 4 x F515, colour 26) appears at SPECIAL_ITEM's place (E5A2) for 384 frames; once taken it shows its points and moves (F514 b1), then is cleared (b3)" }
+INVINCIBLE_ITEM_TAKE = { addr = 0x91A3, note = "called for each player by the player loop (41C7): a player who touches the item makes both players invincible for 384 frames (P1_REC and P2_REC +19 = 1, +20 the timer), scores 3000, sound 0A; F44E = 1 (enemies stop shooting), F518 = 1 (a player who comes back gets it again, 4044; enemy code reads it at 7CB0)" }
+PLAYER_INVINCIBLE_TICK = { addr = 0x9233, note = "called for each player by the player loop: while +19 b0, 1000 points for each enemy the player touches (the sub CPU's PLAYER_ENEMY_HITS beats it and sets +19 b1), the player's colour flashes (1E/22 and 2E every 3 frames), sound 30 at 78 frames left; at 0 clears +19, F44E, F518 and E341" }
+TEST_MODE = { addr = 0x8000, note = "jumped to from 0168 when DSW0 b2 is clear: with DSW0 b0 and b2 both clear goes to BB7E, else clears the palette and loops on the test screens (82CB, 83B3, 8360)" }
+HELP_SCENE_INIT = { addr = 0x9C7D, note = "Seen in MAME (round 16). round start (4C35): clears F536 (0x15 bytes); in a game, when ROUND_MAIN reaches the entry for E5F5 in 9D2E (0F 1F 2F 3F 4F 5F: rounds 16, 32, 48, 64, 80, 96), shows the two captives with their guards and HELP!! bubbles (F536 = 1); while F536 = 1 the player loop and ITEM_HINT_RUN wait" }
+HELP_SCENE_RUN = { addr = 0x9D35, note = "each frame while F536 is 01-7F: animates the two HELP!! records at F537; at the end F536 = FF and E5F5 + 1" }
+BOMB_RUN = { addr = 0xAAC5, note = "Seen in MAME (--special 17): each frame while F5B6: a ring of fireballs bursts out from the middle (AB2E), then the screen flashes yellow (F9DE/F9FE 00F7) and every enemy dies. Kind 17's handler (8953) starts it" }
+IDLE_PLAYER_RUN = { addr = 0xAD98, note = "the player loop for a player in state 80 (not playing, 4070): the dragon waits in the corner with the PUSH 2P balloon (B14F, B15F for player 2)" }
+JOIN_PROMPT = { addr = 0xB18F, note = "each frame of a game, not in the attract loop: the top-corner text for a player who is not playing (PUSH 2P / TO START, INSERT COIN from B339), switched every 3C frames" }
+ENDING_HINT_SCREEN = { addr = 0xB77A, note = "after the ending with two players outside super mode (1ED3): BUT IT WAS NOT A TRUE ENDING! / WRITE 8 BIG WORDS ON A PAPER. / THIS IS A KEY OF SECRET GAME. and the hint words" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

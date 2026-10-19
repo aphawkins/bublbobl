@@ -7352,6 +7352,8 @@ L_BF03:                 ; BF03
         ret
 
         .incbin "main_bank0.bin", 0x3F38, 0x0010
+; Seen in MAME (--special 30): each frame while F448 (kind 30 sets 81): a hand holding a star sweeps down across the screen (b0, 7 sprites from BFE3), then HURRY UP!! rises from the bottom (b1) and the enemies turn angry; b2 done. Not in the attract loop or with NO_SPECIAL
+HURRY_HAND_RUN:         ; BF48
         ld      a,(ATTRACT)
         and     a
         ret     nz
