@@ -609,6 +609,14 @@ Started (2026-10-17) with the sub CPU, which is now done:
   players in super mode (`--poke E5DB=1`) free their parents, get `ENDING_TEXT_SUPER` (THE END !)
   and go straight to the high score table. Bank 0 is 6052 instructions,
   the fixed ROM 12754; the set is still byte-exact.
+- Task bodies (2026-10-19): `BUBBLES_TASK` calls `SECRET_ROUND_START` (`5046`): special kinds
+  31-33 (`SECRET_ROUND_A`-`C` in bank 2) set `E723` = 29, and the next frame takes the player to the
+  secret room, round record 65 (`STATE29_*` became `SECRET_ROUND_INIT`/`FRAME`; `E724` picks stars or
+  lightning). Its other call is `EXTEND_CHECK` (`6EF8`): with all six letters the letters flash and
+  `EXTEND_SCENE` (`7007`) shows NICE 1UP!, seen with `--poke E742=3F`. Also `EXTEND_LETTERS_DRAW`,
+  `CAPTIVES_INIT`/`STEP` (round 100) and `SCORE_BAR_REDRAW` (`21CF`). Two more tamper checks: the
+  word at `0B2E` must be `IRQ_HANDLER` in `CAPTIVES_STEP` and `EXTEND_SCENE`. Still `L_xxxx`: `4195`
+  (a player's frame after a lost life), `43A0`, `6B80`.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).

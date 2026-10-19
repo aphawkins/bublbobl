@@ -227,7 +227,7 @@ ROUND_TASK = { addr = 0x0538, note = "task 2: LOAD_ROUND_REC, clears E33B.., sta
 ATTRACT_TASK = { addr = 0x1D17, note = "task 0 (started at 01D7): ATTRACT = 1, clears the screen, starts task 1; after a wait, resets the tasks and runs the attract loop" }
 TITLE_TASK = { addr = 0x2AF8, note = "task 1: ROUND_MAIN = 0x64 (the title/attract layout), DIFFICULTY 7; the title screen" }
 OBJECTS_TASK = { addr = 0x3DF0, note = "task 3: each frame calls the bank-2 per-object updates (A59B, A2FC, 936A ...), then starts task 4" }
-BUBBLES_TASK = { addr = 0x5B3C, note = "task 5: clears E744.., then each frame the bubble routines (5046, 5C2B, 6EF8); the pop-flag state is POP_FLAG" }
+BUBBLES_TASK = { addr = 0x5B3C, note = "task 5: clears E744.., then each frame SECRET_ROUND_START, BUBBLES_STEP and EXTEND_CHECK (round 100: CAPTIVES_STEP); the pop-flag state is POP_FLAG" }
 ROUND_VARS_CLEAR = { addr = 0x063E, note = "clears the per-round flags (E6FF, E737, E341, E342, F536, SUB_CHECKS ...) and the words F9DE, F9FE" }
 ROUND_END_CLEAR = { addr = 0x0673, note = "round over: E2D5 cleared if E34B is negative, E344-E34E (11 bytes) cleared" }
 ROUND_END_PICK = { addr = 0x068C, note = "E744 = which end-of-round item/text: from F464, F46B, the ROUND_MAIN table at 0710, or the players' E641/E646 against the table at 0706; FF = none" }
@@ -344,6 +344,7 @@ ATTRACT_COIN = { addr = 0x1D70, note = "a credit is present: back to normal, ATT
 START_WAIT = { addr = 0x1DA3, note = "each frame: CREDITS_DRAW, BONUS_INFO_DRAW, START_PROMPT_DRAW and START_BUTTON_CHECK until a start button is pressed" }
 ROUND_LOOP = { addr = 0x1E2F, note = "one round of the game: ROUND_MAIN + 1 (the 100th round goes to ROUND_100_DONE), DIFFICULTY_TICK, then the round tasks run" }
 ROUND_100_DONE = { addr = 0x1E64, note = "ROUND_MAIN reached 0x64: the ending, then ZAP_ROUND (one player) or HIGH_SCORE_SCREEN" }
+SCORE_BAR_REDRAW = { addr = 0x21CF, note = "TILES_RESTORE if E352, the top rows blanked (2250); the round each player reached into E644 (P1) / E649 (P2), then both scores and 1UP/2UP" }
 HIGH_SCORE_SCREEN = { addr = 0x1EEA, note = "GAME OVER sequence: sound 02, HIGH_ENTRY_BOTH, HIGH_ENTRY_SETUP, GAME_OVER_SHOW, SWB7_SCORE_A/B, then back to the attract loop (1D1E)" }
 ZAP_ROUND = { addr = 0x1F30, note = "text 'YOU ZAPPED TO .....': ROUND_MAIN = one of eight values from the table at 1F88 (picked with R), DIFFICULTY 1E; then ROUND_LOOP" }
 DEMO_END = { addr = 0x1F90, note = "no player in the game (the demo is over): a tamper compare of (0001) with START, then HIGH_SCORE_SCREEN's steps" }
@@ -371,8 +372,17 @@ ENDING_SCROLL = { addr = 0x563F, note = "Seen in MAME (--boss-pop, two players):
 ENDING_SCROLL_STEP = { addr = 0x56AB, note = "moves every tile column (E2F5) and every object in use up by 1. Tamper check: byte 0002 must be 5E, else two pushes wreck the stack" }
 ENDING_ROW_CLEAR = { addr = 0x5701, note = "clears tile row GRID_DRAW_ROW & 1F (D500 + 2 x row, 32 columns)" }
 ENDING_ROW_DRAW = { addr = 0x5719, note = "below the row count: from bank 1 at (E734), records of colour, column, length and characters into row GRID_DRAW_ROW & 1F; FF ends the row" }
-STATE29_INIT = { addr = 0x50CB, note = "E723 = 29 (see L_5046): bank 2 effect starter for E724 (3 kinds: 50FC, 510B, 5115), sound 29; the text at 55E5 comes with it, so it may be the secret round" }
-STATE29_FRAME = { addr = 0x5127, note = "per frame: 55DB, 52B6, 5353, 5416, GHOST_COUNTDOWN, the Skel-Monsta update, 541E and 0x24 BUBBLE_SLOTS records" }
+SECRET_ROUND_START = { addr = 0x5046, note = "Seen in MAME (--special 31-33): when E723 = 29 (special kinds 31-33): clears the bubbles, timer E72E = 960, ENEMY_TOTAL 0A, ends tasks 3 and 4, ROUND_MAIN + 1 kept in E726, then round record 65 (the secret room: a statue, rows of gems and a plate in the secret alphabet)" }
+SECRET_ROUND_INIT = { addr = 0x50CB, note = "the room's effect by E724 (table 50F6): 0 STARS_START, 1 LIGHTNING_START, 2 STARS_START with F47B = 1; sound 29. SECRET_WELCOME_SHOW (55E5) comes with it" }
+SECRET_ROUND_FRAME = { addr = 0x5127, note = "the secret round, per frame: 55DB, 52B6, 5353, 5416, GHOST_COUNTDOWN, the Skel-Monsta update, 541E and 0x24 BUBBLE_SLOTS records" }
+EXTEND_LETTERS_DRAW = { addr = 0x62FB, note = "the EXTEND letters each player has, down the side: E742 at D51C (P1), E743 at DC9C (P2)" }
+EXTEND_LETTERS_ROW = { addr = 0x630C, note = "one player's letters: bit n of (HL) set draws letter n (EXTEND_LETTER_DRAW) from IY" }
+EXTEND_LETTER_DRAW = { addr = 0x6322, note = "letter C of EXTEND at IY" }
+EXTEND_CLEAR  = { addr = 0x6EEF, note = "clears the EXTEND scene state, EB56-EB98" }
+EXTEND_CHECK  = { addr = 0x6EF8, note = "Seen in MAME (--poke E742=3F): a player with all six letters (E742/E743 & 3F = 3F; EB56 = that player): letters cleared, sound 10, tasks 3, 4 and 2 ended; EB57 b0 set, and the six letters then flash 7 times (6F59, from 6FE3) before EXTEND_SCENE. BUBBLES_TASK skips the round while EB57 is set" }
+EXTEND_SCENE  = { addr = 0x7007, note = "Seen in MAME: the EXTEND screen, the big letter bubbles over a picture from bank 1 (849E, 85D6, 870E, 8A54), then NICE 1UP! and the next round. Tamper check: the word at 0B2E must be IRQ_HANDLER, else PUSH IY" }
+CAPTIVES_INIT = { addr = 0x6755, note = "clears the two captive records (EB36, EB46); on round 100 (not the attract loop) sets them up, objects E255 and E265, F446 = 0" }
+CAPTIVES_STEP = { addr = 0x67B3, note = "Seen in MAME (--boss-pop): round 100, per frame from BUBBLES_TASK: HEART_CYCLE once a captive is freed, the two-player starfield once ROUND_WIPE is done, then each captive (6BF7/6BFF poses). Tamper check: the word at 0B2E must be IRQ_HANDLER, else PUSH IX" }
 ENEMY_ATTACK_CHECK = { addr = 0x7B94, note = "NZ when this enemy may attack: (IX+14) b1, target alive, the MCU proximity bytes near enough (FC2B record: first under 8, second 40 or more) and open cells ahead" }
 ENEMY_DEFEATED = { addr = 0x7BFD, note = "tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along a path from the table at 80C9" }
 ENEMY3_SHOT_LOOP = { addr = 0x7A42, note = "each ENEMY3_SHOTS record with its owner in ENEMY3_SLOTS" }
@@ -658,6 +668,9 @@ BOMB_RUN = { addr = 0xAAC5, note = "Seen in MAME (--special 17): each frame whil
 IDLE_PLAYER_RUN = { addr = 0xAD98, note = "the player loop for a player in state 80 (not playing, 4070): the dragon waits in the corner with the PUSH 2P balloon (B14F, B15F for player 2)" }
 JOIN_PROMPT = { addr = 0xB18F, note = "each frame of a game, not in the attract loop: the top-corner text for a player who is not playing (PUSH 2P / TO START, INSERT COIN from B339), switched every 3C frames" }
 ENDING_HINT_SCREEN = { addr = 0xB77A, note = "Seen in MAME (--boss-pop): after the ending with two players outside super mode (1ED3): BUT IT WAS NOT A TRUE ENDING! / WRITE 8 BIG WORDS ON A PAPER. / THIS IS A KEY OF SECRET GAME. and the hint words" }
+SECRET_ROUND_A = { addr = 0x8AB7, note = "special kind 31: E724 = 0, E723 = 29, so SECRET_ROUND_START takes the player to the secret room with the stars (seen in MAME)" }
+SECRET_ROUND_B = { addr = 0x8AC2, note = "special kind 32: E724 = 1, E723 = 29: the secret room with the lightning (seen in MAME)" }
+SECRET_ROUND_C = { addr = 0x8ACD, note = "special kind 33: E724 = 2, E723 = 29: the secret room with STARS_START, F47B = 1 (seen in MAME)" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

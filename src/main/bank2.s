@@ -1226,21 +1226,24 @@ L_8AB1:                 ; 8AB1
         ld      (hl),0x81
         ret
 
-L_8AB7:                 ; 8AB7
+; special kind 31: E724 = 0, E723 = 29, so SECRET_ROUND_START takes the player to the secret room with the stars (seen in MAME)
+SECRET_ROUND_A:         ; 8AB7
         ld      hl,0xE724
         ld      (hl),0x00
         ld      hl,0xE723
         ld      (hl),0x29
         ret
 
-L_8AC2:                 ; 8AC2
+; special kind 32: E724 = 1, E723 = 29: the secret room with the lightning (seen in MAME)
+SECRET_ROUND_B:         ; 8AC2
         ld      hl,0xE724
         ld      (hl),0x01
         ld      hl,0xE723
         ld      (hl),0x29
         ret
 
-L_8ACD:                 ; 8ACD
+; special kind 33: E724 = 2, E723 = 29: the secret room with STARS_START, F47B = 1 (seen in MAME)
+SECRET_ROUND_C:         ; 8ACD
         ld      hl,0xE724
         ld      (hl),0x02
         ld      hl,0xE723
@@ -1320,9 +1323,9 @@ SPECIAL_EFFECTS:        ; 8AFF
         .word   L_8AA3
         .word   L_8AA9
         .word   L_8AB1
-        .word   L_8AB7
-        .word   L_8AC2
-        .word   L_8ACD
+        .word   SECRET_ROUND_A
+        .word   SECRET_ROUND_B
+        .word   SECRET_ROUND_C
         .word   L_8AD8
         .word   L_8AED
 ; one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the BIG_ITEM code)

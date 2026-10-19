@@ -4099,7 +4099,7 @@ L_1DFA:                 ; 1DFA
         call    SCORE_LABELS_DRAW
         ld      hl,0xE352
         ld      (hl),0x00
-        call    L_21CF
+        call    SCORE_BAR_REDRAW
 ; one round of the game: ROUND_MAIN + 1 (the 100th round goes to ROUND_100_DONE), DIFFICULTY_TICK, then the round tasks run
 ROUND_LOOP:             ; 1E2F
         ld      a,0x02
@@ -4168,7 +4168,7 @@ L_1EA1:                 ; 1EA1
         pop     bc
         djnz    L_1EA1
 L_1EB4:                 ; 1EB4
-        call    L_21CF
+        call    SCORE_BAR_REDRAW
         call    0xB34F
         call    LOAD_PALETTES
         ld      a,(0xE5D7)
@@ -4278,7 +4278,7 @@ HIGH_SCORE_SCREEN_DEMO: ; 1FA9
         call    CLEAR_OBJ_SHADOW
         call    SET_E1D2_SEQ
         call    SET_E2D5_RECS
-        call    L_21CF
+        call    SCORE_BAR_REDRAW
         ld      a,0x02
         ld      (SOUND_CMD),a
         ld      a,0x03
@@ -4506,7 +4506,8 @@ BANK3_CALL_BE00:        ; 21C4
         call    0xBE00
         jp      BANK_RESTORE
 
-L_21CF:                 ; 21CF
+; TILES_RESTORE if E352, the top rows blanked (2250); the round each player reached into E644 (P1) / E649 (P2), then both scores and 1UP/2UP
+SCORE_BAR_REDRAW:       ; 21CF
         ld      a,(0xE352)
         and     a
         call    nz,TILES_RESTORE
@@ -9488,7 +9489,8 @@ L_503B:                 ; 503B
         ld      (hl),0xFF
         ret
 
-L_5046:                 ; 5046
+; Seen in MAME (--special 31-33): when E723 = 29 (special kinds 31-33): clears the bubbles, timer E72E = 960, ENEMY_TOTAL 0A, ends tasks 3 and 4, ROUND_MAIN + 1 kept in E726, then round record 65 (the secret room: a statue, rows of gems and a plate in the secret alphabet)
+SECRET_ROUND_START:     ; 5046
         ld      a,(0xE723)
         cp      0x29
         ret     nz
@@ -9541,14 +9543,14 @@ L_5046:                 ; 5046
 L_50BB:                 ; 50BB
         ld      hl,0xE5D7
         bit     1,(hl)
-        jr      z,STATE29_INIT
+        jr      z,SECRET_ROUND_INIT
         ld      hl,0xE2B5
         ld      (hl),0x58
         inc     hl
         inc     hl
         ld      (hl),0xD8
-; E723 = 29 (see L_5046): bank 2 effect starter for E724 (3 kinds: 50FC, 510B, 5115), sound 29; the text at 55E5 comes with it, so it may be the secret round
-STATE29_INIT:           ; 50CB
+; the room's effect by E724 (table 50F6): 0 STARS_START, 1 LIGHTNING_START, 2 STARS_START with F47B = 1; sound 29. SECRET_WELCOME_SHOW (55E5) comes with it
+SECRET_ROUND_INIT:      ; 50CB
         ld      a,0x03
         rst     0x18
         call    L_5498
@@ -9597,8 +9599,8 @@ L_5115:                 ; 5115
 
 L_5124:                 ; 5124
         call    BANK_RESTORE
-; per frame: 55DB, 52B6, 5353, 5416, GHOST_COUNTDOWN, the Skel-Monsta update, 541E and 0x24 BUBBLE_SLOTS records
-STATE29_FRAME:          ; 5127
+; the secret round, per frame: 55DB, 52B6, 5353, 5416, GHOST_COUNTDOWN, the Skel-Monsta update, 541E and 0x24 BUBBLE_SLOTS records
+SECRET_ROUND_FRAME:     ; 5127
         rst     0x20
         call    L_55DB
         call    L_52B6
@@ -9686,7 +9688,7 @@ L_51CA:                 ; 51CA
         add     ix,de
         dec     b
         jp      nz,L_5143
-        jp      STATE29_FRAME
+        jp      SECRET_ROUND_FRAME
 
         .incbin "main_fixed.bin", 0x51D7, 0x0090
 L_5267:                 ; 5267
@@ -10779,12 +10781,12 @@ L_5AE4:                 ; 5AE4
         jp      DECIMAL3_DRAW
 
         .incbin "main_fixed.bin", 0x5AEE, 0x004E
-; task 5: clears E744.., then each frame the bubble routines (5046, 5C2B, 6EF8); the pop-flag state is POP_FLAG
+; task 5: clears E744.., then each frame SECRET_ROUND_START, BUBBLES_STEP and EXTEND_CHECK (round 100: CAPTIVES_STEP); the pop-flag state is POP_FLAG
 BUBBLES_TASK:           ; 5B3C
         rst     0x20
         call    BUBBLES_INIT
-        call    L_6EEF
-        call    L_6755
+        call    EXTEND_CLEAR
+        call    CAPTIVES_INIT
         ld      a,(ATTRACT)
         and     a
         jr      nz,L_5B53
@@ -10796,15 +10798,15 @@ L_5B53:                 ; 5B53
         ld      a,(0xEB57)
         and     a
         jr      nz,L_5B60
-        call    L_5046
+        call    SECRET_ROUND_START
         call    BUBBLES_STEP
 L_5B60:                 ; 5B60
-        call    L_6EF8
+        call    EXTEND_CHECK
         jr      L_5B53
 
 L_5B65:                 ; 5B65
         rst     0x20
-        call    L_67B3
+        call    CAPTIVES_STEP
         call    BUBBLES_STEP
         jr      L_5B65
 
@@ -10815,7 +10817,7 @@ BUBBLES_INIT:           ; 5B6E
         call    ZERO_BC
         ld      a,(ROUND_MAIN)
         cp      0x63
-        call    nz,L_62FB
+        call    nz,EXTEND_LETTERS_DRAW
         ld      hl,POP_FLAG
         ld      bc,0x0007
         call    ZERO_BC
@@ -11252,7 +11254,7 @@ L_5EDD:                 ; 5EDD
         ld      hl,0xE5F8
         call    ADD_HL_A
         inc     (hl)
-        call    L_62FB
+        call    EXTEND_LETTERS_DRAW
         ld      c,0x17
         call    SOUND_PUSH
         pop     af
@@ -11774,13 +11776,15 @@ L_62F6:                 ; 62F6
         ld      (ix+20),0x00
         ret
 
-L_62FB:                 ; 62FB
+; the EXTEND letters each player has, down the side: E742 at D51C (P1), E743 at DC9C (P2)
+EXTEND_LETTERS_DRAW:    ; 62FB
         ld      iy,0xD51C
         ld      hl,0xE742
-        call    L_630C
+        call    EXTEND_LETTERS_ROW
         ld      iy,0xDC9C
         ld      hl,0xE743
-L_630C:                 ; 630C
+; one player's letters: bit n of (HL) set draws letter n (EXTEND_LETTER_DRAW) from IY
+EXTEND_LETTERS_ROW:     ; 630C
         ld      a,(hl)
         or      a
         ret     z
@@ -11790,7 +11794,7 @@ L_6312:                 ; 6312
         push    af
         push    bc
         push    iy
-        call    c,L_6322
+        call    c,EXTEND_LETTER_DRAW
         pop     iy
         pop     bc
         pop     af
@@ -11798,7 +11802,8 @@ L_6312:                 ; 6312
         djnz    L_6312
         ret
 
-L_6322:                 ; 6322
+; letter C of EXTEND at IY
+EXTEND_LETTER_DRAW:     ; 6322
         ld      a,c
         add     a,a
         add     a,a
@@ -12287,7 +12292,8 @@ L_6738:                 ; 6738
         jp      L_602A
 
         .incbin "main_fixed.bin", 0x6751, 0x0004
-L_6755:                 ; 6755
+; clears the two captive records (EB36, EB46); on round 100 (not the attract loop) sets them up, objects E255 and E265, F446 = 0
+CAPTIVES_INIT:          ; 6755
         ld      hl,0xEB36
         ld      bc,0x0020
         call    ZERO_BC
@@ -12320,7 +12326,8 @@ L_6755:                 ; 6755
         ld      b,0x08
         jp      GFX_GRID_FILL
 
-L_67B3:                 ; 67B3
+; Seen in MAME (--boss-pop): round 100, per frame from BUBBLES_TASK: HEART_CYCLE once a captive is freed, the two-player starfield once ROUND_WIPE is done, then each captive (6BF7/6BFF poses). Tamper check: the word at 0B2E must be IRQ_HANDLER, else PUSH IX
+CAPTIVES_STEP:          ; 67B3
         ld      a,(ENEMY_TOTAL)
         and     a
         jr      nz,L_67EA
@@ -13098,12 +13105,14 @@ L_6EDD:                 ; 6EDD
         ld      (ix+0),0x10
         jp      L_602A
 
-L_6EEF:                 ; 6EEF
+; clears the EXTEND scene state, EB56-EB98
+EXTEND_CLEAR:           ; 6EEF
         ld      hl,0xEB56
         ld      bc,0x0043
         jp      ZERO_BC
 
-L_6EF8:                 ; 6EF8
+; Seen in MAME (--poke E742=3F): a player with all six letters (E742/E743 & 3F = 3F; EB56 = that player): letters cleared, sound 10, tasks 3, 4 and 2 ended; EB57 b0 set, and the six letters then flash 7 times (6F59, from 6FE3) before EXTEND_SCENE. BUBBLES_TASK skips the round while EB57 is set
+EXTEND_CHECK:           ; 6EF8
         ld      ix,0xEB57
         bit     0,(ix+0)
         jp      nz,L_6F59
@@ -13174,7 +13183,7 @@ L_6F82:                 ; 6F82
 
 L_6F92:                 ; 6F92
         call    L_6FBF
-        jp      L_7007
+        jp      EXTEND_SCENE
 
 L_6F98:                 ; 6F98
         ld      l,(ix+4)
@@ -13220,7 +13229,8 @@ L_6FCB:                 ; 6FCB
         ret
 
         .incbin "main_fixed.bin", 0x6FE3, 0x0024
-L_7007:                 ; 7007
+; Seen in MAME: the EXTEND screen, the big letter bubbles over a picture from bank 1 (849E, 85D6, 870E, 8A54), then NICE 1UP! and the next round. Tamper check: the word at 0B2E must be IRQ_HANDLER, else PUSH IY
+EXTEND_SCENE:           ; 7007
         ld      hl,IRQ_HANDLER
         ld      de,(0x0B2E)
         or      a
