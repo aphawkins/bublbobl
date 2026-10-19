@@ -11,8 +11,12 @@ BANK2_ENTRIES="--entry A59B --entry A2FC --entry 936A --entry 99E2 --entry 96E6 
   --entry 8000 --entry 8CC7 --entry 91A3 --entry 9233 --entry 8DFF --entry 8FA6 --entry 92CF
   --entry 9C7D --entry 9D35 --entry A480 --entry AAC5 --entry ACBA --entry AD98 --entry B18F
   --entry B77A --entry B9CD"
-# bank 0: OBJECTS_TASK calls BF48 after BANK_RESTORE
-BANK0_ENTRIES="--entry BF48"
+# bank 0: OBJECTS_TASK calls BF48 after BANK_RESTORE; the fixed ROM's calls into B3xx-B8xx
+# run with page 0 in (B391, B3B5 and B738 seen in MAME; the rest sit in page 0's gaps)
+BANK0_ENTRIES="--entry BF48 --entry B34F --entry B391 --entry B3AF --entry B3B5 --entry B732
+  --entry B738 --entry B878 --entry B884 --entry B8D3"
+# bank 3: BANK3_CALL_BE00 (21C4)
+BANK3_ENTRIES="--entry BE00"
 # jump tables (ADDR:COUNT), found from the TABLE_WORD callers
 BANK0_TABLES="--table 8442:4 --table 8E5F:6 --table 9218:6 --table 95F9:6 --table 987D:6
   --table 9CCF:4 --table A0FB:5 --table A4BE:4 --table A80C:6 --table AAA8:4
@@ -20,4 +24,4 @@ BANK0_TABLES="--table 8442:4 --table 8E5F:6 --table 9218:6 --table 95F9:6 --tabl
 BANK2_TABLES="--table 8AFF:54 --table 9F22:6 --table B0E7:4"
 python tools/dasmz80.py main_bank0 --probe $BANK0_ENTRIES $BANK0_TABLES --out src/main/bank0.s
 python tools/dasmz80.py main_bank2 --probe $BANK2_ENTRIES $BANK2_TABLES --out src/main/bank2.s
-python tools/dasmz80.py main_bank3 --probe --out src/main/bank3.s
+python tools/dasmz80.py main_bank3 --probe $BANK3_ENTRIES --out src/main/bank3.s

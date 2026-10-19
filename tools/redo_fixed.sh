@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")/.."
 python tools/dasmz80.py main_fixed --probe --table 37FD:10 --table 50F6:3 --table 54BC:3 --table 61F4:7 \
   --table 6E50:5 --table 7B8C:4 --table 5406:8 --table 0B22:6 --entry 0538 --entry 1D17 \
-  --entry 2AF8 --entry 3DF0 --entry 5B3C --out disasm/main_fixed.s
+  --entry 2AF8 --entry 3DF0 --entry 5B3C --entry 563F --out disasm/main_fixed.s
 python - <<'P'
 import re
 fx = open('disasm/main_fixed.s', encoding='utf-8').read()

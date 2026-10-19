@@ -10107,7 +10107,203 @@ SECRET_WELCOME_STEP:    ; 55FA
         ld      c,0x00
         jp      PRINT_TEXT
 
-        .incbin "main_fixed.bin", 0x560F, 0x0167
+        .incbin "main_fixed.bin", 0x560F, 0x0030
+; the ending (bank0:ENDING_START jumps here): every 4 frames ENDING_SCROLL_STEP; every 8 pixels a row is cleared and the next drawn, 0x1A rows with one player, else 0x8B; text pointer E734 from bank1 ENDING_TEXT_1P, _2P or _SUPER
+ENDING_SCROLL:          ; 563F
+        ld      hl,GRID_DRAW_ROW
+        ld      (hl),0x00
+        ld      hl,0x90EA
+        ld      a,(0xE5D7)
+        cp      0x03
+        jr      nz,L_565A
+        ld      hl,0x8D42
+        ld      a,(SUPER_MODE)
+        and     a
+        jr      z,L_565A
+        ld      hl,0x91BF
+L_565A:                 ; 565A
+        ld      (0xE734),hl
+L_565D:                 ; 565D
+        rst     0x20
+        ld      hl,0xE736
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x04
+        jr      nz,L_565D
+        ld      (hl),0x00
+        call    ENDING_SCROLL_STEP
+        ld      a,(0xE2F5)
+        and     0x07
+        jr      nz,L_565D
+        call    ENDING_ROW_CLEAR
+        call    ENDING_ROW_DRAW
+        ld      e,0x3B
+        ld      a,(0xE5D7)
+        cp      0x03
+        jr      nz,L_568C
+        ld      e,0xAC
+        ld      a,(SUPER_MODE)
+        and     a
+        jr      z,L_568C
+        ld      e,0xAC
+L_568C:                 ; 568C
+        ld      hl,GRID_DRAW_ROW
+        inc     (hl)
+        ld      a,(hl)
+        cp      e
+        jr      nz,L_565D
+        ld      hl,GRID_DRAW_ROW
+        ld      (hl),0x00
+        ld      b,0x10
+        ld      hl,0xE2F5
+L_569E:                 ; 569E
+        ld      (hl),0x00
+        inc     hl
+        inc     hl
+        inc     hl
+        inc     hl
+        djnz    L_569E
+        ld      a,0x05
+        rst     0x08
+        rst     0x20
+        ret
+
+; moves every tile column (E2F5) and every object in use up by 1. Tamper check: byte 0002 must be 5E, else two pushes wreck the stack
+ENDING_SCROLL_STEP:     ; 56AB
+        ld      a,(0x0002)
+        cp      0x5E
+        jr      z,L_56B4
+        push    af
+        push    bc
+L_56B4:                 ; 56B4
+        ld      b,0x10
+        ld      hl,0xE2F5
+L_56B9:                 ; 56B9
+        inc     (hl)
+        inc     hl
+        inc     hl
+        inc     hl
+        inc     hl
+        djnz    L_56B9
+        ld      b,0x10
+        ld      hl,0xE20D
+L_56C5:                 ; 56C5
+        ld      a,(hl)
+        and     a
+        jr      z,L_56CA
+        inc     (hl)
+L_56CA:                 ; 56CA
+        inc     hl
+        inc     hl
+        inc     hl
+        inc     hl
+        djnz    L_56C5
+        ld      hl,0xE2C5
+        ld      a,(hl)
+        and     a
+        jr      z,L_56D8
+        inc     (hl)
+L_56D8:                 ; 56D8
+        ld      hl,0xE2B5
+        ld      a,(hl)
+        and     a
+        jr      z,L_56E0
+        inc     (hl)
+L_56E0:                 ; 56E0
+        ld      b,0x08
+        ld      hl,0xE255
+L_56E5:                 ; 56E5
+        ld      a,(hl)
+        and     a
+        jr      z,L_56EA
+        inc     (hl)
+L_56EA:                 ; 56EA
+        inc     hl
+        inc     hl
+        inc     hl
+        inc     hl
+        djnz    L_56E5
+        ld      b,0x10
+        ld      hl,0xE275
+L_56F5:                 ; 56F5
+        ld      a,(hl)
+        and     a
+        jr      z,L_56FA
+        inc     (hl)
+L_56FA:                 ; 56FA
+        inc     hl
+        inc     hl
+        inc     hl
+        inc     hl
+        djnz    L_56F5
+        ret
+
+; clears tile row GRID_DRAW_ROW & 1F (D500 + 2 x row, 32 columns)
+ENDING_ROW_CLEAR:       ; 5701
+        ld      a,(GRID_DRAW_ROW)
+        and     0x1F
+        add     a,a
+        ld      hl,0xD500
+        ld      b,0x20
+L_570C:                 ; 570C
+        call    ADD_HL_A
+        ld      (hl),0x00
+        inc     hl
+        ld      (hl),0x00
+        ld      a,0x3F
+        djnz    L_570C
+        ret
+
+; below the row count: from bank 1 at (E734), records of colour, column, length and characters into row GRID_DRAW_ROW & 1F; FF ends the row
+ENDING_ROW_DRAW:        ; 5719
+        ld      e,0x1A
+        ld      a,(0xE5D7)
+        cp      0x03
+        jr      nz,L_572C
+        ld      e,0x8B
+        ld      a,(SUPER_MODE)
+        and     a
+        jr      z,L_572C
+        ld      e,0x8B
+L_572C:                 ; 572C
+        ld      a,(GRID_DRAW_ROW)
+        cp      e
+        ret     nc
+        ld      a,0x01
+        call    BANK_SELECT
+        ld      ix,(0xE734)
+L_573A:                 ; 573A
+        ld      a,(ix+0)
+        inc     ix
+        cp      0xFF
+        jr      z,L_576F
+        ld      c,a
+        ld      a,(ix+0)
+        inc     ix
+        call    MUL64_DE
+        ld      hl,0xD500
+        add     hl,de
+        ld      a,(GRID_DRAW_ROW)
+        and     0x1F
+        add     a,a
+        call    ADD_HL_A
+        ld      b,(ix+0)
+        inc     ix
+L_575E:                 ; 575E
+        ld      a,(ix+0)
+        ld      (hl),a
+        inc     hl
+        inc     ix
+        ld      (hl),c
+        ld      a,0x3F
+        call    ADD_HL_A
+        djnz    L_575E
+        jr      L_573A
+
+L_576F:                 ; 576F
+        ld      (0xE734),ix
+        jp      BANK_RESTORE
+
 L_5776:                 ; 5776
         ld      hl,0xE737
         ld      bc,0x000B

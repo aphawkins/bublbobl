@@ -367,6 +367,10 @@ RECORD_SHOW = { addr = 0x39DB, note = "text 'TODAY'S RECORD IS' at D54A while E6
 RECORD_ROUND_SHOW = { addr = 0x3A0C, note = "text '\"ROUND    \"' and the round number (or 'AL' at 101) at DBCA" }
 SECRET_WELCOME_SHOW = { addr = 0x55E5, note = "E729 = FF, E72A = 78, text 'WELCOME TO SECRET ROUND' at D65E" }
 SECRET_WELCOME_STEP = { addr = 0x55FA, note = "E72A counts down; at 0 E729 = 1 and the text at 5627 replaces it" }
+ENDING_SCROLL = { addr = 0x563F, note = "the ending (bank0:ENDING_START jumps here): every 4 frames ENDING_SCROLL_STEP; every 8 pixels a row is cleared and the next drawn, 0x1A rows with one player, else 0x8B; text pointer E734 from bank1 ENDING_TEXT_1P, _2P or _SUPER" }
+ENDING_SCROLL_STEP = { addr = 0x56AB, note = "moves every tile column (E2F5) and every object in use up by 1. Tamper check: byte 0002 must be 5E, else two pushes wreck the stack" }
+ENDING_ROW_CLEAR = { addr = 0x5701, note = "clears tile row GRID_DRAW_ROW & 1F (D500 + 2 x row, 32 columns)" }
+ENDING_ROW_DRAW = { addr = 0x5719, note = "below the row count: from bank 1 at (E734), records of colour, column, length and characters into row GRID_DRAW_ROW & 1F; FF ends the row" }
 STATE29_INIT = { addr = 0x50CB, note = "E723 = 29 (see L_5046): bank 2 effect starter for E724 (3 kinds: 50FC, 510B, 5115), sound 29; the text at 55E5 comes with it, so it may be the secret round" }
 STATE29_FRAME = { addr = 0x5127, note = "per frame: 55DB, 52B6, 5353, 5416, GHOST_COUNTDOWN, the Skel-Monsta update, 541E and 0x24 BUBBLE_SLOTS records" }
 ENEMY_ATTACK_CHECK = { addr = 0x7B94, note = "NZ when this enemy may attack: (IX+14) b1, target alive, the MCU proximity bytes near enough (FC2B record: first under 8, second 40 or more) and open cells ahead" }
@@ -556,10 +560,26 @@ ENEMY3_ATTACK_STEP = { addr = 0x984D, note = "while (IX+24) b4: at (IX+5) = 2 so
 ENEMY2B_ATTACK_START = { addr = 0xA7E4, note = "group 2B as ENEMY2_ATTACK_START: unless (IX+7) b2 or (IX+24) b4, starts the throw" }
 ENEMY_GROUND_CHECK = { addr = 0x8EDF, note = "Z-flag result: probes the floor under the enemy (ENEMY_FLOOR_PROBE with (IX+14) b5 set, then GRID_PROBE_3); if none, Y - 1 and A = 1" }
 HURRY_HAND_RUN = { addr = 0xBF48, note = "Seen in MAME (--special 30): each frame while F448 (kind 30 sets 81): a hand holding a star sweeps down across the screen (b0, 7 sprites from BFE3), then HURRY UP!! rises from the bottom (b1) and the enemies turn angry; b2 done. Not in the attract loop or with NO_SPECIAL" }
+ENDING_START  = { addr = 0xB34F, note = "from ROUND_100_DONE: STARFIELD_RESET, F448 = 0, F458 + 1, BEA9, with two players 600 frames of BF61, sound 14 (two) or 2B, then ENDING_SCROLL. Tamper check: bit 3 of byte 0002 set pushes DE and BC" }
+STARFIELD_RESET = { addr = 0xB391, note = "clears the 9 bytes from F359: the twinkle counters and F35B" }
+STARFIELD_DRAW_2P = { addr = 0xB3AF, note = "STARFIELD_DRAW with two players only (E5D7 = 3); round 100 once F446 = 20. Not seen in MAME" }
+STARFIELD_DRAW = { addr = 0xB3B5, note = "Seen in MAME: the starry backdrop of INTRO_STORY, STARFIELD_MAP_A-C to CD08, D008 and D308; palette F960 cleared, so the stars start dark" }
+STARFIELD_TWINKLE_2P = { addr = 0xB732, note = "STARFIELD_TWINKLE with two players only. Not seen in MAME" }
+STARFIELD_TWINKLE = { addr = 0xB738, note = "Seen in MAME: per frame, colours F960, F96E and F968. F35B 0: every 10 frames the next of 9 steps of STAR_FADE_IN; 1: STAR_CYCLE, until GRID_DRAW_ROW reaches 31 (one player) or A2; 2: each colour 1 down every 20 frames. INTRO_STORY sets 2 at E61A = 110" }
+R100_PIC_PALETTE = { addr = 0xB878, note = "round 100 (6AE3): palette 7 (F8E0) copied to palette 9 (F920). Not seen in MAME" }
+R100_PIC_DRAW = { addr = 0xB884, note = "round 100 (6AE3, with sound 1C): the 8 x 8 tiles of R100_PIC_TILES at D818, tile bank 26. Not seen in MAME" }
+R100_PIC_CYCLE = { addr = 0xB8D3, note = "round 100, round cleared and a player record (EB36, EB46) b5: every 2nd call F35D steps 0-5 and colour F93A of palette 9 comes from R100_PIC_COLOURS. Not seen in MAME" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
 BOSS_POSES    = { addr = 0xAF4C, size = 0x80, note = "8 x 16 first tiles (bank 8): poses 0-1, mirrored 0-1, poses 2-3, mirrored 2-3; piece i at column i % 4, row i / 4" }
+STARFIELD_MAP_A = { addr = 0xB3F2, size = 0x138, note = "0x1A x 0x0C tiles, tile bank 2D (STARFIELD_DRAW)" }
+STARFIELD_MAP_B = { addr = 0xB52A, size = 0x138, note = "0x1A x 0x0C tiles, tile bank 2D" }
+STARFIELD_MAP_C = { addr = 0xB662, size = 0xD0, note = "0x1A x 8 tiles, tile bank 2E" }
+STAR_CYCLE    = { addr = 0xB800, size = 0x3C, note = "10 x 3 colours for F960, F96E, F968: STARFIELD_TWINKLE's cycle" }
+STAR_FADE_IN  = { addr = 0xB83C, size = 0x3C, note = "10 x 3 colours, steps 1-9 used: STARFIELD_TWINKLE's fade-in" }
+R100_PIC_TILES = { addr = 0xB893, size = 0x40, note = "8 x 8 tiles for R100_PIC_DRAW" }
+R100_PIC_COLOURS = { addr = 0xB8F1, size = 0x0C, note = "6 colour words for R100_PIC_CYCLE" }
 
 [bank1.data]
 # a78-05-1.52 page 1 (file 0x4000-0x7FFF), mapped at 8000 when FB40 = 5.
@@ -569,6 +589,9 @@ ROUND_RECORDS  = { addr = 0xA73A, size = 0x10CC, note = "100 x 0x2B bytes, one p
 GRID_EDGES     = { addr = 0x95AA, size = 0x40, note = "32 pointers; LOAD_GRID_EDGES uses 0-15 for both edges: 0x50 bytes for the top, the first 0x30 for the bottom. 16-31 point at GRID_EDGE_LOW, never read there" }
 GRID_EDGE_ROWS = { addr = 0x95EA, size = 0x02D0, note = "9 x 0x50 bytes: ROUND_GRID rows 0-4; the first 0x30 also fill rows 29-31" }
 GRID_EDGE_LOW  = { addr = 0x98BA, size = 0x01B0, note = "9 x 0x30 bytes, each the same as the first 0x30 of the matching GRID_EDGE_ROWS pattern; unreferenced" }
+ENDING_TEXT_2P = { addr = 0x8D42, size = 0x3A8, note = "0x8B rows for ENDING_SCROLL, two players: CONGRATULATIONS! / NOW,YOU FOUND THE MOST IMPORTANT MAGIC IN THE WORLD. IT'S \"LOVE\" & \"FRIENDSHIP\" ..." }
+ENDING_TEXT_1P = { addr = 0x90EA, size = 0xD5, note = "0x1A rows, one player: CONGRATULATIONS! / BUT THIS IS NOT A TRUE ENDING! / COME HERE WITH YOUR FRIENDS! ..." }
+ENDING_TEXT_SUPER = { addr = 0x91BF, size = 0x3EB, note = "0x8B rows, two players in super mode: CONGRATULATIONS! / YOU COULD HELP YOUR FATHER & MOTHER! ..." }
 
 [bank2.code]
 # a78-05-1.52 page 2 (file 0x8000-0xBFFF), mapped at 8000 when FB40 = 6.
@@ -649,9 +672,15 @@ BIG_ITEM_POINTS = { addr = 0x8D46, note = "11 BCD words per F46D for SCORE_ADD: 
 BIG_ITEM_START = { addr = 0x8D5C, note = "4 x (Y, X): where the 4 sprites start, above the top in the middle" }
 BIG_ITEM_BURST_TILES = { addr = 0x8D43, note = "3 tile numbers for the points sprite of BIG_ITEM_BURST (SPRITE_GRID_D)" }
 
+[bank3.code]
+TAITO_CREDIT  = { addr = 0xBE00, note = "Seen in MAME (BANK3_CALL_BE00): the TAITO logo (two rows of tiles), (C) TAITO CORPORATION 1986 and ALL RIGHTS RESERVED, from CREDIT_STRINGS" }
+PRINT_COUNTED = { addr = 0xBE2D, note = "HL = a count then characters, DE = tile address, C = attribute; one row down (+40) a character" }
+BANK3_ADD_DE_A = { addr = 0xBE3D, note = "DE += A" }
+
 [bank3.data]
 
 # a78-05-1.52 page 3 (file 0xC000-0xFFFF), mapped at 8000 when FB40 = 7.
+CREDIT_STRINGS = { addr = 0xBE42, size = 0x10A, note = "four counted strings at BE42, BE7F, BEBB, BF06 (the rest FF) for TAITO_CREDIT" }
 VERSION_STAMP = { addr = 0xBF4C, note = "file 0xFF4C: 'VER 0.1 4.SEP,1986 SUMMER'" }
 
 [sub.mem]

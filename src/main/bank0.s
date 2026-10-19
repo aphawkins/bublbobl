@@ -6320,17 +6320,10 @@ L_B33E:                 ; B33E
         .word   ENEMY0B_WALK_R
         .word   ENEMY0B_FALL
         .word   ENEMY0B_WALK_L
-        ld      (hl),h
-        adc     a,h
-        and     h
-        ld      (bc),a
-        ld      (bc),a
-        ld      (bc),a
-        inc     b
-        ld      (bc),a
-        ld      b,0xCD
-        sub     c
-        or      e
+        .incbin "main_bank0.bin", 0x3346, 0x0009
+; from ROUND_100_DONE: STARFIELD_RESET, F448 = 0, F458 + 1, BEA9, with two players 600 frames of BF61, sound 14 (two) or 2B, then ENDING_SCROLL. Tamper check: bit 3 of byte 0002 set pushes DE and BC
+ENDING_START:           ; B34F
+        call    STARFIELD_RESET
         ld      hl,0xF448
         ld      (hl),0x00
         call    SET_E2F5_RECS
@@ -6360,8 +6353,10 @@ L_B389:                 ; B389
         ld      c,0x2B
         call    SOUND_PUSH
 L_B38E:                 ; B38E
-        jp      0x563F
+        jp      ENDING_SCROLL
 
+; clears the 9 bytes from F359: the twinkle counters and F35B
+STARFIELD_RESET:        ; B391
         ld      hl,0xF359
         ld      bc,0x0009
         jp      ZERO_BC
@@ -6382,7 +6377,13 @@ L_B3A3:                 ; B3A3
         jr      nz,L_B3A3
         ret
 
-        .incbin "main_bank0.bin", 0x33AF, 0x0006
+; STARFIELD_DRAW with two players only (E5D7 = 3); round 100 once F446 = 20. Not seen in MAME
+STARFIELD_DRAW_2P:      ; B3AF
+        ld      a,(0xE5D7)
+        cp      0x03
+        ret     nz
+; Seen in MAME: the starry backdrop of INTRO_STORY, STARFIELD_MAP_A-C to CD08, D008 and D308; palette F960 cleared, so the stars start dark
+STARFIELD_DRAW:         ; B3B5
         call    VIDEO_OFF
         ld      hl,0xF960
         ld      bc,0x0020
@@ -6406,7 +6407,22 @@ L_B3A3:                 ; B3A3
         call    TILE_RECT
         jp      VIDEO_ON
 
-        .incbin "main_bank0.bin", 0x33F2, 0x0346
+; 0x1A x 0x0C tiles, tile bank 2D (STARFIELD_DRAW)
+STARFIELD_MAP_A:        ; B3F2
+        .incbin "main_bank0.bin", 0x33F2, 0x0138
+; 0x1A x 0x0C tiles, tile bank 2D
+STARFIELD_MAP_B:        ; B52A
+        .incbin "main_bank0.bin", 0x352A, 0x0138
+; 0x1A x 8 tiles, tile bank 2E
+STARFIELD_MAP_C:        ; B662
+        .incbin "main_bank0.bin", 0x3662, 0x00D0
+; STARFIELD_TWINKLE with two players only. Not seen in MAME
+STARFIELD_TWINKLE_2P:   ; B732
+        ld      a,(0xE5D7)
+        cp      0x03
+        ret     nz
+; Seen in MAME: per frame, colours F960, F96E and F968. F35B 0: every 10 frames the next of 9 steps of STAR_FADE_IN; 1: STAR_CYCLE, until GRID_DRAW_ROW reaches 31 (one player) or A2; 2: each colour 1 down every 20 frames. INTRO_STORY sets 2 at E61A = 110
+STARFIELD_TWINKLE:      ; B738
         ld      a,(0xF35B)
         bit     0,a
         jp      nz,L_B789
@@ -6531,7 +6547,56 @@ L_B7F2:                 ; B7F2
         ld      (hl),a
         ret
 
-        .incbin "main_bank0.bin", 0x3800, 0x00FD
+; 10 x 3 colours for F960, F96E, F968: STARFIELD_TWINKLE's cycle
+STAR_CYCLE:             ; B800
+        .incbin "main_bank0.bin", 0x3800, 0x003C
+; 10 x 3 colours, steps 1-9 used: STARFIELD_TWINKLE's fade-in
+STAR_FADE_IN:           ; B83C
+        .incbin "main_bank0.bin", 0x383C, 0x003C
+; round 100 (6AE3): palette 7 (F8E0) copied to palette 9 (F920). Not seen in MAME
+R100_PIC_PALETTE:       ; B878
+        ld      hl,0xF8E0
+        ld      de,0xF920
+        ld      bc,0x0020
+        ldir
+        ret
+
+; round 100 (6AE3, with sound 1C): the 8 x 8 tiles of R100_PIC_TILES at D818, tile bank 26. Not seen in MAME
+R100_PIC_DRAW:          ; B884
+        ld      hl,0xD818
+        ld      de,0xB893
+        ld      bc,0x0808
+        ld      a,0x26
+        call    TILE_RECT
+        ret
+
+; 8 x 8 tiles for R100_PIC_DRAW
+R100_PIC_TILES:         ; B893
+        .incbin "main_bank0.bin", 0x3893, 0x0040
+; round 100, round cleared and a player record (EB36, EB46) b5: every 2nd call F35D steps 0-5 and colour F93A of palette 9 comes from R100_PIC_COLOURS. Not seen in MAME
+R100_PIC_CYCLE:         ; B8D3
+        ld      hl,0xF35C
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x02
+        ret     nz
+        ld      (hl),0x00
+        inc     hl
+        inc     (hl)
+        ld      a,(hl)
+        cp      0x06
+        jr      nz,L_B8E6
+        xor     a
+        ld      (hl),a
+L_B8E6:                 ; B8E6
+        ld      hl,0xB8F1
+        call    TABLE_WORD
+        ld      (0xF93A),de
+        ret
+
+; 6 colour words for R100_PIC_CYCLE
+R100_PIC_COLOURS:       ; B8F1
+        .incbin "main_bank0.bin", 0x38F1, 0x000C
 L_B8FD:                 ; B8FD
         ld      a,(0xF362)
         and     a
