@@ -5,6 +5,7 @@
         .include "fixed.inc"
         .section .text
 
+L_8000:                 ; 8000
         ld      a,(DSW0_COPY)
         and     0x05
         jp      z,L_BB7E
@@ -1323,7 +1324,7 @@ SPECIAL_EFFECTS:        ; 8AFF
         .word   L_8ACD
         .word   L_8AD8
         .word   L_8AED
-; one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the REC_F46B code)
+; one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the BIG_ITEM code)
 ROM_SUM_STEP_H:         ; 8B6B
         ld      a,(0xF466)
         and     a
@@ -1356,14 +1357,14 @@ L_8B99:                 ; 8B99
         cp      (hl)
         ret     z
         push    hl
-; round start, called by OBJECTS_TASK: clears the state record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0
-REC_F46B_INIT:          ; 8BA7
+; Seen in MAME (--special 1E, 23, 28 with --clear). round start, called by OBJECTS_TASK: clears the big item record at F46B (F46B on, F46C state, F46D variant, F46E timer, F46F player)
+BIG_ITEM_INIT:          ; 8BA7
         ld      hl,0xF46B
         ld      bc,0x000B
         jp      ZERO_BC
 
-; each frame: steps the record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0
-REC_F46B_RUN:           ; 8BB0
+; Seen in MAME. Special kinds 1E-28 set F46B and F46D = 28 - kind; once ENEMY_TOTAL is 0 a big 32 x 32 copy of the item (4 sprites at E2E5, tiles BIG_ITEM_TILES) falls from the top to the floor in the middle, with sound 1B, and waits there for BIG_ITEM_TAKE. Seen: 28 an ice lolly, 23 a cake, 1E a diamond. ROUND_END_PICK then makes E744 = F46D + 25
+BIG_ITEM_RUN:           ; 8BB0
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -1379,7 +1380,7 @@ REC_F46B_RUN:           ; 8BB0
         bit     2,a
         jp      nz,L_8CA4
         bit     3,a
-        jp      nz,L_8C39
+        jp      nz,BIG_ITEM_BURST
         bit     1,a
         ret     nz
         ld      hl,0xE2E5
@@ -1440,7 +1441,8 @@ L_8C22:                 ; 8C22
         ld      (hl),0x02
         ret
 
-L_8C39:                 ; 8C39
+; state 8, after BIG_ITEM_TAKE: the 4 sprites move apart, the points sprite (BIG_ITEM_POINTS_SPRITE) shows for 100 frames (F46E) as they sink, then the record is cleared
+BIG_ITEM_BURST:         ; 8C39
         ld      hl,0xE2E5
         inc     hl
         inc     hl
@@ -1531,6 +1533,8 @@ L_8CB8:                 ; 8CB8
         ld      (hl),0x00
         ret
 
+; called for each player by the player loop (41CA): while the big item falls or waits, a player within 18 x 18 of it scores BIG_ITEM_POINTS, sound 25, F46F = the player, state 8 (BIG_ITEM_BURST). Not seen in MAME: the cheat does not walk the player onto it
+BIG_ITEM_TAKE:          ; 8CC7
         ld      a,(0xF46C)
         bit     0,a
         jr      nz,L_8CD1
@@ -1561,7 +1565,24 @@ L_8CD1:                 ; 8CD1
         ld      (hl),0x08
         ret
 
-        .incbin "main_bank2.bin", 0x0D01, 0x0063
+; 11 x 4 tile numbers, one entry per F46D, for SPRITE_GRID
+BIG_ITEM_TILES:         ; 8D01
+        .incbin "main_bank2.bin", 0x0D01, 0x002C
+; 11 bytes: the big item's SPRITE_GRID attribute (C) per F46D
+BIG_ITEM_COLOURS:       ; 8D2D
+        .incbin "main_bank2.bin", 0x0D2D, 0x000B
+; 11 bytes: the points sprite per F46D, two per value as in BIG_ITEM_POINTS
+BIG_ITEM_POINTS_SPRITE: ; 8D38
+        .incbin "main_bank2.bin", 0x0D38, 0x000B
+; 3 tile numbers for the points sprite of BIG_ITEM_BURST (SPRITE_GRID_D)
+BIG_ITEM_BURST_TILES:   ; 8D43
+        .incbin "main_bank2.bin", 0x0D43, 0x0003
+; 11 BCD words per F46D for SCORE_ADD: 1000 1000 2000 2000 3000 3000 4000 5000 6000 7000 8000 (shown x10: 10000 to 80000)
+BIG_ITEM_POINTS:        ; 8D46
+        .incbin "main_bank2.bin", 0x0D46, 0x0016
+; 4 x (Y, X): where the 4 sprites start, above the top in the middle
+BIG_ITEM_START:         ; 8D5C
+        .incbin "main_bank2.bin", 0x0D5C, 0x0008
 ; as ROM_SUM_STEP_H: pointer F477, sum F479, flag F476
 ROM_SUM_STEP_I:         ; 8D64
         ld      a,(0xF476)
@@ -1656,6 +1677,7 @@ L_8DEA:                 ; 8DEA
         jr      nz,L_8DBA
         ret
 
+L_8DFF:                 ; 8DFF
         ld      a,(0xF47C)
         and     a
         ret     z
@@ -1888,6 +1910,7 @@ L_8F8D:                 ; 8F8D
         jr      nz,L_8F6B
         ret
 
+L_8FA6:                 ; 8FA6
         ld      a,(0xF4CB)
         and     a
         ret     z
@@ -2175,6 +2198,7 @@ L_9192:                 ; 9192
         set     3,(hl)
         ret
 
+L_91A3:                 ; 91A3
         ld      a,(0xF514)
         bit     0,a
         ret     z
@@ -2237,6 +2261,7 @@ L_9207:                 ; 9207
         set     1,(hl)
         ret
 
+L_9233:                 ; 9233
         bit     0,(ix+19)
         ret     z
         bit     1,(ix+19)
@@ -2312,6 +2337,7 @@ REC_F519_INIT:          ; 92B6
         ld      (hl),0x01
         ret
 
+L_92CF:                 ; 92CF
         ld      a,(0xF519)
         and     a
         ret     z
@@ -3654,6 +3680,7 @@ L_9C5F:                 ; 9C5F
         ld      (iy+67),l
         ret
 
+L_9C7D:                 ; 9C7D
         ld      hl,0xF536
         ld      bc,0x0015
         call    ZERO_BC
@@ -3733,6 +3760,7 @@ L_9CC5:                 ; 9CC5
         ret
 
         .incbin "main_bank2.bin", 0x1D2E, 0x0007
+L_9D35:                 ; 9D35
         ld      a,(0xF536)
         and     a
         ret     z
@@ -4646,6 +4674,7 @@ L_A464:                 ; A464
         pop     ix
         ret
 
+L_A480:                 ; A480
         ld      a,(0xF595)
         and     a
         ret     z
@@ -5396,6 +5425,7 @@ L_AA71:                 ; AA71
         jp      ENEMY_HITS_STATE
 
         .incbin "main_bank2.bin", 0x2AA5, 0x0020
+L_AAC5:                 ; AAC5
         ld      a,(0xF5B6)
         and     a
         ret     z
@@ -5654,6 +5684,7 @@ REC_F60F_INIT:          ; AC80
         ld      (ix+2),0xC8
         ret
 
+L_ACBA:                 ; ACBA
         ld      a,(ROUND_MAIN)
         cp      0x63
         ret     nz
@@ -5737,6 +5768,7 @@ L_AD61:                 ; AD61
         ret
 
         .incbin "main_bank2.bin", 0x2D6C, 0x002C
+L_AD98:                 ; AD98
         ld      a,(ix+29)
         bit     7,a
         ret     nz
@@ -6261,6 +6293,7 @@ L_B169:                 ; B169
 L_B18D:                 ; B18D
         ret     c
         inc     d
+L_B18F:                 ; B18F
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -6666,14 +6699,62 @@ L_B5F2:                 ; B5F2
         .incbin "main_bank2.bin", 0x35FD, 0x006F
 ; 5 bytes an item, as POINTS_ITEMS
 SPECIAL_ITEMS:          ; B66C
-        .incbin "main_bank2.bin", 0x366C, 0x0358
+        .incbin "main_bank2.bin", 0x366C, 0x010E
+L_B77A:                 ; B77A
+        call    CLEAR_ROWS_A
+        call    CLEAR_ROWS_B
+        call    SET_E1D2_SEQ
+        call    SET_E2F5_RECS
+        call    SET_E1D0_19
+        ld      hl,0xB9A4
+        ld      de,0xF9E0
+        ld      bc,0x0020
+        ldir
+        ld      hl,0xCDD6
+        ld      de,0xB8BA
+        ld      bc,0x091A
+        ld      a,0x3F
+        call    TILE_RECT
+        ld      hl,0xB7F0
+        ld      de,0xD58A
+        ld      c,0x00
+        call    PRINT_TEXT
+        ld      hl,0xB80E
+        ld      de,0xD58E
+        ld      c,0x00
+        call    PRINT_TEXT
+        ld      hl,0xB82C
+        ld      de,0xD592
+        ld      c,0x00
+        call    PRINT_TEXT
+        ld      hl,0xB84A
+        ld      de,0xD5AA
+        ld      c,0x00
+        call    PRINT_TEXT
+        ld      hl,0xB867
+        ld      de,0xD5AE
+        ld      c,0x00
+        call    PRINT_TEXT
+        ld      hl,0xB883
+        ld      de,0xD5B2
+        ld      c,0x00
+        call    PRINT_TEXT
+        ld      hl,0xB89F
+        ld      de,0xD5B6
+        ld      c,0x00
+        call    PRINT_TEXT
+        ret
+
+        .incbin "main_bank2.bin", 0x37F0, 0x01D4
 ; round start, called by OBJECTS_TASK: clears the state record at F624
 REC_F624_INIT:          ; B9C4
         ld      hl,0xF624
         ld      bc,0x0044
         jp      ZERO_BC
 
-        .incbin "main_bank2.bin", 0x39CD, 0x0006
+L_B9CD:                 ; B9CD
+        ld      ix,0xF628
+        ld      a,0x08
 L_B9D3:                 ; B9D3
         push    af
         ld      a,(ix+0)
@@ -6994,4 +7075,6 @@ PALETTE0_SET:           ; BC2F
         pop     af
         ret
 
-        .incbin "main_bank2.bin", 0x3C3D, 0x03C3
+        .incbin "main_bank2.bin", 0x3C3D, 0x030B
+L_BF48:                 ; BF48
+        .incbin "main_bank2.bin", 0x3F48, 0x00B8

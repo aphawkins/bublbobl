@@ -551,11 +551,25 @@ Started (2026-10-17) with the sub CPU, which is now done:
   with pickups, with a timer and a P1 vs P2 count); 12 `ROUND_SKIP`. Kinds 13/32, 1A/31/33 and
   1D/2D/35 reach `EFFECT_C/A/B_START`. Kinds 1E–28 reach only the start of `REC_F46B_RUN`
   (which needs `ENEMY_TOTAL` = 0). No kind reached `REC_F519`, `REC_F54B`, `REC_F60F` or `REC_F624`.
+- Big items (2026-10-19): `trace.py --special K --clear` also writes `ENEMY_TOTAL` = 0 once the
+  item is taken. Kinds 1E–28 are the big items: when the round is cleared, a 32 × 32 copy of the
+  item falls to the floor in the middle (28 an ice lolly, 23 a cake, 1E a diamond), and touching it
+  scores 10000 to 80000 (`BIG_ITEM_POINTS`, by `F46D` = 28 − kind). `REC_F46B_*` became
+  `BIG_ITEM_INIT`/`RUN`, with `BIG_ITEM_TAKE` (`8CC7`) and `BIG_ITEM_BURST`. The item appears
+  only from round 2, so these runs need about 70 s. `BIG_ITEM_TAKE` was not seen: the cheat
+  does not walk the player onto the big item.
+  `BIG_ITEM_TAKE` had no label because the fixed ROM's calls into page 2 outside `OBJECTS_TASK`
+  were never entries. `redo_banks.sh` now passes the 17 targets that follow a `BANK_SELECT 2`
+  (among them `8000`, the test-mode start): bank 2 is 5998 instructions, still byte-exact. Calls
+  whose bank is set further away (bank 0 enemy code calling `8879`, `91A6`.., and `A150`, `B34F`,
+  the `B3xx`–`BExx` calls) still need their bank checked before they are added.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
-     `tools/trace.lua`, then rename them.
+     `tools/trace.lua`, then rename them. Done: `F46B` (big items). Left: `EFFECT_A/B/C`, and
+     `F519` (needs `E603` and the `SPECIAL_RULES` byte in `F463`, which the cheat does not set),
+     `F54B`, `F60F`, `F624`. Name the 17 new bank 2 entries.
   3. Check some `--probe` regions, and the score code above, against a MAME trace.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines, are not.

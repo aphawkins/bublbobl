@@ -60,3 +60,16 @@ if CFG.special and CFG.special > 0 then
     end
   end)
 end
+
+-- CFG.clear (with CFG.special): once the item is taken (SPECIAL_STATE b0 clear again after
+-- it showed), ENEMY_TOTAL (ED3D) is written 0 each frame, as if every enemy were gone. The
+-- enemies stay on screen; the code that waits for a cleared round (such as REC_F46B_RUN,
+-- which kinds 1E-28 start) runs.
+if CFG.special and CFG.special > 0 and CFG.clear then
+  local shown = false
+  CHEAT_CLEAR_FRAME = emu.add_machine_frame_notifier(function()
+    local state = space:read_u8(0xF45F)
+    if state & 1 ~= 0 then shown = true
+    elseif shown and space:read_u8(0xED3D) ~= 0 then space:write_u8(0xED3D, 0) end
+  end)
+end

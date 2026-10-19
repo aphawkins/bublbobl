@@ -572,8 +572,8 @@ BANK2_CHECK   = { addr = 0x85AE, note = "one step a call of a sum over bank2 (F4
 SPECIAL_PICK  = { addr = 0x85EB, note = "at round start (3E0E): SPECIAL_KIND from SKIP_KINDS, else the first SPECIAL_RULES entry whose counter has reached its threshold (clearing it); none in the attract demo or round 100" }
 SPECIAL_RUN   = { addr = 0x8686, note = "the special item: appears at record bytes 10-11 when SPECIAL_TIMER runs out, unless NO_SPECIAL or no enemies" }
 SPECIAL_TAKE  = { addr = 0x873E, note = "a player touches the special item: its effect through the table at 8AFF" }
-REC_F46B_INIT = { addr = 0x8BA7, note = "round start, called by OBJECTS_TASK: clears the state record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0" }
-REC_F46B_RUN = { addr = 0x8BB0, note = "each frame: steps the record at F46B. Part of the effect started by special kinds 1E-28 (F46D picks the variant); runs only when ENEMY_TOTAL is 0" }
+BIG_ITEM_INIT = { addr = 0x8BA7, note = "Seen in MAME (--special 1E, 23, 28 with --clear). round start, called by OBJECTS_TASK: clears the big item record at F46B (F46B on, F46C state, F46D variant, F46E timer, F46F player)" }
+BIG_ITEM_RUN = { addr = 0x8BB0, note = "Seen in MAME. Special kinds 1E-28 set F46B and F46D = 28 - kind; once ENEMY_TOTAL is 0 a big 32 x 32 copy of the item (4 sprites at E2E5, tiles BIG_ITEM_TILES) falls from the top to the floor in the middle, with sound 1B, and waits there for BIG_ITEM_TAKE. Seen: 28 an ice lolly, 23 a cake, 1E a diamond. ROUND_END_PICK then makes E744 = F46D + 25" }
 REC_F513_INIT = { addr = 0x90DD, note = "round start, called by OBJECTS_TASK: clears the state record at F513. Part of the effect started by special kind 0E (F513 = FF, per notes/levels.md)" }
 REC_F519_INIT = { addr = 0x92B6, note = "round start, called by OBJECTS_TASK: clears the state record at F519" }
 PICKUP_RUSH_A_INIT = { addr = 0x936A, note = "Seen in MAME (--special 09, 0A, 0B): the playfield fills with pickups, with a timer and a P1 vs P2 count at the top. round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A" }
@@ -589,7 +589,7 @@ KILL_ALL_A_RUN = { addr = 0xA5A4, note = "Seen in MAME (trace.py --special 05): 
 KILL_ALL_B_INIT = { addr = 0xA820, note = "Seen in MAME (--special 1C): every enemy turns into a gem, by another path than KILL_ALL_A. round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)" }
 REC_F60F_INIT = { addr = 0xAC80, note = "round start, called by OBJECTS_TASK: clears the state record at F60F" }
 REC_F624_INIT = { addr = 0xB9C4, note = "round start, called by OBJECTS_TASK: clears the state record at F624" }
-ROM_SUM_STEP_H = { addr = 0x8B6B, note = "one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the REC_F46B code)" }
+ROM_SUM_STEP_H = { addr = 0x8B6B, note = "one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the BIG_ITEM code)" }
 ROM_SUM_STEP_I = { addr = 0x8D64, note = "as ROM_SUM_STEP_H: pointer F477, sum F479, flag F476" }
 ROM_SUM_STEP_J = { addr = 0x8F17, note = "as ROM_SUM_STEP_H: pointer F4C7, sum F4C9, flag F4C6" }
 ROM_SUM_STEP_K = { addr = 0x909A, note = "as ROM_SUM_STEP_H: pointer F50F, sum F511, flag F50E" }
@@ -603,6 +603,8 @@ EFFECT_B_START = { addr = 0x8F54, note = "unless ATTRACT: clears F4CB (0x43 byte
 EFFECT_C_START = { addr = 0xA433, note = "clears F595 (9 bytes) and sets up the effect C point at F597/F596 with 8 sprite slots" }
 PATH_NEXT_BYTE = { addr = 0xAA22, note = "A = the next byte of movement path (IX+8), position (IX+7); 88 wraps to the start" }
 PALETTE0_SET = { addr = 0xBC2F, note = "video off, the first byte of PALETTE_RAM = C, video on" }
+BIG_ITEM_BURST = { addr = 0x8C39, note = "state 8, after BIG_ITEM_TAKE: the 4 sprites move apart, the points sprite (BIG_ITEM_POINTS_SPRITE) shows for 100 frames (F46E) as they sink, then the record is cleared" }
+BIG_ITEM_TAKE = { addr = 0x8CC7, note = "called for each player by the player loop (41CA): while the big item falls or waits, a player within 18 x 18 of it scores BIG_ITEM_POINTS, sound 25, F46F = the player, state 8 (BIG_ITEM_BURST). Not seen in MAME: the cheat does not walk the player onto it" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }
@@ -611,6 +613,12 @@ SPECIAL_EFFECTS = { addr = 0x8AFF, size = 0x6C, note = "word table: SPECIAL_TAKE
 POINTS_ITEMS  = { addr = 0xB389, note = "5 bytes an item: first tile, attribute, then (B38B) score tile and score" }
 SPECIAL_RULES = { addr = 0xB4F2, size = 0x17A, note = "0x36 x 7 bytes: counter address, 4 thresholds (column by SPECIAL_CLASS), a byte for F463. Entry n gives SPECIAL_KIND 0x35 - n" }
 SPECIAL_ITEMS = { addr = 0xB66C, note = "5 bytes an item, as POINTS_ITEMS" }
+BIG_ITEM_TILES = { addr = 0x8D01, note = "11 x 4 tile numbers, one entry per F46D, for SPRITE_GRID" }
+BIG_ITEM_COLOURS = { addr = 0x8D2D, note = "11 bytes: the big item's SPRITE_GRID attribute (C) per F46D" }
+BIG_ITEM_POINTS_SPRITE = { addr = 0x8D38, note = "11 bytes: the points sprite per F46D, two per value as in BIG_ITEM_POINTS" }
+BIG_ITEM_POINTS = { addr = 0x8D46, note = "11 BCD words per F46D for SCORE_ADD: 1000 1000 2000 2000 3000 3000 4000 5000 6000 7000 8000 (shown x10: 10000 to 80000)" }
+BIG_ITEM_START = { addr = 0x8D5C, note = "4 x (Y, X): where the 4 sprites start, above the top in the middle" }
+BIG_ITEM_BURST_TILES = { addr = 0x8D43, note = "3 tile numbers for the points sprite of BIG_ITEM_BURST (SPRITE_GRID_D)" }
 
 [bank3.data]
 

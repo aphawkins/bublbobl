@@ -4,9 +4,13 @@
 set -e
 cd "$(dirname "$0")/.."
 python tools/symbols.py > /dev/null
-# entries: the calls OBJECTS_TASK (3DF0) makes into page 2
+# entries: the calls OBJECTS_TASK (3DF0) makes into page 2, then the fixed ROM's other
+# calls after BANK_SELECT 2 (8000 is the test-mode start at 0168)
 BANK2_ENTRIES="--entry A59B --entry A2FC --entry 936A --entry 99E2 --entry 96E6 --entry 90DD
-  --entry 92B6 --entry A820 --entry 9F76 --entry B9C4 --entry 8BA7 --entry AC80"
+  --entry 92B6 --entry A820 --entry 9F76 --entry B9C4 --entry 8BA7 --entry AC80
+  --entry 8000 --entry 8CC7 --entry 91A3 --entry 9233 --entry 8DFF --entry 8FA6 --entry 92CF
+  --entry 9C7D --entry 9D35 --entry A480 --entry AAC5 --entry ACBA --entry AD98 --entry B18F
+  --entry B77A --entry B9CD --entry BF48"
 # jump tables (ADDR:COUNT), found from the TABLE_WORD callers
 BANK0_TABLES="--table 8442:4 --table 8E5F:6 --table 9218:6 --table 95F9:6 --table 987D:6
   --table 9CCF:4 --table A0FB:5 --table A4BE:4 --table A80C:6 --table AAA8:4
