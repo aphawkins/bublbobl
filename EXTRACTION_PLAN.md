@@ -598,16 +598,20 @@ Started (2026-10-17) with the sub CPU, which is now done:
   under the ending. `ENDING_START` (`B34F`) jumps to `563F` in the fixed ROM, which was inside an
   `.incbin`: it is now `ENDING_SCROLL`, which scrolls up one of bank 1's three ending texts
   (`ENDING_TEXT_1P`, `_2P`, `_SUPER`, `8D42–95A9`). `ENDING_SCROLL_STEP` and `ENDING_START` each
-  hide one more tamper check on byte `0002`. `BE00` is `TAITO_CREDIT`. The round 100 picture
-  (`R100_PIC_*`) and the two-player starfield calls were not seen. Bank 0 is 6052 instructions,
+  hide one more tamper check on byte `0002`. `BE00` is `TAITO_CREDIT`. Then `trace.py --boss-pop` (pops the
+  round 100 boss's bubble as soon as it is trapped) showed the two-player ending: the captives
+  turn into the players' girlfriends, `HEART_DRAW` puts a big heart between two HAPPY END!!
+  (`HEART_CYCLE` turns it yellow, orange, pink), `ROUND_WIPE` (`BEA9`, one more tamper check, on
+  `0004`) clears the walls, the stars come in (`STARFIELD_DRAW_2P`), and `ENDING_TEXT_2P` scrolls
+  up into the staff list. Bank 0 is 6052 instructions,
   the fixed ROM 12754; the set is still byte-exact.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
      `tools/trace.lua`, then rename them. Done: every `REC_*` record, the 17 new entries and
-     the fixed ROM's calls into a bank chosen further away. Left: see the round 100 picture
-     and the two-player ending in MAME (`--round 100 --boss-hits 80` with two players).
+     the fixed ROM's calls into a bank chosen further away. The one-player and super mode
+     endings (`ENDING_TEXT_1P`, `_SUPER`) and `ENDING_HINT_SCREEN` are not seen yet.
   3. Check some `--probe` regions, and the score code above, against a MAME trace.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.

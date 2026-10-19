@@ -10108,7 +10108,7 @@ SECRET_WELCOME_STEP:    ; 55FA
         jp      PRINT_TEXT
 
         .incbin "main_fixed.bin", 0x560F, 0x0030
-; the ending (bank0:ENDING_START jumps here): every 4 frames ENDING_SCROLL_STEP; every 8 pixels a row is cleared and the next drawn, 0x1A rows with one player, else 0x8B; text pointer E734 from bank1 ENDING_TEXT_1P, _2P or _SUPER
+; Seen in MAME (--boss-pop, two players): the ending (bank0:ENDING_START jumps here): every 4 frames ENDING_SCROLL_STEP; every 8 pixels a row is cleared and the next drawn, 0x1A rows with one player, else 0x8B; text pointer E734 from bank1 ENDING_TEXT_1P, _2P or _SUPER
 ENDING_SCROLL:          ; 563F
         ld      hl,GRID_DRAW_ROW
         ld      (hl),0x00

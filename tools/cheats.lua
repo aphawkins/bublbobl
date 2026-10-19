@@ -31,6 +31,15 @@ if CFG.boss_hits and CFG.boss_hits > 0 then
     end)
 end
 
+-- CFG.boss_pop: when bank0:A972 traps the boss (BOSS_SLOT +0 = 2), this tap writes 6 instead.
+-- Bit 2 is what a player touching the bubble sets, so the next BOSS_UPDATE pops it (sound 27).
+if CFG.boss_pop then
+  CHEAT_BOSS_POP_TAP = space:install_write_tap(0xF296, 0xF296, "cheat_boss_pop",
+    function(offset, data, mask)
+      if data == 0x02 and curpc.value == 0xA972 then return 0x06 end
+    end)
+end
+
 -- CFG.special (1-0x35): every round's special item is that SPECIAL_KIND, and it appears
 -- F0 frames (4 s) into the round, the game's own short timer. SPECIAL_PICK (bank2:85EB) writes the kind to F45E; when no
 -- SPECIAL_RULES counter is due it sets SPECIAL_STATE b3 (no item) at 863A instead, and this

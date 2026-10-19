@@ -6321,7 +6321,7 @@ L_B33E:                 ; B33E
         .word   ENEMY0B_FALL
         .word   ENEMY0B_WALK_L
         .incbin "main_bank0.bin", 0x3346, 0x0009
-; from ROUND_100_DONE: STARFIELD_RESET, F448 = 0, F458 + 1, BEA9, with two players 600 frames of BF61, sound 14 (two) or 2B, then ENDING_SCROLL. Tamper check: bit 3 of byte 0002 set pushes DE and BC
+; Seen in MAME (--boss-pop): from ROUND_100_DONE: STARFIELD_RESET, F448 = 0, F458 + 1, ROUND_WIPE, with two players 600 frames of BF61, sound 14 (two) or 2B, then ENDING_SCROLL. Tamper check: bit 3 of byte 0002 set pushes DE and BC
 ENDING_START:           ; B34F
         call    STARFIELD_RESET
         ld      hl,0xF448
@@ -6336,7 +6336,7 @@ ENDING_START:           ; B34F
         push    de
         push    bc
 L_B36D:                 ; B36D
-        call    L_BEA9
+        call    ROUND_WIPE
         call    L_B39A
         ld      a,(0xE5D7)
         cp      0x03
@@ -6377,7 +6377,7 @@ L_B3A3:                 ; B3A3
         jr      nz,L_B3A3
         ret
 
-; STARFIELD_DRAW with two players only (E5D7 = 3); round 100 once F446 = 20. Not seen in MAME
+; Seen in MAME (--boss-pop): STARFIELD_DRAW with two players only (E5D7 = 3); round 100 once ROUND_WIPE is done (F446 = 20), so the stars come in behind HAPPY END!!
 STARFIELD_DRAW_2P:      ; B3AF
         ld      a,(0xE5D7)
         cp      0x03
@@ -6416,7 +6416,7 @@ STARFIELD_MAP_B:        ; B52A
 ; 0x1A x 8 tiles, tile bank 2E
 STARFIELD_MAP_C:        ; B662
         .incbin "main_bank0.bin", 0x3662, 0x00D0
-; STARFIELD_TWINKLE with two players only. Not seen in MAME
+; Seen in MAME: STARFIELD_TWINKLE with two players only
 STARFIELD_TWINKLE_2P:   ; B732
         ld      a,(0xE5D7)
         cp      0x03
@@ -6553,16 +6553,16 @@ STAR_CYCLE:             ; B800
 ; 10 x 3 colours, steps 1-9 used: STARFIELD_TWINKLE's fade-in
 STAR_FADE_IN:           ; B83C
         .incbin "main_bank0.bin", 0x383C, 0x003C
-; round 100 (6AE3): palette 7 (F8E0) copied to palette 9 (F920). Not seen in MAME
-R100_PIC_PALETTE:       ; B878
+; Seen in MAME (--boss-pop, two players): round 100 after the boss (6AE3, then HEART_DRAW and sound 1C): palette 7 (F8E0) copied to palette 9 (F920)
+HEART_PALETTE:          ; B878
         ld      hl,0xF8E0
         ld      de,0xF920
         ld      bc,0x0020
         ldir
         ret
 
-; round 100 (6AE3, with sound 1C): the 8 x 8 tiles of R100_PIC_TILES at D818, tile bank 26. Not seen in MAME
-R100_PIC_DRAW:          ; B884
+; Seen in MAME: the big heart between the two HAPPY END!! at the end of round 100, the 8 x 8 tiles of HEART_TILES at D818, tile bank 26
+HEART_DRAW:             ; B884
         ld      hl,0xD818
         ld      de,0xB893
         ld      bc,0x0808
@@ -6570,11 +6570,11 @@ R100_PIC_DRAW:          ; B884
         call    TILE_RECT
         ret
 
-; 8 x 8 tiles for R100_PIC_DRAW
-R100_PIC_TILES:         ; B893
+; 8 x 8 tiles for HEART_DRAW
+HEART_TILES:            ; B893
         .incbin "main_bank0.bin", 0x3893, 0x0040
-; round 100, round cleared and a player record (EB36, EB46) b5: every 2nd call F35D steps 0-5 and colour F93A of palette 9 comes from R100_PIC_COLOURS. Not seen in MAME
-R100_PIC_CYCLE:         ; B8D3
+; Seen in MAME: round 100 cleared and a captive record (EB36, EB46) b5: every 2nd call F35D steps 0-5 and colour F93A of palette 9 comes from HEART_COLOURS, so the heart turns yellow, orange, pink
+HEART_CYCLE:            ; B8D3
         ld      hl,0xF35C
         inc     (hl)
         ld      a,(hl)
@@ -6594,8 +6594,8 @@ L_B8E6:                 ; B8E6
         ld      (0xF93A),de
         ret
 
-; 6 colour words for R100_PIC_CYCLE
-R100_PIC_COLOURS:       ; B8F1
+; 6 colour words for HEART_CYCLE
+HEART_COLOURS:          ; B8F1
         .incbin "main_bank0.bin", 0x38F1, 0x000C
 L_B8FD:                 ; B8FD
         ld      a,(0xF362)
@@ -7336,7 +7336,8 @@ L_BE8F:                 ; BE8F
         .word   ENEMY2B_SHOT_ANIM
         .word   ENEMY2B_SHOT_FLY_L
         .incbin "main_bank0.bin", 0x3E97, 0x0012
-L_BEA9:                 ; BEA9
+; Seen in MAME: clears the round's walls from the playfield, column F446 from 4 to 1F, 8 steps of the tiles at BF38 a column, 2 frames a step. Tamper check: the word at 0004 must be START, else EX (SP),IX
+ROUND_WIPE:             ; BEA9
         ld      hl,0xF446
         ld      (hl),0x04
         ld      hl,0xF445

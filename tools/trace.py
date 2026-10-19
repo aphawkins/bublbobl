@@ -11,7 +11,8 @@ code is already fully classified.
 
 Cheats (tools/cheats.lua), in the recording and in its replay alike: --round N starts every
 game on round N; --boss-hits N starts the round 100 boss with N of its 80 hits taken (80:
-it is beaten as soon as it drifts to the middle); --special K makes every special item kind K
+it is beaten as soon as it drifts to the middle), and --boss-pop pops its bubble as soon as it
+is trapped; --special K makes every special item kind K
 and walks player 1 onto it, and --clear then sets the enemy count to 0; --poke ADDR=VAL holds
 a byte at VAL. A recording keeps its cheats in
 <name>.cheats beside the .inp.
@@ -270,6 +271,7 @@ def main() -> int:
     ap.add_argument("--inp", type=Path, help="play: trace this recording instead of a new one")
     ap.add_argument("--round", type=int, help="start each game on this round (1-100)")
     ap.add_argument("--boss-hits", type=int, help="hits the round 100 boss has taken at the start (0-80)")
+    ap.add_argument("--boss-pop", action="store_true", help="the round 100 boss's bubble pops as soon as it is trapped")
     ap.add_argument("--special", type=lambda v: int(v, 0), help="force every special item to this SPECIAL_KIND (1-0x35) and walk P1 onto it")
     ap.add_argument("--clear", action="store_true", help="with --special: once the item is taken, ENEMY_TOTAL is 0 (the round is cleared)")
     ap.add_argument("--poke", action="append", default=[], metavar="ADDR=VAL",
@@ -320,7 +322,7 @@ def main() -> int:
     elif args.inp and cheats["round"] is None and inp.with_suffix(".round").exists():
         cheats["round"] = int(inp.with_suffix(".round").read_text())
     cheats = {"round": cheats["round"] or 1, "boss_hits": cheats["boss_hits"] or 0,
-              "special": args.special or 0, "clear": args.clear,
+              "boss_pop": args.boss_pop, "special": args.special or 0, "clear": args.clear,
               "poke": [[int(a, 16), int(v, 16)] for a, v in (x.split("=") for x in args.poke)]}
     if not 1 <= cheats["round"] <= 100:
         raise SystemExit("--round must be 1-100")
@@ -345,7 +347,8 @@ def main() -> int:
     if interactive:
         if not args.inp:
             record = common + ["-window", "-record", inp.name]
-            if cheats != {"round": 1, "boss_hits": 0, "special": 0, "clear": False, "poke": []}:
+            if cheats != {"round": 1, "boss_hits": 0, "boss_pop": False, "special": 0, "clear": False,
+                          "poke": []}:
                 rec_script = out / "record.lua"
                 rec_script.write_text("CFG = " + lua_value(cheats) + "\n\n" + cheats_lua,
                                       encoding="utf-8")
