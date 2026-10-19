@@ -119,7 +119,9 @@ record (next section).
 entries of 1, byte 39 of 2, byte 40 of 3, byte 41 of 4. `SPAWN_BUBBLE` (`6D9B`) makes a
 bubble come out of the floor or ceiling gaps every 0x80 frames while there are fewer than 16,
 and may give it the type at a random entry of the list. The pop handlers show what the types
-are: 1 is lightning (`66A1`), 2 water (`660D`) and 3 fire (`6633`). In the rounds with
+are: 1 is lightning (`66A1`), 2 water (`660D`) and 3 fire (`6633`). The bubble keeps the type as
+`IX+24` = 4 − the list value (the table at `6E50`), so `5FBC` sends `IX+24` 1 to fire and 3 to lightning.
+Water and fire were seen in MAME (round 13, the list held at 2 and at 3). In the rounds with
 special bubbles the four bytes add up to 3–16.
 
 Type 4 never appears. Only round 100 lists it (2 of 16), and `SPAWN_BUBBLE` makes no bubbles

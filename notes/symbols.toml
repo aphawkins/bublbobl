@@ -96,6 +96,8 @@ GHOST_SLOTS   = { addr = 0xF1C2, note = "set up by GHOST_INIT; drew Skel-Monsta,
 BOSS_SLOT     = { addr = 0xF296, size = 0x14, note = "the round 100 boss, set up by BOSS_INIT (drew Super Drunk). +0B = hits taken: from 0x46 it flashes (bank0:AE73), from 0x50 bank0:A960 traps it in a bubble (+0 = 2) when X is 80-87; unpopped, it escapes angry (+0 = 9) with hits 0" }
 BOSS_SHOTS    = { addr = 0xF367, size = 0x67, note = "the boss's bottles, 0x0C bytes each, set up by BOSS_SHOTS_INIT" }
 ENEMY5_SLOTS  = { addr = 0xF113, note = "group 5, 0x19 bytes each (drew Monsta in the traced rounds)" }
+POTION_P1 = { addr = 0xF60F, note = "1 = player 1 took a round 100 potion (POTIONS_RUN): their bubbles are lightning bubbles (POTION_BUBBLE)" }
+POTION_P2 = { addr = 0xF610, note = "as POTION_P1 for player 2" }
 
 [main.code]
 RESET          = { addr = 0x0000, note = "DI / IM 2 / JP 00B9" }
@@ -384,6 +386,10 @@ HEX_CHAR = { addr = 0x0FFE, note = "A (0-F) to its ASCII digit or letter" }
 TILE_COLS_FILL = { addr = 0x3CAD, note = "B columns of C tile words D, E at HL, 0x40 bytes a column" }
 RAND_TIMER_SET = { addr = 0x6214, note = "(IX+13) = the byte at 622A + SPEED2_SEL, plus R & 7; (IX+12) = 1" }
 STEP_TO_8_UP = { addr = 0x7FE7, note = "(HL) + 1 up to three times, stopping at a multiple of 8; the third step only if (IX+0) b4" }
+BUBBLE_FIRE_DROP = { addr = 0x6633, note = "a popped fire bubble (list type 3, IX+24 = 1): a fireball falls until it lands on a platform, then F624 = its position for FIRE_RUN" }
+BUBBLE_WATER_POP = { addr = 0x660D, note = "a popped water bubble (list type 2, IX+24 = 2): tamper check of MCU_READY, then F557 = 1 and the position for WATER_RUN, unless water is already running" }
+BUBBLE_LIGHTNING_POP = { addr = 0x66A1, note = "a popped lightning bubble (list type 1, IX+24 = 3; also the potion bubbles of round 100, 5DD7). Not seen in MAME" }
+POTION_BUBBLE = { addr = 0x5DD7, note = "a player's blown bubble when that player has the round 100 potion (F60F/F610): it becomes IX+24 = 3, a lightning bubble" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }
@@ -575,20 +581,20 @@ SPECIAL_TAKE  = { addr = 0x873E, note = "a player touches the special item: its 
 BIG_ITEM_INIT = { addr = 0x8BA7, note = "Seen in MAME (--special 1E, 23, 28 with --clear). round start, called by OBJECTS_TASK: clears the big item record at F46B (F46B on, F46C state, F46D variant, F46E timer, F46F player)" }
 BIG_ITEM_RUN = { addr = 0x8BB0, note = "Seen in MAME. Special kinds 1E-28 set F46B and F46D = 28 - kind; once ENEMY_TOTAL is 0 a big 32 x 32 copy of the item (4 sprites at E2E5, tiles BIG_ITEM_TILES) falls from the top to the floor in the middle, with sound 1B, and waits there for BIG_ITEM_TAKE. Seen: 28 an ice lolly, 23 a cake, 1E a diamond. ROUND_END_PICK then makes E744 = F46D + 25" }
 REC_F513_INIT = { addr = 0x90DD, note = "round start, called by OBJECTS_TASK: clears the state record at F513. Part of the effect started by special kind 0E (F513 = FF, per notes/levels.md)" }
-REC_F519_INIT = { addr = 0x92B6, note = "round start, called by OBJECTS_TASK: clears the state record at F519" }
+ITEM_HINT_INIT = { addr = 0x92B6, note = "Seen in MAME (--poke E603=1 --poke F463=1). round start, called by OBJECTS_TASK: clears F519 (3 bytes), then F519 = 1 when E603 (special kind 29 was taken this game; cleared at game over) and F463 (the round's SPECIAL_RULES byte: 1 for the effect items 05, 0E, 12-14, 17, 19, 1A, 1C, 1D, 2D, 35) are both set" }
 PICKUP_RUSH_A_INIT = { addr = 0x936A, note = "Seen in MAME (--special 09, 0A, 0B): the playfield fills with pickups, with a timer and a P1 vs P2 count at the top. round start, called by OBJECTS_TASK: clears the state record at F521. Part of the effect started by special kinds 09 and 0A" }
 PICKUP_RUSH_B_INIT = { addr = 0x96E6, note = "Seen in MAME (--special 0D): as PICKUP_RUSH_A with notes as the pickups. round start, called by OBJECTS_TASK: clears the state record at F52B. Part of the effect started by special kind 0D" }
 PICKUP_RUSH_B_RUN = { addr = 0x96EF, note = "Seen in MAME (--special 0D): as PICKUP_RUSH_A with notes as the pickups. each frame: steps the record at F52B. Part of the effect started by special kind 0D" }
 PICKUP_RUSH_C_INIT = { addr = 0x99E2, note = "Seen in MAME (--special 0C, 2F): as PICKUP_RUSH_A with arches as the pickups. round start, called by OBJECTS_TASK: clears the state record at F531. Part of the effect started by special kind 0C" }
 PICKUP_RUSH_C_RUN = { addr = 0x99EB, note = "Seen in MAME (--special 0C, 2F): as PICKUP_RUSH_A with arches as the pickups. each frame: steps the record at F531. Part of the effect started by special kind 0C" }
-REC_F54B_INIT = { addr = 0x9F76, note = "round start, called by OBJECTS_TASK: clears the state record at F54B" }
-REC_F54B_RUN = { addr = 0x9F7F, note = "each frame: steps the record at F54B" }
+WATER_INIT = { addr = 0x9F76, note = "Seen in MAME (round 13). round start, called by OBJECTS_TASK: clears the water record at F54B (0x40 bytes)" }
+WATER_RUN = { addr = 0x9F7F, note = "each frame: once a water bubble pops (BUBBLE_WATER_POP sets F557 = 1 with its position), sound 1E and water pours from there down and along the platforms" }
 ROUND_SKIP_INIT = { addr = 0xA2FC, note = "Seen in MAME (--special 12): the playfield scrolls on to a later round. round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12" }
 KILL_ALL_A_INIT = { addr = 0xA59B, note = "Seen in MAME (trace.py --special 05): every enemy turns into a gem. round start, called by OBJECTS_TASK: clears the state record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
 KILL_ALL_A_RUN = { addr = 0xA5A4, note = "Seen in MAME (trace.py --special 05): every enemy turns into a gem. each frame: steps the record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
 KILL_ALL_B_INIT = { addr = 0xA820, note = "Seen in MAME (--special 1C): every enemy turns into a gem, by another path than KILL_ALL_A. round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)" }
-REC_F60F_INIT = { addr = 0xAC80, note = "round start, called by OBJECTS_TASK: clears the state record at F60F" }
-REC_F624_INIT = { addr = 0xB9C4, note = "round start, called by OBJECTS_TASK: clears the state record at F624" }
+POTIONS_INIT = { addr = 0xAC80, note = "Seen in MAME (round 100). round start, called by OBJECTS_TASK: clears F60F (0x0C bytes); on round 100 sets up the two potions, F611 at Y 98 X 38 (tiles CE98) and F616 at Y 98 X C8 (tiles D318)" }
+FIRE_INIT = { addr = 0xB9C4, note = "Seen in MAME (round 13 with SPECIAL_LIST held at 3). round start, called by OBJECTS_TASK: clears the fire records from F624" }
 ROM_SUM_STEP_H = { addr = 0x8B6B, note = "one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the BIG_ITEM code)" }
 ROM_SUM_STEP_I = { addr = 0x8D64, note = "as ROM_SUM_STEP_H: pointer F477, sum F479, flag F476" }
 ROM_SUM_STEP_J = { addr = 0x8F17, note = "as ROM_SUM_STEP_H: pointer F4C7, sum F4C9, flag F4C6" }
@@ -614,6 +620,9 @@ LIGHTNING_RUN = { addr = 0xA480, note = "each frame while F595 is 01-7F: the scr
 LIGHTNING_STRIKE = { addr = 0xA4CE, note = "starts a bolt: 8 sprites from A58B at Y E8 and a random X, sound 23" }
 LIGHTNING_FLY = { addr = 0xA501, note = "moves the bolt down 6 and left 2 a frame, animating it, until it leaves the bottom" }
 LIGHTNING_HIT = { addr = 0xA541, note = "the bolt hit an enemy (LIGHTNING_HITS sets +0 = 2): the player who took the item (F460) scores 500 BCD (5000 on screen)" }
+ITEM_HINT_RUN = { addr = 0x92CF, note = "each frame while F519: when play starts (E6FF negative), sound 28, then the palette word at F9DE/F9FE switches between 80F0 and 0000 every 3 frames, 10 times, so the screen flashes: a sign that this round's special item is an effect item" }
+POTIONS_RUN = { addr = 0xACBA, note = "round 100, once play starts: draws each potion (tiles and the palette at F9C0); a player within 0C x 0C takes it: F60F (P1) or F610 (P2) = 1, and the tiles are cleared. Taking one not seen in MAME" }
+FIRE_RUN = { addr = 0xB9CD, note = "each frame: the 8 flame records at F628; when a fire bubble's fireball lands (F624 b0, set by BUBBLE_FIRE_DROP with its position), flames spread along the platform" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

@@ -686,3 +686,10 @@ end = 0xB4B4
 kind = "data"
 source = "manual"
 note = "text (insert coin to continue, push start) then 5-byte records"
+
+[[range]]
+start = 0xB4F2
+end = 0xB66B
+kind = "data"
+source = "manual"
+note = "SPECIAL_RULES (0x36 x 7 bytes): the ROM sum at B4CB ends PUSH IX on a mismatch and runs on into it"

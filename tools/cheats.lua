@@ -73,3 +73,22 @@ if CFG.special and CFG.special > 0 and CFG.clear then
     elseif shown and space:read_u8(0xED3D) ~= 0 then space:write_u8(0xED3D, 0) end
   end)
 end
+
+-- CFG.poke: {{addr, value}, ...} (trace.py --poke): each address holds its value from frame 240,
+-- after the start-up RAM test (which hangs at 0216 if a byte will not change). From then it is
+-- written at the end of every frame, and a write tap turns every write the game makes into it.
+if CFG.poke and #CFG.poke > 0 then
+  local frames = 0
+  CHEAT_POKE_TAPS = {}
+  CHEAT_POKE_FRAME = emu.add_machine_frame_notifier(function()
+    frames = frames + 1
+    if frames < 240 then return end
+    if #CHEAT_POKE_TAPS == 0 then
+      for i, p in ipairs(CFG.poke) do
+        CHEAT_POKE_TAPS[i] = space:install_write_tap(p[1], p[1], "cheat_poke_" .. i,
+          function(offset, data, mask) return p[2] end)
+      end
+    end
+    for _, p in ipairs(CFG.poke) do space:write_u8(p[1], p[2]) end
+  end)
+end

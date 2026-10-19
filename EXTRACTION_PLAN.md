@@ -572,13 +572,22 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `FOOD_RAIN_HITS` and `LIGHTNING_HITS`. Kinds 2D, 35 and the `E724` path (31–33, which set
   `E723` = 29 and start the effect from the fixed ROM at `50EE`) were not looked at.
   Kind 29 sets `E603`, one of the two conditions for `REC_F519`.
+- The last records (2026-10-19): `trace.py --poke ADDR=VAL` holds a byte at a value from frame
+  240 (holding it sooner hangs the start-up RAM test at `0216`). `REC_F519` is `ITEM_HINT`: after
+  kind 29 has been taken in a game, a round whose special item is an effect item starts with sound
+  28 and a flash. `REC_F54B` is `WATER` and `REC_F624` is `FIRE`, from the water and fire bubbles,
+  seen on round 13 with `SPECIAL_LIST` held at 2 and at 3. The bubble's `IX+24` is 4 − the list
+  value (`6E50`), so `BUBBLE_FIRE_DROP` is `IX+24` 1 and `BUBBLE_LIGHTNING_POP` is 3. `REC_F60F` is
+  `POTIONS`: round 100's two potions, which set `POTION_P1`/`P2` and turn that player's bubbles into
+  lightning bubbles (`POTION_BUBBLE`). A potion being taken, and a lightning bubble popping, were not
+  seen. `SPECIAL_RULES` (`B4F2–B66B`) is now data in the class map: a ROM sum at `B4CB` runs into it on
+  a mismatch, and the tracer had read 174 instructions there.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
-     `tools/trace.lua`, then rename them. Done: `F46B` (big items), stars, food, lightning. Left:
-     `F519` (needs `E603` and the `SPECIAL_RULES` byte in `F463`, which the cheat does not set),
-     `F54B`, `F60F`, `F624`. Name the 17 new bank 2 entries.
+     `tools/trace.lua`, then rename them. Done except `REC_F513` (kind 0E). Name the rest of the
+     17 new bank 2 entries.
   3. Check some `--probe` regions, and the score code above, against a MAME trace.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.

@@ -7528,7 +7528,7 @@ L_3EE4:                 ; 3EE4
         call    PLAYER_SHIELD_START
         call    POWER_UP_STATS
         xor     a
-        ld      (0xF60F),a
+        ld      (POTION_P1),a
         ld      (0xF611),a
         ld      (0xF616),a
         ld      hl,(ROUND_SECONDS)
@@ -7586,7 +7586,7 @@ L_3F68:                 ; 3F68
         call    PLAYER_SHIELD_START
         call    POWER_UP_STATS
         xor     a
-        ld      (0xF610),a
+        ld      (POTION_P2),a
         ld      (0xF611),a
         ld      (0xF616),a
         ld      hl,(ROUND_SECONDS)
@@ -10903,17 +10903,18 @@ L_5D96:                 ; 5D96
         jp      nc,L_602A
 L_5DBF:                 ; 5DBF
         call    CELL_TRACK
-        ld      hl,0xF60F
+        ld      hl,POTION_P1
         bit     0,(ix+22)
         jr      z,L_5DCC
         inc     hl
 L_5DCC:                 ; 5DCC
         bit     0,(hl)
-        jr      nz,L_5DD7
+        jr      nz,POTION_BUBBLE
         ld      (ix+0),0x01
         jp      L_602A
 
-L_5DD7:                 ; 5DD7
+; a player's blown bubble when that player has the round 100 potion (F60F/F610): it becomes IX+24 = 3, a lightning bubble
+POTION_BUBBLE:          ; 5DD7
         ld      (ix+24),0x03
         call    OBJ_STATE_15
         ld      (ix+0),0x10
@@ -11150,11 +11151,11 @@ L_5FB1:                 ; 5FB1
 L_5FBC:                 ; 5FBC
         ld      a,(ix+24)
         cp      0x01
-        jp      z,L_6633
+        jp      z,BUBBLE_FIRE_DROP
         cp      0x02
-        jp      z,L_660D
+        jp      z,BUBBLE_WATER_POP
         cp      0x03
-        jp      z,L_66A1
+        jp      z,BUBBLE_LIGHTNING_POP
         ld      a,(ENEMY_TOTAL)
         and     a
         jp      nz,L_5FE4
@@ -11927,7 +11928,8 @@ L_65FE:                 ; 65FE
         ret     z
         rst     0x28
         push    af
-L_660D:                 ; 660D
+; a popped water bubble (list type 2, IX+24 = 2): tamper check of MCU_READY, then F557 = 1 and the position for WATER_RUN, unless water is already running
+BUBBLE_WATER_POP:       ; 660D
         ld      a,(MCU_READY)
         cp      0x37
         jr      z,L_6616
@@ -11951,7 +11953,8 @@ L_6616:                 ; 6616
         ld      (hl),a
         jp      L_5FE4
 
-L_6633:                 ; 6633
+; a popped fire bubble (list type 3, IX+24 = 1): a fireball falls until it lands on a platform, then F624 = its position for FIRE_RUN
+BUBBLE_FIRE_DROP:       ; 6633
         call    OBJ_STATE_15
         call    IX_SPEED_CLEAR
         ld      (ix+0),0x40
@@ -11998,7 +12001,8 @@ L_663D:                 ; 663D
         jp      L_5FE4
 
         .incbin "main_fixed.bin", 0x669D, 0x0004
-L_66A1:                 ; 66A1
+; a popped lightning bubble (list type 1, IX+24 = 3; also the potion bubbles of round 100, 5DD7). Not seen in MAME
+BUBBLE_LIGHTNING_POP:   ; 66A1
         ld      hl,START
         ld      bc,(0x0004)
         or      a

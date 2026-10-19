@@ -2327,8 +2327,8 @@ L_929F:                 ; 929F
         ld      (hl),0x00
         ret
 
-; round start, called by OBJECTS_TASK: clears the state record at F519
-REC_F519_INIT:          ; 92B6
+; Seen in MAME (--poke E603=1 --poke F463=1). round start, called by OBJECTS_TASK: clears F519 (3 bytes), then F519 = 1 when E603 (special kind 29 was taken this game; cleared at game over) and F463 (the round's SPECIAL_RULES byte: 1 for the effect items 05, 0E, 12-14, 17, 19, 1A, 1C, 1D, 2D, 35) are both set
+ITEM_HINT_INIT:         ; 92B6
         ld      hl,0xF519
         ld      bc,0x0003
         call    ZERO_BC
@@ -2342,7 +2342,8 @@ REC_F519_INIT:          ; 92B6
         ld      (hl),0x01
         ret
 
-L_92CF:                 ; 92CF
+; each frame while F519: when play starts (E6FF negative), sound 28, then the palette word at F9DE/F9FE switches between 80F0 and 0000 every 3 frames, 10 times, so the screen flashes: a sign that this round's special item is an effect item
+ITEM_HINT_RUN:          ; 92CF
         ld      a,(0xF519)
         and     a
         ret     z
@@ -3961,14 +3962,14 @@ L_9F66:                 ; 9F66
         .incbin "main_bank2.bin", 0x1F66, 0x0008
 L_9F6E:                 ; 9F6E
         .incbin "main_bank2.bin", 0x1F6E, 0x0008
-; round start, called by OBJECTS_TASK: clears the state record at F54B
-REC_F54B_INIT:          ; 9F76
+; Seen in MAME (round 13). round start, called by OBJECTS_TASK: clears the water record at F54B (0x40 bytes)
+WATER_INIT:             ; 9F76
         ld      hl,0xF54B
         ld      bc,0x0040
         jp      ZERO_BC
 
-; each frame: steps the record at F54B
-REC_F54B_RUN:           ; 9F7F
+; each frame: once a water bubble pops (BUBBLE_WATER_POP sets F557 = 1 with its position), sound 1E and water pours from there down and along the platforms
+WATER_RUN:              ; 9F7F
         ld      a,(0xF590)
         and     a
         ret     nz
@@ -5671,9 +5672,9 @@ L_AC72:                 ; AC72
         jp      nz,L_AB34
         ret
 
-; round start, called by OBJECTS_TASK: clears the state record at F60F
-REC_F60F_INIT:          ; AC80
-        ld      hl,0xF60F
+; Seen in MAME (round 100). round start, called by OBJECTS_TASK: clears F60F (0x0C bytes); on round 100 sets up the two potions, F611 at Y 98 X 38 (tiles CE98) and F616 at Y 98 X C8 (tiles D318)
+POTIONS_INIT:           ; AC80
+        ld      hl,POTION_P1
         ld      bc,0x000C
         call    ZERO_BC
         ld      a,(ROUND_MAIN)
@@ -5693,7 +5694,8 @@ REC_F60F_INIT:          ; AC80
         ld      (ix+2),0xC8
         ret
 
-L_ACBA:                 ; ACBA
+; round 100, once play starts: draws each potion (tiles and the palette at F9C0); a player within 0C x 0C takes it: F60F (P1) or F610 (P2) = 1, and the tiles are cleared. Taking one not seen in MAME
+POTIONS_RUN:            ; ACBA
         ld      a,(ROUND_MAIN)
         cp      0x63
         ret     nz
@@ -5746,13 +5748,13 @@ L_AD1F:                 ; AD1F
         and     a
         jr      nz,L_AD34
         ld      (PLAYER_NOW),a
-        ld      hl,0xF60F
+        ld      hl,POTION_P1
         ld      (hl),0x01
         jr      L_AD3C
 
 L_AD34:                 ; AD34
         ld      (PLAYER_NOW),a
-        ld      hl,0xF610
+        ld      hl,POTION_P2
         ld      (hl),0x01
 L_AD3C:                 ; AD3C
         ld      e,(ix+3)
@@ -6528,184 +6530,7 @@ L_B4E3:                 ; B4E3
         push    ix
 ; 0x36 x 7 bytes: counter address, 4 thresholds (column by SPECIAL_CLASS), a byte for F463. Entry n gives SPECIAL_KIND 0x35 - n
 SPECIAL_RULES:          ; B4F2
-        ex      af,af'
-        and     0x01
-        ld      bc,0x0101
-        ld      bc,0xE610
-        ld      bc,0x0101
-        ld      bc,0x0F00
-        and     0x01
-        ld      bc,0x0101
-        nop
-        ld      c,0xE6
-        ld      bc,0x0101
-        ld      bc,0x0D00
-        and     0x01
-        ld      bc,0x0101
-        nop
-        ld      de,0x14E6
-        add     hl,de
-        ld      e,0x1B
-        nop
-        ld      a,(bc)
-        and     0x01
-        ld      bc,0x0101
-        nop
-        add     hl,bc
-        and     0x01
-        ld      bc,0x0101
-        nop
-        rlca
-        and     0x01
-        ld      bc,0x0101
-        ld      bc,0xE606
-        ld      bc,0x0101
-        ld      bc,0x0500
-        and     0x01
-        ld      bc,0x0101
-        nop
-        inc     b
-        and     0x01
-        ld      bc,0x0101
-        nop
-        cp      0xE5
-        ld      c,0x0C
-        ex      af,af'
-        ld      a,(bc)
-        nop
-        ret     m
-        push    hl
-        inc     bc
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        ld      sp,hl
-        push    hl
-        inc     bc
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        jp      m,0x03E5
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        ei
-        push    hl
-        inc     bc
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        call    m,0x03E5
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        push    iy
-        inc     bc
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        rst     0x38
-        push    hl
-        inc     bc
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        nop
-        and     0x03
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        ld      (bc),a
-        and     0x03
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        ld      bc,0x03E6
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        ld      e,b
-        call    p,0x0101
-        ld      bc,0x0001
-        ld      d,a
-        call    p,0x0101
-        ld      bc,0x0101
-        jp      c,0x1EE5
-        add     hl,de
-        rrca
-        inc     d
-        ld      bc,0xE5D9
-        ld      e,0x19
-        rrca
-        inc     d
-        nop
-        call    p,0x10E5
-        ld      c,0x0A
-        inc     c
-        ld      bc,0xE5F3
-        djnz    L_B5C8
-        ld      a,(bc)
-        inc     c
-        ld      bc,0xE5ED
-        inc     b
-        inc     bc
-        ld      bc,0x0002
-        call    pe,0x02E5
-        ld      (bc),a
-L_B5C8:                 ; B5C8
-        ld      bc,0x0101
-        ret     p
-        push    hl
-        dec     b
-        dec     b
-        dec     b
-        dec     b
-        nop
-        rst     0x28
-        push    hl
-        dec     b
-        dec     b
-        dec     b
-        dec     b
-        nop
-        xor     0xE5
-        rlca
-        ld      b,0x04
-        dec     b
-        ld      bc,0xE5F7
-        djnz    L_B5F2
-        ld      a,(bc)
-        inc     c
-        ld      bc,0xE5F6
-        dec     c
-        inc     c
-        ld      a,(bc)
-        dec     bc
-        ld      bc,0xE5EB
-        inc     bc
-        inc     bc
-L_B5F2:                 ; B5F2
-        inc     bc
-        inc     bc
-        nop
-        jp      pe,0x03E5
-        inc     bc
-        inc     bc
-        inc     bc
-        nop
-        jp      (hl)
-
-        .incbin "main_bank2.bin", 0x35FD, 0x006F
+        .incbin "main_bank2.bin", 0x34F2, 0x017A
 ; 5 bytes an item, as POINTS_ITEMS
 SPECIAL_ITEMS:          ; B66C
         .incbin "main_bank2.bin", 0x366C, 0x010E
@@ -6755,13 +6580,14 @@ L_B77A:                 ; B77A
         ret
 
         .incbin "main_bank2.bin", 0x37F0, 0x01D4
-; round start, called by OBJECTS_TASK: clears the state record at F624
-REC_F624_INIT:          ; B9C4
+; Seen in MAME (round 13 with SPECIAL_LIST held at 3). round start, called by OBJECTS_TASK: clears the fire records from F624
+FIRE_INIT:              ; B9C4
         ld      hl,0xF624
         ld      bc,0x0044
         jp      ZERO_BC
 
-L_B9CD:                 ; B9CD
+; each frame: the 8 flame records at F628; when a fire bubble's fireball lands (F624 b0, set by BUBBLE_FIRE_DROP with its position), flames spread along the platform
+FIRE_RUN:               ; B9CD
         ld      ix,0xF628
         ld      a,0x08
 L_B9D3:                 ; B9D3
