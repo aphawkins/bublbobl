@@ -26,6 +26,7 @@ INCLUDES = {
     "fixed": [("main.code", lambda a: a if a < 0x8000 else None),
               ("main.data", lambda a: a if a < 0x8000 else None)],
     "sub": [("main.mem", lambda a: a if 0xE000 <= a < 0xF800 else None)],
+    "sound": [("sound.io", None), ("sound.mem", None)],
     "mcu": [("mcu.io", None), ("mcu.bus", None), ("mcu.ram", None),
             ("shared.mcu", lambda a: a & 0x0FFF)],  # the MCU bus sees FC00-FFFF at 0C00-0FFF
 }

@@ -62,8 +62,9 @@ Other tools:
 - `tools/dasmz80.py` — trace Z80 code from the vectors, the traced ranges and the named
   routines, and write a first-pass source to `disasm/<cpu>.s` (`sub`, `sound`, `main_fixed`,
   `main_bank0`-`3`; `--table ADDR:COUNT` for jump tables, `--probe` for gaps that decode as
-  code). It made `src/sub/sub.s`; `tools/redo_fixed.sh` and `tools/redo_banks.sh` regenerate
-  `src/main/fixed.s` and `bank0/2/3.s` from it and `notes/symbols.toml`
+  code). It made `src/sub/sub.s`; `tools/redo_fixed.sh`, `tools/redo_banks.sh` and
+  `tools/redo_sound.sh` regenerate `src/main/fixed.s`, `bank0/2/3.s` and `src/sound/sound.s`
+  from it and `notes/symbols.toml`
 - `tools/dasm6801.py` — trace the MCU code from its vectors and write a first-pass source to
   `disasm/mcu.s` (it made the first `src/mcu/mcu.s`, which is now edited by hand)
 - `tools/trace.py` — run MAME headless on a scripted scenario (`--list`) with the debugger

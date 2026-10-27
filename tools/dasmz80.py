@@ -34,7 +34,7 @@ ROOT = romset.ROOT
 # cpu -> (image, base, end, symbols tables for labels, include tables for operands)
 IMAGES = {
     "sub": ("sub.bin", 0x0000, 0x8000, ["sub.code", "sub.data"], ["main.mem"]),
-    "sound": ("sound.bin", 0x0000, 0x8000, ["sound.code"], ["sound.io"]),
+    "sound": ("sound.bin", 0x0000, 0x8000, ["sound.code", "sound.data"], ["sound.mem", "sound.io"]),
     "main_fixed": ("main_fixed.bin", 0x0000, 0x8000, ["main.code", "main.data"],
                    ["main.io", "main.mem", "shared.mcu"]),
 }
@@ -44,8 +44,10 @@ for _n in range(4):
                                 [f"bank{_n}.code", f"bank{_n}.data"],
                                 ["main.io", "main.mem", "shared.mcu"])
 
+# cpus whose 16-bit constants equal to one of their own [<cpu>.data] names print as that name
+OWN_DATA_VALUES = ("sound",)
 # cpu -> the include file tools/symbols.py writes for it
-INCLUDE = {"sub": "sub.inc", "main_fixed": "main.inc",
+INCLUDE = {"sub": "sub.inc", "sound": "sound.inc", "main_fixed": "main.inc",
            **{f"main_bank{n}": "main.inc" for n in range(4)}}
 # banks also see the fixed ROM's names (build/include/fixed.inc)
 EXTRA_INCLUDE = {f"main_bank{n}": "fixed.inc" for n in range(4)}
@@ -273,6 +275,11 @@ class Names:
                         self.ext[v["addr"]] = k
                         if path == "main.data" or k in VALUE_LABELS:
                             self.ext_value[v["addr"]] = k
+        if cpu in OWN_DATA_VALUES:
+            for path in labels:
+                if path.endswith(".data"):
+                    for k, v in table(path).items():
+                        self.ext_value[v["addr"]] = k
         self.ram: dict[int, str] = {}
         for path in includes:
             for k, v in table(path).items():

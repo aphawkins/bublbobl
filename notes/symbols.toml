@@ -1041,13 +1041,76 @@ RAM        = { addr = 0x8000, size = 0x1000 }
 YM2203     = { addr = 0x9000, size = 2 }
 YM3526     = { addr = 0xA000, size = 2 }
 CMD_LATCH  = { addr = 0xB000, note = "R: command / W: reply" }
-NMI_ENABLE = { addr = 0xB001 }
+NMI_ENABLE = { addr = 0xB001, note = "W: NMI on / R: b0 polled by REPLY_READY and SEQ_END_NOTIFY" }
 NMI_DISABLE = { addr = 0xB002 }
+DIAG_ROM   = { addr = 0xE000, note = "empty socket: with a JP (C3) here, NMI, MAIN_LOOP and SEQ_END_NOTIFY call E009, E00C, E00F and E02D" }
+
+[sound.mem]
+# Records: each command starts one or more channel records, by record id (RECORD_TABLE).
+# The first record of each pair takes its channel from the second while it plays.
+SSG_REC_A      = { addr = 0x8000, size = 0x70, note = "id 84: the YM2203's SSG, over SSG_REC_B" }
+SSG_REC_B      = { addr = 0x8070, size = 0x70, note = "id 86" }
+OPN_RECS       = { addr = 0x80E0, size = 0x360, note = "ids 8C-96: the YM2203's 3 FM channels x 2 records of 0x90 (8C over 8E, 90 over 92, 94 over 96)" }
+OPL_RECS       = { addr = 0x8440, size = 0x5A0, note = "ids 98-BA: the YM3526's 9 channels x 2 records of 0x50 (98 over 9A, 9C over 9E ...)" }
+QUEUE_IN       = { addr = 0x8F80, note = "CMD_QUEUE index last written" }
+QUEUE_OUT      = { addr = 0x8F81, note = "CMD_QUEUE index last read" }
+CMD_QUEUE      = { addr = 0x8F82, size = 0x10, note = "16-byte ring of commands; when full the oldest is dropped" }
+CUR_RECORD     = { addr = 0x8F92, note = "word: the record being started or run" }
+CHIP_PORT      = { addr = 0x8F9A, note = "word: YM2203 or YM3526, the chip being written" }
+OPN_TAKEN      = { addr = 0x8F9C, note = "b0-b2: an FM channel's first record played this tick (OPN_FM_TICK)" }
+OPN_LAYER      = { addr = 0x8F9D, note = "BLOCK_NOW: 0 = the first record of the channel's pair, 1 = the second" }
+OPN_TIMER_MODE = { addr = 0x8F9F, note = "b0: write 5F/6F, not 1F/2F, to register 27 (channel 3 special mode)" }
+OPL_TAKEN      = { addr = 0x8FA0, size = 2, note = "9 bits: a channel's A record played this tick (OPL_TICK_A); OPL_TICK_B clears them" }
+OPL_LAYER      = { addr = 0x8FA2, note = "as OPN_LAYER, for the YM3526" }
+OPN_TIMER_A    = { addr = 0x8FA3, size = 2, note = "10-bit timer A value, loaded at the next IRQ when TIMER_A_NEW b0 is set" }
+TIMER_A_NEW    = { addr = 0x8FA8 }
+SSG_TAKEN      = { addr = 0x8FA9, note = "1 while SSG_REC_A plays" }
+SOUND_ON       = { addr = 0x8FAA, note = "0 after reset and command EE: BLOCK_START starts nothing; 1 after EF" }
+SOUND_MODE     = { addr = 0x8FAB, note = "b0 (command F0 flips it): commands below E0 are not played but kept in ECHO_CMD as the reply; b7: OPL_TIMER_STOP has run" }
+ECHO_CMD       = { addr = 0x8FAC }
 
 [sound.code]
 RESET = { addr = 0x0000 }
-IRQ   = { addr = 0x0038, note = "from YM chips" }
-NMI   = { addr = 0x0066, note = "from command latch" }
+IRQ   = { addr = 0x0038, note = "IM 1, from the YM chips' timers" }
+NMI   = { addr = 0x0066, note = "from the command latch: every command but FF goes into CMD_QUEUE (and to DIAG_ROM, if fitted)" }
+QUEUE_PUSH      = { addr = 0x00B3, note = "A = command below F0: added to CMD_QUEUE, carry clear; F0 and up: carry set, not added" }
+SOUND_START     = { addr = 0x00DC, note = "clears RAM; YM2203 timers A = 150 and B = D5, SSG off (SSG_OFF_CHECK); YM3526 timer 1 started; reply E0, then MAIN_LOOP" }
+MAIN_LOOP       = { addr = 0x016D, note = "QUEUE_RUN with interrupts off, REPLY_READY, DIAG_ROM_CHECK; for ever" }
+SSG_OFF_CHECK   = { addr = 0x017A, note = "HL = YM2203: register 7 (mixer) = 3F, all SSG tones and noise off; resets the CPU if it does not read back" }
+IRQ_HANDLER     = { addr = 0x0195, note = "YM2203 timer A: OPL_TICK_A, OPL_TICK_B; timer B: OPN_FM_TICK, OPN_SSG_TICK; a new timer A value; TAMPER_CHECK. RET, not RETI: MAIN_LOOP has the EI" }
+OPL_TIMER_STOP  = { addr = 0x022B, note = "first IRQ only: waits for the YM3526's timer 1 (SOUND_START), then resets its IRQ and stops it" }
+REPLY_READY     = { addr = 0x024D, note = "reply ECHO_CMD in echo mode (SOUND_MODE b0), else E0 while NMI_ENABLE b0 reads clear" }
+DIAG_ROM_CHECK  = { addr = 0x0268, note = "with DIAG_ROM fitted: if E00F gives NZ and E009 gives 53 ('S'), reset" }
+TAMPER_CHECK    = { addr = 0x0279, note = "six opcode bytes in 0144-022B must be as built, else reset" }
+QUEUE_RUN       = { addr = 0x02A3, note = "until CMD_QUEUE is empty: 00-34 COMMAND_START (echo mode: ECHO_CMD), 35-DF ignored, E0-EF COMMAND_E, F0-FE COMMAND_F" }
+COMMAND_START   = { addr = 0x02EF, note = "A = command: its COMMAND_TABLE entry is a count of block words, or one block (first byte 1B and up)" }
+COMMAND_BLOCKS  = { addr = 0x02FE, note = "BC = entry, D = command: a word with high byte 0 queues its low byte as another command; any other is a block for BLOCK_START" }
+BLOCK_START     = { addr = 0x0332, note = "BC = block, A = its record id: unless SOUND_ON is 0 the record (RECORD_TABLE) is started at the block, with D as its command; ids F0/F1 go to BLOCK_NOW. A record playing (+0 b1) with +5 below the block's +1 high nibble is left alone" }
+COMMAND_E       = { addr = 0x03B0, note = "EE: SOUND_ON = 0; EF: SOUND_ON = 1; the rest do nothing" }
+BLOCK_NOW       = { addr = 0x03C5, note = "BC = an F0/F1 block: the byte after names a record, and the bytes after that are applied to it at once (SSG_EVENTS, OPN_EVENTS, OPL_EVENTS)" }
+COMMAND_F       = { addr = 0x044B, note = "F0-FE through COMMAND_F_JUMPS" }
+ECHO_TOGGLE     = { addr = 0x045D, note = "command F0: flips SOUND_MODE b0" }
+COMMAND_F_ENTRY = { addr = 0x046E, note = "commands F2, F4, F6, F8: COMMAND_BLOCKS from COMMAND_F_TABLE" }
+COMMAND_F_NONE  = { addr = 0x0480 }
+SEQ_END_NOTIFY  = { addr = 0x049F, note = "a record's sequence has ended: with +4 b0 its command (+3) is the reply, waiting until NMI_ENABLE b0 reads clear; then +8 is queued as the next command (and sent to DIAG_ROM, if fitted)" }
+OPL_TICK_A      = { addr = 0x04D8, note = "timer A: the YM3526's 9 A records (98, 9C ... B8); each one playing sets its bit in OPL_TAKEN" }
+OPL_TICK_B      = { addr = 0x0535, note = "the 9 B records (9A, 9E ... BA), each skipped while its A record plays; one whose OPL_TAKEN bit is set is flagged to rewrite its voice" }
+OPL_EVENTS      = { addr = 0x077D, note = "YM3526: the bytes after BC with b7 set, into the record at IX (low nibble below 0C: a note from OPL_NOTES)" }
+OPL_WRITE       = { addr = 0x0ECB, note = "HL = YM3526, B = register, A = value; fixed delays, no status read" }
+OPN_FM_TICK     = { addr = 0x125E, note = "timer B: the YM2203's 3 FM channels, the second record of each pair skipped while the first plays" }
+OPN_EVENTS      = { addr = 0x1557, note = "YM2203 FM: as OPL_EVENTS, notes from OPN_NOTES" }
+OPN_WRITE       = { addr = 0x1DD6, note = "HL = YM2203, B = register, A = value; waits while the busy flag (b7) is set" }
+OPN_SSG_TICK    = { addr = 0x225B, note = "the SSG records: SSG_REC_B skipped while SSG_REC_A plays" }
+SSG_EVENTS      = { addr = 0x243C, note = "YM2203 SSG: the byte after BC, by its high nibble (b6-b7 set) through SSG_EVENT_JUMPS" }
+
+[sound.data]
+RECORD_TABLE    = { addr = 0x0378, size = 0x38, note = "words by record id - 84 (ids 84-BA, even): the record; 88 and 8A are 0" }
+COMMAND_F_JUMPS = { addr = 0x0481, size = 0x1E, note = "15 words for F0-FE" }
+OPL_NOTES       = { addr = 0x0840, size = 0x18, note = "12 words" }
+OPN_NOTES       = { addr = 0x1619, size = 0x18, note = "12 words" }
+SSG_EVENT_JUMPS = { addr = 0x24F1, size = 0x18 }
+COMMAND_TABLE   = { addr = 0x329C, size = 0x6A, note = "53 words for commands 00-34" }
+COMMAND_F_TABLE = { addr = 0x3306, size = 0x0E, note = "COMMAND_F_ENTRY reads the words at +0, +4, +8 and +C (F2-F8)" }
 
 [shared.mcu]
 # Contract in notes/mcu_shared_ram.md. Direction: M = written by the MCU, Z = by the main CPU.

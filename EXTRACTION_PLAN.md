@@ -843,6 +843,32 @@ reference to compare against.
 
 Deliverable: `src\sound\*.s`, `build\sound\`, `notes\data_formats.md#sound`.
 
+Started (2026-10-27):
+- Step 1, first pass: `tools/redo_sound.sh` writes `src/sound/sound.s` from `dasmz80.py` and
+  `notes/symbols.toml` (`[sound.io]`, `[sound.mem]`, `[sound.code]`, `[sound.data]`), with
+  `COMMAND_F_JUMPS` as a jump table. 0x2235 bytes are instructions; still byte-exact.
+  `symbols.py` writes `sound.inc`, and the sound source's constants print its own data names.
+- The framework, read from the code. `SOUND_START` clears RAM, starts the YM2203's timers
+  (A = 150, B = D5) and checks the SSG mixer; the YM3526's timer runs only until the first IRQ
+  (`OPL_TIMER_STOP`). The NMI puts every command but FF in a 16-byte ring (`CMD_QUEUE`), and
+  `MAIN_LOOP` plays them (`QUEUE_RUN`): 00-34 through `COMMAND_TABLE`, EE and EF sound off and
+  on (`SOUND_ON`; the main CPU sends EF at reset, from `0176`), F0 an echo mode that keeps commands as
+  the reply instead of playing them, F2-F8 four more entries. The reply is E0 when idle.
+- A command entry is one block or a count of words; a word with high byte 0 queues another
+  command. A block's first byte is a record id (`RECORD_TABLE`): 84/86 the SSG, 8C-96 the
+  YM2203's 3 FM channels, 98-BA the YM3526's 9, two records per channel, and the first of each
+  pair takes the channel from the second while it plays. Ids F0/F1 apply their events to a
+  record at once (`BLOCK_NOW`). Timer A steps the YM3526 records, timer B the YM2203's; the
+  IRQ also runs a tamper check of six opcode bytes. When a sequence ends it can reply its
+  command number and queue another (`SEQ_END_NOTIFY`).
+- Commands 01, 08, 0B, 13, 14, 19, 2A and 2B start all 9 of the YM3526's first records,
+  02, 07, 0A, 0F, 10, 29, 30 and 32 all 9 second ones. 0C-0E, 11, 15-17, 1A, 1D-22, 2C, 2F,
+  31, 33 and 34 start one YM2203 FM record, 05, 06 and 2E one SSG record; 00 and F2-F8 start
+  every record. Which is which piece is not yet heard.
+- `DIAG_ROM` (`E000`): the code calls into an empty socket when a JP is there.
+- Next: the sequence players (`OPL_TICK_A`/`_B`, `OPN_FM_TICK`, `OPN_SSG_TICK` and what they
+  call) and the event formats, then the command catalogue (step 2) against MAME recordings.
+
 ---
 
 ## 12. Phase 8 — Reassembly to a byte-exact set that runs in MAME
