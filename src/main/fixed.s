@@ -14641,21 +14641,21 @@ L_7A35:                 ; 7A35
         ld      ix,ENEMY3_SHOTS
         ld      hl,ENEMY3_SLOTS
         xor     a
-; each ENEMY3_SHOTS record with its owner in ENEMY3_SLOTS
+; Seen in MAME (r42, round 42): each ENEMY3_SHOTS record with its owner in ENEMY3_SLOTS. A shot not yet thrown waits for the owner's (IX+24) b3 (ENEMY3_ATTACK_STEP), then takes the owner's facing (owner +8) as its mode, turns the owner to face its target (1 or 3, by ENEMY_PROX_B), starts at the owner's position with speed row owner +12 + 0A (at most 1E) and sets +0 b0; then ENEMY3_SHOT_FLY
 ENEMY3_SHOT_LOOP:       ; 7A42
         push    af
         push    hl
         ld      a,(0xF44E)
         and     a
-        jp      nz,L_7B61
+        jp      nz,ENEMY3_SHOT_END
         call    0x8879
         bit     0,(ix+0)
-        jp      nz,L_7ABA
+        jp      nz,ENEMY3_SHOT_FLY
         ld      a,0x18
         call    ADD_HL_A
         ld      a,(hl)
         bit     3,a
-        jp      z,L_7B75
+        jp      z,ENEMY3_SHOT_NEXT
         pop     hl
         push    hl
         ld      a,0x08
@@ -14710,63 +14710,68 @@ L_7AAC:                 ; 7AAC
         ld      c,0x33
         call    SPRITE
         set     0,(ix+0)
-L_7ABA:                 ; 7ABA
+; Seen in MAME (r42, round 42): each frame of a thrown shot: ENEMY_SPEED_NEXT, then ENEMY3_SHOT_MODES by (IX+7); +0 b6 (it hit a wall) ends it
+ENEMY3_SHOT_FLY:        ; 7ABA
         call    OBJ_POS_LOAD
         call    0x8838
         ld      a,(TIMER_RUN)
         and     a
-        jp      nz,L_7B75
+        jp      nz,ENEMY3_SHOT_NEXT
         bit     6,(ix+0)
-        jp      nz,L_7B61
+        jp      nz,ENEMY3_SHOT_END
         ld      a,(ix+7)
-        ld      hl,L_7B8C
+        ld      hl,ENEMY3_SHOT_MODES
         call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-L_7AD9:                 ; 7AD9
+; the shot flies left (IX+13) pixels, until ENEMY_WALL_L
+ENEMY3_SHOT_L:          ; 7AD9
         ld      a,(ix+13)
         or      a
-        jp      z,L_7B1E
+        jp      z,ENEMY3_SHOT_SPRITE
         ld      b,a
 L_7AE1:                 ; 7AE1
         push    bc
         call    OBJ_POS_LOAD
         call    0x879A
-        jr      z,L_7AF6
+        jr      z,ENEMY3_SHOT_HIT_WALL
         call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
         pop     bc
         djnz    L_7AE1
-        jp      L_7B1E
+        jp      ENEMY3_SHOT_SPRITE
 
-L_7AF6:                 ; 7AF6
+; the shot stops at a wall: +0 b6, so ENEMY3_SHOT_END runs on the next frame
+ENEMY3_SHOT_HIT_WALL:   ; 7AF6
         pop     bc
         call    IX_SPEED_CLEAR
         set     6,(ix+0)
-        jp      L_7B75
+        jp      ENEMY3_SHOT_NEXT
 
-L_7B01:                 ; 7B01
+; the shot flies right (IX+13) pixels, until ENEMY_WALL_R
+ENEMY3_SHOT_R:          ; 7B01
         ld      a,(ix+13)
         or      a
-        jp      z,L_7B1E
+        jp      z,ENEMY3_SHOT_SPRITE
         ld      b,a
 L_7B09:                 ; 7B09
         push    bc
         call    OBJ_POS_LOAD
         call    0x87AC
-        jr      z,L_7AF6
+        jr      z,ENEMY3_SHOT_HIT_WALL
         call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
         pop     bc
         djnz    L_7B09
-        jp      L_7B1E
+        jp      ENEMY3_SHOT_SPRITE
 
-L_7B1E:                 ; 7B1E
+; ANIM_STEP 6 frames (faster in HURRY), held at the last; tiles 4C or 64 (by (IX+16) b3, every 8 frames) + 4 x (5 - frame), colour 1E, flipped by (IX+7) b1
+ENEMY3_SHOT_SPRITE:     ; 7B1E
         inc     (ix+16)
         ld      a,(ix+5)
         cp      0x05
@@ -14797,13 +14802,14 @@ L_7B48:                 ; 7B48
         bit     1,(ix+7)
         jr      z,L_7B5B
         call    SPRITE
-        jp      L_7B75
+        jp      ENEMY3_SHOT_NEXT
 
 L_7B5B:                 ; 7B5B
         call    SPRITE_FLIPX
-        jp      L_7B75
+        jp      ENEMY3_SHOT_NEXT
 
-L_7B61:                 ; 7B61
+; also while F44E: clears the shot, the owner's (IX+24) b3, hides it, ENEMY3_SHOTS_FREE + 1
+ENEMY3_SHOT_END:        ; 7B61
         ld      (ix+0),0x00
         pop     hl
         push    hl
@@ -14811,9 +14817,10 @@ L_7B61:                 ; 7B61
         call    ADD_HL_A
         res     3,(hl)
         call    OBJ_HIDE
-        ld      hl,0xF05E
+        ld      hl,ENEMY3_SHOTS_FREE
         inc     (hl)
-L_7B75:                 ; 7B75
+; next ENEMY3_SHOTS record (0x12 bytes) and owner (0x1B bytes), ED41 in all
+ENEMY3_SHOT_NEXT:       ; 7B75
         ld      de,0x0012
         add     ix,de
         pop     hl
@@ -14828,11 +14835,12 @@ L_7B75:                 ; 7B75
         jp      nz,ENEMY3_SHOT_LOOP
         ret
 
-L_7B8C:                 ; 7B8C
-        .word   L_7B1E
-        .word   L_7B01
-        .word   L_7B1E
-        .word   L_7AD9
+; (IX+7) 0 and 2 ENEMY3_SHOT_SPRITE only, 1 ENEMY3_SHOT_R, 3 ENEMY3_SHOT_L
+ENEMY3_SHOT_MODES:      ; 7B8C
+        .word   ENEMY3_SHOT_SPRITE
+        .word   ENEMY3_SHOT_R
+        .word   ENEMY3_SHOT_SPRITE
+        .word   ENEMY3_SHOT_L
 ; NZ when this enemy may attack: (IX+14) b1, target alive, the MCU proximity bytes near enough (FC2B record: first under 8, second 40 or more) and open cells ahead
 ENEMY_ATTACK_CHECK:     ; 7B94
         bit     1,(ix+14)

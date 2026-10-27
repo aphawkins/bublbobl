@@ -99,6 +99,7 @@ ENEMY5_SLOTS  = { addr = 0xF113, note = "group 5, 0x19 bytes each (drew Monsta i
 POTION_P1 = { addr = 0xF60F, note = "1 = player 1 took a round 100 potion (POTIONS_RUN): their bubbles are lightning bubbles (POTION_BUBBLE)" }
 POTION_P2 = { addr = 0xF610, note = "as POTION_P1 for player 2" }
 SECRET_DEATH = { addr = 0xE730, note = "1 = the Skel-Monsta killed a player in the secret round (sub GHOST_HITS, only while E723 = 29); SECRET_DEATH_SLEEP sets b7, SECRET_EXIT_CHECK then ends the room; SECRET_ROUND_EXIT clears it" }
+ENEMY3_SHOTS_FREE = { addr = 0xF05E, note = "group 3 shots that may still be thrown: 2 when a group 3 enemy enters (ENEMY3_ENTER), ENEMY3_ATTACK_START takes one, ENEMY3_SHOT_END gives it back" }
 
 [main.code]
 RESET          = { addr = 0x0000, note = "DI / IM 2 / JP 00B9" }
@@ -386,7 +387,7 @@ CAPTIVES_INIT = { addr = 0x6755, note = "clears the two captive records (EB36, E
 CAPTIVES_STEP = { addr = 0x67B3, note = "Seen in MAME (--boss-pop): round 100, per frame from BUBBLES_TASK: HEART_CYCLE once a captive is freed, the two-player starfield once ROUND_WIPE is done, then each captive (6BF7/6BFF poses). Tamper check: the word at 0B2E must be IRQ_HANDLER, else PUSH IX" }
 ENEMY_ATTACK_CHECK = { addr = 0x7B94, note = "NZ when this enemy may attack: (IX+14) b1, target alive, the MCU proximity bytes near enough (FC2B record: first under 8, second 40 or more) and open cells ahead" }
 ENEMY_DEFEATED = { addr = 0x7BFD, note = "tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along a path from the table at 80C9" }
-ENEMY3_SHOT_LOOP = { addr = 0x7A42, note = "each ENEMY3_SHOTS record with its owner in ENEMY3_SLOTS" }
+ENEMY3_SHOT_LOOP = { addr = 0x7A42, note = "Seen in MAME (r42, round 42): each ENEMY3_SHOTS record with its owner in ENEMY3_SLOTS. A shot not yet thrown waits for the owner's (IX+24) b3 (ENEMY3_ATTACK_STEP), then takes the owner's facing (owner +8) as its mode, turns the owner to face its target (1 or 3, by ENEMY_PROX_B), starts at the owner's position with speed row owner +12 + 0A (at most 1E) and sets +0 b0; then ENEMY3_SHOT_FLY" }
 SPRITE_GRID_D = { addr = 0x14C2, note = "SPRITE_GRID with D already set" }
 SCREEN_FLASH = { addr = 0x18BB, note = "video off and on 7 times, 6 frames each" }
 MUL16 = { addr = 0x0DC1, note = "DE x BC -> DE:HL, read from the code" }
@@ -438,6 +439,13 @@ OBJ_STATE_19 = { addr = 0x15AF, note = "object A: byte 3 = 19. Probe code, never
 OBJ_STATE_1A = { addr = 0x15B8, note = "object A: byte 3 = 1A. Probe code, never run in MAME" }
 OBJ_STATE_1B = { addr = 0x15C1, note = "object A: byte 3 = 1B. Probe code, never run in MAME" }
 GRID_PROBE_ABOVE3 = { addr = 0x1636, note = "cells at X-8, X and X+8 on Y+8 of the object at IX; Z at the first wall; a Y+8 of D8-DF gives A = 0. Probe code, never run in MAME" }
+ENEMY3_SHOT_FLY = { addr = 0x7ABA, note = "Seen in MAME (r42, round 42): each frame of a thrown shot: ENEMY_SPEED_NEXT, then ENEMY3_SHOT_MODES by (IX+7); +0 b6 (it hit a wall) ends it" }
+ENEMY3_SHOT_L = { addr = 0x7AD9, note = "the shot flies left (IX+13) pixels, until ENEMY_WALL_L" }
+ENEMY3_SHOT_HIT_WALL = { addr = 0x7AF6, note = "the shot stops at a wall: +0 b6, so ENEMY3_SHOT_END runs on the next frame" }
+ENEMY3_SHOT_R = { addr = 0x7B01, note = "the shot flies right (IX+13) pixels, until ENEMY_WALL_R" }
+ENEMY3_SHOT_SPRITE = { addr = 0x7B1E, note = "ANIM_STEP 6 frames (faster in HURRY), held at the last; tiles 4C or 64 (by (IX+16) b3, every 8 frames) + 4 x (5 - frame), colour 1E, flipped by (IX+7) b1" }
+ENEMY3_SHOT_END = { addr = 0x7B61, note = "also while F44E: clears the shot, the owner's (IX+24) b3, hides it, ENEMY3_SHOTS_FREE + 1" }
+ENEMY3_SHOT_NEXT = { addr = 0x7B75, note = "next ENEMY3_SHOTS record (0x12 bytes) and owner (0x1B bytes), ED41 in all" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }
@@ -460,6 +468,7 @@ RED_RAMP         = { addr = 0x2895, size = 32, note = "16 colours, black to red"
 PALETTES_7_8     = { addr = 0x3CC2, size = 0x40 }
 PLAYER_ANIMS     = { addr = 0x4584, size = 0x60, note = "12 x 8 bytes: frame count, delay for each of 4 speeds (IX+2C), frame list pointer, flags (b0 one-shot, b1 list holds every frame; else first tile + 4 x frame)" }
 PLAYER_FRAMES    = { addr = 0x45E4, size = 0x0D, note = "first tiles for PLAYER_ANIMS" }
+ENEMY3_SHOT_MODES = { addr = 0x7B8C, note = "(IX+7) 0 and 2 ENEMY3_SHOT_SPRITE only, 1 ENEMY3_SHOT_R, 3 ENEMY3_SHOT_L" }
 
 [bank0.code]
 # a78-05-1.52 page 0 (file 0x0000-0x3FFF), mapped at 8000 when FB40 = 4.
@@ -599,7 +608,7 @@ ENEMY2_SHOT_WALL_PROBE = { addr = 0x8417, note = "on a cell column: cells at X-9
 ENEMY2_SHOT_BURST = { addr = 0x83D5, note = "state b2: ANIM_STEP frames A4 + 4 x frame; at the end ENEMY2_SHOT_END" }
 ENEMY2_SHOT_END = { addr = 0x83EC, note = "clears the owner's (+19) b4, hides the shot and its state" }
 ENEMY2_SHOT_NEXT = { addr = 0x8400, note = "next shot record (0x10 bytes), owner + 0x23" }
-ENEMY3_ATTACK_START = { addr = 0x981C, note = "when (F05E) is nonzero and the enemy is not attacking: stops, (IX+24) b4, (F05E) - 1" }
+ENEMY3_ATTACK_START = { addr = 0x981C, note = "Seen in MAME (r42): when ENEMY3_SHOTS_FREE is nonzero and the enemy is not attacking: stops, (IX+24) b4, ENEMY3_SHOTS_FREE - 1. Tamper check: the IM 2 entry (I, FC00) must be IRQ_VECTOR_ENTRY, else PUSH IY" }
 ENEMY3_ATTACK_STEP = { addr = 0x984D, note = "while (IX+24) b4: at (IX+5) = 2 sound 22, b4 off and b3 on (the shot)" }
 ENEMY2B_ATTACK_START = { addr = 0xA7E4, note = "group 2B as ENEMY2_ATTACK_START: unless (IX+7) b2 or (IX+24) b4, starts the throw" }
 ENEMY_GROUND_CHECK = { addr = 0x8EDF, note = "Z-flag result: probes the floor under the enemy (ENEMY_FLOOR_PROBE with (IX+14) b5 set, then GRID_PROBE_3); if none, Y - 1 and A = 1" }
@@ -672,6 +681,9 @@ ENEMY5_SPRITE = { addr = 0xA045, note = "ANIM_STEP 2 frames, colour 1C: tiles DC
 ENEMY5_NEXT = { addr = 0xA094, note = "next ENEMY5_SLOTS record (0x19 bytes), ED43 in all" }
 ENEMY5_STUCK_CHECK = { addr = 0xA0A3, note = "Seen in MAME (bt1, bub13): counts bounces in (IX+20); keeps Y, X at the first in (IX+16), (IX+15); at the third, if the enemy has not moved, the mode steps on (1 to 3 facing 3, 4 to 0 facing 1, else + 1) so it cannot stay stuck in a corner; then ROM_SUM_STEP_T" }
 ROM_SUM_STEP_T = { addr = 0x9241, note = "one byte a call of a sum of all of bank 0 (8000-BFFF), in EEAA (EEA7 starts it, EEA8 is the pointer); the end compares with EEAB and on a mismatch runs into ENEMY2_INIT with DE pushed" }
+ENEMY3_ENTER = { addr = 0x96D5, note = "ENEMY_ANGER; the first frame: mode 2 (falls in), ENEMY_ENTRY and ENEMY3_SHOTS_FREE = 2" }
+ENEMY3_MOVE = { addr = 0x9708, note = "Seen in MAME (r42): a group 3 enemy in play: ENEMY_SPEED, ENEMY_DROP until it is out (+0 b5), then the ENEMY3 mode by (IX+7); (IX+24) b0 shows ENEMY_ANIM_FLIP only" }
+ENEMY3_NEXT = { addr = 0x97DD, note = "next ENEMY3_SLOTS record (0x1B bytes), ED41 in all" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }

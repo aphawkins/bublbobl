@@ -2859,50 +2859,52 @@ L_96A3:                 ; 96A3
 L_96AD:                 ; 96AD
         push    af
         bit     3,(ix+0)
-        jp      nz,L_97DD
+        jp      nz,ENEMY3_NEXT
         ld      a,(ix+0)
         bit     2,a
         jp      nz,L_96F6
         bit     1,a
         jp      nz,L_9702
         call    ENEMY_HIT_REACT
-        jr      nc,L_96D5
+        jr      nc,ENEMY3_ENTER
         bit     3,(ix+24)
-        jp      z,L_97DD
+        jp      z,ENEMY3_NEXT
         set     5,(ix+24)
-        jp      L_97DD
+        jp      ENEMY3_NEXT
 
-L_96D5:                 ; 96D5
+; ENEMY_ANGER; the first frame: mode 2 (falls in), ENEMY_ENTRY and ENEMY3_SHOTS_FREE = 2
+ENEMY3_ENTER:           ; 96D5
         call    ENEMY_ANGER
         bit     0,(ix+0)
-        jr      nz,L_9708
+        jr      nz,ENEMY3_MOVE
         ld      (ix+7),0x02
         call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
-        ld      hl,0xF05E
+        ld      hl,ENEMY3_SHOTS_FREE
         ld      (hl),0x02
-        jp      L_97DD
+        jp      ENEMY3_NEXT
 
 L_96F6:                 ; 96F6
         call    ENEMY_TRAP_IF_B6
-        jp      c,L_97DD
+        jp      c,ENEMY3_NEXT
         call    ENEMY_ANGRY_IF_B5
-        jp      L_97DD
+        jp      ENEMY3_NEXT
 
 L_9702:                 ; 9702
         call    ENEMY_DEFEATED
-        jp      L_97DD
+        jp      ENEMY3_NEXT
 
-L_9708:                 ; 9708
+; Seen in MAME (r42): a group 3 enemy in play: ENEMY_SPEED, ENEMY_DROP until it is out (+0 b5), then the ENEMY3 mode by (IX+7); (IX+24) b0 shows ENEMY_ANIM_FLIP only
+ENEMY3_MOVE:            ; 9708
         call    OBJ_POS_LOAD
         ld      c,0x03
         call    ENEMY_HIT_REPORT
         call    ENEMY_REMOVE_IF_B7
         jp      nc,L_971D
         set     5,(ix+24)
-        jp      L_97DD
+        jp      ENEMY3_NEXT
 
 L_971D:                 ; 971D
         call    ENEMY_SPEED
@@ -2910,7 +2912,7 @@ L_971D:                 ; 971D
         call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
-        jp      nz,L_97DD
+        jp      nz,ENEMY3_NEXT
         bit     5,(ix+0)
         jr      nz,L_9739
         call    ENEMY_DROP
@@ -2932,7 +2934,7 @@ L_9750:                 ; 9750
 L_9753:                 ; 9753
         ld      c,0x1E
         call    ENEMY_ANIM_FLIP
-        jp      L_97DD
+        jp      ENEMY3_NEXT
 
 L_975B:                 ; 975B
         ld      a,(ix+7)
@@ -2990,14 +2992,14 @@ L_97AD:                 ; 97AD
         ld      de,(0x9891)
         ld      c,0x1E
         call    ENEMY_ANIM_SPRITE
-        jp      L_97DD
+        jp      ENEMY3_NEXT
 
 L_97BF:                 ; 97BF
         ld      hl,0x988B
         ld      de,(0x988F)
         ld      c,0x1E
         call    ENEMY_ANIM_SPRITE
-        jp      L_97DD
+        jp      ENEMY3_NEXT
 
 L_97CE:                 ; 97CE
         ld      hl,0x9889
@@ -3005,7 +3007,8 @@ L_97CE:                 ; 97CE
         ld      de,(0x988D)
         ld      c,0x1E
         call    ENEMY_ANIM_SPRITE
-L_97DD:                 ; 97DD
+; next ENEMY3_SLOTS record (0x1B bytes), ED41 in all
+ENEMY3_NEXT:            ; 97DD
         ld      de,0x001B
         add     ix,de
         pop     af
@@ -3038,7 +3041,7 @@ L_9812:                 ; 9812
         call    nz,ENEMY3_ATTACK_START
         ret
 
-; when (F05E) is nonzero and the enemy is not attacking: stops, (IX+24) b4, (F05E) - 1
+; Seen in MAME (r42): when ENEMY3_SHOTS_FREE is nonzero and the enemy is not attacking: stops, (IX+24) b4, ENEMY3_SHOTS_FREE - 1. Tamper check: the IM 2 entry (I, FC00) must be IRQ_VECTOR_ENTRY, else PUSH IY
 ENEMY3_ATTACK_START:    ; 981C
         bit     1,(ix+14)
         ret     z
@@ -3046,7 +3049,7 @@ ENEMY3_ATTACK_START:    ; 981C
         ret     nz
         bit     3,(ix+24)
         ret     nz
-        ld      a,(0xF05E)
+        ld      a,(ENEMY3_SHOTS_FREE)
         and     a
         jr      nz,L_9832
         ret
@@ -3054,7 +3057,7 @@ ENEMY3_ATTACK_START:    ; 981C
 L_9832:                 ; 9832
         call    IX_SPEED_CLEAR
         set     4,(ix+24)
-        ld      hl,0xF05E
+        ld      hl,ENEMY3_SHOTS_FREE
         dec     (hl)
         ld      a,i
         ld      h,a

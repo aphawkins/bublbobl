@@ -668,6 +668,14 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `ENEMY5_STUCK_CHECK` compares its position over three bounces and steps the mode on if it has
   not moved, so it cannot stick in a corner; it also runs `ROM_SUM_STEP_T`, a sum of all of
   bank 0.
+- Group 3's shots (2026-10-27): no trace had a group 3 enemy, so a new run, `r42` (`trace.py game1p
+  --round 42 --seconds 120 --cpus main`, round 42 has seven), is now merged into the class maps.
+  Everything named here ran in it. A group 3 enemy walking or falling may throw
+  (`ENEMY_ATTACK_CHECK`, `ENEMY3_ATTACK_START`) while `ENEMY3_SHOTS_FREE` (`F05E`) is nonzero:
+  it starts at 2 when the group enters, a throw takes one and `ENEMY3_SHOT_END` gives it back,
+  so at most two fireballs are out. `ENEMY3_SHOT_LOOP` launches the shot from the owner in the
+  owner's facing, and `ENEMY3_SHOT_FLY` moves it left or right (`ENEMY3_SHOT_L`/`_R`) until a
+  wall. `97EC` (a probe region) has no callers and was left unnamed.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -679,7 +687,7 @@ Started (2026-10-17) with the sub CPU, which is now done:
      (2026-10-27): the 16 regions left are code MAME never ran, and the score code ran.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
-     The ghost and groups 4 and 5 are done (2026-10-27); groups 4 and 5 have no attack.
+     The ghost and groups 3, 4 and 5 are done (2026-10-27); groups 4 and 5 have no attack.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

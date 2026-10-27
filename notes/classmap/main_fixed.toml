@@ -2166,13 +2166,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x79E9
-end = 0x79F6
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x7A27
 end = 0x7A32
 kind = "code"
 source = "trace"
@@ -2180,13 +2173,27 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x7A35
-end = 0x7A39
+end = 0x7AA7
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x7BFD
+start = 0x7AAC
+end = 0x7B30
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7B34
+end = 0x7B8B
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7B94
 end = 0x7C08
 kind = "code"
 source = "trace"
