@@ -702,7 +702,7 @@ Started (2026-10-17) with the sub CPU, which is now done:
   score for walking, each jump (500) and each bubble (100); 14 blows two bubbles at a time 16
   times; 15, 16 and 18 combine them. 04 freezes the enemies (`TIMER_RUN`), 06-08 skip 3, 5 or 7
   rounds (`E350`) and 34 skips to round 70 at top difficulty; 2A-2C choose the end-of-round
-  item. Kinds 19 (`E720`) and 1B (`F676`) set flags not yet understood.
+  item. Kind 1B (`F676`) sets a flag not yet understood (kind 19 is `TAKE_KILL_ALL_SHAKE`, below).
 - Bank 2's helpers (2026-10-27): every routine that something in bank 2 calls now has a name.
   Among them, the water (`WATER_CARRY` carries a player who is not pressing jump,
   `WATER_ENEMY_HITS` and `WATER_ROCK_HITS` sweep enemies and group 2's rocks away), the fire
@@ -738,6 +738,14 @@ Started (2026-10-17) with the sub CPU, which is now done:
   once (2 = 2000, doubling up to 7 = 64000), with the score shown over the player.
   `PLAYER_DEATH_STEP` is the hit player's spin, and `PLAYER_WALK_SCORE` the walking points. One
   more ROM sum, `ROM_SUM_STEP_V` (every 8th byte from `598A`). Still byte-exact; 43 calls left.
+- The objects (2026-10-27), read from the code: `OBJECTS_TASK`'s three pairs. `ROUND_ENTRY_INIT`
+  and `_RUN`: at a round's start each player's bubble floats from where the player was to the
+  start corner (Y 28, X 10 or D0, `ROUND_ENTRY_MOVE`) and bursts, and then the round's tasks
+  start. `KILL_ALL_SHAKE_INIT` and `_RUN` answer special kind 19 (`E720`, now
+  `TAKE_KILL_ALL_SHAKE`): every enemy is beaten, the screen shakes for 0x30 frames, and each enemy
+  scores 3000. `RUSH_COUNT_INIT` and `_RUN` run the pickup rushes' TIME and counts
+  (`RUSH_TIME_STEP`, `RUSH_LABELS_DRAW`); when every pickup is taken each player scores 50000 and
+  the one with more another 50000. Still byte-exact; 33 calls left.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).

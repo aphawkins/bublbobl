@@ -1074,8 +1074,8 @@ TAKE_ALL_BUBBLE:        ; 898E
         call    TAKE_BUBBLE_SPEED
         jp      TAKE_BUBBLE_RATE
 
-; special kind 19: E720 = 1, E601 + 1; meaning of E720 not known. Tamper check: byte 0005 must be START's high byte, else it runs on into TAKE_STARS with two words popped
-TAKE_19:                ; 8997
+; special kind 19: E720 = 1 starts KILL_ALL_SHAKE_RUN; E601 + 1. Tamper check: byte 0005 must be START's high byte, else it runs on into TAKE_STARS with two words popped
+TAKE_KILL_ALL_SHAKE:    ; 8997
         ld      hl,0xE720
         ld      (hl),0x01
         ld      hl,0xE601
@@ -1358,7 +1358,7 @@ SPECIAL_EFFECTS:        ; 8AFF
         .word   TAKE_ALL_BOOSTS
         .word   TAKE_BOMB
         .word   TAKE_ALL_BUBBLE
-        .word   TAKE_19
+        .word   TAKE_KILL_ALL_SHAKE
         .word   TAKE_STARS
         .word   TAKE_1B
         .word   TAKE_KILL_ALL_B

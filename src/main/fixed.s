@@ -7436,7 +7436,7 @@ PALETTES_7_8:           ; 3CC2
 ; task 3: each frame calls the bank-2 per-object updates (A59B, A2FC, 936A ...), then starts task 4
 OBJECTS_TASK:           ; 3DF0
         rst     0x20
-        call    L_4C35
+        call    ROUND_ENTRY_INIT
         ld      a,0x02
         call    BANK_SELECT
         call    0xA59B
@@ -7451,13 +7451,13 @@ OBJECTS_TASK:           ; 3DF0
         call    0xA820
         call    P1_REC_INIT
         call    P2_REC_INIT
-        call    L_5776
+        call    RUSH_COUNT_INIT
         call    0x9F76
         call    0xB9C4
         call    0x8BA7
         call    0xAC80
         call    BANK_RESTORE
-        call    L_4F52
+        call    KILL_ALL_SHAKE_INIT
         ld      hl,0xF448
         ld      (hl),0x00
         ld      a,(0xF536)
@@ -7483,7 +7483,7 @@ L_3E52:                 ; 3E52
 ; OBJECTS_TASK's per-frame loop: the page-2 RUN routines, PLAYERS_STEP, then back to the yield
 OBJECTS_FRAME:          ; 3E5B
         rst     0x20
-        call    L_4D13
+        call    ROUND_ENTRY_RUN
         ld      a,0x02
         call    BANK_SELECT
         call    0x8499
@@ -7499,14 +7499,14 @@ OBJECTS_FRAME:          ; 3E5B
         call    0x8DFF
         call    0x8FA6
         call    0xA829
-        call    L_577F
+        call    RUSH_COUNT_RUN
         call    0x9F7F
         call    0xB9CD
         call    0x92CF
         call    0x8BB0
         call    0xACBA
         call    BANK_RESTORE
-        call    L_4F5B
+        call    KILL_ALL_SHAKE_RUN
         call    0xBF48
         call    PLAYERS_STEP
         jp      OBJECTS_FRAME
@@ -9020,7 +9020,8 @@ L_4C0E:                 ; 4C0E
         ret
 
         .incbin "main_fixed.bin", 0x4C1B, 0x001A
-L_4C35:                 ; 4C35
+; OBJECTS_TASK at a round's start: E6FF-E71A cleared, bank 2 9C7D; E71A = E5D7 (who plays). Each playing player's bubble (records of 0x0C at E700 and E70C, 4 sprites at E2C5 / E2B5, gfx 18 / 19) starts where the player was (P1_REC or P2_REC +1, +2; Y 50 and X 48 or B0 in round 1 and the attract loop), with (IX+10) b0 for Y 20 and over, b1 for X under 28
+ROUND_ENTRY_INIT:       ; 4C35
         ld      hl,0xE6FF
         ld      bc,0x001C
         call    ZERO_BC
@@ -9052,7 +9053,7 @@ L_4C71:                 ; 4C71
         ld      (ix+3),l
         ld      (ix+4),h
         push    hl
-        call    L_4EC1
+        call    ROUND_ENTRY_SPRITES
         pop     hl
         ld      de,0x0018
         ld      b,0x04
@@ -9095,7 +9096,7 @@ L_4CD2:                 ; 4CD2
         ld      (ix+3),l
         ld      (ix+4),h
         push    hl
-        call    L_4EC1
+        call    ROUND_ENTRY_SPRITES
         pop     hl
         ld      de,0x0019
         ld      b,0x04
@@ -9117,7 +9118,8 @@ L_4D0B:                 ; 4D0B
         set     0,(ix+0)
         ret
 
-L_4D13:                 ; 4D13
+; OBJECTS_FRAME until E6FF is negative: bank 2 9D35, then each bubble: b0 the start animation (4EE3), b1 floating (4EF7, ROUND_ENTRY_MOVE) until (IX+9) = 3, then E718 marks it; once all are in, unless E351 or F536 = 1, b2 the burst (4F03), and E719 marks it. When every playing player's bubble has burst: E6FF = FF, P1_REC_INIT / P2_REC_INIT, task 5 started (and task 4 in round 1, round 100 or with F536 negative), a 2-frame sleep, SUB_CHECKS = 49
+ROUND_ENTRY_RUN:        ; 4D13
         ld      a,(0xE6FF)
         and     a
         ret     m
@@ -9153,7 +9155,7 @@ L_4D3D:                 ; 4D3D
 L_4D57:                 ; 4D57
         ld      b,0x04
         call    SPRITE_LIST
-        call    L_4E4A
+        call    ROUND_ENTRY_MOVE
         jp      L_4DFF
 
 L_4D62:                 ; 4D62
@@ -9175,7 +9177,7 @@ L_4D6D:                 ; 4D6D
 L_4D85:                 ; 4D85
         ld      b,0x04
         call    SPRITE_LIST
-        call    L_4E4A
+        call    ROUND_ENTRY_MOVE
         ld      a,(ix+9)
         cp      0x03
         jr      nz,L_4DFF
@@ -9271,7 +9273,8 @@ L_4E41:                 ; 4E41
         ld      (hl),0x49
         ret
 
-L_4E4A:                 ; 4E4A
+; every 2nd frame with MCU_READY b5: the bubble's 4 sprites 2 pixels down (or up with (IX+10) b1) until Y 28 or 29 ((IX+9) b0), and 2 pixels right (or left with (IX+10) b0) until X 10 (player 1) or D0 (player 2) ((IX+9) b1)
+ROUND_ENTRY_MOVE:       ; 4E4A
         ld      a,(MCU_READY)
         bit     5,a
         ret     z
@@ -9354,7 +9357,8 @@ L_4EB8:                 ; 4EB8
         djnz    L_4EB8
         ret
 
-L_4EC1:                 ; 4EC1
+; the 4 sprites at HL at the bubble's Y, X plus the offsets at 4EDB, attribute 14
+ROUND_ENTRY_SPRITES:    ; 4EC1
         ld      b,0x04
         ld      de,0x4EDB
 L_4EC6:                 ; 4EC6
@@ -9415,12 +9419,14 @@ L_4F44:                 ; 4F44
         cp      (hl)
         ret     z
         push    hl
-L_4F52:                 ; 4F52
+; OBJECTS_TASK: E720-E722 cleared
+KILL_ALL_SHAKE_INIT:    ; 4F52
         ld      hl,0xE720
         ld      bc,0x0003
         jp      ZERO_BC
 
-L_4F5B:                 ; 4F5B
+; OBJECTS_FRAME, not in the attract loop, once E720 (TAKE_KILL_ALL_SHAKE) is set: every enemy beaten (ENEMY_HITS_STATE 8), tasks 3, 5, 4 and 2 stopped, TILES_SAVE; then for 0x30 frames (E721) every sprite moves 4 down to Y 8 (sound 23), then 4 up to F8, and back; at the end the sprites are cleared, the tasks restarted, TILES_RESTORE, and 3000 for each enemy (ENEMY_TOTAL) to player F460. Read from the code. Tamper checks: IRQ_VECTOR_ENTRY must be IRQ_HANDLER, else I + 1; bit 3 of 0002 clear runs RST 28; the byte 3 before FETCH0_DEST must be 37, else PUSH DE
+KILL_ALL_SHAKE_RUN:     ; 4F5B
         ld      a,(ATTRACT)
         and     a
         ret     nz
@@ -10375,12 +10381,14 @@ L_576F:                 ; 576F
         ld      (0xE734),ix
         jp      BANK_RESTORE
 
-L_5776:                 ; 5776
+; OBJECTS_TASK: E737-E741 cleared
+RUSH_COUNT_INIT:        ; 5776
         ld      hl,0xE737
         ld      bc,0x000B
         jp      ZERO_BC
 
-L_577F:                 ; 577F
+; OBJECTS_FRAME while E737 (the TAKE_RUSH_* kinds set it) is positive, by E738: 0 starts it (task 4 stopped, the enemies cleared, ROUND_END_CLEAR, sound 32, RUSH_LABELS_DRAW, TIME at D80E, E741 = 30 seconds); b0 counts (BONUS_COUNT_DRAW, RUSH_TIME_STEP) until E73A + E73B, the players' pickups, equal E73C, the pickups laid (then E73E = 1: all taken); b1 each player's count as sprites; b2 the banner slides in to Y 70, and with all taken each playing player scores 50000 and the one with more (both on a tie) 50000 more; b3 waits 0x96 frames; b4 slides it out over 0xB4 frames, then ENEMY_TOTAL = 0 (the round ends), E737 = FF, sound 30. Tamper checks: FC85 b0 clear runs EX (SP),HL; byte 0002 not 5E sleeps the task
+RUSH_COUNT_RUN:         ; 577F
         ld      a,(0xE737)
         and     a
         ret     z
@@ -10411,7 +10419,7 @@ L_577F:                 ; 577F
         ld      (hl),0x01
         ld      c,0x32
         call    SOUND_PUSH
-        call    L_5A0D
+        call    RUSH_LABELS_DRAW
         call    BONUS_COUNT_DRAW
         ld      hl,0xE738
         ld      (hl),0x01
@@ -10425,7 +10433,7 @@ L_577F:                 ; 577F
         .incbin "main_fixed.bin", 0x57DF, 0x0005
 L_57E4:                 ; 57E4
         call    BONUS_COUNT_DRAW
-        call    L_5AD3
+        call    RUSH_TIME_STEP
         call    ROM_SUM_STEP_B
         ld      a,(0xE73C)
         and     a
@@ -10712,7 +10720,8 @@ L_59DA:                 ; 59DA
         call    SOUND_PUSH
         ret
 
-L_5A0D:                 ; 5A0D
+; RUSH_COUNT_RUN: tiles 90-97 down D008 and 9B-A2 down D00A, colour 1D
+RUSH_LABELS_DRAW:       ; 5A0D
         ld      b,0x08
         ld      e,0x90
         ld      hl,0xD008
@@ -10832,7 +10841,8 @@ TILE_PAIR_PUT:          ; 5AC9
         ld      (hl),e
         ret
 
-L_5AD3:                 ; 5AD3
+; RUSH_COUNT_RUN: every 60 frames (E740) the seconds E741 - 1 (not below 0), drawn with DECIMAL3_DRAW at D98E
+RUSH_TIME_STEP:         ; 5AD3
         ld      hl,0xE740
         inc     (hl)
         ld      a,(hl)
