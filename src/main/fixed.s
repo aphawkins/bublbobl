@@ -1743,7 +1743,7 @@ COIN_SCAN:              ; 0BE4
 L_0BF2:                 ; 0BF2
         push    af
         push    bc
-        call    L_0C99
+        call    INPUT_EDGE
         pop     bc
         pop     af
         sla     a
@@ -1841,7 +1841,8 @@ L_0C94:                 ; 0C94
         ld      (0xE368),a
         ret
 
-L_0C99:                 ; 0C99
+; COIN_SCAN, one switch: A b7 the new state, (HL) the old (replaced by A); (HL+1) = 1 if the old b7 was clear, + 2 if the new b7 is set; HL + 2
+INPUT_EDGE:             ; 0C99
         ld      e,a
         ld      d,(hl)
         ld      (hl),a
@@ -2073,11 +2074,11 @@ L_0DBD:                 ; 0DBD
 ; DE x BC -> DE:HL, read from the code
 MUL16:                  ; 0DC1
         ld      a,e
-        call    L_0DD9
+        call    MUL_A_BC
         ex      af,af'
         push    hl
         ld      a,d
-        call    L_0DDB
+        call    MUL_A_BC_E
         ld      d,a
         ex      af,af'
         add     a,h
@@ -2093,9 +2094,11 @@ L_0DD4:                 ; 0DD4
         inc     de
         ret
 
-L_0DD9:                 ; 0DD9
+; A:HL = A x BC (8 x 16 bit, shift and add); E = 0
+MUL_A_BC:               ; 0DD9
         ld      e,0x00
-L_0DDB:                 ; 0DDB
+; MUL_A_BC with E already 0 (MUL16's second call)
+MUL_A_BC_E:             ; 0DDB
         ld      h,e
         ld      l,e
         add     a,a
@@ -2147,12 +2150,13 @@ L_0E06:                 ; 0E06
         ret
 
         .incbin "main_fixed.bin", 0x0E0C, 0x0016
-L_0E22:                 ; 0E22
+; carry when the 16-bit RAND_STATE is below the word whose high byte is at 0E30 + A (CMP_DOWN, 2 bytes); SPAWN_BUBBLE calls it with A = 25
+RAND_BELOW:             ; 0E22
         ld      hl,0x0E30
         call    ADD_HL_A
         ld      de,0xE380
         ld      b,0x02
-        jp      L_0E91
+        jp      CMP_DOWN
 
         .incbin "main_fixed.bin", 0x0E30, 0x002E
 ; scrambles the 16-bit RAND_STATE (shift left, feedback from bits 15 and 4)
@@ -2196,19 +2200,20 @@ SCORE_CMP:              ; 0E85
         push    de
         push    hl
         ld      b,0x03
-        call    L_0E91
+        call    CMP_DOWN
         pop     hl
         pop     de
         pop     bc
         ret
 
-L_0E91:                 ; 0E91
+; compares B bytes from DE and HL downwards, stopping at the first that differs: C = (DE) < (HL), Z = all equal
+CMP_DOWN:               ; 0E91
         ld      a,(de)
         cp      (hl)
         ret     nz
         dec     de
         dec     hl
-        djnz    L_0E91
+        djnz    CMP_DOWN
         ret
 
         .incbin "main_fixed.bin", 0x0E99, 0x0001
@@ -3449,16 +3454,16 @@ GRID_DRAW_START:        ; 18E7
         ld      (GRID_DRAW_ROW),a
         jp      LOAD_GRID_EDGES
 
-; draws ROUND_GRID rows until GRID_DRAW_ROW = 0x20 (one row if E5C3 is set): clear the row's tiles, DRAW_GRID_ROW, L_6065, SHADE_GRID_ROW, L_1A93; after row 31, SIDE_WALL_ROW for rows 30 and 31
+; draws ROUND_GRID rows until GRID_DRAW_ROW = 0x20 (one row if E5C3 is set): clear the row's tiles, DRAW_GRID_ROW, L_6065, SHADE_GRID_ROW, SIDE_WALL_ROW_LAG; after row 31, SIDE_WALL_ROW for rows 30 and 31
 GRID_DRAW_NEXT:         ; 18EE
         ld      a,(GRID_DRAW_ROW)
         cp      0x20
         ret     z
-        call    L_1942
+        call    GRID_ROW_CLEAR
         call    DRAW_GRID_ROW
         call    ROM_SUM_STEP_B
         call    SHADE_GRID_ROW
-        call    L_1A93
+        call    SIDE_WALL_ROW_LAG
         ld      hl,GRID_DRAW_ROW
         inc     (hl)
         ld      a,(hl)
@@ -3498,7 +3503,8 @@ L_193F:                 ; 193F
         ld      h,a
         ret
 
-L_1942:                 ; 1942
+; GRID_DRAW_NEXT: the tile row GRID_DRAW_ROW cleared in all 32 columns from CD00
+GRID_ROW_CLEAR:         ; 1942
         ld      a,(GRID_DRAW_ROW)
         add     a,a
         ld      hl,0xCD00
@@ -3686,7 +3692,8 @@ L_1A87:                 ; 1A87
         ld      (hl),0xF4
         ret
 
-L_1A93:                 ; 1A93
+; GRID_DRAW_NEXT: SIDE_WALL_ROW for the row 2 above GRID_DRAW_ROW (none for rows 0 and 1)
+SIDE_WALL_ROW_LAG:      ; 1A93
         ld      a,(GRID_DRAW_ROW)
         sub     0x02
         ret     c
@@ -3697,10 +3704,11 @@ SIDE_WALL_ROW:          ; 1A99
         ld      d,0x00
         push    de
         ld      iy,0xCD00
-        call    L_1AAA
+        call    SIDE_WALL_BLOCK
         pop     de
         ld      iy,0xD480
-L_1AAA:                 ; 1AAA
+; SIDE_WALL_ROW, at IY + DE: where the tile word is the wall tile (GRID_WALL_TILE + 4), a 2 x 2 side-wall block from GRID_WALL_TILE (+ 2 on odd rows); else the 2 x 2 is cleared. Tamper check: MCU_READY b1 clear runs on into TITLE_INIT
+SIDE_WALL_BLOCK:        ; 1AAA
         add     iy,de
         call    GRID_WALL_TILE
         ex      de,hl
@@ -5868,7 +5876,8 @@ L_2FD7:                 ; 2FD7
         ex      de,hl
         ld      bc,0x0003
         lddr
-L_2FE4:                 ; 2FE4
+; SCORE_DRAW of HIGH_SCORE at D006, then ROM_SUM_STEP_Q
+HIGH_SCORE_DRAW:        ; 2FE4
         ld      hl,0xD006
         ld      de,0xE64E
         call    SCORE_DRAW
@@ -6035,7 +6044,7 @@ ROUND_NUMBER_DRAW:      ; 30DF
         ld      a,(ATTRACT)
         and     a
         ret     nz
-        call    L_3142
+        call    ROUND_DIGIT_COLOUR
         ld      (0xD509),a
         ld      (0xD50B),a
         ld      (0xD549),a
@@ -6078,7 +6087,8 @@ L_3125:                 ; 3125
         ret     z
         pop     de
         pop     hl
-L_3142:                 ; 3142
+; ROUND_NUMBER_DRAW: A = 3D when ROUND_MAIN is odd (an even round), else 39: the round number's attribute
+ROUND_DIGIT_COLOUR:     ; 3142
         ld      a,(ROUND_MAIN)
         ld      e,a
         ld      a,0x3D
@@ -6339,7 +6349,7 @@ SCORE_LABELS_DRAW:      ; 3395
         ld      de,0xCD06
         ld      c,0x00
         call    PRINT_TEXT
-        call    L_2FE4
+        call    HIGH_SCORE_DRAW
         call    P1_LABEL_DRAW
 ; text at 33DE to D244
 P2_LABEL_DRAW:          ; 33B1
@@ -6731,9 +6741,9 @@ L_373B:                 ; 373B
         or      b
         jp      z,L_3756
         push    bc
-        call    L_381E
-        call    L_383C
-        call    L_385A
+        call    ENTRY_LETTER_NEXT
+        call    ENTRY_LETTER_PREV
+        call    ENTRY_LETTER_PICK
         pop     bc
         ld      a,(0xE678)
         cp      0x03
@@ -6858,7 +6868,8 @@ HIGH_ENTRY_PTR:         ; 3811
         add     hl,de
         ret
 
-L_381E:                 ; 381E
+; INITIALS_ENTRY: the current player's input (IN1_COPY or IN2_COPY) b1 clear: E679 + 1 (0x1C wraps to 0), ENTRY_LETTER_DRAW
+ENTRY_LETTER_NEXT:      ; 381E
         ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3829
@@ -6878,7 +6889,8 @@ L_382C:                 ; 382C
         ld      (hl),0x00
         jr      ENTRY_LETTER_DRAW
 
-L_383C:                 ; 383C
+; INITIALS_ENTRY: input b0 clear: E679 - 1 (below 0 wraps to 1B), ENTRY_LETTER_DRAW
+ENTRY_LETTER_PREV:      ; 383C
         ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3847
@@ -6898,7 +6910,8 @@ L_384A:                 ; 384A
         ld      (hl),0x1B
         jr      ENTRY_LETTER_DRAW
 
-L_385A:                 ; 385A
+; INITIALS_ENTRY: input b4 or b5 clear: INITIALS_STORE (once a press, E67A); both released clears E67A
+ENTRY_LETTER_PICK:      ; 385A
         ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3865
@@ -13108,7 +13121,7 @@ L_6E16:                 ; 6E16
         ld      hl,0xE75B
         inc     (hl)
         ld      a,0x25
-        call    L_0E22
+        call    RAND_BELOW
         jr      nc,L_6E71
         ld      a,(0xF676)
         and     a
@@ -15186,7 +15199,7 @@ L_7DB1:                 ; 7DB1
         jp      L_7E8C
 
 L_7DC4:                 ; 7DC4
-        call    L_7F79
+        call    DEFEATED_PATH_STEP
         jp      nz,L_7E8C
         set     6,(ix+14)
         jp      L_7E8C
@@ -15237,7 +15250,7 @@ L_7E31:                 ; 7E31
         jp      L_7E8C
 
 L_7E38:                 ; 7E38
-        call    L_7F79
+        call    DEFEATED_PATH_STEP
         jp      nz,L_7E8C
         set     6,(ix+14)
         jp      L_7E8C
@@ -15398,7 +15411,8 @@ L_7F68:                 ; 7F68
         call    SPRITE
         ret
 
-L_7F79:                 ; 7F79
+; ENEMY_DEFEATED: one step of the path at (IX+16) (PATH_PTR, step (IX+18); mirrored 20 - n with (IX+8) b1): b0 moves Y (b3 down, STEP_TO_8_DOWN, else STEP_TO_8_UP), b4 X (b7 left). 99 ends: Z
+DEFEATED_PATH_STEP:     ; 7F79
         ld      l,(ix+16)
         ld      h,(ix+17)
         ld      a,(hl)
@@ -15426,7 +15440,7 @@ L_7F90:                 ; 7F90
         jr      L_7FAE
 
 L_7FAB:                 ; 7FAB
-        call    L_7FF8
+        call    STEP_TO_8_DOWN
 L_7FAE:                 ; 7FAE
         bit     4,b
         jr      z,L_7FC0
@@ -15438,7 +15452,7 @@ L_7FAE:                 ; 7FAE
         jr      L_7FC0
 
 L_7FBD:                 ; 7FBD
-        call    L_7FF8
+        call    STEP_TO_8_DOWN
 L_7FC0:                 ; 7FC0
         inc     (ix+18)
         inc     de
@@ -15478,7 +15492,8 @@ STEP_TO_8_UP:           ; 7FE7
         inc     (hl)
         ret
 
-L_7FF8:                 ; 7FF8
+; STEP_TO_8_UP downwards: (HL) - 1, stopping at a multiple of 8. The code runs past 7FFF: its AND's operand and the rest (RET Z, the (IX+0) b4 test, a third DEC) are the first bytes of the bank at 8000, so it works only with bank 0 in (bank 0 starts 07 C8 DD ..)
+STEP_TO_8_DOWN:         ; 7FF8
         dec     (hl)
         ld      a,(hl)
         and     0x07

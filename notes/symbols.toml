@@ -251,7 +251,7 @@ TILES_RESTORE = { addr = 0x0AA4, note = "E352 = 0; copies D504 back to CD04, the
 TILE_COPY = { addr = 0x0ACA, note = "32 rows of 4 bytes from HL to DE, rows 0x40 apart" }
 ROM_SUM_STEP_A = { addr = 0x0AE3, note = "each call adds one byte of every 4th (0004, 0008 ... 0C04) into E35C; when done compares with E35D" }
 GRID_DRAW_START = { addr = 0x18E7, note = "GRID_DRAW_ROW = 0, then LOAD_GRID_EDGES" }
-GRID_DRAW_NEXT = { addr = 0x18EE, note = "draws ROUND_GRID rows until GRID_DRAW_ROW = 0x20 (one row if E5C3 is set): clear the row's tiles, DRAW_GRID_ROW, L_6065, SHADE_GRID_ROW, L_1A93; after row 31, SIDE_WALL_ROW for rows 30 and 31" }
+GRID_DRAW_NEXT = { addr = 0x18EE, note = "draws ROUND_GRID rows until GRID_DRAW_ROW = 0x20 (one row if E5C3 is set): clear the row's tiles, DRAW_GRID_ROW, L_6065, SHADE_GRID_ROW, SIDE_WALL_ROW_LAG; after row 31, SIDE_WALL_ROW for rows 30 and 31" }
 ROM_SUM_STEP_B = { addr = 0x6065, note = "as ROM_SUM_STEP_A, one byte of every 2nd from 2642 to 731B into EB2F, then compared with EB30" }
 ROUND_NUMBER_DRAW = { addr = 0x30DF, note = "tiles at D508/D548: the round number ROUND_MAIN + 1 (tens, units); nothing in the attract loop; round 100 has its own tiles (8A)" }
 BOSS_RECS_INIT = { addr = 0x0339, note = "round 100: 16 four-byte records at E2F5, each a zero, a word from the table at 0352 and a zero" }
@@ -512,6 +512,21 @@ BLOW_REQUEST_TAKE = { addr = 0x634A, note = "a free bubble slot: takes the blow 
 CAPTIVE_PLAYER_WALK = { addr = 0x69BE, note = "round 100 ending, the captive at IX with (IX+12) set: its player's sprite (E2C5 for captive 0, E2B5 for 1) drops to Y 18, then once +0 b7 walks to X 40 (player 1) or B0 (player 2), facing (E699 / E6CB) the way it walks, frames 44 + 4 x step (every 5 frames, 4 steps), colour (IX+12). There: with two players +0 b6 is set and the players face each other; with one, a captive whose player is not playing gets CAPTIVE_HEART" }
 CAPTIVES_SIDE_TILES = { addr = 0x6B9F, note = "round 100, two players only: the 4 x 0A tiles at 6C5F at D560 and at DA20, colour 1C. Not checked in MAME which picture this is" }
 CAPTIVES_MID_TILES = { addr = 0x6BC2, note = "round 100, two players only: the 2 x 14 tiles at 6C87 at D690, colour 1C, or 20 while F2A3 is set. Not checked in MAME" }
+INPUT_EDGE = { addr = 0x0C99, note = "COIN_SCAN, one switch: A b7 the new state, (HL) the old (replaced by A); (HL+1) = 1 if the old b7 was clear, + 2 if the new b7 is set; HL + 2" }
+MUL_A_BC = { addr = 0x0DD9, note = "A:HL = A x BC (8 x 16 bit, shift and add); E = 0" }
+MUL_A_BC_E = { addr = 0x0DDB, note = "MUL_A_BC with E already 0 (MUL16's second call)" }
+RAND_BELOW = { addr = 0x0E22, note = "carry when the 16-bit RAND_STATE is below the word whose high byte is at 0E30 + A (CMP_DOWN, 2 bytes); SPAWN_BUBBLE calls it with A = 25" }
+CMP_DOWN = { addr = 0x0E91, note = "compares B bytes from DE and HL downwards, stopping at the first that differs: C = (DE) < (HL), Z = all equal" }
+GRID_ROW_CLEAR = { addr = 0x1942, note = "GRID_DRAW_NEXT: the tile row GRID_DRAW_ROW cleared in all 32 columns from CD00" }
+SIDE_WALL_ROW_LAG = { addr = 0x1A93, note = "GRID_DRAW_NEXT: SIDE_WALL_ROW for the row 2 above GRID_DRAW_ROW (none for rows 0 and 1)" }
+SIDE_WALL_BLOCK = { addr = 0x1AAA, note = "SIDE_WALL_ROW, at IY + DE: where the tile word is the wall tile (GRID_WALL_TILE + 4), a 2 x 2 side-wall block from GRID_WALL_TILE (+ 2 on odd rows); else the 2 x 2 is cleared. Tamper check: MCU_READY b1 clear runs on into TITLE_INIT" }
+HIGH_SCORE_DRAW = { addr = 0x2FE4, note = "SCORE_DRAW of HIGH_SCORE at D006, then ROM_SUM_STEP_Q" }
+ROUND_DIGIT_COLOUR = { addr = 0x3142, note = "ROUND_NUMBER_DRAW: A = 3D when ROUND_MAIN is odd (an even round), else 39: the round number's attribute" }
+ENTRY_LETTER_NEXT = { addr = 0x381E, note = "INITIALS_ENTRY: the current player's input (IN1_COPY or IN2_COPY) b1 clear: E679 + 1 (0x1C wraps to 0), ENTRY_LETTER_DRAW" }
+ENTRY_LETTER_PREV = { addr = 0x383C, note = "INITIALS_ENTRY: input b0 clear: E679 - 1 (below 0 wraps to 1B), ENTRY_LETTER_DRAW" }
+ENTRY_LETTER_PICK = { addr = 0x385A, note = "INITIALS_ENTRY: input b4 or b5 clear: INITIALS_STORE (once a press, E67A); both released clears E67A" }
+DEFEATED_PATH_STEP = { addr = 0x7F79, note = "ENEMY_DEFEATED: one step of the path at (IX+16) (PATH_PTR, step (IX+18); mirrored 20 - n with (IX+8) b1): b0 moves Y (b3 down, STEP_TO_8_DOWN, else STEP_TO_8_UP), b4 X (b7 left). 99 ends: Z" }
+STEP_TO_8_DOWN = { addr = 0x7FF8, note = "STEP_TO_8_UP downwards: (HL) - 1, stopping at a multiple of 8. The code runs past 7FFF: its AND's operand and the rest (RET Z, the (IX+0) b4 test, a third DEC) are the first bytes of the bank at 8000, so it works only with bank 0 in (bank 0 starts 07 C8 DD ..)" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }

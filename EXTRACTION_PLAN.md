@@ -760,9 +760,17 @@ Started (2026-10-17) with the sub CPU, which is now done:
   100 ending `CAPTIVE_PLAYER_WALK` walks each player to their captive (X 40 or B0), and
   `CAPTIVES_SIDE_TILES` and `_MID_TILES` draw two-player tiles not yet matched to the screen.
   Still byte-exact; 15 calls left, all small helpers.
+- The last helpers (2026-10-27): `INPUT_EDGE` (the coin switches), `MUL_A_BC`, `CMP_DOWN`,
+  `RAND_BELOW`, `GRID_ROW_CLEAR`, `SIDE_WALL_ROW_LAG`, `SIDE_WALL_BLOCK`, `HIGH_SCORE_DRAW`,
+  `ROUND_DIGIT_COLOUR`, the initials entry's `ENTRY_LETTER_NEXT`/`_PREV`/`_PICK`, and the
+  defeated enemy's `DEFEATED_PATH_STEP`. `STEP_TO_8_DOWN` (`7FF8`) runs off the end of the fixed
+  ROM: its last instruction's operand and the rest of the routine are bank 0's first bytes
+  (`07 C8 DD CB 00 66 C8 35 C9`), so it only works with bank 0 in. Every call in the fixed ROM
+  and in banks 0 and 2 now goes to a named routine; still byte-exact.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
-     the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
+     the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`). Done (2026-10-27):
+     no call in the fixed ROM goes to an `L_xxxx` label.
   2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
      `tools/trace.lua`, then rename them. Done: every `REC_*` record, the 17 new entries and
      the fixed ROM's calls into a bank chosen further away. All three endings and the hint
