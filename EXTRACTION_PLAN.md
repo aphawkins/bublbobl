@@ -675,7 +675,16 @@ Started (2026-10-17) with the sub CPU, which is now done:
   it starts at 2 when the group enters, a throw takes one and `ENEMY3_SHOT_END` gives it back,
   so at most two fireballs are out. `ENEMY3_SHOT_LOOP` launches the shot from the owner in the
   owner's facing, and `ENEMY3_SHOT_FLY` moves it left or right (`ENEMY3_SHOT_L`/`_R`) until a
-  wall. `97EC` (a probe region) has no callers and was left unnamed.
+  wall.
+- Group 2 and 2B (2026-10-27): two more runs, `r26` (seven of group 2) and `r50` (seven of 2B,
+  `ENEMY_SWAP` b4), the same way as `r42`, now merged. Group 2 lifts a rock over its head
+  (`ENEMY2_ATTACK_LIFT`, called off by `ENEMY2_ATTACK_CANCEL` near a wall), and on the last frame
+  `ENEMY2_SHOT_LOOP` takes the rock over and `ENEMY2_SHOT_FLY` throws it. 2B winds up
+  (`ENEMY2B_THROW_ANIM`) and `ENEMY2B_SHOT_LOOP`/`_FLY` throw a bottle, which ends when its owner
+  is trapped or beaten. Shared by every walking group: after each walk step `ENEMY_WALK_THINK`
+  alternates on a timer between `ENEMY_WALK_SEEK` (turn toward the target, read from the MCU
+  proximity record) and `ENEMY_CLIMB_SEEK` (jump up toward it when the cells above are open).
+  `94DB`, `97EC` and `A7B9` are per-group copies of `ENEMY_WALK_THINK` that nothing calls.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -687,7 +696,8 @@ Started (2026-10-17) with the sub CPU, which is now done:
      (2026-10-27): the 16 regions left are code MAME never ran, and the score code ran.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
-     The ghost and groups 3, 4 and 5 are done (2026-10-27); groups 4 and 5 have no attack.
+     The ghost and groups 2, 2B, 3, 4 and 5 are done (2026-10-27); groups 4 and 5 have no attack.
+     The boss's attack is left.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

@@ -1570,6 +1570,13 @@ source = "trace"
 note = "executed in MAME"
 
 [[range]]
+start = 0x4B51
+end = 0x4B5C
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
 start = 0x4B62
 end = 0x4B94
 kind = "code"
@@ -1928,13 +1935,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x63E5
-end = 0x6492
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x6495
 end = 0x649A
 kind = "code"
 source = "trace"

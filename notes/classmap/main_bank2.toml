@@ -913,34 +913,20 @@ note = "executed in MAME"
 
 [[range]]
 start = 0xBA52
-end = 0xBAA3
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0xBAA6
-end = 0xBABB
+end = 0xBAD1
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
 start = 0xBAE5
-end = 0xBAEE
+end = 0xBB0D
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
 start = 0xBB0F
-end = 0xBB2C
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0xBB2F
 end = 0xBB3F
 kind = "code"
 source = "trace"

@@ -684,6 +684,26 @@ ROM_SUM_STEP_T = { addr = 0x9241, note = "one byte a call of a sum of all of ban
 ENEMY3_ENTER = { addr = 0x96D5, note = "ENEMY_ANGER; the first frame: mode 2 (falls in), ENEMY_ENTRY and ENEMY3_SHOTS_FREE = 2" }
 ENEMY3_MOVE = { addr = 0x9708, note = "Seen in MAME (r42): a group 3 enemy in play: ENEMY_SPEED, ENEMY_DROP until it is out (+0 b5), then the ENEMY3 mode by (IX+7); (IX+24) b0 shows ENEMY_ANIM_FLIP only" }
 ENEMY3_NEXT = { addr = 0x97DD, note = "next ENEMY3_SLOTS record (0x1B bytes), ED41 in all" }
+ENEMY_WALK_THINK = { addr = 0x8E40, note = "Seen in MAME: after each step of ENEMY_WALK_L/R (every walking group): (IX+21) counts down and at 0 (ENEMY_TURN_DELAY) flips (IX+24) b1; then ENEMY_WALK_SEEK, or ENEMY_CLIMB_SEEK while b1" }
+ENEMY_WALK_SEEK = { addr = 0x9500, note = "Seen in MAME: not at Y 20 and the target alive: reads the target's bytes of this enemy's MCU_PROXIMITY record; only within 20 in X: carry when the X sides are equal (in line); else, by the X and Y sides (ENEMY_PROX_A, _B), walks in mode 1 or 3 (facing the same), or sets (IX+24) b1 when within 10 in Y. (IX+15) = 1. Tamper check: the IM 2 entry (I, FC00) must be IRQ_VECTOR_ENTRY, else PUSH IY" }
+ENEMY_CLIMB_SEEK = { addr = 0x957A, note = "Seen in MAME: carry when the target is alive and in line in X (as ENEMY_WALK_SEEK); else (IX+21) = 2 and, if ENEMY_ABOVE_PROBE finds the cells above open, a jump up: path 9625 (9628 when it jumped from this Y last time, kept in (IX+15)), mode 4 or 5 by the facing, (IX+24) b0 and b7" }
+ENEMY2_WALK_THINK = { addr = 0x94DB, note = "as ENEMY_WALK_THINK, then ENEMY2_ATTACK_START on carry. Nothing calls it (probe code, never run)" }
+ENEMY3_WALK_THINK = { addr = 0x97EC, note = "as ENEMY_WALK_THINK unless (IX+24) b4, then ENEMY_ATTACK_CHECK and ENEMY3_ATTACK_START. Nothing calls it (probe code, never run)" }
+ENEMY2B_WALK_THINK = { addr = 0xA7B9, note = "as ENEMY_WALK_THINK, then ENEMY_ATTACK_CHECK and ENEMY2B_ATTACK_START. Nothing calls it (probe code, never run)" }
+ENEMY2_ENTER = { addr = 0x9343, note = "ENEMY_ANGER; the first frame: mode 1, ENEMY_ENTRY" }
+ENEMY2_MOVE = { addr = 0x9371, note = "Seen in MAME (r26, round 26): a group 2 enemy in play: removed (with its held rock) at ENEMY_REMOVE_IF_B7; ENEMY_SPEED, ENEMY_DROP until it is out (+0 b5); then ENEMY2_ATTACK_RUN while (IX+25) b1, ENEMY_ANIM_FLIP while (IX+24) b0 (a path jump), else the ENEMY2 mode by (IX+7)" }
+ENEMY2_NEXT = { addr = 0x94CC, note = "next ENEMY2_SLOTS record (0x23 bytes), ED40 in all" }
+ENEMY2_ATTACK_CANCEL = { addr = 0x81F4, note = "the throw is called off: (IX+25) b1 cleared. When there is a wall 1C either side, or while F44E (then the rock's object is cleared too)" }
+ENEMY2_ATTACK_LIFT = { addr = 0x81F9, note = "Seen in MAME (r26): ANIM_STEP 5 frames of 6: the enemy (tiles 58, or 60 angry) lifts the rock (object (IX+30), gfx (IX+34), tiles 54, or 5C angry) at its Y, 10 in front; at the end (IX+25) b4 (thrown) for ENEMY2_SHOT_LOOP" }
+ENEMY2_SHOT_LOOP = { addr = 0x82A2, note = "Seen in MAME (r26): each ENEMY2_SHOTS record with its owner; waits for the owner's (IX+25) b4, then takes the owner's rock object (+30), gfx (+34) and facing (+32) as its mode, speed row owner +12 + 4 (at most 1E), +0 b0; then ENEMY2_SHOT_FLY" }
+ENEMY2_SHOT_FLY = { addr = 0x82FB, note = "each frame of a thrown rock: ENEMY_SPEED, ENEMY_SPEED_NEXT, ENEMY2_SHOT_LAUNCH while +0 b3, else the ENEMY2_SHOT table at 8442 by (IX+7)" }
+ENEMY2B_MOVE = { addr = 0xA666, note = "Seen in MAME (r50, round 50): a group 2B enemy in play: ENEMY_SPEED, ENEMY_DROP until it is out (+0 b5); only ENEMY2B_ANIM while (IX+24) b4 or b3 (throwing), else the ENEMY2B mode by (IX+7)" }
+ENEMY2B_THROW_ANIM = { addr = 0xA76D, note = "while (IX+24) b4: ANIM_STEP 0B frames; at frame 1 (IX+24) b3 (ENEMY2B_SHOT_LOOP launches the bottle); at the end b4 cleared and stopped" }
+ENEMY2B_NEXT = { addr = 0xA7AA, note = "next ENEMY2B_SLOTS record (0x19 bytes), ED40 in all" }
+ENEMY2B_SHOT_LOOP = { addr = 0xBC38, note = "Seen in MAME (r50): each ENEMY2B_SHOTS record with its owner: ends while F44E or F590, or while the owner's +14 b2; waits for the owner's (IX+24) b3, then starts at the owner's Y, 10 in front, in the owner's facing, speed row 1E, +0 b0; then ENEMY2B_SHOT_FLY" }
+ENEMY2B_SHOT_FLY = { addr = 0xBCBB, note = "each frame of a thrown bottle: ENEMY_SPEED_NEXT; ENEMY2B_SHOT_ANIM (the wind-up, then the burst while +0 b3), and once flying (+0 b2) the ENEMY2B_SHOT table at BE8F by (IX+7); ends when the owner is trapped or defeated (owner +0 b2 or b1)" }
+ENEMY2B_SHOT_END = { addr = 0xBE60, note = "hides and clears the bottle and the owner's (IX+24)" }
+ENEMY2B_SHOT_NEXT = { addr = 0xBE78, note = "next ENEMY2B_SHOTS record (0x11 bytes) and owner (0x19 bytes)" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
