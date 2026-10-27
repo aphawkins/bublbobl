@@ -717,6 +717,18 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `TEST_TEXTS`, `TEST_DELAY` and `TEST_SOUND_SELECT` (the test mode's sound number, up and down on
   the joystick, played on P1 start), `RUSH_A_PICKUP` and `WATER_CARRY_MOVE`. No call in either
   bank goes to an unnamed routine now; still byte-exact.
+- The fixed ROM's calls, first batch (2026-10-27): of 74 routines the fixed ROM still called as
+  `L_xxxx`, 22 are named. The tasks: `INSERT_COIN_DRAW` (INSERT COIN or COINS by DSW0 b5 and b7),
+  `JAPAN_NOTICE` (the "for use in Japan only" screen, 12 seconds, only with DSW0 b0 set), and at
+  each round's end `DIFFICULTY_BY_MINUTES` (after 10, 15, 20 and 25 minutes of play the difficulty
+  is raised to at least 0F, 14, 19, 1E), `ROUND_COUNT_UP` and `ROUND_MILESTONE_FLAGS` (rounds 20,
+  30, 40 and 50 set `E60D`-`E610`; what reads them is not known yet). The EXTEND scene, read from
+  the code: the player's dragon jumps under each of the six big letters in turn
+  (`EXTEND_DRAGON_P1`/`_P2`, `EXTEND_JUMP_START`/`_STEP`), and each letter stops wobbling and
+  flashes (`EXTEND_BIG_LETTER_1`-`_6`); then the letters are cleared, the letter bubbles rise
+  (`EXTEND_BUBBLES_RUN`), NICE 1UP! is drawn, one bubble drops into the lives column and the life
+  is added (`EXTEND_LIVES_DRAW`), and `EXTEND_SCENE_END` goes on to the next round. 52 are left:
+  the players, the objects, the secret round, the bubbles and captives, and small helpers.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).

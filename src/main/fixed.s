@@ -4002,7 +4002,7 @@ L_1D07:                 ; 1D07
 ; task 0 (started at 01D7): ATTRACT = 1, clears the screen, starts task 1; after a wait, resets the tasks and runs the attract loop
 ATTRACT_TASK:           ; 1D17
         rst     0x20
-        call    L_2375
+        call    JAPAN_NOTICE
         call    SCORE_LABELS_DRAW
 L_1D1E:                 ; 1D1E
         rst     0x20
@@ -4143,14 +4143,14 @@ ROUND_LOOP:             ; 1E2F
         jp      z,DEMO_END
         rst     0x20
         call    DIFFICULTY_TICK
-        call    L_2355
-        call    L_225C
+        call    DIFFICULTY_BY_MINUTES
+        call    ROUND_COUNT_UP
         ld      hl,ROUND_MAIN
         inc     (hl)
         ld      a,(hl)
         cp      0x64
         jr      z,ROUND_100_DONE
-        call    L_227C
+        call    ROUND_MILESTONE_FLAGS
 L_1E53:                 ; 1E53
         call    CLEAR_OBJ_TILES_LOW
         call    CLEAR_ROWS_C
@@ -4511,7 +4511,8 @@ L_2150:                 ; 2150
         jp      PRINT_TEXT
 
         .incbin "main_fixed.bin", 0x215B, 0x002F
-L_218A:                 ; 218A
+; ATTRACT_TASK: INSERT COIN (21AB) at D7DE when DSW0 b5 and b7 are both set, else INSERT COINS (21B7)
+INSERT_COIN_DRAW:       ; 218A
         ld      a,(DSW0_COPY)
         bit     5,a
         jr      z,L_21A0
@@ -4593,7 +4594,8 @@ L_224E:                 ; 224E
         ret
 
         .incbin "main_fixed.bin", 0x2250, 0x000C
-L_225C:                 ; 225C
+; ROUND_LOOP at each round's end: the word E60B + 1 (at 0x309 it goes back to 0 and E60A + 1), and E5DA + 1
+ROUND_COUNT_UP:         ; 225C
         ld      de,(0xE60B)
         inc     de
         ld      (0xE60B),de
@@ -4610,7 +4612,8 @@ L_2277:                 ; 2277
         inc     (hl)
         ret
 
-L_227C:                 ; 227C
+; ROUND_LOOP after ROUND_MAIN + 1: with ORIGINAL_GAME, or a playing player (E5D7 b0, b1) whose bit in E613 is set, round 20, 30, 40 or 50 (ROUND_MAIN 13, 1D, 27, 31) sets E60D, E60E, E60F or E610 to 1
+ROUND_MILESTONE_FLAGS:  ; 227C
         ld      a,(ORIGINAL_GAME)
         and     a
         jr      nz,L_229C
@@ -4752,7 +4755,8 @@ L_2344:                 ; 2344
         ld      (hl),a
         ret
 
-L_2355:                 ; 2355
+; ROUND_LOOP at each round's end: with the CLOCK_TICK minutes (E337) over 0A, 0F, 14 or 19, C = 0F, 14, 19 or 1E; then (2344) E5DD and DIFFICULTY are raised to C if lower
+DIFFICULTY_BY_MINUTES:  ; 2355
         ld      hl,0xE337
         ld      a,0x19
         cp      (hl)
@@ -4772,7 +4776,8 @@ L_2355:                 ; 2355
         jr      c,L_2344
         ret
 
-L_2375:                 ; 2375
+; ATTRACT_TASK, only when DSW0 b0 is set: the screen cleared, then 0x0D texts from 23AF (NOTICE, THIS GAME IS FOR USE IN JAPAN ONLY ...) for 0x2D0 frames (12 seconds), then CLEAR_ROWS_A
+JAPAN_NOTICE:           ; 2375
         ld      a,(DSW0_COPY)
         bit     0,a
         ret     z
@@ -5459,7 +5464,7 @@ TITLE_TASK:             ; 2AF8
         call    TITLE_INIT
         call    CLEAR_ROWS_A
         call    CLEAR_ROWS_B
-        call    L_218A
+        call    INSERT_COIN_DRAW
         call    CREDITS_DRAW
         ld      a,0x5A
         rst     0x18
@@ -13237,7 +13242,7 @@ L_6F82:                 ; 6F82
         jp      L_6F98
 
 L_6F92:                 ; 6F92
-        call    L_6FBF
+        call    EXTEND_FLASH_ERASE
         jp      EXTEND_SCENE
 
 L_6F98:                 ; 6F98
@@ -13263,7 +13268,8 @@ L_6FA3:                 ; 6FA3
         djnz    L_6FA3
         ret
 
-L_6FBF:                 ; 6FBF
+; EXTEND_CHECK after the 7th flash: the six letters, 2 x 2 tiles each from the tile address at (IX+4), cleared; then EXTEND_SCENE
+EXTEND_FLASH_ERASE:     ; 6FBF
         ld      l,(ix+4)
         ld      h,(ix+5)
         push    hl
@@ -13345,7 +13351,7 @@ L_704A:                 ; 704A
         ld      bc,0x071E
         ld      a,0x36
         call    TILE_RECT
-        call    L_7969
+        call    EXTEND_LIVES_DRAW
         call    BANK_RESTORE
         ld      hl,0x0384
         ld      (0xEB5F),hl
@@ -13407,30 +13413,31 @@ L_7101:                 ; 7101
         ld      (0xEB5F),hl
         ld      a,l
         or      h
-        jp      z,L_7913
+        jp      z,EXTEND_SCENE_END
         ld      a,0x01
         call    BANK_SELECT
-        call    L_7136
-        call    L_7205
-        call    L_7293
-        call    L_7321
-        call    L_739D
-        call    L_7419
-        call    L_7495
-        call    L_7511
-        call    L_759F
-        call    L_77C6
+        call    EXTEND_DRAGON_P1
+        call    EXTEND_DRAGON_P2
+        call    EXTEND_BIG_LETTER_1
+        call    EXTEND_BIG_LETTER_2
+        call    EXTEND_BIG_LETTER_3
+        call    EXTEND_BIG_LETTER_4
+        call    EXTEND_BIG_LETTER_5
+        call    EXTEND_BIG_LETTER_6
+        call    EXTEND_BUBBLES_RUN
+        call    EXTEND_NICE_1UP_DRAW
         call    BANK_RESTORE
         jr      L_7101
 
-L_7136:                 ; 7136
+; EXTEND_SCENE for player 1 (EB56 = 0): the dragon (sprite record at EB69, colour 1E, starting at X E0) jumps (EXTEND_JUMP_START, path 79C6) each time its Y is under 90, and EB70 goes 1 up to 6, one letter a jump (EXTEND_BIG_LETTER_6 first); at 6 it rises to Y 19, then EB72 = 1, EB97 = 3C, EXTEND_BIG_LETTERS_CLEAR. Then it bobs (EXTEND_DRAGON_BOB) facing the other way. Frames 6C or 74 + 4 x (EB6C, 2 steps of 10 frames)
+EXTEND_DRAGON_P1:       ; 7136
         ld      a,(0xEB56)
         and     a
         ret     nz
         ld      a,(0xEB72)
         and     a
         jr      z,L_7147
-        call    L_71C4
+        call    EXTEND_DRAGON_BOB
         jp      L_7196
 
 L_7147:                 ; 7147
@@ -13450,7 +13457,7 @@ L_7158:                 ; 7158
         ld      hl,0xEB70
         inc     (hl)
         ld      de,0x79C6
-        call    L_71E7
+        call    EXTEND_JUMP_START
         jp      L_7196
 
 L_716D:                 ; 716D
@@ -13463,7 +13470,7 @@ L_716D:                 ; 716D
         ld      (hl),0x3C
         ld      hl,0xEB6E
         ld      (hl),0x00
-        call    L_780B
+        call    EXTEND_BIG_LETTERS_CLEAR
         jp      L_7196
 
 L_7187:                 ; 7187
@@ -13474,7 +13481,7 @@ L_718B:                 ; 718B
         ld      b,0x02
 L_718D:                 ; 718D
         push    bc
-        call    L_788E
+        call    EXTEND_JUMP_STEP
         pop     bc
         jr      z,L_7158
         djnz    L_718D
@@ -13505,7 +13512,8 @@ L_71C0:                 ; 71C0
         call    SPRITE
         ret
 
-L_71C4:                 ; 71C4
+; after the letters: the dragon's Y (EB69) goes down to 19 and up to 30 and back, EB6E choosing the way
+EXTEND_DRAGON_BOB:      ; 71C4
         ld      a,(0xEB6E)
         and     a
         ld      hl,(0xEB69)
@@ -13533,7 +13541,8 @@ L_71E1:                 ; 71E1
         ld      (hl),0x00
         ret
 
-L_71E7:                 ; 71E7
+; the dragon starts a jump on the path list at DE (EB65; EB68 = its count): EB6D = 1, EB6E = 1, EB67 = 0, sound 2C
+EXTEND_JUMP_START:      ; 71E7
         ld      hl,0xEB6E
         ld      (hl),0x01
         ld      hl,0xEB6D
@@ -13548,14 +13557,15 @@ L_71E7:                 ; 71E7
         call    SOUND_PUSH
         ret
 
-L_7205:                 ; 7205
+; EXTEND_DRAGON_P1 for player 2 (EB56 set): colour 22, starting at X 14 with EB70 = 7, which goes down to 1 (EXTEND_BIG_LETTER_1 first), and mirrored
+EXTEND_DRAGON_P2:       ; 7205
         ld      a,(0xEB56)
         and     a
         ret     z
         ld      a,(0xEB72)
         and     a
         jr      z,L_7216
-        call    L_71C4
+        call    EXTEND_DRAGON_BOB
         jp      L_7265
 
 L_7216:                 ; 7216
@@ -13575,7 +13585,7 @@ L_7227:                 ; 7227
         ld      hl,0xEB70
         dec     (hl)
         ld      de,0x79C6
-        call    L_71E7
+        call    EXTEND_JUMP_START
         jp      L_7265
 
 L_723C:                 ; 723C
@@ -13588,7 +13598,7 @@ L_723C:                 ; 723C
         ld      (hl),0x3C
         ld      hl,0xEB6E
         ld      (hl),0x00
-        call    L_780B
+        call    EXTEND_BIG_LETTERS_CLEAR
         jp      L_7265
 
 L_7256:                 ; 7256
@@ -13599,7 +13609,7 @@ L_725A:                 ; 725A
         ld      b,0x02
 L_725C:                 ; 725C
         push    bc
-        call    L_788E
+        call    EXTEND_JUMP_STEP
         pop     bc
         jr      z,L_7227
         djnz    L_725C
@@ -13630,7 +13640,8 @@ L_728F:                 ; 728F
         call    SPRITE_FLIPX
         ret
 
-L_7293:                 ; 7293
+; the big letter at D55A (7 x 5 tiles from bank 1): until EB70 = 6 sets EB71 b0, it wobbles (tile banks 34, 35, 36, by EB64, 4 steps of 15 frames); after, it flashes (bank 37, 8B26 and 8BF8, by EB62). Returns once EB72 is set
+EXTEND_BIG_LETTER_1:    ; 7293
         ld      a,(0xEB72)
         and     a
         ret     nz
@@ -13700,7 +13711,8 @@ L_7312:                 ; 7312
         call    TILE_RECT
         ret
 
-L_7321:                 ; 7321
+; as EXTEND_BIG_LETTER_1 at D69A, latched at EB70 = 5 (EB71 b1)
+EXTEND_BIG_LETTER_2:    ; 7321
         ld      a,(0xEB72)
         and     a
         ret     nz
@@ -13764,7 +13776,8 @@ L_738E:                 ; 738E
         call    TILE_RECT
         ret
 
-L_739D:                 ; 739D
+; as EXTEND_BIG_LETTER_1 at D7DA, latched at EB70 = 4 (EB71 b2)
+EXTEND_BIG_LETTER_3:    ; 739D
         ld      a,(0xEB72)
         and     a
         ret     nz
@@ -13828,7 +13841,8 @@ L_740A:                 ; 740A
         call    TILE_RECT
         ret
 
-L_7419:                 ; 7419
+; as EXTEND_BIG_LETTER_1 at D91A, latched at EB70 = 3 (EB71 b3)
+EXTEND_BIG_LETTER_4:    ; 7419
         ld      a,(0xEB72)
         and     a
         ret     nz
@@ -13892,7 +13906,8 @@ L_7486:                 ; 7486
         call    TILE_RECT
         ret
 
-L_7495:                 ; 7495
+; as EXTEND_BIG_LETTER_1 at DA5A, latched at EB70 = 2 (EB71 b4)
+EXTEND_BIG_LETTER_5:    ; 7495
         ld      a,(0xEB72)
         and     a
         ret     nz
@@ -13956,7 +13971,8 @@ L_7502:                 ; 7502
         call    TILE_RECT
         ret
 
-L_7511:                 ; 7511
+; as EXTEND_BIG_LETTER_1 at DB9A, latched at EB70 = 1 (EB71 b5)
+EXTEND_BIG_LETTER_6:    ; 7511
         ld      a,(0xEB72)
         and     a
         ret     nz
@@ -14026,11 +14042,12 @@ L_7590:                 ; 7590
         call    TILE_RECT
         ret
 
-L_759F:                 ; 759F
+; once EB72 is set: EXTEND_PAL_FLASH, then the six letter bubbles (records of 6 bytes at EB73, 4 sprites each from E20D, gfx from 7860) rise by the steps at 7776, a new one each time EB97 (60 frames) runs out. At Y A0 one sets EB98 (NICE 1UP is drawn); bubble 4 stops (b1) and drops into the lives column, the others vanish (b2). It then goes to the next life's place (LIVES_P1 or LIVES_P2 + 1, at most 5) and after 60 frames P1_LIFE_ADD or P2_LIFE_ADD and EXTEND_LIVES_DRAW
+EXTEND_BUBBLES_RUN:     ; 759F
         ld      a,(0xEB72)
         and     a
         ret     z
-        call    L_7782
+        call    EXTEND_PAL_FLASH
         ld      hl,0xEB97
         dec     (hl)
         ld      ix,0xEB73
@@ -14276,7 +14293,7 @@ L_7732:                 ; 7732
 L_7745:                 ; 7745
         call    P2_LIFE_ADD
 L_7748:                 ; 7748
-        call    L_7969
+        call    EXTEND_LIVES_DRAW
         set     2,(ix+0)
         ld      l,(ix+1)
         ld      h,(ix+2)
@@ -14301,7 +14318,8 @@ L_7767:                 ; 7767
         ret
 
         .incbin "main_fixed.bin", 0x7776, 0x000C
-L_7782:                 ; 7782
+; every 5 frames (IX+3) swaps the colours F920, F940 (F0FF or 00FF) and F936, F956 (00FF or 00F8) by (IX+2) b0; IX is EB97 here, after the bubble loop, so the counters are EB9A and EB99
+EXTEND_PAL_FLASH:       ; 7782
         inc     (ix+3)
         ld      a,(ix+3)
         cp      0x05
@@ -14327,7 +14345,8 @@ L_77AF:                 ; 77AF
         ld      (0xF940),de
         ret
 
-L_77C6:                 ; 77C6
+; once EB98 is set: the NICE and 1UP! tiles from bank 1 (8CCA, 4 x 0E at D61A; 8D02 or 8D22, 4 x 8 at D9DA), colours 27 and 26 for player 1, 2B and 2A for player 2
+EXTEND_NICE_1UP_DRAW:   ; 77C6
         ld      a,(0xEB98)
         and     a
         ret     z
@@ -14359,7 +14378,8 @@ L_77EE:                 ; 77EE
         call    TILE_RECT
         ret
 
-L_780B:                 ; 780B
+; the six big letters (D55A .. DB9A, 7 x 5) blanked from 786B
+EXTEND_BIG_LETTERS_CLEAR:; 780B
         ld      hl,0xD55A
         ld      de,0x786B
         ld      bc,0x0705
@@ -14393,7 +14413,8 @@ L_780B:                 ; 780B
         ret
 
         .incbin "main_fixed.bin", 0x7860, 0x002E
-L_788E:                 ; 788E
+; one step of the dragon's jump (EXTEND_DRAGON_*, twice a frame): the PATH_PTR path EB65 at step EB67 moves the sprite at EB69 (b0 Y, b3 down; b4 X, b7 left); the path is mirrored (20 - n) for player 1. 88 ends a path (EB68 more, then the next pair), 99 ends the list; Z when the jump is done
+EXTEND_JUMP_STEP:       ; 788E
         ld      hl,(0xEB65)
         ld      a,(hl)
         cp      0x99
@@ -14490,7 +14511,8 @@ L_7911:                 ; 7911
         ld      a,(bc)
         ret
 
-L_7913:                 ; 7913
+; EXTEND_SCENE when EB5F (0x384 frames) runs out: SCREEN_FLASH, ENEMY_TOTAL = 0, VIDEO_OFF; with FC85 b4 set the screen is reset, sound 30, E357 = 1, E342 = 1 and task 2 started; then the task sleeps
+EXTEND_SCENE_END:       ; 7913
         call    BANK_RESTORE
         call    SCREEN_FLASH
         ld      hl,ENEMY_TOTAL
@@ -14531,7 +14553,8 @@ L_793C:                 ; 793C
 L_7967:                 ; 7967
         xor     a
         rst     0x18
-L_7969:                 ; 7969
+; the lives down the sides: column D53A blanked (32 rows), then up to 5 tiles AB (colour 1C) from D53A for LIVES_P1 if player 1 plays, and up to 5 tiles AC from DCFA up for LIVES_P2 if player 2 plays
+EXTEND_LIVES_DRAW:      ; 7969
         ld      hl,0xD53A
         ld      b,0x20
 L_796E:                 ; 796E

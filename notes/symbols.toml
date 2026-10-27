@@ -450,6 +450,29 @@ ENEMY3_SHOT_R = { addr = 0x7B01, note = "the shot flies right (IX+13) pixels, un
 ENEMY3_SHOT_SPRITE = { addr = 0x7B1E, note = "ANIM_STEP 6 frames (faster in HURRY), held at the last; tiles 4C or 64 (by (IX+16) b3, every 8 frames) + 4 x (5 - frame), colour 1E, flipped by (IX+7) b1" }
 ENEMY3_SHOT_END = { addr = 0x7B61, note = "also while F44E: clears the shot, the owner's (IX+24) b3, hides it, ENEMY3_SHOTS_FREE + 1" }
 ENEMY3_SHOT_NEXT = { addr = 0x7B75, note = "next ENEMY3_SHOTS record (0x12 bytes) and owner (0x1B bytes), ED41 in all" }
+INSERT_COIN_DRAW = { addr = 0x218A, note = "ATTRACT_TASK: INSERT COIN (21AB) at D7DE when DSW0 b5 and b7 are both set, else INSERT COINS (21B7)" }
+JAPAN_NOTICE = { addr = 0x2375, note = "ATTRACT_TASK, only when DSW0 b0 is set: the screen cleared, then 0x0D texts from 23AF (NOTICE, THIS GAME IS FOR USE IN JAPAN ONLY ...) for 0x2D0 frames (12 seconds), then CLEAR_ROWS_A" }
+DIFFICULTY_BY_MINUTES = { addr = 0x2355, note = "ROUND_LOOP at each round's end: with the CLOCK_TICK minutes (E337) over 0A, 0F, 14 or 19, C = 0F, 14, 19 or 1E; then (2344) E5DD and DIFFICULTY are raised to C if lower" }
+ROUND_COUNT_UP = { addr = 0x225C, note = "ROUND_LOOP at each round's end: the word E60B + 1 (at 0x309 it goes back to 0 and E60A + 1), and E5DA + 1" }
+ROUND_MILESTONE_FLAGS = { addr = 0x227C, note = "ROUND_LOOP after ROUND_MAIN + 1: with ORIGINAL_GAME, or a playing player (E5D7 b0, b1) whose bit in E613 is set, round 20, 30, 40 or 50 (ROUND_MAIN 13, 1D, 27, 31) sets E60D, E60E, E60F or E610 to 1" }
+EXTEND_FLASH_ERASE = { addr = 0x6FBF, note = "EXTEND_CHECK after the 7th flash: the six letters, 2 x 2 tiles each from the tile address at (IX+4), cleared; then EXTEND_SCENE" }
+EXTEND_DRAGON_P1 = { addr = 0x7136, note = "EXTEND_SCENE for player 1 (EB56 = 0): the dragon (sprite record at EB69, colour 1E, starting at X E0) jumps (EXTEND_JUMP_START, path 79C6) each time its Y is under 90, and EB70 goes 1 up to 6, one letter a jump (EXTEND_BIG_LETTER_6 first); at 6 it rises to Y 19, then EB72 = 1, EB97 = 3C, EXTEND_BIG_LETTERS_CLEAR. Then it bobs (EXTEND_DRAGON_BOB) facing the other way. Frames 6C or 74 + 4 x (EB6C, 2 steps of 10 frames)" }
+EXTEND_DRAGON_P2 = { addr = 0x7205, note = "EXTEND_DRAGON_P1 for player 2 (EB56 set): colour 22, starting at X 14 with EB70 = 7, which goes down to 1 (EXTEND_BIG_LETTER_1 first), and mirrored" }
+EXTEND_DRAGON_BOB = { addr = 0x71C4, note = "after the letters: the dragon's Y (EB69) goes down to 19 and up to 30 and back, EB6E choosing the way" }
+EXTEND_JUMP_START = { addr = 0x71E7, note = "the dragon starts a jump on the path list at DE (EB65; EB68 = its count): EB6D = 1, EB6E = 1, EB67 = 0, sound 2C" }
+EXTEND_JUMP_STEP = { addr = 0x788E, note = "one step of the dragon's jump (EXTEND_DRAGON_*, twice a frame): the PATH_PTR path EB65 at step EB67 moves the sprite at EB69 (b0 Y, b3 down; b4 X, b7 left); the path is mirrored (20 - n) for player 1. 88 ends a path (EB68 more, then the next pair), 99 ends the list; Z when the jump is done" }
+EXTEND_BIG_LETTER_1 = { addr = 0x7293, note = "the big letter at D55A (7 x 5 tiles from bank 1): until EB70 = 6 sets EB71 b0, it wobbles (tile banks 34, 35, 36, by EB64, 4 steps of 15 frames); after, it flashes (bank 37, 8B26 and 8BF8, by EB62). Returns once EB72 is set" }
+EXTEND_BIG_LETTER_2 = { addr = 0x7321, note = "as EXTEND_BIG_LETTER_1 at D69A, latched at EB70 = 5 (EB71 b1)" }
+EXTEND_BIG_LETTER_3 = { addr = 0x739D, note = "as EXTEND_BIG_LETTER_1 at D7DA, latched at EB70 = 4 (EB71 b2)" }
+EXTEND_BIG_LETTER_4 = { addr = 0x7419, note = "as EXTEND_BIG_LETTER_1 at D91A, latched at EB70 = 3 (EB71 b3)" }
+EXTEND_BIG_LETTER_5 = { addr = 0x7495, note = "as EXTEND_BIG_LETTER_1 at DA5A, latched at EB70 = 2 (EB71 b4)" }
+EXTEND_BIG_LETTER_6 = { addr = 0x7511, note = "as EXTEND_BIG_LETTER_1 at DB9A, latched at EB70 = 1 (EB71 b5)" }
+EXTEND_BUBBLES_RUN = { addr = 0x759F, note = "once EB72 is set: EXTEND_PAL_FLASH, then the six letter bubbles (records of 6 bytes at EB73, 4 sprites each from E20D, gfx from 7860) rise by the steps at 7776, a new one each time EB97 (60 frames) runs out. At Y A0 one sets EB98 (NICE 1UP is drawn); bubble 4 stops (b1) and drops into the lives column, the others vanish (b2). It then goes to the next life's place (LIVES_P1 or LIVES_P2 + 1, at most 5) and after 60 frames P1_LIFE_ADD or P2_LIFE_ADD and EXTEND_LIVES_DRAW" }
+EXTEND_PAL_FLASH = { addr = 0x7782, note = "every 5 frames (IX+3) swaps the colours F920, F940 (F0FF or 00FF) and F936, F956 (00FF or 00F8) by (IX+2) b0; IX is EB97 here, after the bubble loop, so the counters are EB9A and EB99" }
+EXTEND_NICE_1UP_DRAW = { addr = 0x77C6, note = "once EB98 is set: the NICE and 1UP! tiles from bank 1 (8CCA, 4 x 0E at D61A; 8D02 or 8D22, 4 x 8 at D9DA), colours 27 and 26 for player 1, 2B and 2A for player 2" }
+EXTEND_BIG_LETTERS_CLEAR = { addr = 0x780B, note = "the six big letters (D55A .. DB9A, 7 x 5) blanked from 786B" }
+EXTEND_SCENE_END = { addr = 0x7913, note = "EXTEND_SCENE when EB5F (0x384 frames) runs out: SCREEN_FLASH, ENEMY_TOTAL = 0, VIDEO_OFF; with FC85 b4 set the screen is reset, sound 30, E357 = 1, E342 = 1 and task 2 started; then the task sleeps" }
+EXTEND_LIVES_DRAW = { addr = 0x7969, note = "the lives down the sides: column D53A blanked (32 rows), then up to 5 tiles AB (colour 1C) from D53A for LIVES_P1 if player 1 plays, and up to 5 tiles AC from DCFA up for LIVES_P2 if player 2 plays" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }
