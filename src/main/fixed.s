@@ -9626,8 +9626,8 @@ L_50BB:                 ; 50BB
 SECRET_ROUND_INIT:      ; 50CB
         ld      a,0x03
         rst     0x18
-        call    L_5498
-        call    L_5267
+        call    SECRET_ROOM_DRAW
+        call    SECRET_GEMS_INIT
         ld      a,0x03
         rst     0x10
         ld      hl,0xE725
@@ -9672,16 +9672,16 @@ L_5115:                 ; 5115
 
 L_5124:                 ; 5124
         call    BANK_RESTORE
-; the secret round, per frame: 55DB, 52B6, 5353, 5416, GHOST_COUNTDOWN, the Skel-Monsta update, 541E and 0x24 BUBBLE_SLOTS records
+; the secret round, per frame: SECRET_WELCOME_RUN, SECRET_DROP_GAP, SECRET_EXIT_GAP, SECRET_EXIT_CHECK, GHOST_COUNTDOWN, the Skel-Monsta update, SECRET_TILES_FLICKER, then the 0x24 gems (BUBBLE_SLOTS records of 0x0A): each is placed once from 51D7 (Y, X, frame, colour), and a player within 10 takes it for 10000 (no sound; a score sprite 98 in the player's colour rises for 60 frames) and E725 + 1
 SECRET_ROUND_FRAME:     ; 5127
         rst     0x20
-        call    L_55DB
-        call    L_52B6
-        call    L_5353
+        call    SECRET_WELCOME_RUN
+        call    SECRET_DROP_GAP
+        call    SECRET_EXIT_GAP
         call    SECRET_EXIT_CHECK
         call    GHOST_COUNTDOWN
         call    0xA150
-        call    L_541E
+        call    SECRET_TILES_FLICKER
         ld      ix,BUBBLE_SLOTS
         ld      b,0x24
 L_5143:                 ; 5143
@@ -9764,7 +9764,8 @@ L_51CA:                 ; 51CA
         jp      SECRET_ROUND_FRAME
 
         .incbin "main_fixed.bin", 0x51D7, 0x0090
-L_5267:                 ; 5267
+; SECRET_ROUND_INIT: the 0x24 gem records in BUBBLE_SLOTS (0x0A each): +8 the number, +3/+4 a sprite record from E20D, gfx 0C + 0x20 x (n mod 4) + n / 4, attribute 13
+SECRET_GEMS_INIT:       ; 5267
         ld      ix,BUBBLE_SLOTS
         xor     a
         ld      de,0x000C
@@ -9815,7 +9816,8 @@ GHOST_COUNTDOWN:        ; 52A6
         ld      (hl),0x01
         ret
 
-L_52B6:                 ; 52B6
+; once 0x18 gems are taken (E725): every 30 frames one of 3 steps of tiles from 533B (4 bytes to D0E6 and D126), then E72B b1; after that a player whose sprite is at Y 58, X 77-79 is put at Y 18
+SECRET_DROP_GAP:        ; 52B6
         ld      a,(0xE72B)
         bit     1,a
         jr      nz,L_5302
@@ -9896,7 +9898,8 @@ L_5320:                 ; 5320
         ret
 
         .incbin "main_fixed.bin", 0x533B, 0x0018
-L_5353:                 ; 5353
+; once all 0x24 gems are taken: every 30 frames one of 2 steps of tiles from 5406 (to D0F6 and D136), then E731 b1; after that a player at Y 18, X 77-79 runs SECRET_ROUND_EXIT
+SECRET_EXIT_GAP:        ; 5353
         ld      a,(0xE731)
         bit     1,a
         jr      nz,L_539F
@@ -10009,7 +10012,8 @@ SECRET_EXIT_CHECK:      ; 5416
         ret     z
         jr      SECRET_ROUND_EXIT
 
-L_541E:                 ; 541E
+; every 7 frames the 2 x 2 tiles at CD8A/CDCA and D40A/D44A swap between 5488/548C and 5490/5494
+SECRET_TILES_FLICKER:   ; 541E
         ld      hl,0xE727
         inc     (hl)
         ld      a,(hl)
@@ -10058,7 +10062,8 @@ L_545B:                 ; 545B
         ret
 
         .incbin "main_fixed.bin", 0x5488, 0x0010
-L_5498:                 ; 5498
+; SECRET_ROUND_INIT: SET_E1D0_19, colours 55BB to F9C0; by E724 (table 54BC) a palette (555B, 557B or 559B) to F9E0 and a picture from bank 3 (8000 and 8340, 8680 and 89C0, or 8D00 and 9040), 0x1A columns of 0x10 tiles each at CD08 and D108 (TILE_COLS_COPY). Tamper check: FC85 must be 37, else it jumps to HL
+SECRET_ROOM_DRAW:       ; 5498
         ld      iy,0xFC44
         ld      a,(iy+65)
         sub     0x37
@@ -10154,7 +10159,8 @@ L_5546:                 ; 5546
         ret
 
         .incbin "main_fixed.bin", 0x555B, 0x0080
-L_55DB:                 ; 55DB
+; E729 0: SECRET_WELCOME_SHOW; negative: SECRET_WELCOME_STEP; else nothing
+SECRET_WELCOME_RUN:     ; 55DB
         ld      a,(0xE729)
         and     a
         jr      z,SECRET_WELCOME_SHOW

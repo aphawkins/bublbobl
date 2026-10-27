@@ -380,7 +380,7 @@ ENDING_ROW_CLEAR = { addr = 0x5701, note = "clears tile row GRID_DRAW_ROW & 1F (
 ENDING_ROW_DRAW = { addr = 0x5719, note = "below the row count: from bank 1 at (E734), records of colour, column, length and characters into row GRID_DRAW_ROW & 1F; FF ends the row" }
 SECRET_ROUND_START = { addr = 0x5046, note = "Seen in MAME (--special 31-33): when E723 = 29 (special kinds 31-33): clears the bubbles, timer E72E = 960, ENEMY_TOTAL 0A, ends tasks 3 and 4, ROUND_MAIN + 1 kept in E726, then round record 65 (the secret room: a statue, rows of gems and a plate in the secret alphabet)" }
 SECRET_ROUND_INIT = { addr = 0x50CB, note = "the room's effect by E724 (table 50F6): 0 STARS_START, 1 LIGHTNING_START, 2 STARS_START with F47B = 1; sound 29. SECRET_WELCOME_SHOW (55E5) comes with it" }
-SECRET_ROUND_FRAME = { addr = 0x5127, note = "the secret round, per frame: 55DB, 52B6, 5353, 5416, GHOST_COUNTDOWN, the Skel-Monsta update, 541E and 0x24 BUBBLE_SLOTS records" }
+SECRET_ROUND_FRAME = { addr = 0x5127, note = "the secret round, per frame: SECRET_WELCOME_RUN, SECRET_DROP_GAP, SECRET_EXIT_GAP, SECRET_EXIT_CHECK, GHOST_COUNTDOWN, the Skel-Monsta update, SECRET_TILES_FLICKER, then the 0x24 gems (BUBBLE_SLOTS records of 0x0A): each is placed once from 51D7 (Y, X, frame, colour), and a player within 10 takes it for 10000 (no sound; a score sprite 98 in the player's colour rises for 60 frames) and E725 + 1" }
 EXTEND_LETTERS_DRAW = { addr = 0x62FB, note = "the EXTEND letters each player has, down the side: E742 at D51C (P1), E743 at DC9C (P2)" }
 EXTEND_LETTERS_ROW = { addr = 0x630C, note = "one player's letters: bit n of (HL) set draws letter n (EXTEND_LETTER_DRAW) from IY" }
 EXTEND_LETTER_DRAW = { addr = 0x6322, note = "letter C of EXTEND at IY" }
@@ -494,6 +494,12 @@ RUSH_COUNT_INIT = { addr = 0x5776, note = "OBJECTS_TASK: E737-E741 cleared" }
 RUSH_COUNT_RUN = { addr = 0x577F, note = "OBJECTS_FRAME while E737 (the TAKE_RUSH_* kinds set it) is positive, by E738: 0 starts it (task 4 stopped, the enemies cleared, ROUND_END_CLEAR, sound 32, RUSH_LABELS_DRAW, TIME at D80E, E741 = 30 seconds); b0 counts (BONUS_COUNT_DRAW, RUSH_TIME_STEP) until E73A + E73B, the players' pickups, equal E73C, the pickups laid (then E73E = 1: all taken); b1 each player's count as sprites; b2 the banner slides in to Y 70, and with all taken each playing player scores 50000 and the one with more (both on a tie) 50000 more; b3 waits 0x96 frames; b4 slides it out over 0xB4 frames, then ENEMY_TOTAL = 0 (the round ends), E737 = FF, sound 30. Tamper checks: FC85 b0 clear runs EX (SP),HL; byte 0002 not 5E sleeps the task" }
 RUSH_LABELS_DRAW = { addr = 0x5A0D, note = "RUSH_COUNT_RUN: tiles 90-97 down D008 and 9B-A2 down D00A, colour 1D" }
 RUSH_TIME_STEP = { addr = 0x5AD3, note = "RUSH_COUNT_RUN: every 60 frames (E740) the seconds E741 - 1 (not below 0), drawn with DECIMAL3_DRAW at D98E" }
+SECRET_GEMS_INIT = { addr = 0x5267, note = "SECRET_ROUND_INIT: the 0x24 gem records in BUBBLE_SLOTS (0x0A each): +8 the number, +3/+4 a sprite record from E20D, gfx 0C + 0x20 x (n mod 4) + n / 4, attribute 13" }
+SECRET_ROOM_DRAW = { addr = 0x5498, note = "SECRET_ROUND_INIT: SET_E1D0_19, colours 55BB to F9C0; by E724 (table 54BC) a palette (555B, 557B or 559B) to F9E0 and a picture from bank 3 (8000 and 8340, 8680 and 89C0, or 8D00 and 9040), 0x1A columns of 0x10 tiles each at CD08 and D108 (TILE_COLS_COPY). Tamper check: FC85 must be 37, else it jumps to HL" }
+SECRET_DROP_GAP = { addr = 0x52B6, note = "once 0x18 gems are taken (E725): every 30 frames one of 3 steps of tiles from 533B (4 bytes to D0E6 and D126), then E72B b1; after that a player whose sprite is at Y 58, X 77-79 is put at Y 18" }
+SECRET_EXIT_GAP = { addr = 0x5353, note = "once all 0x24 gems are taken: every 30 frames one of 2 steps of tiles from 5406 (to D0F6 and D136), then E731 b1; after that a player at Y 18, X 77-79 runs SECRET_ROUND_EXIT" }
+SECRET_TILES_FLICKER = { addr = 0x541E, note = "every 7 frames the 2 x 2 tiles at CD8A/CDCA and D40A/D44A swap between 5488/548C and 5490/5494" }
+SECRET_WELCOME_RUN = { addr = 0x55DB, note = "E729 0: SECRET_WELCOME_SHOW; negative: SECRET_WELCOME_STEP; else nothing" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }

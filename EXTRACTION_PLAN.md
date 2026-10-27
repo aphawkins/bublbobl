@@ -746,6 +746,12 @@ Started (2026-10-17) with the sub CPU, which is now done:
   scores 3000. `RUSH_COUNT_INIT` and `_RUN` run the pickup rushes' TIME and counts
   (`RUSH_TIME_STEP`, `RUSH_LABELS_DRAW`); when every pickup is taken each player scores 50000 and
   the one with more another 50000. Still byte-exact; 33 calls left.
+- The secret round (2026-10-27), read from the code: `SECRET_ROOM_DRAW` puts up one of three
+  pictures from bank 3 by `E724`, and `SECRET_GEMS_INIT` sets up 0x24 gems, 10000 each.
+  After 0x18 gems `SECRET_DROP_GAP` opens a gap that drops a player from Y 58 to Y 18; after all
+  of them `SECRET_EXIT_GAP` opens the way out, and a player at Y 18, X 77-79 leaves by
+  `SECRET_ROUND_EXIT` (the exit noted earlier). Also `SECRET_TILES_FLICKER` and
+  `SECRET_WELCOME_RUN`. Still byte-exact; 27 calls left.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
