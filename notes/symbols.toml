@@ -100,6 +100,10 @@ POTION_P1 = { addr = 0xF60F, note = "1 = player 1 took a round 100 potion (POTIO
 POTION_P2 = { addr = 0xF610, note = "as POTION_P1 for player 2" }
 SECRET_DEATH = { addr = 0xE730, note = "1 = the Skel-Monsta killed a player in the secret round (sub GHOST_HITS, only while E723 = 29); SECRET_DEATH_SLEEP sets b7, SECRET_EXIT_CHECK then ends the room; SECRET_ROUND_EXIT clears it" }
 ENEMY3_SHOTS_FREE = { addr = 0xF05E, note = "group 3 shots that may still be thrown: 2 when a group 3 enemy enters (ENEMY3_ENTER), ENEMY3_ATTACK_START takes one, ENEMY3_SHOT_END gives it back" }
+BOSS_SHOTS_LEFT = { addr = 0xF3C7, note = "bottles of the boss's volley still on screen: 8 at the start, BOSS_SHOT_OFF_* take one each; at 0 BOSS_SHOT_NEXT clears the volley" }
+BOSS_VOLLEY_TIMER = { addr = 0xF3C8, note = "frames since the last volley; at 78 BOSS_FIGHT starts the next (BOSS_VOLLEY = 1, sound 15)" }
+BOSS_VOLLEY = { addr = 0xF3C9, note = "1 = a volley is out: BOSS_SHOT_LOOP launches every bottle not yet thrown" }
+BOSS_RIGHT_BOUNCES = { addr = 0xF3CA, note = "counted by BOSS_EDGE_RIGHT; 8 once player 1 has been hit (BOSS_FIGHT)" }
 
 [main.code]
 RESET          = { addr = 0x0000, note = "DI / IM 2 / JP 00B9" }
@@ -704,6 +708,25 @@ ENEMY2B_SHOT_LOOP = { addr = 0xBC38, note = "Seen in MAME (r50): each ENEMY2B_SH
 ENEMY2B_SHOT_FLY = { addr = 0xBCBB, note = "each frame of a thrown bottle: ENEMY_SPEED_NEXT; ENEMY2B_SHOT_ANIM (the wind-up, then the burst while +0 b3), and once flying (+0 b2) the ENEMY2B_SHOT table at BE8F by (IX+7); ends when the owner is trapped or defeated (owner +0 b2 or b1)" }
 ENEMY2B_SHOT_END = { addr = 0xBE60, note = "hides and clears the bottle and the owner's (IX+24)" }
 ENEMY2B_SHOT_NEXT = { addr = 0xBE78, note = "next ENEMY2B_SHOTS record (0x11 bytes) and owner (0x19 bytes)" }
+BOSS_ENTER_END = { addr = 0xA913, note = "the entrance (+0 = 0: the palette words F9DE, F9FE flash 70FB / 0 for 6 steps of 3 frames) is over: stopped, +0 b0 (in play)" }
+BOSS_FIGHT = { addr = 0xA91B, note = "Seen in MAME (bub100, r100x2): +0 b0, each frame: BOSS_VOLLEY_TIMER and the volleys, BOSS_POS_LOAD; with exactly one hit taken, BOSS_RIGHT_BOUNCES 7 and a volley out, the hits jump to 50. At 50 hits or more and X 80-87 the boss is trapped (+0 = 2, the volley's objects cleared); else the sprite (BOSS_SPRITE_ANGRY while +0 b3) and the BOSS mode at AAA8" }
+BOSS_TRAPPED = { addr = 0xAAB0, note = "Seen in MAME (r100pop, the endings): +0 b1, in the bubble: BOSS_BUBBLE_FLASH, poses 2-3 in colour 32; when the sub CPU pops it (+0 b2) sound 27 and +0 = 50 (10 when X is 80 or more), BOSS_BEATEN; else after 6 x 3C frames it escapes: +0 = 9 (angry), the hits back to 0" }
+BOSS_BUBBLE_FLASH = { addr = 0xAB27, note = "IX_COUNT_DE 5 x 5: the palette word F998 cycles through BOSS_BUBBLE_COLOURS" }
+IX_COUNT_DE = { addr = 0xAB42, note = "(IX+16) counts to D, then (IX+15) steps on to E and wraps; A = (IX+15) (0 and Z when it wraps)" }
+BOSS_SPRITE_ANGRY = { addr = 0xAB62, note = "Seen in MAME (r100x2): the boss angry (+0 b3): ANIM_STEP poses in colour 26 (29 while BOSS_FLASH_CHECK)" }
+BOSS_BEATEN = { addr = 0xABA5, note = "Seen in MAME (the endings): +0 b4: in super mode with two players BOSS_SUPER_END; else the boss's pieces follow its object until it is off the playfield (X under 20 or E0 and over, or Y D0 and over), then its objects are cleared, +0 = 20 (gone) and ENEMY_TOTAL 0 ends the round" }
+BOSS_SUPER_END = { addr = 0xAC22, note = "Seen in MAME (endsuper): the beaten boss in super mode with two players: the players are put at Y 18, X 20 and D0, and (IX+18) steps through the scene that frees their parents (AC82 .. AE2C), then ENEMY_TOTAL 0" }
+BOSS_FLASH_CHECK = { addr = 0xAE73, note = "while the boss has 46 hits or more (F2A1) or +0 b7, and (IX+5) b0 is clear: carry (the boss is drawn in colour 29), except every 6th such call ((IX+17)), which also clears +0 b7" }
+BOSS_POS_LOAD = { addr = 0xAE9C, note = "(IX+1), (IX+2) = Y, X of the boss's object" }
+OBJ_POS_LIST = { addr = 0xAEAD, note = "B objects at HL (4 bytes each): Y, X from the pairs at DE, attribute C" }
+BOSS_SHOT_LOOP = { addr = 0xB98D, note = "Seen in MAME (bub100, r100x2): each of the 8 BOSS_SHOTS: one not yet thrown, while BOSS_VOLLEY: mode 0 or 2 by the boss's facing (F29D b1), + 1 by the player's side of X 80; starts at the boss's Y - 10 and X + 10 (X - 20 when F29D b1); then BOSS_SHOT_FLY" }
+BOSS_SHOT_FLY = { addr = 0xBA09, note = "BOSS_SHOT_SPRITE, then BOSS_SHOT_MODE0-3 by (IX+7): each checks its edges (BOSS_SHOT_OFF_*) and steps its path (BOSS_SHOT_STEP) from BOSS_SHOT_PATHS by the bottle's number (IX+9)" }
+BOSS_SHOT_NEXT = { addr = 0xBA98, note = "next BOSS_SHOTS record (0x0C bytes), 8 in all; when BOSS_SHOTS_LEFT is 0 every record is cleared, BOSS_SHOTS_LEFT = 8 and BOSS_VOLLEY = 0" }
+BOSS_SHOT_OFF_L = { addr = 0xBAD9, note = "X under 1A: the bottle is hidden and done (+0 = 2), BOSS_SHOTS_LEFT - 1, carry" }
+BOSS_SHOT_OFF_BOTTOM = { addr = 0xBAF4, note = "Y under 22: as BOSS_SHOT_OFF_L, but without the carry, so the mode still steps the hidden bottle once" }
+BOSS_SHOT_OFF_R = { addr = 0xBB0E, note = "X E6 or more: as BOSS_SHOT_OFF_L" }
+BOSS_SHOT_OFF_TOP = { addr = 0xBB2C, note = "Y CE or more: as BOSS_SHOT_OFF_L" }
+BOSS_SHOT_STEP = { addr = 0xBB4A, note = "the next byte of path (HL) (PATH_PTR, position (IX+11), 88 restarts): b0 moves Y 3 (down if b3), b4 moves X 3 (left if b7); 4 instead of 3 while the boss is angry (BOSS_SLOT b3)" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
@@ -720,6 +743,8 @@ ENEMY4_MODES = { addr = 0x9CCF, note = "ENEMY4_FLY_RU, _RD, _LD, _LU for (IX+7) 
 ENEMY4_STEP_TABLE = { addr = 0x9CD7, note = "10 words: the turn script steps 0-9 for ENEMY4_TURN_STEP" }
 ENEMY4_TURNS = { addr = 0x9CEB, note = "8 turn scripts of 0x15 step bytes, each ended by 9 (ENEMY4_STEP_END): steps 0 up, 1 up right, 2 right, 3 down right, 4 down, 5 down left, 6 left, 7 up left, 8 none. A wall hit picks one through (IX+16)" }
 ENEMY5_MODES = { addr = 0xA0FB, note = "ENEMY5_FLY_RD, _RU, ENEMY5_FALL, _LD, _LU for (IX+7) = 0-4 (ENEMY5_MOVE)" }
+BOSS_BUBBLE_COLOURS = { addr = 0xAB38, note = "5 colour words for BOSS_BUBBLE_FLASH" }
+BOSS_SHOT_PATHS = { addr = 0xBBAF, note = "4 x 8 path numbers, one per bottle, for BOSS_SHOT_MODE0-3 (BBAF, BBB7, BBBF, BBC7)" }
 
 [bank1.data]
 # a78-05-1.52 page 1 (file 0x4000-0x7FFF), mapped at 8000 when FB40 = 5.

@@ -685,6 +685,15 @@ Started (2026-10-17) with the sub CPU, which is now done:
   alternates on a timer between `ENEMY_WALK_SEEK` (turn toward the target, read from the MCU
   proximity record) and `ENEMY_CLIMB_SEEK` (jump up toward it when the cells above are open).
   `94DB`, `97EC` and `A7B9` are per-group copies of `ENEMY_WALK_THINK` that nothing calls.
+- The boss (2026-10-27), all seen in the round 100 traces (bub100, r100x2, r100pop and the
+  endings): after its entrance (`BOSS_ENTER_END`), `BOSS_FIGHT` throws a volley every 0x78 frames
+  (`BOSS_VOLLEY_TIMER`, `BOSS_VOLLEY`): `BOSS_SHOT_LOOP` launches all 8 bottles, each on its own
+  path (`BOSS_SHOT_PATHS`, `BOSS_SHOT_STEP`, 3 pixels a step or 4 when the boss is angry), until
+  it leaves the playfield (`BOSS_SHOT_OFF_*`); the next volley waits for all 8. At 0x50 hits the
+  boss can be trapped (`BOSS_TRAPPED`); popped, it flies off (`BOSS_BEATEN`) and the round ends,
+  or in super mode with two players `BOSS_SUPER_END` plays the parents' scene; left alone for
+  6 seconds it escapes angry. Read from the code, not seen: with exactly one hit, 7 right-edge
+  bounces (`BOSS_RIGHT_BOUNCES`) and a volley out, the hits jump to 0x50 (notes/open_questions.md).
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -696,8 +705,8 @@ Started (2026-10-17) with the sub CPU, which is now done:
      (2026-10-27): the 16 regions left are code MAME never ran, and the score code ran.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
-     The ghost and groups 2, 2B, 3, 4 and 5 are done (2026-10-27); groups 4 and 5 have no attack.
-     The boss's attack is left.
+     The ghost, groups 2, 2B, 3, 4 and 5 and the boss are done (2026-10-27); groups 4 and 5 have
+     no attack. The bank 2 routines left are not.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

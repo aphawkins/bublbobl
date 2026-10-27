@@ -37,5 +37,10 @@ still differ.
 ## Main CPU
 
 - SWB#7 `F7FE/F7FF` score output, routines `0F26` and `0F74` (from the MAME driver notes).
+- **The boss's one-hit shortcut (`bank0:A948`).** In `BOSS_FIGHT`, if the boss has taken
+  exactly one hit (`BOSS_SLOT` +0B = 1), `BOSS_RIGHT_BOUNCES` (`F3CA`) is 7 and a volley is out,
+  the hits are set to 0x50, so the boss can be trapped at once. Player 1 being hit sets
+  `F3CA` to 8, which turns it off. Is it reachable in play, and is it a known trick? Check in
+  MAME with `--poke F3CA=7` and one hit (`--boss-hits 1`).
 - **Palette 11 (`bank0:B764–B7FE`)** is rewritten colour by colour, and read back, in
   attract mode and in play. What is the effect, and where are its colours?

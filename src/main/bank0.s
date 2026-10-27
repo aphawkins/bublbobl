@@ -5232,7 +5232,7 @@ BOSS_INIT:              ; A847
         ld      hl,0xE275
         ld      b,0x10
         ld      c,0x18
-        call    L_AEAD
+        call    OBJ_POS_LIST
         ld      hl,0xE28D
         ld      (ix+3),l
         ld      (ix+4),h
@@ -5257,14 +5257,14 @@ L_A8D5:                 ; A8D5
         bit     5,a
         ret     nz
         bit     4,a
-        jp      nz,L_ABA5
+        jp      nz,BOSS_BEATEN
         bit     1,a
-        jp      nz,L_AAB0
+        jp      nz,BOSS_TRAPPED
         bit     0,a
-        jr      nz,L_A91B
+        jr      nz,BOSS_FIGHT
         ld      de,0x0306
         call    ANIM_STEP
-        jr      z,L_A913
+        jr      z,BOSS_ENTER_END
         bit     0,a
         jr      nz,L_A906
         ld      hl,0x70FB
@@ -5280,41 +5280,43 @@ L_A906:                 ; A906
         ld      (0xF9FE),hl
         ret
 
-L_A913:                 ; A913
+; the entrance (+0 = 0: the palette words F9DE, F9FE flash 70FB / 0 for 6 steps of 3 frames) is over: stopped, +0 b0 (in play)
+BOSS_ENTER_END:         ; A913
         call    IX_SPEED_CLEAR
         set     0,(ix+0)
         ret
 
-L_A91B:                 ; A91B
-        ld      a,(0xF3C9)
+; Seen in MAME (bub100, r100x2): +0 b0, each frame: BOSS_VOLLEY_TIMER and the volleys, BOSS_POS_LOAD; with exactly one hit taken, BOSS_RIGHT_BOUNCES 7 and a volley out, the hits jump to 50. At 50 hits or more and X 80-87 the boss is trapped (+0 = 2, the volley's objects cleared); else the sprite (BOSS_SPRITE_ANGRY while +0 b3) and the BOSS mode at AAA8
+BOSS_FIGHT:             ; A91B
+        ld      a,(BOSS_VOLLEY)
         and     a
         jr      nz,L_A939
-        ld      hl,0xF3C8
+        ld      hl,BOSS_VOLLEY_TIMER
         inc     (hl)
         ld      a,(hl)
         sub     0x78
         jr      c,L_A939
-        ld      hl,0xF3C9
+        ld      hl,BOSS_VOLLEY
         ld      (hl),0x01
-        ld      hl,0xF3C8
+        ld      hl,BOSS_VOLLEY_TIMER
         ld      (hl),0x00
         ld      c,0x15
         call    SOUND_PUSH
 L_A939:                 ; A939
-        call    L_AE9C
+        call    BOSS_POS_LOAD
         ld      a,(P1_REC)
         bit     1,a
         jr      z,L_A948
-        ld      hl,0xF3CA
+        ld      hl,BOSS_RIGHT_BOUNCES
         ld      (hl),0x08
 L_A948:                 ; A948
         ld      a,(ix+11)
         cp      0x01
         jr      nz,L_A960
-        ld      a,(0xF3CA)
+        ld      a,(BOSS_RIGHT_BOUNCES)
         cp      0x07
         jr      nz,L_A960
-        ld      a,(0xF3C9)
+        ld      a,(BOSS_VOLLEY)
         and     a
         jr      z,L_A960
         ld      (ix+11),0x50
@@ -5328,7 +5330,7 @@ L_A960:                 ; A960
         cp      0x88
         jr      nc,L_A98E
         ld      (ix+0),0x02
-        ld      hl,0xF3C9
+        ld      hl,BOSS_VOLLEY
         ld      (hl),0x00
         ld      b,0x08
         ld      hl,0xE2D5
@@ -5346,7 +5348,7 @@ L_A980:                 ; A980
 L_A98E:                 ; A98E
         bit     3,(ix+0)
         jr      z,L_A99A
-        call    L_AB62
+        call    BOSS_SPRITE_ANGRY
         jp      L_A9FD
 
 L_A99A:                 ; A99A
@@ -5378,7 +5380,7 @@ L_A9B9:                 ; A9B9
         ld      hl,0xAFAC
         call    ADD_HL_A
 L_A9E1:                 ; A9E1
-        call    L_AE73
+        call    BOSS_FLASH_CHECK
         jr      nc,L_A9EB
         ld      hl,0xAF6C
         ld      c,0x29
@@ -5387,7 +5389,7 @@ L_A9EB:                 ; A9EB
         jr      L_A9FD
 
 L_A9F0:                 ; A9F0
-        call    L_AE73
+        call    BOSS_FLASH_CHECK
         jr      nc,L_A9FA
         ld      hl,0xAF4C
         ld      c,0x29
@@ -5524,8 +5526,9 @@ L_AAA8:                 ; AAA8
         .word   BOSS_MOVE_RD
         .word   BOSS_MOVE_LD
         .word   BOSS_MOVE_LU
-L_AAB0:                 ; AAB0
-        call    L_AB27
+; Seen in MAME (r100pop, the endings): +0 b1, in the bubble: BOSS_BUBBLE_FLASH, poses 2-3 in colour 32; when the sub CPU pops it (+0 b2) sound 27 and +0 = 50 (10 when X is 80 or more), BOSS_BEATEN; else after 6 x 3C frames it escapes: +0 = 9 (angry), the hits back to 0
+BOSS_TRAPPED:           ; AAB0
+        call    BOSS_BUBBLE_FLASH
         ld      de,0x0A02
         call    ANIM_STEP
         call    SHL4
@@ -5576,16 +5579,20 @@ L_AB00:                 ; AB00
         ld      (ix+11),a
         ret
 
-L_AB27:                 ; AB27
+; IX_COUNT_DE 5 x 5: the palette word F998 cycles through BOSS_BUBBLE_COLOURS
+BOSS_BUBBLE_FLASH:      ; AB27
         ld      de,0x0505
-        call    L_AB42
+        call    IX_COUNT_DE
         ld      hl,0xAB38
         call    TABLE_WORD
         ld      (0xF998),de
         ret
 
+; 5 colour words for BOSS_BUBBLE_FLASH
+BOSS_BUBBLE_COLOURS:    ; AB38
         .incbin "main_bank0.bin", 0x2B38, 0x000A
-L_AB42:                 ; AB42
+; (IX+16) counts to D, then (IX+15) steps on to E and wraps; A = (IX+15) (0 and Z when it wraps)
+IX_COUNT_DE:            ; AB42
         inc     (ix+16)
         ld      a,(ix+16)
         cp      d
@@ -5603,7 +5610,8 @@ L_AB5E:                 ; AB5E
         ld      a,(ix+15)
         ret
 
-L_AB62:                 ; AB62
+; Seen in MAME (r100x2): the boss angry (+0 b3): ANIM_STEP poses in colour 26 (29 while BOSS_FLASH_CHECK)
+BOSS_SPRITE_ANGRY:      ; AB62
         ld      de,0x0A02
         call    ANIM_STEP
         call    SHL4
@@ -5618,7 +5626,7 @@ L_AB62:                 ; AB62
         call    SHL4
         ld      hl,0xAF6C
         call    ADD_HL_A
-        call    L_AE73
+        call    BOSS_FLASH_CHECK
         jr      nc,L_AB93
         ld      hl,0xAF6C
         ld      c,0x29
@@ -5627,7 +5635,7 @@ L_AB93:                 ; AB93
         ret
 
 L_AB97:                 ; AB97
-        call    L_AE73
+        call    BOSS_FLASH_CHECK
         jr      nc,L_ABA1
         ld      hl,0xAF4C
         ld      c,0x29
@@ -5635,13 +5643,14 @@ L_ABA1:                 ; ABA1
         call    SPRITE_GRID
         ret
 
-L_ABA5:                 ; ABA5
+; Seen in MAME (the endings): +0 b4: in super mode with two players BOSS_SUPER_END; else the boss's pieces follow its object until it is off the playfield (X under 20 or E0 and over, or Y D0 and over), then its objects are cleared, +0 = 20 (gone) and ENEMY_TOTAL 0 ends the round
+BOSS_BEATEN:            ; ABA5
         ld      a,(SUPER_MODE)
         and     a
         jr      z,L_ABB2
         ld      a,(0xE5D7)
         cp      0x03
-        jr      z,L_AC22
+        jr      z,BOSS_SUPER_END
 L_ABB2:                 ; ABB2
         ld      l,(ix+3)
         ld      h,(ix+4)
@@ -5697,7 +5706,8 @@ L_AC18:                 ; AC18
         jp      nz,L_AA10
         jp      L_AA8A
 
-L_AC22:                 ; AC22
+; Seen in MAME (endsuper): the beaten boss in super mode with two players: the players are put at Y 18, X 20 and D0, and (IX+18) steps through the scene that frees their parents (AC82 .. AE2C), then ENEMY_TOTAL 0
+BOSS_SUPER_END:         ; AC22
         ld      hl,0xE2C5
         ld      (hl),0x18
         inc     hl
@@ -5764,7 +5774,7 @@ L_AC92:                 ; AC92
         ret
 
 L_ACA1:                 ; ACA1
-        call    L_AE9C
+        call    BOSS_POS_LOAD
         ld      de,0xAF3C
         bit     1,(ix+7)
         jr      nz,L_ACB0
@@ -5852,7 +5862,7 @@ L_AD2B:                 ; AD2B
         ld      de,0xAF34
         ld      b,0x04
         ld      c,0x18
-        call    L_AEAD
+        call    OBJ_POS_LIST
         ld      e,0x0C
         ld      b,0x04
         ld      c,0x0F
@@ -5866,7 +5876,7 @@ L_AD2B:                 ; AD2B
         ld      de,0xAF2C
         ld      b,0x04
         ld      c,0x18
-        call    L_AEAD
+        call    OBJ_POS_LIST
         ld      e,0x0D
         ld      b,0x04
         ld      c,0x0F
@@ -5951,7 +5961,7 @@ L_ADF7:                 ; ADF7
         ld      de,0xB0D0
         ld      b,0x10
         ld      c,0x13
-        call    L_AEAD
+        call    OBJ_POS_LIST
 L_AE0A:                 ; AE0A
         ld      de,0x050A
         call    ANIM_STEP
@@ -6008,7 +6018,8 @@ L_AE66:                 ; AE66
         call    SPRITE_GRID
         ret
 
-L_AE73:                 ; AE73
+; while the boss has 46 hits or more (F2A1) or +0 b7, and (IX+5) b0 is clear: carry (the boss is drawn in colour 29), except every 6th such call ((IX+17)), which also clears +0 b7
+BOSS_FLASH_CHECK:       ; AE73
         ld      a,(0xF2A1)
         cp      0x46
         jr      nc,L_AE82
@@ -6032,7 +6043,8 @@ L_AE8A:                 ; AE8A
         res     7,(ix+0)
         ret
 
-L_AE9C:                 ; AE9C
+; (IX+1), (IX+2) = Y, X of the boss's object
+BOSS_POS_LOAD:          ; AE9C
         ld      l,(ix+3)
         ld      h,(ix+4)
         ld      a,(hl)
@@ -6043,7 +6055,8 @@ L_AE9C:                 ; AE9C
         ld      (ix+2),a
         ret
 
-L_AEAD:                 ; AEAD
+; B objects at HL (4 bytes each): Y, X from the pairs at DE, attribute C
+OBJ_POS_LIST:           ; AEAD
         ld      a,(de)
         ld      (hl),a
         inc     hl
@@ -6056,7 +6069,7 @@ L_AEAD:                 ; AEAD
         ld      (hl),a
         inc     hl
         inc     de
-        djnz    L_AEAD
+        djnz    OBJ_POS_LIST
         ret
 
 ; X below 2C: flips (IX+7) b0-1
@@ -6079,7 +6092,7 @@ BOSS_EDGE_RIGHT:        ; AECD
         ld      a,(ix+7)
         xor     0x03
         ld      (ix+7),a
-        ld      hl,0xF3CA
+        ld      hl,BOSS_RIGHT_BOUNCES
         inc     (hl)
         ret
 
@@ -6768,15 +6781,16 @@ BOSS_SHOTS_UPDATE:      ; B97A
 L_B988:                 ; B988
         ld      ix,BOSS_SHOTS
         xor     a
-L_B98D:                 ; B98D
+; Seen in MAME (bub100, r100x2): each of the 8 BOSS_SHOTS: one not yet thrown, while BOSS_VOLLEY: mode 0 or 2 by the boss's facing (F29D b1), + 1 by the player's side of X 80; starts at the boss's Y - 10 and X + 10 (X - 20 when F29D b1); then BOSS_SHOT_FLY
+BOSS_SHOT_LOOP:         ; B98D
         push    af
         bit     0,(ix+0)
-        jr      nz,L_BA09
-        ld      a,(0xF3C9)
+        jr      nz,BOSS_SHOT_FLY
+        ld      a,(BOSS_VOLLEY)
         and     a
-        jp      z,L_BA98
+        jp      z,BOSS_SHOT_NEXT
         bit     1,(ix+0)
-        jp      nz,L_BA98
+        jp      nz,BOSS_SHOT_NEXT
         ld      a,(0xF29D)
         bit     1,a
         ld      (ix+7),0x00
@@ -6825,9 +6839,10 @@ L_B9F6:                 ; B9F6
         ld      (ix+5),0x00
         ld      (ix+6),0x00
         call    BOSS_SHOT_SPRITE
-        jp      L_BA98
+        jp      BOSS_SHOT_NEXT
 
-L_BA09:                 ; BA09
+; BOSS_SHOT_SPRITE, then BOSS_SHOT_MODE0-3 by (IX+7): each checks its edges (BOSS_SHOT_OFF_*) and steps its path (BOSS_SHOT_STEP) from BOSS_SHOT_PATHS by the bottle's number (IX+9)
+BOSS_SHOT_FLY:          ; BA09
         call    OBJ_POS_LOAD
         call    BOSS_SHOT_SPRITE
         ld      a,(ix+7)
@@ -6838,66 +6853,67 @@ L_BA09:                 ; BA09
 
 ; mode 0 of the BOSS_SHOT table at BBA7
 BOSS_SHOT_MODE0:        ; BA1A
-        call    L_BB0E
-        jp      c,L_BA98
-        call    L_BB2C
-        jp      c,L_BA98
-        call    L_BAF4
-        jp      c,L_BA98
+        call    BOSS_SHOT_OFF_R
+        jp      c,BOSS_SHOT_NEXT
+        call    BOSS_SHOT_OFF_TOP
+        jp      c,BOSS_SHOT_NEXT
+        call    BOSS_SHOT_OFF_BOTTOM
+        jp      c,BOSS_SHOT_NEXT
         ld      a,(ix+9)
         ld      hl,0xBBAF
         call    ADD_HL_A
-        call    L_BB4A
-        jr      L_BA98
+        call    BOSS_SHOT_STEP
+        jr      BOSS_SHOT_NEXT
 
 ; mode 1 of the BOSS_SHOT table at BBA7
 BOSS_SHOT_MODE1:        ; BA3A
-        call    L_BB0E
-        jp      c,L_BA98
-        call    L_BAD9
-        jp      c,L_BA98
-        call    L_BAF4
-        jp      c,L_BA98
+        call    BOSS_SHOT_OFF_R
+        jp      c,BOSS_SHOT_NEXT
+        call    BOSS_SHOT_OFF_L
+        jp      c,BOSS_SHOT_NEXT
+        call    BOSS_SHOT_OFF_BOTTOM
+        jp      c,BOSS_SHOT_NEXT
         ld      a,(ix+9)
         ld      hl,0xBBB7
         call    ADD_HL_A
-        call    L_BB4A
-        jr      L_BA98
+        call    BOSS_SHOT_STEP
+        jr      BOSS_SHOT_NEXT
 
 ; mode 2 of the BOSS_SHOT table at BBA7
 BOSS_SHOT_MODE2:        ; BA5A
-        call    L_BAD9
-        jp      c,L_BA98
-        call    L_BB2C
-        jp      c,L_BA98
-        call    L_BAF4
-        jp      c,L_BA98
+        call    BOSS_SHOT_OFF_L
+        jp      c,BOSS_SHOT_NEXT
+        call    BOSS_SHOT_OFF_TOP
+        jp      c,BOSS_SHOT_NEXT
+        call    BOSS_SHOT_OFF_BOTTOM
+        jp      c,BOSS_SHOT_NEXT
         ld      a,(ix+9)
         ld      hl,0xBBBF
         call    ADD_HL_A
-        call    L_BB4A
-        jr      L_BA98
+        call    BOSS_SHOT_STEP
+        jr      BOSS_SHOT_NEXT
 
 ; mode 3 of the BOSS_SHOT table at BBA7
 BOSS_SHOT_MODE3:        ; BA7A
-        call    L_BB0E
-        jp      c,L_BA98
-        call    L_BAD9
-        jp      c,L_BA98
-        call    L_BB2C
-        jp      c,L_BA98
+        call    BOSS_SHOT_OFF_R
+        jp      c,BOSS_SHOT_NEXT
+        call    BOSS_SHOT_OFF_L
+        jp      c,BOSS_SHOT_NEXT
+        call    BOSS_SHOT_OFF_TOP
+        jp      c,BOSS_SHOT_NEXT
         ld      a,(ix+9)
         ld      hl,0xBBC7
         call    ADD_HL_A
-        call    L_BB4A
-L_BA98:                 ; BA98
+        call    BOSS_SHOT_STEP
+; next BOSS_SHOTS record (0x0C bytes), 8 in all; when BOSS_SHOTS_LEFT is 0 every record is cleared, BOSS_SHOTS_LEFT = 8 and BOSS_VOLLEY = 0
+BOSS_SHOT_NEXT:         ; BA98
         ld      de,0x000C
         add     ix,de
         pop     af
         inc     a
         cp      0x08
-        jp      nz,L_B98D
-        ld      a,(0xF3C7)
+        jp      nz,BOSS_SHOT_LOOP
+        ld      a,(BOSS_SHOTS_LEFT)
         and     a
         ret     nz
         ld      ix,BOSS_SHOTS
@@ -6907,9 +6923,9 @@ L_BAAF:                 ; BAAF
         ld      de,0x000C
         add     ix,de
         djnz    L_BAAF
-        ld      hl,0xF3C7
+        ld      hl,BOSS_SHOTS_LEFT
         ld      (hl),0x08
-        ld      hl,0xF3C9
+        ld      hl,BOSS_VOLLEY
         ld      (hl),0x00
         ret
 
@@ -6926,7 +6942,8 @@ BOSS_SHOT_SPRITE:       ; BAC5
         call    SPRITE
         ret
 
-L_BAD9:                 ; BAD9
+; X under 1A: the bottle is hidden and done (+0 = 2), BOSS_SHOTS_LEFT - 1, carry
+BOSS_SHOT_OFF_L:        ; BAD9
         ld      a,(ix+2)
         cp      0x1A
         ret     nc
@@ -6934,12 +6951,13 @@ L_BAD9:                 ; BAD9
         ld      (ix+1),0x00
         ld      (ix+2),0x00
         ld      (ix+0),0x02
-        ld      hl,0xF3C7
+        ld      hl,BOSS_SHOTS_LEFT
         dec     (hl)
         scf
         ret
 
-L_BAF4:                 ; BAF4
+; Y under 22: as BOSS_SHOT_OFF_L, but without the carry, so the mode still steps the hidden bottle once
+BOSS_SHOT_OFF_BOTTOM:   ; BAF4
         ld      a,(ix+1)
         cp      0x22
         ret     nc
@@ -6947,11 +6965,12 @@ L_BAF4:                 ; BAF4
         ld      (ix+1),0x00
         ld      (ix+2),0x00
         ld      (ix+0),0x02
-        ld      hl,0xF3C7
+        ld      hl,BOSS_SHOTS_LEFT
         dec     (hl)
         ret
 
-L_BB0E:                 ; BB0E
+; X E6 or more: as BOSS_SHOT_OFF_L
+BOSS_SHOT_OFF_R:        ; BB0E
         ld      a,(ix+2)
         cp      0xE6
         jr      nc,L_BB17
@@ -6963,12 +6982,13 @@ L_BB17:                 ; BB17
         ld      (ix+1),0x00
         ld      (ix+2),0x00
         ld      (ix+0),0x02
-        ld      hl,0xF3C7
+        ld      hl,BOSS_SHOTS_LEFT
         dec     (hl)
         scf
         ret
 
-L_BB2C:                 ; BB2C
+; Y CE or more: as BOSS_SHOT_OFF_L
+BOSS_SHOT_OFF_TOP:      ; BB2C
         ld      a,(ix+1)
         cp      0xCE
         jr      nc,L_BB35
@@ -6980,12 +7000,13 @@ L_BB35:                 ; BB35
         ld      (ix+1),0x00
         ld      (ix+2),0x00
         ld      (ix+0),0x02
-        ld      hl,0xF3C7
+        ld      hl,BOSS_SHOTS_LEFT
         dec     (hl)
         scf
         ret
 
-L_BB4A:                 ; BB4A
+; the next byte of path (HL) (PATH_PTR, position (IX+11), 88 restarts): b0 moves Y 3 (down if b3), b4 moves X 3 (left if b7); 4 instead of 3 while the boss is angry (BOSS_SLOT b3)
+BOSS_SHOT_STEP:         ; BB4A
         push    hl
         ld      a,(hl)
         call    PATH_PTR
@@ -6997,7 +7018,7 @@ L_BB4A:                 ; BB4A
         cp      0x88
         jr      nz,L_BB64
         ld      (ix+11),0x00
-        jr      L_BB4A
+        jr      BOSS_SHOT_STEP
 
 L_BB64:                 ; BB64
         call    OBJ_PTR
@@ -7054,6 +7075,8 @@ L_BBA7:                 ; BBA7
         .word   BOSS_SHOT_MODE1
         .word   BOSS_SHOT_MODE2
         .word   BOSS_SHOT_MODE3
+; 4 x 8 path numbers, one per bottle, for BOSS_SHOT_MODE0-3 (BBAF, BBB7, BBBF, BBC7)
+BOSS_SHOT_PATHS:        ; BBAF
         .incbin "main_bank0.bin", 0x3BAF, 0x0020
 ; clears ENEMY2B_SHOTS; sets them up only if group 2 is nonzero and ENEMY_SWAP b4
 ENEMY2B_SHOTS_INIT:     ; BBCF
