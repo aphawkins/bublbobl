@@ -767,21 +767,24 @@ L_87A6:                 ; 87A6
         ex      de,hl
         jp      (hl)
 
-L_87B1:                 ; 87B1
+; special kind 00: the player's bubbles travel twice as far (IX+49 = 80, from 40: the bubble's distance (IX+18)); BANK2_CHECK, E5EB + 1
+TAKE_BUBBLE_RANGE:      ; 87B1
         call    BANK2_CHECK
         ld      hl,0xE5EB
         inc     (hl)
         ld      (ix+49),0x80
         ret
 
-L_87BD:                 ; 87BD
+; special kind 01: the player's bubbles move 6 pixels a frame (IX+47 = 6, from 3: the bubble's (IX+31)); ROM_SUM_STEP_H, E5E9 + 1
+TAKE_BUBBLE_SPEED:      ; 87BD
         call    ROM_SUM_STEP_H
         ld      hl,0xE5E9
         inc     (hl)
         ld      (ix+47),0x06
         ret
 
-L_87C9:                 ; 87C9
+; special kind 02: shorter wait between bubbles (IX+46 = 5, from 14, copied to (IX+38) at each blow); ROM_SUM_STEP_I, E5EA + 1. Tamper check: byte 0004 must be START's low byte, else PUSH AF, PUSH IX
+TAKE_BUBBLE_RATE:       ; 87C9
         call    ROM_SUM_STEP_I
         ld      hl,0xE5EA
         inc     (hl)
@@ -792,7 +795,8 @@ L_87C9:                 ; 87C9
         ret     z
         push    af
         push    ix
-L_87DF:                 ; 87DF
+; special kind 03: the player walks faster (IX+48 = 13, the SPEED_PATTERNS row, from 0C) and IX+44 = 1 (the other set of player frames); ROM_SUM_STEP_J. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX
+TAKE_FAST_WALK:         ; 87DF
         call    ROM_SUM_STEP_J
         ld      b,0x03
         xor     a
@@ -811,7 +815,8 @@ L_87F2:                 ; 87F2
         ld      (ix+31),a
         ret
 
-L_87FF:                 ; 87FF
+; special kind 04: E341 = FF and TIMER_RUN = FF: the enemies stop while the MCU countdown runs (every enemy update returns while TIMER_RUN), and ROUND_PAL_SHIFT changes the palette; E5ED + 1, ROM_SUM_STEP_L. Tamper check: byte 0002 b3, else PUSH HL
+TAKE_FREEZE:            ; 87FF
         call    ROM_SUM_STEP_L
         ld      a,(0x0002)
         bit     3,a
@@ -826,29 +831,34 @@ L_880A:                 ; 880A
         ld      (hl),0xFF
         ret
 
-L_8819:                 ; 8819
+; special kind 05: F59E = 1 starts KILL_ALL_A; ROM_SUM_STEP_K
+TAKE_KILL_ALL_A:        ; 8819
         call    ROM_SUM_STEP_K
         ld      hl,0xF59E
         ld      (hl),0x01
         ret
 
-L_8822:                 ; 8822
+; special kind 06: E350 = 3 rounds to skip, then TAKE_SKIP
+TAKE_SKIP_3:            ; 8822
         call    ROM_SUM_STEP_M
         ld      hl,0xE350
         ld      (hl),0x03
-        jr      L_883E
+        jr      TAKE_SKIP
 
-L_882C:                 ; 882C
+; special kind 07: E350 = 5, then TAKE_SKIP
+TAKE_SKIP_5:            ; 882C
         call    ROM_SUM_STEP_N
         ld      hl,0xE350
         ld      (hl),0x05
-        jr      L_883E
+        jr      TAKE_SKIP
 
-L_8836:                 ; 8836
+; special kind 08: E350 = 7, then TAKE_SKIP
+TAKE_SKIP_7:            ; 8836
         call    ROM_SUM_STEP_O
         ld      hl,0xE350
         ld      (hl),0x07
-L_883E:                 ; 883E
+; E5EC + 1; ends tasks 4, 5 and 2, SCREEN_FLASH, starts task 2 (ROUND_TASK) again; E34F = 1 and POINTS_FLAG_U = 1. E350 is the number of rounds to skip, counted down in the round code (0A8x)
+TAKE_SKIP:              ; 883E
         ld      hl,0xE5EC
         inc     (hl)
         ld      a,0x04
@@ -866,7 +876,8 @@ L_883E:                 ; 883E
         ld      (hl),0x01
         ret
 
-L_885C:                 ; 885C
+; special kind 09: PICKUP_RUSH_A (F521 = FF) with F523 = 1, E739 = 3; E737 = 1, E341 = 1; ROM_SUM_STEP_P
+TAKE_RUSH_A1:           ; 885C
         call    ROM_SUM_STEP_P
         ld      hl,0xF523
         ld      (hl),0x01
@@ -880,7 +891,8 @@ L_885C:                 ; 885C
         ld      (hl),0x01
         ret
 
-L_8879:                 ; 8879
+; special kind 0A: as TAKE_RUSH_A1 with F523 = 2, E739 = 2
+TAKE_RUSH_A2:           ; 8879
         ld      hl,0xF523
         ld      (hl),0x02
         ld      hl,0xF521
@@ -893,7 +905,8 @@ L_8879:                 ; 8879
         ld      (hl),0x01
         ret
 
-L_8893:                 ; 8893
+; special kind 0B: as TAKE_RUSH_A1 with F523 = 0, E739 = 1. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX
+TAKE_RUSH_A0:           ; 8893
         ld      b,0x03
         xor     a
         ld      hl,0x0000
@@ -917,7 +930,8 @@ L_88A3:                 ; 88A3
         ld      (hl),0x01
         ret
 
-L_88BD:                 ; 88BD
+; special kind 0C (and 2F): PICKUP_RUSH_C (F531 = FF), E739 = 4, E737 = 1, E341 = 1
+TAKE_RUSH_C:            ; 88BD
         ld      hl,0xF531
         ld      (hl),0xFF
         ld      hl,0xE737
@@ -928,7 +942,8 @@ L_88BD:                 ; 88BD
         ld      (hl),0x01
         ret
 
-L_88D2:                 ; 88D2
+; special kind 0D: PICKUP_RUSH_B (F52B = FF), E739 = 0, E737 = 1, E341 = 1. Tamper check: the IM 2 entry (I, FC00) must be IRQ_VECTOR_ENTRY, else the task sleeps for ever
+TAKE_RUSH_B:            ; 88D2
         ld      a,i
         ld      d,a
         ld      a,(MCU_RAM)
@@ -950,25 +965,30 @@ L_88E3:                 ; 88E3
         ld      (hl),0x01
         ret
 
-L_88F8:                 ; 88F8
+; special kind 0E: nothing (INVINCIBLE_ITEM has its own path)
+TAKE_NONE:              ; 88F8
         ret
 
-L_88F9:                 ; 88F9
+; special kind 0F: IX+45 b0: walking scores (L_480F, 1 for each step of E5E5); ROM_SUM_STEP_A
+TAKE_WALK_POINTS:       ; 88F9
         call    ROM_SUM_STEP_A
         set     0,(ix+45)
         ret
 
-L_8901:                 ; 8901
+; special kind 10: IX+45 b1: each jump scores 50 BCD (500 on screen); ROM_SUM_STEP_C
+TAKE_JUMP_POINTS:       ; 8901
         call    ROM_SUM_STEP_C
         set     1,(ix+45)
         ret
 
-L_8909:                 ; 8909
+; special kind 11: IX+45 b2: each bubble blown scores 10 BCD (100 on screen); ROM_SUM_STEP_D
+TAKE_BLOW_POINTS:       ; 8909
         call    ROM_SUM_STEP_D
         set     2,(ix+45)
         ret
 
-L_8911:                 ; 8911
+; special kind 12: F590 = 1 starts ROUND_SKIP; E600 + 1, ROM_SUM_STEP_E
+TAKE_ROUND_SKIP:        ; 8911
         call    ROM_SUM_STEP_E
         ld      hl,0xF590
         ld      (hl),0x01
@@ -976,7 +996,8 @@ L_8911:                 ; 8911
         inc     (hl)
         ret
 
-L_891E:                 ; 891E
+; special kind 13: LIGHTNING_START, F595 = 1, IX+45 b4; E5FF + 1
+TAKE_LIGHTNING:         ; 891E
         call    LIGHTNING_START
         ld      hl,0xF595
         ld      (hl),0x01
@@ -985,25 +1006,29 @@ L_891E:                 ; 891E
         inc     (hl)
         ret
 
-L_892F:                 ; 892F
+; special kind 14: IX+45 b6 and IX+40 = 10: the next 16 blows each make two bubbles
+TAKE_DOUBLE_BUBBLES:    ; 892F
         set     6,(ix+45)
         ld      (ix+40),0x10
         ret
 
-L_8938:                 ; 8938
-        call    L_8901
-        call    L_8909
-        jp      L_88F9
+; special kind 15: TAKE_JUMP_POINTS, TAKE_BLOW_POINTS and TAKE_WALK_POINTS
+TAKE_ALL_POINTS:        ; 8938
+        call    TAKE_JUMP_POINTS
+        call    TAKE_BLOW_POINTS
+        jp      TAKE_WALK_POINTS
 
-L_8941:                 ; 8941
-        call    L_8901
-        call    L_8909
-        call    L_88F9
-        call    L_87B1
-        call    L_87BD
-        jp      L_87C9
+; special kind 16: as TAKE_ALL_POINTS, then TAKE_BUBBLE_RANGE, _SPEED and _RATE
+TAKE_ALL_BOOSTS:        ; 8941
+        call    TAKE_JUMP_POINTS
+        call    TAKE_BLOW_POINTS
+        call    TAKE_WALK_POINTS
+        call    TAKE_BUBBLE_RANGE
+        call    TAKE_BUBBLE_SPEED
+        jp      TAKE_BUBBLE_RATE
 
-L_8953:                 ; 8953
+; special kind 17: ends task 5, E341 = 1, clears the bubbles' objects, BOMB_INIT, F5B6 = 1 (BOMB_RUN), IX+45 b5; E602 + 1. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX
+TAKE_BOMB:              ; 8953
         ld      b,0x03
         xor     a
         ld      hl,0x0000
@@ -1027,7 +1052,7 @@ L_8963:                 ; 8963
         ld      b,0x00
         call    ZERO_BC
         push    ix
-        call    L_AA5E
+        call    BOMB_INIT
         pop     ix
         ld      hl,0xF5B6
         ld      (hl),0x01
@@ -1036,12 +1061,14 @@ L_8963:                 ; 8963
         inc     (hl)
         ret
 
-L_898E:                 ; 898E
-        call    L_87B1
-        call    L_87BD
-        jp      L_87C9
+; special kind 18: TAKE_BUBBLE_RANGE, _SPEED and _RATE
+TAKE_ALL_BUBBLE:        ; 898E
+        call    TAKE_BUBBLE_RANGE
+        call    TAKE_BUBBLE_SPEED
+        jp      TAKE_BUBBLE_RATE
 
-L_8997:                 ; 8997
+; special kind 19: E720 = 1, E601 + 1; meaning of E720 not known. Tamper check: byte 0005 must be START's high byte, else it runs on into TAKE_STARS with two words popped
+TAKE_19:                ; 8997
         ld      hl,0xE720
         ld      (hl),0x01
         ld      hl,0xE601
@@ -1052,7 +1079,8 @@ L_8997:                 ; 8997
         ret     z
         pop     af
         pop     bc
-L_89AA:                 ; 89AA
+; special kind 1A: STARS_START with F47B = 0, F47C = 1
+TAKE_STARS:             ; 89AA
         push    ix
         ld      hl,0xF47B
         ld      (hl),0x00
@@ -1062,17 +1090,20 @@ L_89AA:                 ; 89AA
         ld      (hl),0x01
         ret
 
-L_89BC:                 ; 89BC
+; special kind 1B: F676 = 0A; meaning not known
+TAKE_1B:                ; 89BC
         ld      hl,0xF676
         ld      (hl),0x0A
         ret
 
-L_89C2:                 ; 89C2
+; special kind 1C: F5AC = 1 starts KILL_ALL_B
+TAKE_KILL_ALL_B:        ; 89C2
         ld      hl,0xF5AC
         ld      (hl),0x01
         ret
 
-L_89C8:                 ; 89C8
+; special kind 1D: FOOD_RAIN_START, F4CB = 1. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX
+TAKE_FOOD_RAIN:         ; 89C8
         ld      b,0x03
         xor     a
         ld      hl,0x0000
@@ -1091,35 +1122,40 @@ L_89D8:                 ; 89D8
         ld      (hl),0x01
         ret
 
-L_89E5:                 ; 89E5
+; special kind 1E: F46B = 1 starts BIG_ITEM, with F46D = 0A; kinds 1F-28 the same with F46D = 9 .. 0
+TAKE_BIG_ITEM_1E:       ; 89E5
         ld      hl,0xF46D
         ld      (hl),0x0A
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_89F0:                 ; 89F0
+; special kind 1F: as TAKE_BIG_ITEM_1E with F46D = 9
+TAKE_BIG_ITEM_1F:       ; 89F0
         ld      hl,0xF46D
         ld      (hl),0x09
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_89FB:                 ; 89FB
+; special kind 20: as TAKE_BIG_ITEM_1E with F46D = 8
+TAKE_BIG_ITEM_20:       ; 89FB
         ld      hl,0xF46D
         ld      (hl),0x08
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_8A06:                 ; 8A06
+; special kind 21: as TAKE_BIG_ITEM_1E with F46D = 7
+TAKE_BIG_ITEM_21:       ; 8A06
         ld      hl,0xF46D
         ld      (hl),0x07
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_8A11:                 ; 8A11
+; special kind 22: as TAKE_BIG_ITEM_1E with F46D = 6. Tamper check: the word at 0004 must be START, else EXX and EX (SP),HL
+TAKE_BIG_ITEM_22:       ; 8A11
         ld      hl,0xF46D
         ld      (hl),0x06
         ld      hl,0xF46B
@@ -1133,75 +1169,86 @@ L_8A11:                 ; 8A11
         ex      (sp),hl
         ret
 
-L_8A28:                 ; 8A28
+; special kind 23: as TAKE_BIG_ITEM_1E with F46D = 5
+TAKE_BIG_ITEM_23:       ; 8A28
         ld      hl,0xF46D
         ld      (hl),0x05
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_8A33:                 ; 8A33
+; special kind 24: as TAKE_BIG_ITEM_1E with F46D = 4
+TAKE_BIG_ITEM_24:       ; 8A33
         ld      hl,0xF46D
         ld      (hl),0x04
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_8A3E:                 ; 8A3E
+; special kind 25: as TAKE_BIG_ITEM_1E with F46D = 3
+TAKE_BIG_ITEM_25:       ; 8A3E
         ld      hl,0xF46D
         ld      (hl),0x03
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_8A49:                 ; 8A49
+; special kind 26: as TAKE_BIG_ITEM_1E with F46D = 2
+TAKE_BIG_ITEM_26:       ; 8A49
         ld      hl,0xF46D
         ld      (hl),0x02
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_8A54:                 ; 8A54
+; special kind 27: as TAKE_BIG_ITEM_1E with F46D = 1
+TAKE_BIG_ITEM_27:       ; 8A54
         ld      hl,0xF46D
         ld      (hl),0x01
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_8A5F:                 ; 8A5F
+; special kind 28: as TAKE_BIG_ITEM_1E with F46D = 0
+TAKE_BIG_ITEM_28:       ; 8A5F
         ld      hl,0xF46D
         ld      (hl),0x00
         ld      hl,0xF46B
         ld      (hl),0x01
         ret
 
-L_8A6A:                 ; 8A6A
+; special kind 29: E603 = 1, so ITEM_HINT shows on later rounds
+TAKE_HINT_KEY:          ; 8A6A
         ld      hl,0xE603
         ld      (hl),0x01
         ret
 
-L_8A70:                 ; 8A70
+; special kind 2A: F464 = 1, F465 = 30: ROUND_END_PICK shows end-of-round item 30
+TAKE_END_ITEM_30:       ; 8A70
         ld      hl,0xF464
         ld      (hl),0x01
         ld      hl,0xF465
         ld      (hl),0x30
         ret
 
-L_8A7B:                 ; 8A7B
+; special kind 2B: as TAKE_END_ITEM_30 with item 31
+TAKE_END_ITEM_31:       ; 8A7B
         ld      hl,0xF464
         ld      (hl),0x01
         ld      hl,0xF465
         ld      (hl),0x31
         ret
 
-L_8A86:                 ; 8A86
+; special kind 2C: as TAKE_END_ITEM_30 with item 32
+TAKE_END_ITEM_32:       ; 8A86
         ld      hl,0xF464
         ld      (hl),0x01
         ld      hl,0xF465
         ld      (hl),0x32
         ret
 
-L_8A91:                 ; 8A91
+; special kind 2D: FOOD_RAIN_START with F4CD = 1 (end-of-round item sprites as the food)
+TAKE_FOOD_RAIN_B:       ; 8A91
         push    ix
         call    FOOD_RAIN_START
         pop     ix
@@ -1211,17 +1258,20 @@ L_8A91:                 ; 8A91
         ld      (hl),0x01
         ret
 
-L_8AA3:                 ; 8AA3
+; special kind 2E: F44D = 1, so both items come after F0 frames
+TAKE_ITEMS_EARLY:       ; 8AA3
         ld      hl,0xF44D
         ld      (hl),0x01
         ret
 
-L_8AA9:                 ; 8AA9
+; special kind 2F: SKIP_KINDS = 3, then TAKE_RUSH_C
+TAKE_RUSH_C_SKIP:       ; 8AA9
         ld      hl,SKIP_KINDS
         ld      (hl),0x03
-        jp      L_88BD
+        jp      TAKE_RUSH_C
 
-L_8AB1:                 ; 8AB1
+; special kind 30: F448 = 81 starts HURRY_HAND_RUN
+TAKE_HURRY_HAND:        ; 8AB1
         ld      hl,0xF448
         ld      (hl),0x81
         ret
@@ -1250,7 +1300,8 @@ SECRET_ROUND_C:         ; 8ACD
         ld      (hl),0x29
         ret
 
-L_8AD8:                 ; 8AD8
+; special kind 34: below round 0x45, E350 = 0x45 - ROUND_MAIN and DIFFICULTY = 1E, then TAKE_SKIP: so play goes on at ROUND_MAIN 0x45 (round 70)
+TAKE_SKIP_TO_70:        ; 8AD8
         ld      a,(ROUND_MAIN)
         cp      0x45
         ret     nc
@@ -1260,9 +1311,10 @@ L_8AD8:                 ; 8AD8
         ld      (0xE350),a
         ld      hl,DIFFICULTY
         ld      (hl),0x1E
-        jp      L_883E
+        jp      TAKE_SKIP
 
-L_8AED:                 ; 8AED
+; special kind 35: FOOD_RAIN_START with F4CD = FF
+TAKE_FOOD_RAIN_C:       ; 8AED
         push    ix
         call    FOOD_RAIN_START
         pop     ix
@@ -1274,60 +1326,60 @@ L_8AED:                 ; 8AED
 
 ; word table: SPECIAL_TAKE jumps to entry SPECIAL_KIND
 SPECIAL_EFFECTS:        ; 8AFF
-        .word   L_87B1
-        .word   L_87BD
-        .word   L_87C9
-        .word   L_87DF
-        .word   L_87FF
-        .word   L_8819
-        .word   L_8822
-        .word   L_882C
-        .word   L_8836
-        .word   L_885C
-        .word   L_8879
-        .word   L_8893
-        .word   L_88BD
-        .word   L_88D2
-        .word   L_88F8
-        .word   L_88F9
-        .word   L_8901
-        .word   L_8909
-        .word   L_8911
-        .word   L_891E
-        .word   L_892F
-        .word   L_8938
-        .word   L_8941
-        .word   L_8953
-        .word   L_898E
-        .word   L_8997
-        .word   L_89AA
-        .word   L_89BC
-        .word   L_89C2
-        .word   L_89C8
-        .word   L_89E5
-        .word   L_89F0
-        .word   L_89FB
-        .word   L_8A06
-        .word   L_8A11
-        .word   L_8A28
-        .word   L_8A33
-        .word   L_8A3E
-        .word   L_8A49
-        .word   L_8A54
-        .word   L_8A5F
-        .word   L_8A6A
-        .word   L_8A70
-        .word   L_8A7B
-        .word   L_8A86
-        .word   L_8A91
-        .word   L_8AA3
-        .word   L_8AA9
-        .word   L_8AB1
+        .word   TAKE_BUBBLE_RANGE
+        .word   TAKE_BUBBLE_SPEED
+        .word   TAKE_BUBBLE_RATE
+        .word   TAKE_FAST_WALK
+        .word   TAKE_FREEZE
+        .word   TAKE_KILL_ALL_A
+        .word   TAKE_SKIP_3
+        .word   TAKE_SKIP_5
+        .word   TAKE_SKIP_7
+        .word   TAKE_RUSH_A1
+        .word   TAKE_RUSH_A2
+        .word   TAKE_RUSH_A0
+        .word   TAKE_RUSH_C
+        .word   TAKE_RUSH_B
+        .word   TAKE_NONE
+        .word   TAKE_WALK_POINTS
+        .word   TAKE_JUMP_POINTS
+        .word   TAKE_BLOW_POINTS
+        .word   TAKE_ROUND_SKIP
+        .word   TAKE_LIGHTNING
+        .word   TAKE_DOUBLE_BUBBLES
+        .word   TAKE_ALL_POINTS
+        .word   TAKE_ALL_BOOSTS
+        .word   TAKE_BOMB
+        .word   TAKE_ALL_BUBBLE
+        .word   TAKE_19
+        .word   TAKE_STARS
+        .word   TAKE_1B
+        .word   TAKE_KILL_ALL_B
+        .word   TAKE_FOOD_RAIN
+        .word   TAKE_BIG_ITEM_1E
+        .word   TAKE_BIG_ITEM_1F
+        .word   TAKE_BIG_ITEM_20
+        .word   TAKE_BIG_ITEM_21
+        .word   TAKE_BIG_ITEM_22
+        .word   TAKE_BIG_ITEM_23
+        .word   TAKE_BIG_ITEM_24
+        .word   TAKE_BIG_ITEM_25
+        .word   TAKE_BIG_ITEM_26
+        .word   TAKE_BIG_ITEM_27
+        .word   TAKE_BIG_ITEM_28
+        .word   TAKE_HINT_KEY
+        .word   TAKE_END_ITEM_30
+        .word   TAKE_END_ITEM_31
+        .word   TAKE_END_ITEM_32
+        .word   TAKE_FOOD_RAIN_B
+        .word   TAKE_ITEMS_EARLY
+        .word   TAKE_RUSH_C_SKIP
+        .word   TAKE_HURRY_HAND
         .word   SECRET_ROUND_A
         .word   SECRET_ROUND_B
         .word   SECRET_ROUND_C
-        .word   L_8AD8
-        .word   L_8AED
+        .word   TAKE_SKIP_TO_70
+        .word   TAKE_FOOD_RAIN_C
 ; one byte a call of a ROM sum, pointer in F467, sum in F469, started by F466 (the BIG_ITEM code)
 ROM_SUM_STEP_H:         ; 8B6B
         ld      a,(0xF466)
@@ -5401,7 +5453,8 @@ L_AA5C:                 ; AA5C
         dec     (hl)
         ret
 
-L_AA5E:                 ; AA5E
+; unless ATTRACT: clears F5B6 (0x59 bytes) and sets up 8 fireball records at F5B7 from the table at AAA5 (0x0B bytes each)
+BOMB_INIT:              ; AA5E
         ld      a,(ATTRACT)
         and     a
         ret     nz

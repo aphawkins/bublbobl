@@ -825,6 +825,59 @@ ENDING_HINT_SCREEN = { addr = 0xB77A, note = "Seen in MAME (--boss-pop): after t
 SECRET_ROUND_A = { addr = 0x8AB7, note = "special kind 31: E724 = 0, E723 = 29, so SECRET_ROUND_START takes the player to the secret room with the stars (seen in MAME)" }
 SECRET_ROUND_B = { addr = 0x8AC2, note = "special kind 32: E724 = 1, E723 = 29: the secret room with the lightning (seen in MAME)" }
 SECRET_ROUND_C = { addr = 0x8ACD, note = "special kind 33: E724 = 2, E723 = 29: the secret room with STARS_START, F47B = 1 (seen in MAME)" }
+TAKE_BUBBLE_RANGE = { addr = 0x87B1, note = "special kind 00: the player's bubbles travel twice as far (IX+49 = 80, from 40: the bubble's distance (IX+18)); BANK2_CHECK, E5EB + 1" }
+TAKE_BUBBLE_SPEED = { addr = 0x87BD, note = "special kind 01: the player's bubbles move 6 pixels a frame (IX+47 = 6, from 3: the bubble's (IX+31)); ROM_SUM_STEP_H, E5E9 + 1" }
+TAKE_BUBBLE_RATE = { addr = 0x87C9, note = "special kind 02: shorter wait between bubbles (IX+46 = 5, from 14, copied to (IX+38) at each blow); ROM_SUM_STEP_I, E5EA + 1. Tamper check: byte 0004 must be START's low byte, else PUSH AF, PUSH IX" }
+TAKE_FAST_WALK = { addr = 0x87DF, note = "special kind 03: the player walks faster (IX+48 = 13, the SPEED_PATTERNS row, from 0C) and IX+44 = 1 (the other set of player frames); ROM_SUM_STEP_J. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX" }
+TAKE_FREEZE = { addr = 0x87FF, note = "special kind 04: E341 = FF and TIMER_RUN = FF: the enemies stop while the MCU countdown runs (every enemy update returns while TIMER_RUN), and ROUND_PAL_SHIFT changes the palette; E5ED + 1, ROM_SUM_STEP_L. Tamper check: byte 0002 b3, else PUSH HL" }
+TAKE_KILL_ALL_A = { addr = 0x8819, note = "special kind 05: F59E = 1 starts KILL_ALL_A; ROM_SUM_STEP_K" }
+TAKE_SKIP_3 = { addr = 0x8822, note = "special kind 06: E350 = 3 rounds to skip, then TAKE_SKIP" }
+TAKE_SKIP_5 = { addr = 0x882C, note = "special kind 07: E350 = 5, then TAKE_SKIP" }
+TAKE_SKIP_7 = { addr = 0x8836, note = "special kind 08: E350 = 7, then TAKE_SKIP" }
+TAKE_SKIP = { addr = 0x883E, note = "E5EC + 1; ends tasks 4, 5 and 2, SCREEN_FLASH, starts task 2 (ROUND_TASK) again; E34F = 1 and POINTS_FLAG_U = 1. E350 is the number of rounds to skip, counted down in the round code (0A8x)" }
+TAKE_RUSH_A1 = { addr = 0x885C, note = "special kind 09: PICKUP_RUSH_A (F521 = FF) with F523 = 1, E739 = 3; E737 = 1, E341 = 1; ROM_SUM_STEP_P" }
+TAKE_RUSH_A2 = { addr = 0x8879, note = "special kind 0A: as TAKE_RUSH_A1 with F523 = 2, E739 = 2" }
+TAKE_RUSH_A0 = { addr = 0x8893, note = "special kind 0B: as TAKE_RUSH_A1 with F523 = 0, E739 = 1. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX" }
+TAKE_RUSH_C = { addr = 0x88BD, note = "special kind 0C (and 2F): PICKUP_RUSH_C (F531 = FF), E739 = 4, E737 = 1, E341 = 1" }
+TAKE_RUSH_B = { addr = 0x88D2, note = "special kind 0D: PICKUP_RUSH_B (F52B = FF), E739 = 0, E737 = 1, E341 = 1. Tamper check: the IM 2 entry (I, FC00) must be IRQ_VECTOR_ENTRY, else the task sleeps for ever" }
+TAKE_NONE = { addr = 0x88F8, note = "special kind 0E: nothing (INVINCIBLE_ITEM has its own path)" }
+TAKE_WALK_POINTS = { addr = 0x88F9, note = "special kind 0F: IX+45 b0: walking scores (L_480F, 1 for each step of E5E5); ROM_SUM_STEP_A" }
+TAKE_JUMP_POINTS = { addr = 0x8901, note = "special kind 10: IX+45 b1: each jump scores 50 BCD (500 on screen); ROM_SUM_STEP_C" }
+TAKE_BLOW_POINTS = { addr = 0x8909, note = "special kind 11: IX+45 b2: each bubble blown scores 10 BCD (100 on screen); ROM_SUM_STEP_D" }
+TAKE_ROUND_SKIP = { addr = 0x8911, note = "special kind 12: F590 = 1 starts ROUND_SKIP; E600 + 1, ROM_SUM_STEP_E" }
+TAKE_LIGHTNING = { addr = 0x891E, note = "special kind 13: LIGHTNING_START, F595 = 1, IX+45 b4; E5FF + 1" }
+TAKE_DOUBLE_BUBBLES = { addr = 0x892F, note = "special kind 14: IX+45 b6 and IX+40 = 10: the next 16 blows each make two bubbles" }
+TAKE_ALL_POINTS = { addr = 0x8938, note = "special kind 15: TAKE_JUMP_POINTS, TAKE_BLOW_POINTS and TAKE_WALK_POINTS" }
+TAKE_ALL_BOOSTS = { addr = 0x8941, note = "special kind 16: as TAKE_ALL_POINTS, then TAKE_BUBBLE_RANGE, _SPEED and _RATE" }
+TAKE_BOMB = { addr = 0x8953, note = "special kind 17: ends task 5, E341 = 1, clears the bubbles' objects, BOMB_INIT, F5B6 = 1 (BOMB_RUN), IX+45 b5; E602 + 1. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX" }
+TAKE_ALL_BUBBLE = { addr = 0x898E, note = "special kind 18: TAKE_BUBBLE_RANGE, _SPEED and _RATE" }
+TAKE_19 = { addr = 0x8997, note = "special kind 19: E720 = 1, E601 + 1; meaning of E720 not known. Tamper check: byte 0005 must be START's high byte, else it runs on into TAKE_STARS with two words popped" }
+TAKE_STARS = { addr = 0x89AA, note = "special kind 1A: STARS_START with F47B = 0, F47C = 1" }
+TAKE_1B = { addr = 0x89BC, note = "special kind 1B: F676 = 0A; meaning not known" }
+TAKE_KILL_ALL_B = { addr = 0x89C2, note = "special kind 1C: F5AC = 1 starts KILL_ALL_B" }
+TAKE_FOOD_RAIN = { addr = 0x89C8, note = "special kind 1D: FOOD_RAIN_START, F4CB = 1. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX" }
+TAKE_BIG_ITEM_1E = { addr = 0x89E5, note = "special kind 1E: F46B = 1 starts BIG_ITEM, with F46D = 0A; kinds 1F-28 the same with F46D = 9 .. 0" }
+TAKE_BIG_ITEM_22 = { addr = 0x8A11, note = "special kind 22: as TAKE_BIG_ITEM_1E with F46D = 6. Tamper check: the word at 0004 must be START, else EXX and EX (SP),HL" }
+TAKE_HINT_KEY = { addr = 0x8A6A, note = "special kind 29: E603 = 1, so ITEM_HINT shows on later rounds" }
+TAKE_END_ITEM_30 = { addr = 0x8A70, note = "special kind 2A: F464 = 1, F465 = 30: ROUND_END_PICK shows end-of-round item 30" }
+TAKE_END_ITEM_31 = { addr = 0x8A7B, note = "special kind 2B: as TAKE_END_ITEM_30 with item 31" }
+TAKE_END_ITEM_32 = { addr = 0x8A86, note = "special kind 2C: as TAKE_END_ITEM_30 with item 32" }
+TAKE_FOOD_RAIN_B = { addr = 0x8A91, note = "special kind 2D: FOOD_RAIN_START with F4CD = 1 (end-of-round item sprites as the food)" }
+TAKE_ITEMS_EARLY = { addr = 0x8AA3, note = "special kind 2E: F44D = 1, so both items come after F0 frames" }
+TAKE_RUSH_C_SKIP = { addr = 0x8AA9, note = "special kind 2F: SKIP_KINDS = 3, then TAKE_RUSH_C" }
+TAKE_HURRY_HAND = { addr = 0x8AB1, note = "special kind 30: F448 = 81 starts HURRY_HAND_RUN" }
+TAKE_SKIP_TO_70 = { addr = 0x8AD8, note = "special kind 34: below round 0x45, E350 = 0x45 - ROUND_MAIN and DIFFICULTY = 1E, then TAKE_SKIP: so play goes on at ROUND_MAIN 0x45 (round 70)" }
+TAKE_FOOD_RAIN_C = { addr = 0x8AED, note = "special kind 35: FOOD_RAIN_START with F4CD = FF" }
+BOMB_INIT = { addr = 0xAA5E, note = "unless ATTRACT: clears F5B6 (0x59 bytes) and sets up 8 fireball records at F5B7 from the table at AAA5 (0x0B bytes each)" }
+TAKE_BIG_ITEM_1F = { addr = 0x89F0, note = "special kind 1F: as TAKE_BIG_ITEM_1E with F46D = 9" }
+TAKE_BIG_ITEM_20 = { addr = 0x89FB, note = "special kind 20: as TAKE_BIG_ITEM_1E with F46D = 8" }
+TAKE_BIG_ITEM_21 = { addr = 0x8A06, note = "special kind 21: as TAKE_BIG_ITEM_1E with F46D = 7" }
+TAKE_BIG_ITEM_23 = { addr = 0x8A28, note = "special kind 23: as TAKE_BIG_ITEM_1E with F46D = 5" }
+TAKE_BIG_ITEM_24 = { addr = 0x8A33, note = "special kind 24: as TAKE_BIG_ITEM_1E with F46D = 4" }
+TAKE_BIG_ITEM_25 = { addr = 0x8A3E, note = "special kind 25: as TAKE_BIG_ITEM_1E with F46D = 3" }
+TAKE_BIG_ITEM_26 = { addr = 0x8A49, note = "special kind 26: as TAKE_BIG_ITEM_1E with F46D = 2" }
+TAKE_BIG_ITEM_27 = { addr = 0x8A54, note = "special kind 27: as TAKE_BIG_ITEM_1E with F46D = 1" }
+TAKE_BIG_ITEM_28 = { addr = 0x8A5F, note = "special kind 28: as TAKE_BIG_ITEM_1E with F46D = 0" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

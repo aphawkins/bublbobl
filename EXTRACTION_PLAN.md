@@ -694,6 +694,15 @@ Started (2026-10-17) with the sub CPU, which is now done:
   or in super mode with two players `BOSS_SUPER_END` plays the parents' scene; left alone for
   6 seconds it escapes angry. Read from the code, not seen: with exactly one hit, 7 right-edge
   bounces (`BOSS_RIGHT_BOUNCES`) and a volley out, the hits jump to 0x50 (notes/open_questions.md).
+- Special item handlers (2026-10-27): every entry of `SPECIAL_EFFECTS` (bank 2 `8AFF`) is named
+  `TAKE_*` by its effect, and all ran in the `specialKK` sweep except kind 0E (a bare `RET`).
+  The player boosts are read from the player record: kind 00 doubles a bubble's range
+  (`IX+49` 40 to 80), 01 its speed (`IX+47` 3 to 6 pixels a frame), 02 shortens the wait between
+  bubbles (`IX+46` 14 to 5), 03 walks faster (`IX+48`, the speed row, 0C to 13); 0F, 10 and 11
+  score for walking, each jump (500) and each bubble (100); 14 blows two bubbles at a time 16
+  times; 15, 16 and 18 combine them. 04 freezes the enemies (`TIMER_RUN`), 06-08 skip 3, 5 or 7
+  rounds (`E350`) and 34 skips to round 70 at top difficulty; 2A-2C choose the end-of-round
+  item. Kinds 19 (`E720`) and 1B (`F676`) set flags not yet understood.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -706,7 +715,8 @@ Started (2026-10-17) with the sub CPU, which is now done:
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
      The ghost, groups 2, 2B, 3, 4 and 5 and the boss are done (2026-10-27); groups 4 and 5 have
-     no attack. The bank 2 routines left are not.
+     no attack. So are the special item handlers. Bank 2 still has small unnamed helpers inside
+     named routines (the pickup rush tile writers, `WATER_RUN`, `FIRE_RUN`, `TEST_MODE`).
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---
