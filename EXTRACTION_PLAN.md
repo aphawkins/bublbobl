@@ -615,8 +615,16 @@ Started (2026-10-17) with the sub CPU, which is now done:
   lightning). Its other call is `EXTEND_CHECK` (`6EF8`): with all six letters the letters flash and
   `EXTEND_SCENE` (`7007`) shows NICE 1UP!, seen with `--poke E742=3F`. Also `EXTEND_LETTERS_DRAW`,
   `CAPTIVES_INIT`/`STEP` (round 100) and `SCORE_BAR_REDRAW` (`21CF`). Two more tamper checks: the
-  word at `0B2E` must be `IRQ_HANDLER` in `CAPTIVES_STEP` and `EXTEND_SCENE`. Still `L_xxxx`: `4195`
-  (a player's frame after a lost life), `43A0`, `6B80`.
+  word at `0B2E` must be `IRQ_HANDLER` in `CAPTIVES_STEP` and `EXTEND_SCENE`.
+- The last three (2026-10-27): `43A0` is `PLAYER_FACE_INPUT` (the facing byte `IX+8` from the
+  joystick). `4195` is `SECRET_DEATH_SLEEP`: when the Skel-Monsta kills a player in the secret
+  room, the sub CPU sets `SECRET_DEATH` (`E730`), and after the lost life this sets its b7 and puts
+  the task to sleep. `SECRET_EXIT_CHECK` (`5416`) then runs `SECRET_ROUND_EXIT` (`53CF`), which
+  sends the game on to the round after the one the player left. The code after `4195` is
+  `PLAYER_PLAY_STEP` (`419F`), a player's frame in play. `6B80` is `CAPTIVE_HEART`, the small
+  heart over each captive in the round 100 ending (the end2p trace's sprite sheet shows it).
+  Read from the code, not watched: a Skel-Monsta death in the secret room, and the exit at Y 18,
+  X 77-79 (`539F`).
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).

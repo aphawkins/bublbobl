@@ -7653,7 +7653,7 @@ L_4018:                 ; 4018
         bit     2,a
         jp      nz,L_4062
         bit     0,a
-        jp      nz,L_419F
+        jp      nz,PLAYER_PLAY_STEP
         bit     1,a
         jp      nz,L_40E0
         bit     4,a
@@ -7674,7 +7674,7 @@ L_4018:                 ; 4018
         ld      (ix+22),0x00
 L_405B:                 ; 405B
         ld      (ix+0),0x01
-        jp      L_419F
+        jp      PLAYER_PLAY_STEP
 
 L_4062:                 ; 4062
         ld      a,0x02
@@ -7783,7 +7783,7 @@ L_410D:                 ; 410D
         call    P1_LIVES_DRAW
         ex      af,af'
         jp      m,L_4146
-        call    L_4195
+        call    SECRET_DEATH_SLEEP
         call    P1_REC_INIT
         call    P1_STATS_INIT
         jp      L_41D7
@@ -7796,7 +7796,7 @@ L_4146:                 ; 4146
         ld      c,0xFD
         call    DIFFICULTY_DOWN
         call    SWB7_SCORE_A
-        call    L_4195
+        call    SECRET_DEATH_SLEEP
         jp      L_41D7
 
 L_415F:                 ; 415F
@@ -7808,7 +7808,7 @@ L_415F:                 ; 415F
         call    P2_LIVES_DRAW
         ex      af,af'
         jp      m,L_417C
-        call    L_4195
+        call    SECRET_DEATH_SLEEP
         call    P2_REC_INIT
         call    P2_STATS_INIT
         jp      L_41D7
@@ -7821,17 +7821,19 @@ L_417C:                 ; 417C
         ld      c,0xFD
         call    DIFFICULTY_DOWN
         call    SWB7_SCORE_B
-        call    L_4195
+        call    SECRET_DEATH_SLEEP
         jp      L_41D7
 
-L_4195:                 ; 4195
-        ld      hl,0xE730
+; PLAYERS_STEP, after a lost life (or the last one): if SECRET_DEATH b0, sets its b7 and the task sleeps until started (RST 18, A = 0); else returns
+SECRET_DEATH_SLEEP:     ; 4195
+        ld      hl,SECRET_DEATH
         bit     0,(hl)
         ret     z
         set     7,(hl)
         xor     a
         rst     0x18
-L_419F:                 ; 419F
+; PLAYERS_STEP, state b0: one frame of a player in play: OBJ_POS_LOAD, PLAYER_PROX_SET, speed, input and walking (4247), PLAYER_SPRITE, then bank 2 854E, 873E, 91A3, BIG_ITEM_TAKE (8CC7), 9233
+PLAYER_PLAY_STEP:       ; 419F
         call    OBJ_POS_LOAD
         call    PLAYER_PROX_SET
         call    PLAYER_SPEED_STEP
@@ -7936,7 +7938,7 @@ L_4247:                 ; 4247
         jp      PLAYER_SPEED_SET
 
 L_4271:                 ; 4271
-        call    L_43A0
+        call    PLAYER_FACE_INPUT
         ld      (ix+35),0x02
         ld      a,0x08
         call    PLAYER_SPEED_SET
@@ -7973,7 +7975,7 @@ L_42AC:                 ; 42AC
         ret
 
 L_42AE:                 ; 42AE
-        call    L_43A0
+        call    PLAYER_FACE_INPUT
         ld      (ix+35),0x04
         ld      a,0x08
         call    PLAYER_SPEED_SET
@@ -8033,7 +8035,7 @@ L_431D:                 ; 431D
         pop     bc
         djnz    L_42F5
         call    L_4334
-        jp      L_43A0
+        jp      PLAYER_FACE_INPUT
 
 L_4326:                 ; 4326
         pop     bc
@@ -8106,7 +8108,8 @@ L_4399:                 ; 4399
         dec     (hl)
         ret
 
-L_43A0:                 ; 43A0
+; IX+8 (facing) from the player's input (PLAYER_FLAGS_GET, active low): b0 clear (left held) 0, else b1 clear (right held) 1; neither held leaves it
+PLAYER_FACE_INPUT:      ; 43A0
         call    PLAYER_FLAGS_GET
         bit     0,a
         jr      z,L_43AF
@@ -8623,7 +8626,7 @@ L_48E8:                 ; 48E8
         call    ROM_SUM_STEP_D
         res     0,(ix+11)
 L_4912:                 ; 4912
-        call    L_43A0
+        call    PLAYER_FACE_INPUT
         call    L_4334
         ld      a,(ix+32)
         or      a
@@ -9605,7 +9608,7 @@ SECRET_ROUND_FRAME:     ; 5127
         call    L_55DB
         call    L_52B6
         call    L_5353
-        call    L_5416
+        call    SECRET_EXIT_CHECK
         call    GHOST_COUNTDOWN
         call    0xA150
         call    L_541E
@@ -9879,7 +9882,7 @@ L_539F:                 ; 539F
         cp      0x77
         jr      c,L_53B9
         cp      0x7A
-        jr      c,L_53CF
+        jr      c,SECRET_ROUND_EXIT
 L_53B9:                 ; 53B9
         ld      hl,0xE5D7
         bit     1,(hl)
@@ -9895,7 +9898,8 @@ L_53B9:                 ; 53B9
         ret     c
         cp      0x7A
         ret     nc
-L_53CF:                 ; 53CF
+; leaves the secret room: ends task 3, SCREEN_FLASH, ROUND_MAIN = E726 (the round after the one left), sound 30, E723 and SECRET_DEATH 0, ENEMY_TOTAL 0 (the round is over), then sleeps. From SECRET_EXIT_CHECK, or 539F when E731 b1 is set and a playing player's object stands at Y 18, X 77-79
+SECRET_ROUND_EXIT:      ; 53CF
         ld      a,0x03
         rst     0x08
         call    SCREEN_FLASH
@@ -9915,7 +9919,7 @@ L_53CF:                 ; 53CF
         ld      (hl),0x01
         ld      hl,ENEMY_TOTAL
         ld      (hl),0x00
-        ld      hl,0xE730
+        ld      hl,SECRET_DEATH
         ld      (hl),0x00
         xor     a
         rst     0x18
@@ -9928,11 +9932,12 @@ L_5406:                 ; 5406
         .word   0x397B
         .word   0x3973
         .word   L_397C
-L_5416:                 ; 5416
-        ld      hl,0xE730
+; SECRET_ROUND_FRAME: SECRET_ROUND_EXIT once SECRET_DEATH b7 is set
+SECRET_EXIT_CHECK:      ; 5416
+        ld      hl,SECRET_DEATH
         bit     7,(hl)
         ret     z
-        jr      L_53CF
+        jr      SECRET_ROUND_EXIT
 
 L_541E:                 ; 541E
         ld      hl,0xE727
@@ -12701,13 +12706,13 @@ L_6A41:                 ; 6A41
         jr      nz,L_6A56
         bit     0,a
         jr      nz,L_6A5E
-        call    L_6B80
+        call    CAPTIVE_HEART
         ret
 
 L_6A56:                 ; 6A56
         bit     1,a
         jr      nz,L_6A5E
-        call    L_6B80
+        call    CAPTIVE_HEART
         ret
 
 L_6A5E:                 ; 6A5E
@@ -12786,7 +12791,7 @@ L_6AE3:                 ; 6AE3
         dec     (ix+11)
         jr      nz,L_6B0D
         set     5,(ix+0)
-        call    L_6B80
+        call    CAPTIVE_HEART
         call    IX_SPEED_CLEAR
         bit     0,(ix+8)
         jp      nz,L_6BEC
@@ -12857,7 +12862,8 @@ L_6B77:                 ; 6B77
         call    L_6BC2
         jp      L_6BEC
 
-L_6B80:                 ; 6B80
+; Seen in MAME (end2p, endsuper, r100pop: sprites.csv caller 6B9B): round 100, a small heart sprite in the captive's third object at Y 30, X 38 (IX+8 = 0) or B8 (IX+8 = 1), tile 44, attribute 26. Drawn when the captive's countdown IX+11 ends (6AE3, before HEART_DRAW), or from 6A41 for a captive whose player is not playing
+CAPTIVE_HEART:          ; 6B80
         call    OBJ_PTR
         ld      a,0x08
         call    ADD_HL_A

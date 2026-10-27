@@ -98,6 +98,7 @@ BOSS_SHOTS    = { addr = 0xF367, size = 0x67, note = "the boss's bottles, 0x0C b
 ENEMY5_SLOTS  = { addr = 0xF113, note = "group 5, 0x19 bytes each (drew Monsta in the traced rounds)" }
 POTION_P1 = { addr = 0xF60F, note = "1 = player 1 took a round 100 potion (POTIONS_RUN): their bubbles are lightning bubbles (POTION_BUBBLE)" }
 POTION_P2 = { addr = 0xF610, note = "as POTION_P1 for player 2" }
+SECRET_DEATH = { addr = 0xE730, note = "1 = the Skel-Monsta killed a player in the secret round (sub GHOST_HITS, only while E723 = 29); SECRET_DEATH_SLEEP sets b7, SECRET_EXIT_CHECK then ends the room; SECRET_ROUND_EXIT clears it" }
 
 [main.code]
 RESET          = { addr = 0x0000, note = "DI / IM 2 / JP 00B9" }
@@ -404,6 +405,12 @@ BUBBLE_FIRE_DROP = { addr = 0x6633, note = "a popped fire bubble (list type 3, I
 BUBBLE_WATER_POP = { addr = 0x660D, note = "a popped water bubble (list type 2, IX+24 = 2): tamper check of MCU_READY, then F557 = 1 and the position for WATER_RUN, unless water is already running" }
 BUBBLE_LIGHTNING_POP = { addr = 0x66A1, note = "a popped lightning bubble (list type 1, IX+24 = 3; also the potion bubbles of round 100, 5DD7). Not seen in MAME" }
 POTION_BUBBLE = { addr = 0x5DD7, note = "a player's blown bubble when that player has the round 100 potion (F60F/F610): it becomes IX+24 = 3, a lightning bubble" }
+SECRET_DEATH_SLEEP = { addr = 0x4195, note = "PLAYERS_STEP, after a lost life (or the last one): if SECRET_DEATH b0, sets its b7 and the task sleeps until started (RST 18, A = 0); else returns" }
+PLAYER_PLAY_STEP = { addr = 0x419F, note = "PLAYERS_STEP, state b0: one frame of a player in play: OBJ_POS_LOAD, PLAYER_PROX_SET, speed, input and walking (4247), PLAYER_SPRITE, then bank 2 854E, 873E, 91A3, BIG_ITEM_TAKE (8CC7), 9233" }
+PLAYER_FACE_INPUT = { addr = 0x43A0, note = "IX+8 (facing) from the player's input (PLAYER_FLAGS_GET, active low): b0 clear (left held) 0, else b1 clear (right held) 1; neither held leaves it" }
+SECRET_ROUND_EXIT = { addr = 0x53CF, note = "leaves the secret room: ends task 3, SCREEN_FLASH, ROUND_MAIN = E726 (the round after the one left), sound 30, E723 and SECRET_DEATH 0, ENEMY_TOTAL 0 (the round is over), then sleeps. From SECRET_EXIT_CHECK, or 539F when E731 b1 is set and a playing player's object stands at Y 18, X 77-79" }
+SECRET_EXIT_CHECK = { addr = 0x5416, note = "SECRET_ROUND_FRAME: SECRET_ROUND_EXIT once SECRET_DEATH b7 is set" }
+CAPTIVE_HEART = { addr = 0x6B80, note = "Seen in MAME (end2p, endsuper, r100pop: sprites.csv caller 6B9B): round 100, a small heart sprite in the captive's third object at Y 30, X 38 (IX+8 = 0) or B8 (IX+8 = 1), tile 44, attribute 26. Drawn when the captive's countdown IX+11 ends (6AE3, before HEART_DRAW), or from 6A41 for a captive whose player is not playing" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }
