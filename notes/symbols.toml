@@ -727,6 +727,12 @@ BOSS_SHOT_OFF_BOTTOM = { addr = 0xBAF4, note = "Y under 22: as BOSS_SHOT_OFF_L, 
 BOSS_SHOT_OFF_R = { addr = 0xBB0E, note = "X E6 or more: as BOSS_SHOT_OFF_L" }
 BOSS_SHOT_OFF_TOP = { addr = 0xBB2C, note = "Y CE or more: as BOSS_SHOT_OFF_L" }
 BOSS_SHOT_STEP = { addr = 0xBB4A, note = "the next byte of path (HL) (PATH_PTR, position (IX+11), 88 restarts): b0 moves Y 3 (down if b3), b4 moves X 3 (left if b7); 4 instead of 3 while the boss is angry (BOSS_SLOT b3)" }
+GHOST_STEER_TO = { addr = 0xA4DA, note = "GHOST_STEER for the player record at HL (P1_REC or P2_REC): returns if the player is out (+0 b0 clear), else sets (IX+7) toward that player" }
+ROM_SUM_STEP_U = { addr = 0xB8FD, note = "one byte a call of a sum from bank 0 A103 to BFFF, in F365 (F362 starts it, F363 is the pointer); the end compares with F366 and on a mismatch runs into BOSS_SHOTS_INIT with DE pushed. ENEMY0B's walk calls it every 0x78 frames" }
+ENDING_HAND_WAIT = { addr = 0xB39A, note = "ENDING_START, two players only (E5D7 = 3): 600 frames (0x258), each a TASK_YIELD and ENDING_HAND_RUN" }
+ENDING_HAND_RUN = { addr = 0xBF61, note = "HURRY_HAND_RUN's sweep without the ATTRACT and NO_SPECIAL checks, for two players (E5D8): SOUND_CMD = 3, and with F448 b0 clear the sprites come from BFF1, not BFF8. Which sprites those are has not been checked in MAME" }
+STAR_COLOURS_SET = { addr = 0xB75D, note = "STARFIELD_TWINKLE: the three colour words at HL + A to F960, F96E and F968" }
+COLOUR_DIM = { addr = 0xB7DE, note = "the colour word at HL, each 4-bit channel 1 down (none below 0): the low and high nibbles of the first byte and the high nibble of the second" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
@@ -896,6 +902,12 @@ IDLE_PLAYER_SPRITES = { addr = 0xB072, note = "IDLE_PLAYER_RUN: a 2 x 2 sprite f
 TEST_BLOCK_4X4 = { addr = 0x812D, note = "TEST_MODE: 4 rows of 4 tile words, tile 18 with attribute E, at HL (0x40 a row)" }
 TEST_INPUTS_SHOW = { addr = 0x82CB, note = "TEST_MODE: 14 input bits as ON or OFF (texts at 8304), one entry of 6 bytes each at 830C: the byte (IN0_COPY, IN1_COPY, IN2_COPY), the tile address, the bit, and 1 to invert" }
 TEST_DSW_SHOW = { addr = 0x83B3, note = "TEST_MODE: DSW0_COPY and DSW1_COPY as 8 tiles each down a column (48 for a 1, 4C for a 0), from the table at 83E0" }
+TEST_SCREEN_INIT = { addr = 0x809F, note = "TEST_MODE: palette cleared, 16 colour words from 8172 to F802 (every 0x20 bytes), OBJ_TILES filled with 16 x 16 blocks of tiles 14-17, 16 TEST_BLOCK_4X4 from the table at 8142 (address, attribute), objects at DD01 and DD05-DD3D; then waits on IN1_COPY b6 and sets LOCKOUT_REQ = FF" }
+TEST_TEXTS = { addr = 0x8192, note = "TEST_MODE: PRINT_TEXTS, 0x16 texts from 819B" }
+TEST_DELAY = { addr = 0x82C3, note = "a busy wait: A counts 256 twice" }
+TEST_SOUND_SELECT = { addr = 0x8360, note = "TEST_MODE, each frame: every 0x3C frames IN1_COPY b0 clear moves the sound number F449 up, b1 clear down; F449 shown with DECIMAL3_DRAW at C46E. When IN1_COPY b6 goes clear (once, F44A): sound 0, 60 TEST_DELAYs, then sound F449" }
+RUSH_A_PICKUP = { addr = 0x94EF, note = "PICKUP_RUSH_A, for the player at IX: the tile word under the player (TILE_ADDR at Y+1) is a pickup when its attribute is 00 and its tile is one of the four from 92 + 4 x F523; then the block is cleared (950E) and counted for that player" }
+WATER_CARRY_MOVE = { addr = 0xA1E3, note = "WATER_CARRY: the player's object (Y at HL, X at HL+2) to the stream's Y - 8, X - 8; at stream Y 0, (DE) = 1 and X = 50, or A0 when the stream's X b7 is set" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }

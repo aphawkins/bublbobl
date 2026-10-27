@@ -4762,15 +4762,16 @@ GHOST_STEER:            ; A4C6
         and     a
         jr      nz,L_A4D3
         ld      hl,P1_REC
-        call    L_A4DA
+        call    GHOST_STEER_TO
         ret
 
 L_A4D3:                 ; A4D3
         ld      hl,P2_REC
-        call    L_A4DA
+        call    GHOST_STEER_TO
         ret
 
-L_A4DA:                 ; A4DA
+; GHOST_STEER for the player record at HL (P1_REC or P2_REC): returns if the player is out (+0 b0 clear), else sets (IX+7) toward that player
+GHOST_STEER_TO:         ; A4DA
         bit     0,(hl)
         ret     z
         bit     3,(ix+0)
@@ -6255,7 +6256,7 @@ L_B1D6:                 ; B1D6
         jr      nc,L_B203
         ld      (ix+22),0x00
         set     1,(ix+14)
-        call    L_B8FD
+        call    ROM_SUM_STEP_U
 L_B203:                 ; B203
         ld      a,(ix+7)
         ld      hl,L_B33E
@@ -6445,7 +6446,7 @@ ENDING_START:           ; B34F
         push    bc
 L_B36D:                 ; B36D
         call    ROUND_WIPE
-        call    L_B39A
+        call    ENDING_HAND_WAIT
         ld      a,(0xE5D7)
         cp      0x03
         jr      nz,L_B389
@@ -6469,7 +6470,8 @@ STARFIELD_RESET:        ; B391
         ld      bc,0x0009
         jp      ZERO_BC
 
-L_B39A:                 ; B39A
+; ENDING_START, two players only (E5D7 = 3): 600 frames (0x258), each a TASK_YIELD and ENDING_HAND_RUN
+ENDING_HAND_WAIT:       ; B39A
         ld      a,(0xE5D7)
         cp      0x03
         ret     nz
@@ -6477,7 +6479,7 @@ L_B39A:                 ; B39A
 L_B3A3:                 ; B3A3
         rst     0x20
         push    bc
-        call    L_BF61
+        call    ENDING_HAND_RUN
         pop     bc
         dec     bc
         ld      a,c
@@ -6552,7 +6554,8 @@ STARFIELD_TWINKLE:      ; B738
         add     a,a
         add     a,l
         ld      hl,0xB83C
-L_B75D:                 ; B75D
+; STARFIELD_TWINKLE: the three colour words at HL + A to F960, F96E and F968
+STAR_COLOURS_SET:       ; B75D
         call    ADD_HL_A
         ld      e,(hl)
         inc     hl
@@ -6600,7 +6603,7 @@ L_B79C:                 ; B79C
         add     a,a
         add     a,l
         ld      hl,0xB800
-        call    L_B75D
+        call    STAR_COLOURS_SET
         ld      e,0xA2
         ld      a,(0xE5D8)
         and     a
@@ -6626,11 +6629,12 @@ L_B7C5:                 ; B7C5
         ret     nz
         ld      (hl),0x00
         ld      hl,0xF960
-        call    L_B7DE
+        call    COLOUR_DIM
         ld      hl,0xF96E
-        call    L_B7DE
+        call    COLOUR_DIM
         ld      hl,0xF968
-L_B7DE:                 ; B7DE
+; the colour word at HL, each 4-bit channel 1 down (none below 0): the low and high nibbles of the first byte and the high nibble of the second
+COLOUR_DIM:             ; B7DE
         ld      a,(hl)
         and     0x0F
         jr      z,L_B7E5
@@ -6705,7 +6709,8 @@ L_B8E6:                 ; B8E6
 ; 6 colour words for HEART_CYCLE
 HEART_COLOURS:          ; B8F1
         .incbin "main_bank0.bin", 0x38F1, 0x000C
-L_B8FD:                 ; B8FD
+; one byte a call of a sum from bank 0 A103 to BFFF, in F365 (F362 starts it, F363 is the pointer); the end compares with F366 and on a mismatch runs into BOSS_SHOTS_INIT with DE pushed. ENEMY0B's walk calls it every 0x78 frames
+ROM_SUM_STEP_U:         ; B8FD
         ld      a,(0xF362)
         and     a
         jr      nz,L_B913
@@ -7557,7 +7562,8 @@ HURRY_HAND_RUN:         ; BF48
         jr      nz,L_BF75
         ret
 
-L_BF61:                 ; BF61
+; HURRY_HAND_RUN's sweep without the ATTRACT and NO_SPECIAL checks, for two players (E5D8): SOUND_CMD = 3, and with F448 b0 clear the sprites come from BFF1, not BFF8. Which sprites those are has not been checked in MAME
+ENDING_HAND_RUN:        ; BF61
         ld      a,(0xE5D8)
         and     a
         ret     z

@@ -709,6 +709,14 @@ Started (2026-10-17) with the sub CPU, which is now done:
   (`FIRE_PLAYER_CHECK` burns a player, `FIRE_ENEMY_HIT` beats an enemy), the pickup rushes'
   tiles and pickups, the bomb's fireballs, and the test screens (`TEST_INPUTS_SHOW` shows 14
   input bits as ON/OFF, `TEST_DSW_SHOW` both DIP switch banks as bits).
+- The banks' last calls (2026-10-27): 12 routines in banks 0 and 2 were still called as `L_xxxx`.
+  Bank 0: `GHOST_STEER_TO` (the body of `GHOST_STEER` for one player), `ROM_SUM_STEP_U` (bank 0
+  `A103`-`BFFF`, from `ENEMY0B`'s walk), `ENDING_HAND_WAIT` and `ENDING_HAND_RUN` (600 frames of
+  `HURRY_HAND_RUN`'s sweep in the two-player ending; which sprites `BFF1` gives is not yet seen),
+  `STAR_COLOURS_SET` and `COLOUR_DIM` (the starfield's colours). Bank 2: `TEST_SCREEN_INIT`,
+  `TEST_TEXTS`, `TEST_DELAY` and `TEST_SOUND_SELECT` (the test mode's sound number, up and down on
+  the joystick, played on P1 start), `RUSH_A_PICKUP` and `WATER_CARRY_MOVE`. No call in either
+  bank goes to an unnamed routine now; still byte-exact.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -721,8 +729,8 @@ Started (2026-10-17) with the sub CPU, which is now done:
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
      The ghost, groups 2, 2B, 3, 4 and 5 and the boss are done (2026-10-27); groups 4 and 5 have
-     no attack. So are the special item handlers and every called routine in bank 2. What is
-     left in banks 0 and 2 is branch targets inside named routines.
+     no attack. So are the special item handlers and every called routine in banks 0 and 2
+     (2026-10-27). What is left in banks 0 and 2 is branch targets inside named routines.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

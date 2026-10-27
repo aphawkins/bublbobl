@@ -10,20 +10,21 @@ TEST_MODE:              ; 8000
         ld      a,(DSW0_COPY)
         and     0x05
         jp      z,L_BB7E
-        call    L_809F
+        call    TEST_SCREEN_INIT
         call    CLEAR_OBJ_TILES
-        call    L_8192
+        call    TEST_TEXTS
         ld      a,0xEF
         ld      (SOUND_CMD),a
 L_8016:                 ; 8016
         call    TEST_INPUTS_SHOW
         call    TEST_DSW_SHOW
-        call    L_8360
+        call    TEST_SOUND_SELECT
         ld      (WATCHDOG),a
         jr      L_8016
 
         .incbin "main_bank2.bin", 0x0024, 0x007B
-L_809F:                 ; 809F
+; TEST_MODE: palette cleared, 16 colour words from 8172 to F802 (every 0x20 bytes), OBJ_TILES filled with 16 x 16 blocks of tiles 14-17, 16 TEST_BLOCK_4X4 from the table at 8142 (address, attribute), objects at DD01 and DD05-DD3D; then waits on IN1_COPY b6 and sets LOCKOUT_REQ = FF
+TEST_SCREEN_INIT:       ; 809F
         ld      hl,PALETTE_RAM
         ld      bc,0x0200
         call    ZERO_BC
@@ -116,13 +117,15 @@ L_8132:                 ; 8132
         ret
 
         .incbin "main_bank2.bin", 0x0142, 0x0050
-L_8192:                 ; 8192
+; TEST_MODE: PRINT_TEXTS, 0x16 texts from 819B
+TEST_TEXTS:             ; 8192
         ld      iy,0x819B
         ld      b,0x16
         jp      PRINT_TEXTS
 
         .incbin "main_bank2.bin", 0x019B, 0x0128
-L_82C3:                 ; 82C3
+; a busy wait: A counts 256 twice
+TEST_DELAY:             ; 82C3
         xor     a
 L_82C4:                 ; 82C4
         inc     a
@@ -167,7 +170,8 @@ L_82F6:                 ; 82F6
         ret
 
         .incbin "main_bank2.bin", 0x0304, 0x005C
-L_8360:                 ; 8360
+; TEST_MODE, each frame: every 0x3C frames IN1_COPY b0 clear moves the sound number F449 up, b1 clear down; F449 shown with DECIMAL3_DRAW at C46E. When IN1_COPY b6 goes clear (once, F44A): sound 0, 60 TEST_DELAYs, then sound F449
+TEST_SOUND_SELECT:      ; 8360
         ld      hl,0xF44B
         inc     (hl)
         ld      a,(hl)
@@ -207,7 +211,7 @@ L_8396:                 ; 8396
         ld      (SOUND_CMD),a
         ld      b,0x3C
 L_83A7:                 ; 83A7
-        call    L_82C3
+        call    TEST_DELAY
         djnz    L_83A7
         ld      a,(0xF449)
         ld      (SOUND_CMD),a
@@ -2669,7 +2673,7 @@ L_94AC:                 ; 94AC
         ld      ix,P1_REC
         bit     0,(ix+0)
         jr      z,L_94C6
-        call    L_94EF
+        call    RUSH_A_PICKUP
         jr      nc,L_94C6
         ld      hl,0xE73A
         inc     (hl)
@@ -2681,7 +2685,7 @@ L_94C6:                 ; 94C6
         ld      ix,P2_REC
         bit     0,(ix+0)
         ret     z
-        call    L_94EF
+        call    RUSH_A_PICKUP
         ret     nc
         ld      hl,0xE73B
         inc     (hl)
@@ -2697,7 +2701,8 @@ L_94DC:                 ; 94DC
         ld      a,(hl)
         sub     0x37
         ret     z
-L_94EF:                 ; 94EF
+; PICKUP_RUSH_A, for the player at IX: the tile word under the player (TILE_ADDR at Y+1) is a pickup when its attribute is 00 and its tile is one of the four from 92 + 4 x F523; then the block is cleared (950E) and counted for that player
+RUSH_A_PICKUP:          ; 94EF
         call    OBJ_POS
         inc     l
         call    TILE_ADDR
@@ -4355,7 +4360,7 @@ WATER_CARRY:            ; A1A2
         jp      nc,L_A1C8
         ld      hl,0xE2C5
         ld      de,0xE69C
-        call    L_A1E3
+        call    WATER_CARRY_MOVE
 L_A1C8:                 ; A1C8
         ld      hl,P2_REC
         bit     0,(hl)
@@ -4370,7 +4375,8 @@ L_A1C8:                 ; A1C8
         ret     nc
         ld      hl,0xE2B5
         ld      de,0xE6CE
-L_A1E3:                 ; A1E3
+; WATER_CARRY: the player's object (Y at HL, X at HL+2) to the stream's Y - 8, X - 8; at stream Y 0, (DE) = 1 and X = 50, or A0 when the stream's X b7 is set
+WATER_CARRY_MOVE:       ; A1E3
         ld      a,(ix+1)
         sub     0x08
         ld      (hl),a
