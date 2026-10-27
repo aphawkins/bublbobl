@@ -662,6 +662,12 @@ Started (2026-10-17) with the sub CPU, which is now done:
   the wall; `ENEMY4_TURN` plays it one step a frame and `ENEMY4_TURN_BACK` reverses it early if it
   meets a wall. At the end the mode becomes the one the hit chose. `ENEMY4_LD_FLOOR` hides one more
   ROM sum, `ROM_SUM_STEP_S` (bank 0 `8150`-`94FD`).
+- Group 5 (2026-10-27), seen in the bt1, bt3, bub13 and r16 traces: no attack either.
+  `ENEMY5_MOVE` flies it on a diagonal (`ENEMY5_MODES`, with `ENEMY5_FALL` as mode 2), and it
+  bounces straight off a wall into the next diagonal (`ENEMY5_TO_RU` .. `ENEMY5_TO_LD_FACE`).
+  `ENEMY5_STUCK_CHECK` compares its position over three bounces and steps the mode on if it has
+  not moved, so it cannot stick in a corner; it also runs `ROM_SUM_STEP_T`, a sum of all of
+  bank 0.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -673,7 +679,7 @@ Started (2026-10-17) with the sub CPU, which is now done:
      (2026-10-27): the 16 regions left are code MAME never ran, and the score code ran.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
-     The ghost and group 4 are done (2026-10-27); group 4 has no attack.
+     The ghost and groups 4 and 5 are done (2026-10-27); groups 4 and 5 have no attack.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

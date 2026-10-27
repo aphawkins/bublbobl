@@ -2271,7 +2271,8 @@ L_9218:                 ; 9218
         .word   ENEMY1_JUMP_R
         .word   ENEMY1_JUMP_L
         .incbin "main_bank0.bin", 0x1224, 0x001D
-L_9241:                 ; 9241
+; one byte a call of a sum of all of bank 0 (8000-BFFF), in EEAA (EEA7 starts it, EEA8 is the pointer); the end compares with EEAB and on a mismatch runs into ENEMY2_INIT with DE pushed
+ROM_SUM_STEP_T:         ; 9241
         ld      a,(0xEEA7)
         and     a
         jr      nz,L_9257
@@ -3865,52 +3866,53 @@ L_9E41:                 ; 9E41
 L_9E4B:                 ; 9E4B
         push    af
         bit     3,(ix+0)
-        jp      nz,L_A094
+        jp      nz,ENEMY5_NEXT
         ld      a,(ix+0)
         bit     2,a
         jp      nz,L_9E7E
         bit     1,a
         jp      nz,L_9E8A
         call    ENEMY_HIT_REACT
-        jp      c,L_A094
+        jp      c,ENEMY5_NEXT
         call    ENEMY_ANGER
         bit     0,(ix+0)
-        jr      nz,L_9E90
+        jr      nz,ENEMY5_MOVE
         call    ENEMY_HIT_PTR
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
-        jp      L_A094
+        jp      ENEMY5_NEXT
 
 L_9E7E:                 ; 9E7E
         call    ENEMY_TRAP_IF_B6
-        jp      c,L_A094
+        jp      c,ENEMY5_NEXT
         call    ENEMY_ANGRY_IF_B5
-        jp      L_A094
+        jp      ENEMY5_NEXT
 
 L_9E8A:                 ; 9E8A
         call    ENEMY_DEFEATED
-        jp      L_A094
+        jp      ENEMY5_NEXT
 
-L_9E90:                 ; 9E90
+; Seen in MAME (bt1, bub13, r16): a group 5 enemy in play: ENEMY_SPEED, then ENEMY_DROP until it is out (+0 b5), then the ENEMY5_MODES fly by (IX+7). A fly bounces off a wall straight away (no turn script, unlike group 4)
+ENEMY5_MOVE:            ; 9E90
         ld      c,0x05
         call    ENEMY_HIT_REPORT
         call    ENEMY_REMOVE_IF_B7
-        jp      c,L_A094
+        jp      c,ENEMY5_NEXT
         call    ENEMY_SPEED
-        jp      nc,L_A045
+        jp      nc,ENEMY5_SPRITE
         call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
-        jp      nz,L_A094
+        jp      nz,ENEMY5_NEXT
         bit     5,(ix+0)
         jr      nz,L_9EB7
         call    ENEMY_DROP
-        jp      L_A045
+        jp      ENEMY5_SPRITE
 
 L_9EB7:                 ; 9EB7
         ld      a,(ix+7)
-        ld      hl,L_A0FB
+        ld      hl,ENEMY5_MODES
         call    TABLE_WORD
         ex      de,hl
         jp      (hl)
@@ -3919,7 +3921,7 @@ L_9EB7:                 ; 9EB7
 ENEMY5_FLY_LU:          ; 9EC2
         ld      a,(ix+13)
         or      a
-        jp      z,L_A045
+        jp      z,ENEMY5_SPRITE
         ld      b,a
 L_9ECA:                 ; 9ECA
         push    bc
@@ -3930,20 +3932,20 @@ L_9ECA:                 ; 9ECA
         ld      a,(ix+1)
         add     a,0x07
         call    GRID_CELL_A
-        jr      z,L_9F0A
+        jr      z,ENEMY5_TO_RU
         ld      a,(ix+2)
         sub     0x08
         ld      h,a
         ld      a,(ix+1)
         call    GRID_CELL_A
-        jr      z,L_9F0A
+        jr      z,ENEMY5_TO_RU
         ld      a,(ix+2)
         sub     0x07
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
         call    GRID_CELL_A
-        jp      z,L_9F19
+        jp      z,ENEMY5_TO_LD
         call    OBJ_PTR
         inc     (hl)
         inc     hl
@@ -3951,26 +3953,28 @@ L_9ECA:                 ; 9ECA
         dec     (hl)
         pop     bc
         djnz    L_9ECA
-        jp      L_A045
+        jp      ENEMY5_SPRITE
 
-L_9F0A:                 ; 9F0A
+; a bounce into mode 1 (RU), facing (IX+8) 1: FLY_LU at a wall on the left, FLY_RD at a floor; then ENEMY5_STUCK_CHECK
+ENEMY5_TO_RU:           ; 9F0A
         pop     bc
         ld      (ix+7),0x01
         ld      (ix+8),0x01
-        call    L_A0A3
-        jp      L_A045
+        call    ENEMY5_STUCK_CHECK
+        jp      ENEMY5_SPRITE
 
-L_9F19:                 ; 9F19
+; FLY_LU at a ceiling: mode 3 (LD); then ENEMY5_STUCK_CHECK
+ENEMY5_TO_LD:           ; 9F19
         pop     bc
         ld      (ix+7),0x03
-        call    L_A0A3
-        jp      L_A045
+        call    ENEMY5_STUCK_CHECK
+        jp      ENEMY5_SPRITE
 
 ; flies right and up (Y + 1, X + 1) until a wall
 ENEMY5_FLY_RU:          ; 9F24
         ld      a,(ix+13)
         or      a
-        jp      z,L_A045
+        jp      z,ENEMY5_SPRITE
         ld      b,a
 L_9F2C:                 ; 9F2C
         push    bc
@@ -3981,20 +3985,20 @@ L_9F2C:                 ; 9F2C
         ld      a,(ix+1)
         add     a,0x07
         call    GRID_CELL_A
-        jr      z,L_9F6B
+        jr      z,ENEMY5_TO_LU
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
         call    GRID_CELL_A
-        jr      z,L_9F6B
+        jr      z,ENEMY5_TO_LU
         ld      a,(ix+2)
         add     a,0x07
         ld      h,a
         ld      a,(ix+1)
         add     a,0x08
         call    GRID_CELL_A
-        jr      z,L_9F7A
+        jr      z,ENEMY5_TO_RD
         call    OBJ_PTR
         inc     (hl)
         inc     hl
@@ -4002,26 +4006,28 @@ L_9F2C:                 ; 9F2C
         inc     (hl)
         pop     bc
         djnz    L_9F2C
-        jp      L_A045
+        jp      ENEMY5_SPRITE
 
-L_9F6B:                 ; 9F6B
+; a bounce into mode 4 (LU), facing 3: FLY_RU at a wall on the right, FLY_LD at a floor; then ENEMY5_STUCK_CHECK
+ENEMY5_TO_LU:           ; 9F6B
         pop     bc
         ld      (ix+7),0x04
         ld      (ix+8),0x03
-        call    L_A0A3
-        jp      L_A045
+        call    ENEMY5_STUCK_CHECK
+        jp      ENEMY5_SPRITE
 
-L_9F7A:                 ; 9F7A
+; FLY_RU at a ceiling: mode 0 (RD); then ENEMY5_STUCK_CHECK
+ENEMY5_TO_RD:           ; 9F7A
         pop     bc
         ld      (ix+7),0x00
-        call    L_A0A3
-        jp      L_A045
+        call    ENEMY5_STUCK_CHECK
+        jp      ENEMY5_SPRITE
 
 ; flies left and down (Y - 1, X - 1) until a wall
 ENEMY5_FLY_LD:          ; 9F85
         ld      a,(ix+13)
         or      a
-        jp      z,L_A045
+        jp      z,ENEMY5_SPRITE
         ld      b,a
 L_9F8D:                 ; 9F8D
         push    bc
@@ -4032,20 +4038,20 @@ L_9F8D:                 ; 9F8D
         ld      a,(ix+1)
         sub     0x07
         call    GRID_CELL_A
-        jp      z,L_9FCF
+        jp      z,ENEMY5_TO_RD_FACE
         ld      a,(ix+2)
         sub     0x08
         ld      h,a
         ld      a,(ix+1)
         call    GRID_CELL_A
-        jp      z,L_9FCF
+        jp      z,ENEMY5_TO_RD_FACE
         ld      a,(ix+2)
         sub     0x07
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
         call    GRID_CELL_A
-        jp      z,L_9F6B
+        jp      z,ENEMY5_TO_LU
         call    OBJ_PTR
         dec     (hl)
         inc     hl
@@ -4053,20 +4059,21 @@ L_9F8D:                 ; 9F8D
         dec     (hl)
         pop     bc
         djnz    L_9F8D
-        jp      L_A045
+        jp      ENEMY5_SPRITE
 
-L_9FCF:                 ; 9FCF
+; FLY_LD at a wall on the left: mode 0 (RD), facing 1; then ENEMY5_STUCK_CHECK
+ENEMY5_TO_RD_FACE:      ; 9FCF
         pop     bc
         ld      (ix+7),0x00
         ld      (ix+8),0x01
-        call    L_A0A3
-        jp      L_A045
+        call    ENEMY5_STUCK_CHECK
+        jp      ENEMY5_SPRITE
 
 ; flies right and down (Y - 1, X + 1) until a wall, then mode 1 or 3
 ENEMY5_FLY_RD:          ; 9FDE
         ld      a,(ix+13)
         or      a
-        jp      z,L_A045
+        jp      z,ENEMY5_SPRITE
         ld      b,a
 L_9FE6:                 ; 9FE6
         push    bc
@@ -4077,20 +4084,20 @@ L_9FE6:                 ; 9FE6
         ld      a,(ix+1)
         sub     0x07
         call    GRID_CELL_A
-        jp      z,L_A028
+        jp      z,ENEMY5_TO_LD_FACE
         ld      a,(ix+2)
         add     a,0x08
         ld      h,a
         ld      a,(ix+1)
         call    GRID_CELL_A
-        jp      z,L_A028
+        jp      z,ENEMY5_TO_LD_FACE
         ld      a,(ix+2)
         add     a,0x07
         ld      h,a
         ld      a,(ix+1)
         sub     0x08
         call    GRID_CELL_A
-        jp      z,L_9F0A
+        jp      z,ENEMY5_TO_RU
         call    OBJ_PTR
         dec     (hl)
         inc     hl
@@ -4098,23 +4105,25 @@ L_9FE6:                 ; 9FE6
         inc     (hl)
         pop     bc
         djnz    L_9FE6
-        jp      L_A045
+        jp      ENEMY5_SPRITE
 
-L_A028:                 ; A028
+; FLY_RD at a wall on the right: mode 3 (LD), facing 3; then ENEMY5_STUCK_CHECK
+ENEMY5_TO_LD_FACE:      ; A028
         pop     bc
         ld      (ix+7),0x03
         ld      (ix+8),0x03
-        call    L_A0A3
-        jp      L_A045
+        call    ENEMY5_STUCK_CHECK
+        jp      ENEMY5_SPRITE
 
 ; falls until ENEMY_GROUND_CHECK finds ground, then mode (IX+8)
 ENEMY5_FALL:            ; A037
         call    OBJ_POS_LOAD
         call    ENEMY_GROUND_CHECK
-        jr      nz,L_A045
+        jr      nz,ENEMY5_SPRITE
         ld      a,(ix+8)
         ld      (ix+7),a
-L_A045:                 ; A045
+; ANIM_STEP 2 frames, colour 1C: tiles DC while F44E, D4 (faster) when angry (+0 b7) or HURRY, else CC; SPRITE when facing (IX+8) b1 (left), else SPRITE_FLIPX
+ENEMY5_SPRITE:          ; A045
         ld      c,0x1C
         ld      a,(0xF44E)
         and     a
@@ -4155,13 +4164,14 @@ L_A07E:                 ; A07E
         bit     1,(ix+8)
         jr      z,L_A08E
         call    SPRITE
-        jp      L_A094
+        jp      ENEMY5_NEXT
 
 L_A08E:                 ; A08E
         call    SPRITE_FLIPX
-        jp      L_A094
+        jp      ENEMY5_NEXT
 
-L_A094:                 ; A094
+; next ENEMY5_SLOTS record (0x19 bytes), ED43 in all
+ENEMY5_NEXT:            ; A094
         ld      de,0x0019
         add     ix,de
         pop     af
@@ -4171,7 +4181,8 @@ L_A094:                 ; A094
         jp      nz,L_9E4B
         ret
 
-L_A0A3:                 ; A0A3
+; Seen in MAME (bt1, bub13): counts bounces in (IX+20); keeps Y, X at the first in (IX+16), (IX+15); at the third, if the enemy has not moved, the mode steps on (1 to 3 facing 3, 4 to 0 facing 1, else + 1) so it cannot stay stuck in a corner; then ROM_SUM_STEP_T
+ENEMY5_STUCK_CHECK:     ; A0A3
         inc     (ix+20)
         ld      a,(ix+20)
         cp      0x01
@@ -4215,10 +4226,11 @@ L_A0EF:                 ; A0EF
         ld      (ix+8),0x01
 L_A0F4:                 ; A0F4
         ld      (ix+7),a
-        call    L_9241
+        call    ROM_SUM_STEP_T
         ret
 
-L_A0FB:                 ; A0FB
+; ENEMY5_FLY_RD, _RU, ENEMY5_FALL, _LD, _LU for (IX+7) = 0-4 (ENEMY5_MOVE)
+ENEMY5_MODES:           ; A0FB
         .word   ENEMY5_FLY_RD
         .word   ENEMY5_FLY_RU
         .word   ENEMY5_FALL

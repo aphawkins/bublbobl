@@ -661,6 +661,17 @@ ENEMY4_RU_CEILING = { addr = 0x9AB1, note = "ENEMY4_FLY_RU meets a ceiling (ENEM
 ENEMY4_RD_WALL = { addr = 0x9B29, note = "ENEMY4_FLY_RD meets a wall on the right (ENEMY4_CELL_R_DOWN): (IX+24) b4 b3, then mode 2 (LD) after turn script 9D2A" }
 ENEMY4_RD_FLOOR = { addr = 0x9B0C, note = "ENEMY4_FLY_RD meets a floor (ENEMY4_CELL_DOWN_R): (IX+24) b4 b0, then mode 0 (RU) after turn script 9D15" }
 ROM_SUM_STEP_S = { addr = 0x9D96, note = "one byte a call of a sum from bank 0 8150 to 94FD, in F111 (F10E starts it, F10F is the pointer); the end compares with F112 and on a mismatch runs into ENEMY5_INIT with DE pushed" }
+ENEMY5_MOVE = { addr = 0x9E90, note = "Seen in MAME (bt1, bub13, r16): a group 5 enemy in play: ENEMY_SPEED, then ENEMY_DROP until it is out (+0 b5), then the ENEMY5_MODES fly by (IX+7). A fly bounces off a wall straight away (no turn script, unlike group 4)" }
+ENEMY5_TO_RU = { addr = 0x9F0A, note = "a bounce into mode 1 (RU), facing (IX+8) 1: FLY_LU at a wall on the left, FLY_RD at a floor; then ENEMY5_STUCK_CHECK" }
+ENEMY5_TO_LD = { addr = 0x9F19, note = "FLY_LU at a ceiling: mode 3 (LD); then ENEMY5_STUCK_CHECK" }
+ENEMY5_TO_LU = { addr = 0x9F6B, note = "a bounce into mode 4 (LU), facing 3: FLY_RU at a wall on the right, FLY_LD at a floor; then ENEMY5_STUCK_CHECK" }
+ENEMY5_TO_RD = { addr = 0x9F7A, note = "FLY_RU at a ceiling: mode 0 (RD); then ENEMY5_STUCK_CHECK" }
+ENEMY5_TO_RD_FACE = { addr = 0x9FCF, note = "FLY_LD at a wall on the left: mode 0 (RD), facing 1; then ENEMY5_STUCK_CHECK" }
+ENEMY5_TO_LD_FACE = { addr = 0xA028, note = "FLY_RD at a wall on the right: mode 3 (LD), facing 3; then ENEMY5_STUCK_CHECK" }
+ENEMY5_SPRITE = { addr = 0xA045, note = "ANIM_STEP 2 frames, colour 1C: tiles DC while F44E, D4 (faster) when angry (+0 b7) or HURRY, else CC; SPRITE when facing (IX+8) b1 (left), else SPRITE_FLIPX" }
+ENEMY5_NEXT = { addr = 0xA094, note = "next ENEMY5_SLOTS record (0x19 bytes), ED43 in all" }
+ENEMY5_STUCK_CHECK = { addr = 0xA0A3, note = "Seen in MAME (bt1, bub13): counts bounces in (IX+20); keeps Y, X at the first in (IX+16), (IX+15); at the third, if the enemy has not moved, the mode steps on (1 to 3 facing 3, 4 to 0 facing 1, else + 1) so it cannot stay stuck in a corner; then ROM_SUM_STEP_T" }
+ROM_SUM_STEP_T = { addr = 0x9241, note = "one byte a call of a sum of all of bank 0 (8000-BFFF), in EEAA (EEA7 starts it, EEA8 is the pointer); the end compares with EEAB and on a mismatch runs into ENEMY2_INIT with DE pushed" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
@@ -676,6 +687,7 @@ GHOST_CORNERS = { addr = 0xA2FE, note = "4 (Y, X) starts for GHOST_APPEAR by (IX
 ENEMY4_MODES = { addr = 0x9CCF, note = "ENEMY4_FLY_RU, _RD, _LD, _LU for (IX+7) = 0-3 (ENEMY4_MOVE)" }
 ENEMY4_STEP_TABLE = { addr = 0x9CD7, note = "10 words: the turn script steps 0-9 for ENEMY4_TURN_STEP" }
 ENEMY4_TURNS = { addr = 0x9CEB, note = "8 turn scripts of 0x15 step bytes, each ended by 9 (ENEMY4_STEP_END): steps 0 up, 1 up right, 2 right, 3 down right, 4 down, 5 down left, 6 left, 7 up left, 8 none. A wall hit picks one through (IX+16)" }
+ENEMY5_MODES = { addr = 0xA0FB, note = "ENEMY5_FLY_RD, _RU, ENEMY5_FALL, _LD, _LU for (IX+7) = 0-4 (ENEMY5_MOVE)" }
 
 [bank1.data]
 # a78-05-1.52 page 1 (file 0x4000-0x7FFF), mapped at 8000 when FB40 = 5.
