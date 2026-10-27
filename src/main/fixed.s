@@ -2409,7 +2409,8 @@ L_0FD2:                 ; 0FD2
         ld      (iy+65),0x00
         ret
 
-L_0FE8:                 ; 0FE8
+; A as two HEX_CHAR digits: the high one at (IY+0), the low one at (IY+64), the next tile column. Probe code, never run in MAME
+HEX_BYTE:               ; 0FE8
         push    af
         and     0xF0
         call    SHR4
@@ -2901,7 +2902,8 @@ OBJ_STATE_10:           ; 155E
         ld      (hl),0x10
         ret
 
-L_1567:                 ; 1567
+; object A: byte 3 = 11. Probe code, never run in MAME
+OBJ_STATE_11:           ; 1567
         call    OBJ_PTR
         inc     hl
         inc     hl
@@ -2927,7 +2929,8 @@ OBJ_STATE_13:           ; 1579
         ld      (hl),0x13
         ret
 
-L_1582:                 ; 1582
+; object A: byte 3 = 14. Probe code, never run in MAME
+OBJ_STATE_14:           ; 1582
         call    OBJ_PTR
         inc     hl
         inc     hl
@@ -2944,7 +2947,8 @@ OBJ_STATE_15:           ; 158B
         ld      (hl),0x15
         ret
 
-L_1594:                 ; 1594
+; object A: byte 3 = 16. Probe code, never run in MAME
+OBJ_STATE_16:           ; 1594
         call    OBJ_PTR
         inc     hl
         inc     hl
@@ -2961,7 +2965,8 @@ OBJ_STATE_17:           ; 159D
         ld      (hl),0x17
         ret
 
-L_15A6:                 ; 15A6
+; object A: byte 3 = 18. Probe code, never run in MAME
+OBJ_STATE_18:           ; 15A6
         call    OBJ_PTR
         inc     hl
         inc     hl
@@ -2969,7 +2974,8 @@ L_15A6:                 ; 15A6
         ld      (hl),0x18
         ret
 
-L_15AF:                 ; 15AF
+; object A: byte 3 = 19. Probe code, never run in MAME
+OBJ_STATE_19:           ; 15AF
         call    OBJ_PTR
         inc     hl
         inc     hl
@@ -2977,7 +2983,8 @@ L_15AF:                 ; 15AF
         ld      (hl),0x19
         ret
 
-L_15B8:                 ; 15B8
+; object A: byte 3 = 1A. Probe code, never run in MAME
+OBJ_STATE_1A:           ; 15B8
         call    OBJ_PTR
         inc     hl
         inc     hl
@@ -2985,7 +2992,8 @@ L_15B8:                 ; 15B8
         ld      (hl),0x1A
         ret
 
-L_15C1:                 ; 15C1
+; object A: byte 3 = 1B. Probe code, never run in MAME
+OBJ_STATE_1B:           ; 15C1
         call    OBJ_PTR
         inc     hl
         inc     hl
@@ -3057,7 +3065,8 @@ L_1634:                 ; 1634
         xor     a
         ret
 
-L_1636:                 ; 1636
+; cells at X-8, X and X+8 on Y+8 of the object at IX; Z at the first wall; a Y+8 of D8-DF gives A = 0. Probe code, never run in MAME
+GRID_PROBE_ABOVE3:      ; 1636
         ld      a,(ix+2)
         sub     0x08
         ld      h,a
@@ -6105,7 +6114,7 @@ BONUS_TABLE_PTR:        ; 3170
         ret
 
         .incbin "main_fixed.bin", 0x3181, 0x0060
-; HIGH_SCORE from BONUS_TABLE_PTR entry 0
+; HIGH_SCORE from BONUS_TABLE_PTR entry 0. Seen in MAME: with DSW1 = FF (bonus setting 3) every game snapshot starts at 003000 (30000 shown)
 HIGH_SCORE_INIT:        ; 31E1
         call    BONUS_TABLE_PTR
         ld      de,HIGH_SCORE

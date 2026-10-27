@@ -295,7 +295,7 @@ MODE_NOMAL_SHOW = { addr = 0x29CC, note = "SELECT GAME MODE screen with the NOMA
 MODE_SUPER_SHOW = { addr = 0x29FC, note = "as MODE_NOMAL_SHOW with the SUPER GAME choice; sets SUPER_MODE" }
 P1_BONUS_RESET = { addr = 0x314E, note = "E63F = 0; BONUS_NEXT_P1 from BONUS_TABLE_PTR" }
 P2_BONUS_RESET = { addr = 0x315F, note = "E640 = 0; BONUS_NEXT_P2 from BONUS_TABLE_PTR" }
-HIGH_SCORE_INIT = { addr = 0x31E1, note = "HIGH_SCORE from BONUS_TABLE_PTR entry 0" }
+HIGH_SCORE_INIT = { addr = 0x31E1, note = "HIGH_SCORE from BONUS_TABLE_PTR entry 0. Seen in MAME: with DSW1 = FF (bonus setting 3) every game snapshot starts at 003000 (30000 shown)" }
 BONUS_INFO_DRAW = { addr = 0x31ED, note = "the three bonus life values of BONUS_TABLE_PTR, as texts at 320D and scores" }
 P1_LIVES_INIT = { addr = 0x32BE, note = "LIVES_P1 from LIVES_START" }
 P2_LIVES_INIT = { addr = 0x32C5, note = "LIVES_P2 from LIVES_START" }
@@ -429,6 +429,15 @@ P1_BURN = { addr = 0x4B51, note = "P1_REC +27 b0 set and +28 = 1E, unless it is 
 P2_BURN = { addr = 0x4B5D, note = "as P1_BURN for P2_REC" }
 PLAYER_BURN_STEP = { addr = 0x4B62, note = "while (IX+27) b0: counts (IX+28) down with PLAYER_SPEED_SET 38, and clears b0 at 0" }
 ROM_SUM_STEP_R = { addr = 0x65D0, note = "one byte a call of a sum from 0038 to 142C, in EB34 (EB31 starts it, EB32 is the pointer); the end compares with EB35 and on a mismatch runs RST 28 and into BUBBLE_WATER_POP with AF pushed" }
+HEX_BYTE = { addr = 0x0FE8, note = "A as two HEX_CHAR digits: the high one at (IY+0), the low one at (IY+64), the next tile column. Probe code, never run in MAME" }
+OBJ_STATE_11 = { addr = 0x1567, note = "object A: byte 3 = 11. Probe code, never run in MAME" }
+OBJ_STATE_14 = { addr = 0x1582, note = "object A: byte 3 = 14. Probe code, never run in MAME" }
+OBJ_STATE_16 = { addr = 0x1594, note = "object A: byte 3 = 16. Probe code, never run in MAME" }
+OBJ_STATE_18 = { addr = 0x15A6, note = "object A: byte 3 = 18. Probe code, never run in MAME" }
+OBJ_STATE_19 = { addr = 0x15AF, note = "object A: byte 3 = 19. Probe code, never run in MAME" }
+OBJ_STATE_1A = { addr = 0x15B8, note = "object A: byte 3 = 1A. Probe code, never run in MAME" }
+OBJ_STATE_1B = { addr = 0x15C1, note = "object A: byte 3 = 1B. Probe code, never run in MAME" }
+GRID_PROBE_ABOVE3 = { addr = 0x1636, note = "cells at X-8, X and X+8 on Y+8 of the object at IX; Z at the first wall; a Y+8 of D8-DF gives A = 0. Probe code, never run in MAME" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }

@@ -638,6 +638,14 @@ Started (2026-10-17) with the sub CPU, which is now done:
   frames; not seen), and two more ROM sums, `ROM_SUM_STEP_Q` (`340B`) and `ROM_SUM_STEP_R` (`65D0`).
   The fixed ROM is 12763 instructions, bank 0 6052, bank 2 5824; still byte-exact. Rerun
   `coverage.py` after each new trace, before the redo scripts.
+- Probe and score check (2026-10-27): with every trace merged, `--probe` now takes only 16 regions
+  that MAME never ran: 7 in the fixed ROM, 8 in bank 0, 1 in bank 2. Each reads as code, not data:
+  unused siblings of named routines (`OBJ_STATE_11`, `_14`, `_16`, `_18`-`_1B`, `HEX_BYTE` next to
+  `HEX_CHAR`, `GRID_PROBE_ABOVE3` next to the other probes, now named and marked "never run"),
+  enemy mode exits and turn steps in bank 0 (`8CC9`, `8D7D`, `9465`, `948C`, `94AD`, `94DB`, `97EC`,
+  `A7B9`), and a player record copy in bank 2 (`AFD8`). None was moved to data. Every score
+  routine from the 2026-10-17 note ran in MAME, and the high score starts at bonus table entry 0:
+  with DSW1 = FF (bonus setting 3) every game snapshot has `HIGH_SCORE` = 003000.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -645,7 +653,8 @@ Started (2026-10-17) with the sub CPU, which is now done:
      `tools/trace.lua`, then rename them. Done: every `REC_*` record, the 17 new entries and
      the fixed ROM's calls into a bank chosen further away. All three endings and the hint
      screen have been seen in MAME.
-  3. Check some `--probe` regions, and the score code above, against a MAME trace.
+  3. Check some `--probe` regions, and the score code above, against a MAME trace. Done
+     (2026-10-27): the 16 regions left are code MAME never ran, and the score code ran.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
