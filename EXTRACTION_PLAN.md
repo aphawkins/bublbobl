@@ -729,6 +729,15 @@ Started (2026-10-17) with the sub CPU, which is now done:
   (`EXTEND_BUBBLES_RUN`), NICE 1UP! is drawn, one bubble drops into the lives column and the life
   is added (`EXTEND_LIVES_DRAW`), and `EXTEND_SCENE_END` goes on to the next round. 52 are left:
   the players, the objects, the secret round, the bubbles and captives, and small helpers.
+- The players (2026-10-27), read from the code: `PLAYER_PLAY_STEP`'s calls are named.
+  `PLAYER_WALK` walks on the input until a wall, and starts `PLAYER_FALL` when there is no floor;
+  `PLAYER_FALL_DRIFT` steers a fall or jump every third frame. `PLAYER_JUMP_INPUT` starts a jump on
+  the button or on a bounce off a bubble, and `PLAYER_JUMP_MOVE` moves it a pixel at a time.
+  `PLAYER_PUSHED` moves a player pushed by `(IX+34)`. `PLAYER_BLOW` writes the blow request
+  (`E75E`/`E764`) with the bubble's range and speed. `PLAYER_POP_CHAIN` scores enemies popped at
+  once (2 = 2000, doubling up to 7 = 64000), with the score shown over the player.
+  `PLAYER_DEATH_STEP` is the hit player's spin, and `PLAYER_WALK_SCORE` the walking points. One
+  more ROM sum, `ROM_SUM_STEP_V` (every 8th byte from `598A`). Still byte-exact; 43 calls left.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).

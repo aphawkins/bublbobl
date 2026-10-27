@@ -5815,7 +5815,7 @@ BEST5_SCREEN:           ; 2F54
         call    CLEAR_OBJ_TILES_ALL
         call    CLEAR_E20D
         call    CLEAR_ROWS_A
-        call    L_4F0F
+        call    ROM_SUM_STEP_V
         call    CLEAR_ROWS_B
         call    SET_E2F5_RECS
         call    BEST5_DRAW
@@ -7787,7 +7787,7 @@ L_40E0:                 ; 40E0
         jr      z,L_40EC
         rst     0x20
 L_40EC:                 ; 40EC
-        call    L_43C1
+        call    PLAYER_DEATH_STEP
         jp      nc,L_41D7
         ld      a,(ATTRACT)
         and     a
@@ -7874,10 +7874,10 @@ PLAYER_PLAY_STEP:       ; 419F
         call    PLAYER_PROX_SET
         call    PLAYER_SPEED_STEP
         call    PLAYER_TICK_37
-        call    L_4869
-        call    L_4B76
-        call    L_4708
-        call    L_4247
+        call    PLAYER_JUMP_INPUT
+        call    PLAYER_BLOW
+        call    PLAYER_PUSHED
+        call    PLAYER_WALK
         call    PLAYER_BURN_STEP
         call    PLAYER_SPRITE
         ld      a,0x02
@@ -7887,7 +7887,7 @@ PLAYER_PLAY_STEP:       ; 419F
         call    0x91A3
         call    0x8CC7
         call    0x9233
-        call    L_45F1
+        call    PLAYER_POP_CHAIN
         call    BANK_RESTORE
 L_41D7:                 ; 41D7
         xor     a
@@ -7954,11 +7954,12 @@ L_4239:                 ; 4239
         cp      (hl)
         ret     z
         push    bc
-L_4247:                 ; 4247
+; PLAYER_PLAY_STEP: nothing while burning (+27 b0); falling (+11 b0) goes to PLAYER_FALL; nothing in a jump (+12 b0). Input (PLAYER_FLAGS_GET, active low) b1 clear walks X + 1, b0 clear X - 1 (+35 = 2 or 4, speed 8), (IX+32) pixels a frame, stopped by a wall (GRID_CELL_A); with no floor (GRID_PROBE_3) +11 b0 starts the fall. Then PLAYER_WALK_SCORE. Neither held: +35 = 0, speed 0
+PLAYER_WALK:            ; 4247
         bit     0,(ix+27)
         ret     nz
         bit     0,(ix+11)
-        jp      nz,L_42E3
+        jp      nz,PLAYER_FALL
         bit     0,(ix+12)
         ret     nz
         call    PLAYER_FLAGS_GET
@@ -7999,7 +8000,7 @@ L_4283:                 ; 4283
         inc     (hl)
         pop     bc
         djnz    L_4283
-        jp      L_480F
+        jp      PLAYER_WALK_SCORE
 
 L_42A6:                 ; 42A6
         pop     bc
@@ -8036,9 +8037,10 @@ L_42C0:                 ; 42C0
         dec     (hl)
         pop     bc
         djnz    L_42C0
-        jp      L_480F
+        jp      PLAYER_WALK_SCORE
 
-L_42E3:                 ; 42E3
+; PLAYER_WALK while +11 b0: ROM_SUM_STEP_A, +35 = 3, speed 18; Y - 1 a pixel, (IX+32) a frame, until Y is a multiple of 8 between 20 and DF with floor under it (then +11 = 0, +12 keeps b1); falling off the bottom (Y to 0) counts E5E7 + 1. Then PLAYER_FALL_DRIFT and PLAYER_FACE_INPUT
+PLAYER_FALL:            ; 42E3
         call    ROM_SUM_STEP_A
         ld      (ix+35),0x03
         ld      a,0x18
@@ -8070,7 +8072,7 @@ L_4313:                 ; 4313
 L_431D:                 ; 431D
         pop     bc
         djnz    L_42F5
-        call    L_4334
+        call    PLAYER_FALL_DRIFT
         jp      PLAYER_FACE_INPUT
 
 L_4326:                 ; 4326
@@ -8081,7 +8083,8 @@ L_4326:                 ; 4326
         ld      (ix+12),a
         ret
 
-L_4334:                 ; 4334
+; in a fall or jump, every 3rd frame (IX+24): X + 1 (b1 held) or X - 1 (b0 held) when the cell beside is open (GRID_PROBE_RIGHT, _LEFT); at Y E0 and over only the X limits E7 and 18 apply
+PLAYER_FALL_DRIFT:      ; 4334
         inc     (ix+24)
         ld      a,(ix+24)
         cp      0x03
@@ -8167,7 +8170,8 @@ PLAYER_FLAGS_GET:       ; 43B5
         ld      a,(0xE340)
         ret
 
-L_43C1:                 ; 43C1
+; a hit player (state 2, from PLAYERS_STEP): ROM_SUM_STEP_F; for the first 1E steps it drops Y and Y of the second sprite while there is no floor; then two sprites a frame from the step table at 4450 (or 44CB with +25 b0), (IX+5) the step and (IX+6) its frame count. Carry when the last step (29, or 11) is done
+PLAYER_DEATH_STEP:      ; 43C1
         call    ROM_SUM_STEP_F
         call    OBJ_POS_LOAD
         ld      a,(ix+5)
@@ -8340,7 +8344,8 @@ PLAYER_ANIMS:           ; 4584
 ; first tiles for PLAYER_ANIMS
 PLAYER_FRAMES:          ; 45E4
         .incbin "main_fixed.bin", 0x45E4, 0x000D
-L_45F1:                 ; 45F1
+; PLAYER_PLAY_STEP, bank 2 in: when the sub CPU's flag in POP_ENEMIES is 1 for this player, the count of enemies popped at once (2 or more): +39 = 1, a score from 46AA (2 = 2000, 3 = 4000, 4 = 8000, 5 = 16000, 6 = 32000, 7 = 64000; the 8th word is 0001), sound 26 or 27 (46B8), and a 3-sprite score over the player from 46BF (colour 1E or 22)
+PLAYER_POP_CHAIN:       ; 45F1
         ld      hl,0xF678
         bit     0,(ix+9)
         jr      z,L_45FD
@@ -8479,7 +8484,8 @@ PLAYER_TICK_37:         ; 46FD
         dec     (ix+37)
         jp      ROM_SUM_STEP_C
 
-L_4708:                 ; 4708
+; while (IX+34) (cleared each frame) is nonzero: speed 30, the player moved (IX+34) pixels right (positive) or left, stopped by a wall; with no floor +11 b0 starts the fall
+PLAYER_PUSHED:          ; 4708
         ld      a,(ix+34)
         and     a
         ret     z
@@ -8535,7 +8541,8 @@ L_4759:                 ; 4759
         ret
 
         .incbin "main_fixed.bin", 0x475B, 0x00B4
-L_480F:                 ; 480F
+; the word E5E5 + (IX+32) (pixels walked); with +45 b0 (TAKE_WALK_POINTS) 10 points
+PLAYER_WALK_SCORE:      ; 480F
         ld      hl,0xE5E5
         ld      a,(hl)
         add     a,(ix+32)
@@ -8584,7 +8591,8 @@ L_485A:                 ; 485A
         ret     z
         push    de
         push    bc
-L_4869:                 ; 4869
+; PLAYER_PLAY_STEP: on the ground and not jumping, jump (input b4 clear, once a press: +12 b1) starts a jump; so does a bounce off a bubble while falling or jumping (+36 b0, with jump held), which scores 10. Starting: sound 2C, +12 = b0 b1 and b5 (no direction), b4 (b0 held) or b3 (b1 held), path 4AED (+13/14, +15, +16, speed), E5E4 + 1, 500 with +45 b1 (TAKE_JUMP_POINTS), ROM_SUM_STEP_D. Then (4912) PLAYER_FACE_INPUT, PLAYER_FALL_DRIFT and PLAYER_JUMP_MOVE (IX+32) times
+PLAYER_JUMP_INPUT:      ; 4869
         bit     0,(ix+11)
         jr      nz,L_4875
         bit     0,(ix+12)
@@ -8663,19 +8671,20 @@ L_48E8:                 ; 48E8
         res     0,(ix+11)
 L_4912:                 ; 4912
         call    PLAYER_FACE_INPUT
-        call    L_4334
+        call    PLAYER_FALL_DRIFT
         ld      a,(ix+32)
         or      a
         ret     z
         ld      b,a
 L_491E:                 ; 491E
         push    bc
-        call    L_4926
+        call    PLAYER_JUMP_MOVE
         pop     bc
         djnz    L_491E
         ret
 
-L_4926:                 ; 4926
+; one pixel of a jump: +35 = 3 going down ((IX+15) negative) or 1 going up; probes the cells 9 to the side ((IX+12) b5 none, b4 left), and on the playfield edges sets +12 b6
+PLAYER_JUMP_MOVE:       ; 4926
         call    OBJ_POS_LOAD
         ld      a,(ix+15)
         and     a
@@ -8924,7 +8933,8 @@ L_4B71:                 ; 4B71
         res     0,(ix+27)
         ret
 
-L_4B76:                 ; 4B76
+; PLAYER_PLAY_STEP: the bubble button (input b5 clear, once a press: +10 b1) writes the blow request at E75E (P1) or E764 (P2): 1 (2 while +45 b6, the double bubble, counting (IX+40) down), Y, X, facing, range (+49), speed (+47); then a speed from the table at 4C1B by (IX+18). Tamper check: MCU_READY & 25 zero pushes BC
+PLAYER_BLOW:            ; 4B76
         bit     0,(ix+10)
         jp      nz,L_4C03
         call    PLAYER_FLAGS_GET
@@ -9365,7 +9375,8 @@ L_4EC6:                 ; 4EC6
         ret
 
         .incbin "main_fixed.bin", 0x4EDB, 0x0034
-L_4F0F:                 ; 4F0F
+; one byte a call of a sum of every 8th byte from 598A to 7FFA, in E71E (E71B starts it, E71C is the pointer); the end compares with E71F and on a mismatch runs into 4F52 with HL pushed. From BEST5_SCREEN and 4FA3
+ROM_SUM_STEP_V:         ; 4F0F
         ld      a,(0xE71B)
         and     a
         jr      nz,L_4F25
@@ -9448,7 +9459,7 @@ L_4F8B:                 ; 4F8B
         call    CLEAR_TILE_ROW
 L_4FA3:                 ; 4FA3
         rst     0x20
-        call    L_4F0F
+        call    ROM_SUM_STEP_V
         ld      hl,0xE721
         inc     (hl)
         ld      a,(hl)
