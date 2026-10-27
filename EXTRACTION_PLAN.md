@@ -703,6 +703,12 @@ Started (2026-10-17) with the sub CPU, which is now done:
   times; 15, 16 and 18 combine them. 04 freezes the enemies (`TIMER_RUN`), 06-08 skip 3, 5 or 7
   rounds (`E350`) and 34 skips to round 70 at top difficulty; 2A-2C choose the end-of-round
   item. Kinds 19 (`E720`) and 1B (`F676`) set flags not yet understood.
+- Bank 2's helpers (2026-10-27): every routine that something in bank 2 calls now has a name.
+  Among them, the water (`WATER_CARRY` carries a player who is not pressing jump,
+  `WATER_ENEMY_HITS` and `WATER_ROCK_HITS` sweep enemies and group 2's rocks away), the fire
+  (`FIRE_PLAYER_CHECK` burns a player, `FIRE_ENEMY_HIT` beats an enemy), the pickup rushes'
+  tiles and pickups, the bomb's fireballs, and the test screens (`TEST_INPUTS_SHOW` shows 14
+  input bits as ON/OFF, `TEST_DSW_SHOW` both DIP switch banks as bits).
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -715,8 +721,8 @@ Started (2026-10-17) with the sub CPU, which is now done:
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
      The ghost, groups 2, 2B, 3, 4 and 5 and the boss are done (2026-10-27); groups 4 and 5 have
-     no attack. So are the special item handlers. Bank 2 still has small unnamed helpers inside
-     named routines (the pickup rush tile writers, `WATER_RUN`, `FIRE_RUN`, `TEST_MODE`).
+     no attack. So are the special item handlers and every called routine in bank 2. What is
+     left in banks 0 and 2 is branch targets inside named routines.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

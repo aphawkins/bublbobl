@@ -16,8 +16,8 @@ TEST_MODE:              ; 8000
         ld      a,0xEF
         ld      (SOUND_CMD),a
 L_8016:                 ; 8016
-        call    L_82CB
-        call    L_83B3
+        call    TEST_INPUTS_SHOW
+        call    TEST_DSW_SHOW
         call    L_8360
         ld      (WATCHDOG),a
         jr      L_8016
@@ -69,7 +69,7 @@ L_80F3:                 ; 80F3
         ld      l,(ix+0)
         ld      h,(ix+1)
         ld      e,(ix+2)
-        call    L_812D
+        call    TEST_BLOCK_4X4
         inc     ix
         inc     ix
         inc     ix
@@ -97,7 +97,8 @@ L_811D:                 ; 811D
         ld      (hl),0xFF
         ret
 
-L_812D:                 ; 812D
+; TEST_MODE: 4 rows of 4 tile words, tile 18 with attribute E, at HL (0x40 a row)
+TEST_BLOCK_4X4:         ; 812D
         ld      b,0x04
 L_812F:                 ; 812F
         push    bc
@@ -131,7 +132,8 @@ L_82C7:                 ; 82C7
         jr      nz,L_82C7
         ret
 
-L_82CB:                 ; 82CB
+; TEST_MODE: 14 input bits as ON or OFF (texts at 8304), one entry of 6 bytes each at 830C: the byte (IN0_COPY, IN1_COPY, IN2_COPY), the tile address, the bit, and 1 to invert
+TEST_INPUTS_SHOW:       ; 82CB
         ld      b,0x0E
         ld      ix,0x830C
 L_82D1:                 ; 82D1
@@ -211,7 +213,8 @@ L_83A7:                 ; 83A7
         ld      (SOUND_CMD),a
         ret
 
-L_83B3:                 ; 83B3
+; TEST_MODE: DSW0_COPY and DSW1_COPY as 8 tiles each down a column (48 for a 1, 4C for a 0), from the table at 83E0
+TEST_DSW_SHOW:          ; 83B3
         ld      b,0x02
         ld      ix,0x83E0
 L_83B9:                 ; 83B9
@@ -2541,7 +2544,7 @@ L_93AD:                 ; 93AD
         add     a,a
         add     a,a
         add     a,0xAA
-        call    L_968B
+        call    RUSH_A_TILE_2X2
 L_93D5:                 ; 93D5
         ld      de,0x0080
         add     iy,de
@@ -2586,7 +2589,7 @@ L_9409:                 ; 9409
         add     a,a
         add     a,a
         add     a,0x9E
-        call    L_968B
+        call    RUSH_A_TILE_2X2
 L_9426:                 ; 9426
         ld      de,0x0080
         add     iy,de
@@ -2631,7 +2634,7 @@ L_945A:                 ; 945A
         add     a,a
         add     a,a
         add     a,0x92
-        call    L_968B
+        call    RUSH_A_TILE_2X2
 L_9477:                 ; 9477
         ld      de,0x0080
         add     iy,de
@@ -2800,7 +2803,7 @@ L_958E:                 ; 958E
         add     a,a
         add     a,a
         add     a,0x9E
-        call    L_968B
+        call    RUSH_A_TILE_2X2
 L_95AB:                 ; 95AB
         ld      de,0x0080
         add     iy,de
@@ -2844,7 +2847,7 @@ L_95DC:                 ; 95DC
         add     a,a
         add     a,a
         add     a,0xAA
-        call    L_968B
+        call    RUSH_A_TILE_2X2
 L_95F9:                 ; 95F9
         ld      de,0x0080
         add     iy,de
@@ -2920,7 +2923,8 @@ L_9656:                 ; 9656
         ld      (hl),0x02
         ret
 
-L_968B:                 ; 968B
+; PICKUP_RUSH_A: tiles A .. A+3 as a 2 x 2 block at IY (IY+0, +2, +64, +66), attribute 00
+RUSH_A_TILE_2X2:        ; 968B
         ld      l,0x00
         ld      (iy+0),a
         ld      (iy+1),l
@@ -3014,7 +3018,7 @@ L_971F:                 ; 971F
         ld      hl,0xE73C
         inc     (hl)
         ld      a,0x34
-        call    L_99C4
+        call    RUSH_B_TILE_2X2
 L_9742:                 ; 9742
         ld      de,0x0080
         add     iy,de
@@ -3064,7 +3068,7 @@ L_977C:                 ; 977C
         add     a,a
         add     a,a
         add     a,0x34
-        call    L_99C4
+        call    RUSH_B_TILE_2X2
 L_979A:                 ; 979A
         ld      de,0x0080
         add     iy,de
@@ -3132,7 +3136,7 @@ L_97F8:                 ; 97F8
         add     a,a
         add     a,a
         add     a,0x4C
-        call    L_99C4
+        call    RUSH_B_TILE_2X2
 L_9812:                 ; 9812
         ld      de,0x0080
         add     iy,de
@@ -3150,7 +3154,7 @@ L_9827:                 ; 9827
         ld      ix,P1_REC
         bit     0,(ix+0)
         jr      z,L_9841
-        call    L_9873
+        call    RUSH_B_PICKUP
         jr      nc,L_9841
         ld      hl,0xE73A
         inc     (hl)
@@ -3162,7 +3166,7 @@ L_9841:                 ; 9841
         ld      ix,P2_REC
         bit     0,(ix+0)
         ret     z
-        call    L_9873
+        call    RUSH_B_PICKUP
         ret     nc
         ld      hl,0xE73B
         inc     (hl)
@@ -3184,7 +3188,8 @@ L_9863:                 ; 9863
         set     2,(hl)
         ret
 
-L_9873:                 ; 9873
+; PICKUP_RUSH_B, for the player at IX: the tile word under the player (TILE_ADDR at Y+1) is a pickup when its attribute is 1D and its tile is one of the four from 4C + 4 x F530; then the block is cleared (9892) and counted for that player
+RUSH_B_PICKUP:          ; 9873
         call    OBJ_POS
         inc     l
         call    TILE_ADDR
@@ -3294,7 +3299,7 @@ L_9918:                 ; 9918
         add     a,a
         add     a,a
         add     a,0x34
-        call    L_99C4
+        call    RUSH_B_TILE_2X2
 L_9936:                 ; 9936
         ld      de,0x0080
         add     iy,de
@@ -3370,7 +3375,8 @@ L_998F:                 ; 998F
         ld      (hl),0x02
         ret
 
-L_99C4:                 ; 99C4
+; PICKUP_RUSH_B: as RUSH_A_TILE_2X2 with attribute 1D
+RUSH_B_TILE_2X2:        ; 99C4
         ld      l,0x1D
         ld      (iy+0),a
         ld      (iy+1),l
@@ -3430,7 +3436,7 @@ L_9A1B:                 ; 9A1B
         ld      hl,0xE73C
         inc     (hl)
         ld      a,0x1C
-        call    L_9C5F
+        call    RUSH_C_TILE_2X2
 L_9A3E:                 ; 9A3E
         ld      de,0x0080
         add     iy,de
@@ -3480,7 +3486,7 @@ L_9A78:                 ; 9A78
         add     a,a
         add     a,a
         add     a,0x1C
-        call    L_9C5F
+        call    RUSH_C_TILE_2X2
 L_9A96:                 ; 9A96
         ld      de,0x0080
         add     iy,de
@@ -3522,7 +3528,7 @@ L_9AD7:                 ; 9AD7
         ld      ix,P1_REC
         bit     0,(ix+0)
         jr      z,L_9AF1
-        call    L_9B13
+        call    RUSH_C_PICKUP
         jr      nc,L_9AF1
         ld      hl,0xE73A
         inc     (hl)
@@ -3534,7 +3540,7 @@ L_9AF1:                 ; 9AF1
         ld      ix,P2_REC
         bit     0,(ix+0)
         ret     z
-        call    L_9B13
+        call    RUSH_C_PICKUP
         ret     nc
         ld      hl,0xE73B
         inc     (hl)
@@ -3547,7 +3553,8 @@ L_9B07:                 ; 9B07
         call    SOUND_PUSH
         ret
 
-L_9B13:                 ; 9B13
+; PICKUP_RUSH_C, for the player at IX: as RUSH_B_PICKUP with the tiles 30-33
+RUSH_C_PICKUP:          ; 9B13
         call    OBJ_POS
         inc     l
         call    TILE_ADDR
@@ -3654,7 +3661,7 @@ L_9BB3:                 ; 9BB3
         add     a,a
         add     a,a
         add     a,0x1C
-        call    L_9C5F
+        call    RUSH_C_TILE_2X2
 L_9BD1:                 ; 9BD1
         ld      de,0x0080
         add     iy,de
@@ -3730,7 +3737,8 @@ L_9C2A:                 ; 9C2A
         ld      (hl),0x02
         ret
 
-L_9C5F:                 ; 9C5F
+; PICKUP_RUSH_C: as RUSH_A_TILE_2X2 with attribute 1D
+RUSH_C_TILE_2X2:        ; 9C5F
         ld      l,0x1D
         ld      (iy+0),a
         ld      (iy+1),l
@@ -4079,9 +4087,9 @@ L_9FD9:                 ; 9FD9
         inc     (ix+10)
         bit     0,(ix+10)
         ret     nz
-        call    L_A1A2
-        call    L_A224
-        call    L_A26D
+        call    WATER_CARRY
+        call    WATER_ENEMY_HITS
+        call    WATER_ROCK_HITS
         call    ROM_SUM_STEP_I
         call    GRID_PROBE_BELOW
         jp      nz,L_A05C
@@ -4332,7 +4340,8 @@ L_A196:                 ; A196
         ld      (ix+0),a
         ret
 
-L_A1A2:                 ; A1A2
+; WATER_RUN, for each playing player not pressing button 2 (IN1/IN2_COPY b4 set) and with +25 clear, within 10 of the stream head (WATER_NEAR): the player's object goes to the stream's Y - 8, X - 8 (the water carries them); at Y 0, +0B = 1
+WATER_CARRY:            ; A1A2
         ld      hl,P1_REC
         bit     0,(hl)
         jp      z,L_A1C8
@@ -4342,7 +4351,7 @@ L_A1A2:                 ; A1A2
         ld      a,(0xE6B6)
         and     a
         jp      nz,L_A1C8
-        call    L_A20A
+        call    WATER_NEAR
         jp      nc,L_A1C8
         ld      hl,0xE2C5
         ld      de,0xE69C
@@ -4357,7 +4366,7 @@ L_A1C8:                 ; A1C8
         ld      a,(0xE6E8)
         and     a
         ret     nz
-        call    L_A20A
+        call    WATER_NEAR
         ret     nc
         ld      hl,0xE2B5
         ld      de,0xE6CE
@@ -4388,7 +4397,8 @@ L_A207:                 ; A207
         ld      (hl),0xA0
         ret
 
-L_A20A:                 ; A20A
+; carry when the Y, X at HL+1, HL+2 are within 10 of the stream head (IX+1, IX+2)
+WATER_NEAR:             ; A20A
         inc     hl
         ld      a,(hl)
         sub     (ix+1)
@@ -4406,7 +4416,8 @@ L_A221:                 ; A221
         cp      0x10
         ret
 
-L_A224:                 ; A224
+; each of the 7 ENEMY_HITS records with b0 or b2 within 10 of the stream head: WATER_ENEMY_TAKE
+WATER_ENEMY_HITS:       ; A224
         ld      b,0x00
         ld      hl,ENEMY_HITS
 L_A229:                 ; A229
@@ -4431,7 +4442,7 @@ L_A249:                 ; A249
         cp      0x10
 L_A24B:                 ; A24B
         pop     hl
-        call    c,L_A25B
+        call    c,WATER_ENEMY_TAKE
 L_A24F:                 ; A24F
         inc     hl
         inc     hl
@@ -4443,7 +4454,8 @@ L_A24F:                 ; A24F
         jp      nz,L_A229
         ret
 
-L_A25B:                 ; A25B
+; the enemy's ENEMY_HITS record: state 4, the stream's Y, X, then 7 (the water carries it off). Not seen in MAME
+WATER_ENEMY_TAKE:       ; A25B
         push    hl
         ld      (hl),0x04
         inc     hl
@@ -4457,7 +4469,8 @@ L_A25B:                 ; A25B
         pop     hl
         ret
 
-L_A26D:                 ; A26D
+; each thrown group 2 rock (ENEMY2_SHOTS) within 10 of the stream head bursts (+0 b3) at the stream's Y, X. Tamper check: the word at 0004 must be START, else it stops after the first
+WATER_ROCK_HITS:        ; A26D
         ld      iy,ENEMY2_SHOTS
         ld      b,0x08
 L_A273:                 ; A273
@@ -5503,7 +5516,7 @@ BOMB_RUN:               ; AAC5
         and     a
         ret     z
         jp      m,L_AAE2
-        call    L_AB2E
+        call    BOMB_FIREBALLS
         ld      hl,0xF604
         bit     4,(hl)
         ret     z
@@ -5550,7 +5563,8 @@ L_AB23:                 ; AB23
         ld      (hl),0x00
         ret
 
-L_AB2E:                 ; AB2E
+; BOMB_RUN: the 8 fireball records at F5B7: each starts at Y 70, X 78 (4 objects, sound 12, +0 b1), then flies its path (AB82), bursts (ABC9), and ends (AC72)
+BOMB_FIREBALLS:         ; AB2E
         ld      ix,0xF5B7
         ld      b,0x08
 L_AB34:                 ; AB34
@@ -5891,7 +5905,7 @@ L_ADE0:                 ; ADE0
         ld      hl,0xB12B
 L_AE05:                 ; AE05
         ld      c,0x1D
-        call    L_B072
+        call    IDLE_PLAYER_SPRITES
         ld      b,0x04
         ld      hl,0xE2C7
 L_AE0F:                 ; AE0F
@@ -5916,7 +5930,7 @@ L_AE24:                 ; AE24
         ld      hl,0xB133
 L_AE2F:                 ; AE2F
         ld      c,0x21
-        call    L_B072
+        call    IDLE_PLAYER_SPRITES
         ld      b,0x04
         ld      hl,0xE2B7
 L_AE39:                 ; AE39
@@ -5960,7 +5974,7 @@ L_AE79:                 ; AE79
         jp      nz,L_AE88
         ld      c,0x1D
 L_AE88:                 ; AE88
-        jp      L_B072
+        jp      IDLE_PLAYER_SPRITES
 
 L_AE8B:                 ; AE8B
         call    IX_SPEED_CLEAR
@@ -6015,7 +6029,7 @@ L_AEF0:                 ; AEF0
         jp      nz,L_AEFB
         ld      c,0x1D
 L_AEFB:                 ; AEFB
-        jp      L_B072
+        jp      IDLE_PLAYER_SPRITES
 
 L_AEFE:                 ; AEFE
         call    IX_SPEED_CLEAR
@@ -6039,7 +6053,7 @@ L_AF0C:                 ; AF0C
         ld      hl,0xB133
 L_AF2E:                 ; AF2E
         ld      c,0x1D
-        call    L_B072
+        call    IDLE_PLAYER_SPRITES
         ld      b,0x04
         ld      hl,0xE2C7
 L_AF38:                 ; AF38
@@ -6064,7 +6078,7 @@ L_AF4D:                 ; AF4D
         ld      hl,0xB12B
 L_AF58:                 ; AF58
         ld      c,0x21
-        call    L_B072
+        call    IDLE_PLAYER_SPRITES
         ld      b,0x04
         ld      hl,0xE2B7
 L_AF62:                 ; AF62
@@ -6195,7 +6209,8 @@ L_B066:                 ; B066
         call    ZERO_BC
         jp      P2_REC_INIT
 
-L_B072:                 ; B072
+; IDLE_PLAYER_RUN: a 2 x 2 sprite from the tile list at HL, gfx numbers from (IX+7), colour C (1D for player 1, 21 for player 2)
+IDLE_PLAYER_SPRITES:    ; B072
         ld      e,(ix+7)
         ld      d,0x00
         ld      b,0x02
@@ -6741,14 +6756,14 @@ L_BA60:                 ; BA60
         ld      (hl),e
         inc     hl
         ld      (hl),d
-        call    L_BAE5
+        call    FIRE_ENEMY_HIT
         ld      a,(ix+5)
         cp      0x05
         jr      c,L_BA9A
         cp      0x19
         ld      e,0x03
         jr      nc,L_BA9A
-        call    L_BAB5
+        call    FIRE_PLAYER_CHECK
 L_BA9A:                 ; BA9A
         inc     (ix+7)
         ld      a,(ix+7)
@@ -6766,7 +6781,8 @@ L_BAAA:                 ; BAAA
         jp      nz,L_B9D3
         ret
 
-L_BAB5:                 ; BAB5
+; FIRE_RUN: a player within 8 of a flame (PLAYER_NEAR_CHECK) and not (+2D b5, +25 or +19 invincible): P1_BURN or P2_BURN
+FIRE_PLAYER_CHECK:      ; BAB5
         ld      bc,0x0808
         call    PLAYER_NEAR_CHECK
         ret     nc
@@ -6795,10 +6811,11 @@ L_BAD2:                 ; BAD2
         ret     nz
         jp      P2_BURN
 
-L_BAE5:                 ; BAE5
+; FIRE_RUN: an enemy within 8 of the flame (ENEMY_HIT_NEAR8) is beaten: its ENEMY_HITS record state 10, +3 = 9; E5F3 + 1, ENEMY_TOTAL - 1, sound 25. Tamper check: IRQ_VECTOR_ENTRY must be IRQ_HANDLER, else EX (SP),HL
+FIRE_ENEMY_HIT:         ; BAE5
         ld      e,(ix+1)
         ld      d,(ix+2)
-        call    L_BB0F
+        call    ENEMY_HIT_NEAR8
         ret     nc
         ld      (hl),0x10
         inc     hl
@@ -6817,7 +6834,8 @@ L_BAE5:                 ; BAE5
         sbc     hl,bc
         ret     z
         ex      (sp),hl
-L_BB0F:                 ; BB0F
+; carry, HL and B = the first ENEMY_HITS record (b0 set) whose Y, X are within 8 of E, D (of 7)
+ENEMY_HIT_NEAR8:        ; BB0F
         ld      b,0x00
         ld      hl,ENEMY_HITS
 L_BB14:                 ; BB14

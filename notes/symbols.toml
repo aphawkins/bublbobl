@@ -878,6 +878,24 @@ TAKE_BIG_ITEM_25 = { addr = 0x8A3E, note = "special kind 25: as TAKE_BIG_ITEM_1E
 TAKE_BIG_ITEM_26 = { addr = 0x8A49, note = "special kind 26: as TAKE_BIG_ITEM_1E with F46D = 2" }
 TAKE_BIG_ITEM_27 = { addr = 0x8A54, note = "special kind 27: as TAKE_BIG_ITEM_1E with F46D = 1" }
 TAKE_BIG_ITEM_28 = { addr = 0x8A5F, note = "special kind 28: as TAKE_BIG_ITEM_1E with F46D = 0" }
+RUSH_A_TILE_2X2 = { addr = 0x968B, note = "PICKUP_RUSH_A: tiles A .. A+3 as a 2 x 2 block at IY (IY+0, +2, +64, +66), attribute 00" }
+RUSH_B_TILE_2X2 = { addr = 0x99C4, note = "PICKUP_RUSH_B: as RUSH_A_TILE_2X2 with attribute 1D" }
+RUSH_C_TILE_2X2 = { addr = 0x9C5F, note = "PICKUP_RUSH_C: as RUSH_A_TILE_2X2 with attribute 1D" }
+RUSH_B_PICKUP = { addr = 0x9873, note = "PICKUP_RUSH_B, for the player at IX: the tile word under the player (TILE_ADDR at Y+1) is a pickup when its attribute is 1D and its tile is one of the four from 4C + 4 x F530; then the block is cleared (9892) and counted for that player" }
+RUSH_C_PICKUP = { addr = 0x9B13, note = "PICKUP_RUSH_C, for the player at IX: as RUSH_B_PICKUP with the tiles 30-33" }
+WATER_CARRY = { addr = 0xA1A2, note = "WATER_RUN, for each playing player not pressing button 2 (IN1/IN2_COPY b4 set) and with +25 clear, within 10 of the stream head (WATER_NEAR): the player's object goes to the stream's Y - 8, X - 8 (the water carries them); at Y 0, +0B = 1" }
+WATER_NEAR = { addr = 0xA20A, note = "carry when the Y, X at HL+1, HL+2 are within 10 of the stream head (IX+1, IX+2)" }
+WATER_ENEMY_HITS = { addr = 0xA224, note = "each of the 7 ENEMY_HITS records with b0 or b2 within 10 of the stream head: WATER_ENEMY_TAKE" }
+WATER_ENEMY_TAKE = { addr = 0xA25B, note = "the enemy's ENEMY_HITS record: state 4, the stream's Y, X, then 7 (the water carries it off). Not seen in MAME" }
+WATER_ROCK_HITS = { addr = 0xA26D, note = "each thrown group 2 rock (ENEMY2_SHOTS) within 10 of the stream head bursts (+0 b3) at the stream's Y, X. Tamper check: the word at 0004 must be START, else it stops after the first" }
+FIRE_PLAYER_CHECK = { addr = 0xBAB5, note = "FIRE_RUN: a player within 8 of a flame (PLAYER_NEAR_CHECK) and not (+2D b5, +25 or +19 invincible): P1_BURN or P2_BURN" }
+FIRE_ENEMY_HIT = { addr = 0xBAE5, note = "FIRE_RUN: an enemy within 8 of the flame (ENEMY_HIT_NEAR8) is beaten: its ENEMY_HITS record state 10, +3 = 9; E5F3 + 1, ENEMY_TOTAL - 1, sound 25. Tamper check: IRQ_VECTOR_ENTRY must be IRQ_HANDLER, else EX (SP),HL" }
+ENEMY_HIT_NEAR8 = { addr = 0xBB0F, note = "carry, HL and B = the first ENEMY_HITS record (b0 set) whose Y, X are within 8 of E, D (of 7)" }
+BOMB_FIREBALLS = { addr = 0xAB2E, note = "BOMB_RUN: the 8 fireball records at F5B7: each starts at Y 70, X 78 (4 objects, sound 12, +0 b1), then flies its path (AB82), bursts (ABC9), and ends (AC72)" }
+IDLE_PLAYER_SPRITES = { addr = 0xB072, note = "IDLE_PLAYER_RUN: a 2 x 2 sprite from the tile list at HL, gfx numbers from (IX+7), colour C (1D for player 1, 21 for player 2)" }
+TEST_BLOCK_4X4 = { addr = 0x812D, note = "TEST_MODE: 4 rows of 4 tile words, tile 18 with attribute E, at HL (0x40 a row)" }
+TEST_INPUTS_SHOW = { addr = 0x82CB, note = "TEST_MODE: 14 input bits as ON or OFF (texts at 8304), one entry of 6 bytes each at 830C: the byte (IN0_COPY, IN1_COPY, IN2_COPY), the tile address, the bit, and 1 to invert" }
+TEST_DSW_SHOW = { addr = 0x83B3, note = "TEST_MODE: DSW0_COPY and DSW1_COPY as 8 tiles each down a column (48 for a 1, 4C for a 0), from the table at 83E0" }
 
 [bank2.data]
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }
