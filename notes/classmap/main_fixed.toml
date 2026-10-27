@@ -94,20 +94,13 @@ note = "BANK_PAGES: FB40 bank bits for pages 0-3, two sets by DSW-B:8"
 
 [[range]]
 start = 0x029B
-end = 0x02C7
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x02D6
 end = 0x02F1
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x031C
+start = 0x0300
 end = 0x0351
 kind = "code"
 source = "trace"
@@ -164,13 +157,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x0535
-end = 0x058C
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x0592
 end = 0x061A
 kind = "code"
 source = "trace"
@@ -192,13 +178,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x0697
-end = 0x069C
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x06A4
 end = 0x06C8
 kind = "code"
 source = "trace"
@@ -206,13 +185,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x06CF
-end = 0x06FE
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x0702
 end = 0x0705
 kind = "code"
 source = "trace"
@@ -220,17 +192,17 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x0730
-end = 0x0760
+end = 0x0846
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x0765
-end = 0x0846
-kind = "code"
-source = "trace"
-note = "executed in MAME"
+start = 0x0847
+end = 0x085E
+kind = "data"
+source = "manual"
+note = "after the RET Z of the tamper compare of (0004) with START: 4-byte records and a byte table"
 
 [[range]]
 start = 0x085F
@@ -276,20 +248,6 @@ note = "READY !"
 
 [[range]]
 start = 0x09EC
-end = 0x09F5
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x0A12
-end = 0x0A79
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x0A97
 end = 0x0B20
 kind = "code"
 source = "trace"
@@ -304,20 +262,34 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x0B4B
-end = 0x0B5A
+end = 0x0B8C
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x0B66
-end = 0x0B81
+start = 0x0B8F
+end = 0x0B9E
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x0BC8
+start = 0x0BA4
+end = 0x0BA9
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x0BAC
+end = 0x0BBC
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x0BC0
 end = 0x0C16
 kind = "code"
 source = "trace"
@@ -493,13 +465,13 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x13C4
-end = 0x13EF
+end = 0x142E
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x1444
+start = 0x1442
 end = 0x1477
 kind = "code"
 source = "trace"
@@ -507,7 +479,7 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x1479
-end = 0x14E0
+end = 0x1504
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -534,6 +506,13 @@ source = "trace"
 note = "executed in MAME"
 
 [[range]]
+start = 0x159D
+end = 0x15A5
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
 start = 0x15CA
 end = 0x1635
 kind = "code"
@@ -542,13 +521,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x166B
-end = 0x16E0
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x1700
 end = 0x1762
 kind = "code"
 source = "trace"
@@ -556,34 +528,41 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x1764
-end = 0x179C
+end = 0x17A7
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x17E0
-end = 0x17F1
+start = 0x17AA
+end = 0x1810
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x17F4
-end = 0x17FC
+start = 0x1813
+end = 0x182F
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x18A5
-end = 0x18BA
+start = 0x1832
+end = 0x184A
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x18E7
+start = 0x184D
+end = 0x1850
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x189D
 end = 0x1ABE
 kind = "code"
 source = "trace"
@@ -654,7 +633,28 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x1DB5
-end = 0x1E63
+end = 0x1E72
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x1E7C
+end = 0x1ED0
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x1ED3
+end = 0x1EE6
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x1EEA
+end = 0x1F73
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -815,13 +815,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x22FA
-end = 0x230A
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x230C
 end = 0x2343
 kind = "code"
 source = "trace"
@@ -927,13 +920,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x24ED
-end = 0x2682
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x268C
 end = 0x2894
 kind = "code"
 source = "trace"
@@ -976,7 +962,21 @@ note = "GOOD LUCK!"
 
 [[range]]
 start = 0x2931
-end = 0x2935
+end = 0x293C
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x293F
+end = 0x29C5
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x29CC
+end = 0x2A55
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1130,35 +1130,14 @@ note = "GAME OVER"
 
 [[range]]
 start = 0x2FB3
-end = 0x2FDD
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x2FE4
-end = 0x300F
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3015
-end = 0x30C1
+end = 0x30C9
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
 start = 0x30DF
-end = 0x310E
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3119
-end = 0x3124
+end = 0x313F
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1200,13 +1179,6 @@ note = "AND MYSTERY !?..."
 
 [[range]]
 start = 0x3262
-end = 0x3277
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3293
 end = 0x32A2
 kind = "code"
 source = "trace"
@@ -1215,6 +1187,13 @@ note = "executed in MAME"
 [[range]]
 start = 0x32BE
 end = 0x32DB
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x32E0
+end = 0x32F3
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1277,20 +1256,13 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x349F
-end = 0x34BA
+end = 0x34D9
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x34E5
-end = 0x351C
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3537
+start = 0x34DF
 end = 0x3573
 kind = "code"
 source = "trace"
@@ -1333,62 +1305,90 @@ note = "SCORE ROUND  NAME"
 
 [[range]]
 start = 0x361D
-end = 0x3644
+end = 0x3694
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x3648
-end = 0x365F
+start = 0x3698
+end = 0x36A2
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x366C
-end = 0x3673
+start = 0x36A6
+end = 0x36F3
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x36AC
-end = 0x36B4
+start = 0x36F7
+end = 0x370C
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x36B6
-end = 0x36BB
+start = 0x3710
+end = 0x3719
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x36BD
-end = 0x36C5
+start = 0x371F
+end = 0x377E
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x36C7
-end = 0x36CE
+start = 0x37D1
+end = 0x37DE
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x3811
+end = 0x3828
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x382C
+end = 0x382E
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x383C
+end = 0x3846
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x384A
+end = 0x3864
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x3868
+end = 0x38D3
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
 start = 0x38F0
-end = 0x3989
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x398C
 end = 0x39D6
 kind = "code"
 source = "trace"
@@ -1396,41 +1396,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x39D8
-end = 0x3A22
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3A31
-end = 0x3AD1
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3AD4
-end = 0x3B46
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3B63
-end = 0x3BBD
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3BC0
-end = 0x3C31
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3C4A
 end = 0x3CC1
 kind = "code"
 source = "trace"
@@ -1473,13 +1438,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x3ED6
-end = 0x3FEC
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x3FFA
 end = 0x4004
 kind = "code"
 source = "trace"
@@ -1592,7 +1550,7 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x480F
-end = 0x481F
+end = 0x4825
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1613,13 +1571,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x4B62
-end = 0x4B66
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x4B76
 end = 0x4B94
 kind = "code"
 source = "trace"
@@ -1627,13 +1578,13 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x4B96
-end = 0x4BA9
+end = 0x4BAE
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x4BB4
+start = 0x4BB3
 end = 0x4C1A
 kind = "code"
 source = "trace"
@@ -1641,13 +1592,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x4C35
-end = 0x4CA7
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x4CAA
 end = 0x4D00
 kind = "code"
 source = "trace"
@@ -1655,20 +1599,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x4D02
-end = 0x4D08
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x4D0B
-end = 0x4E80
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x4E89
 end = 0x4EDA
 kind = "code"
 source = "trace"
@@ -1683,14 +1613,112 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x4F52
-end = 0x4F64
+end = 0x4F85
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x5046
-end = 0x504B
+start = 0x4F8B
+end = 0x4FDD
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x4FDF
+end = 0x5013
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5015
+end = 0x50C1
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x50CB
+end = 0x50F5
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x50FC
+end = 0x5196
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x51A2
+end = 0x51D6
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5267
+end = 0x52AF
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x52B6
+end = 0x52C6
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5353
+end = 0x5363
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5406
+end = 0x5415
+kind = "data"
+source = "manual"
+note = "8 words (395E 3968 395F ...) after the RST 18 that ends the routine at 53CF"
+
+[[range]]
+start = 0x5416
+end = 0x541B
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x541E
+end = 0x5487
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5498
+end = 0x54BB
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x54C2
+end = 0x555A
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x55DB
+end = 0x560E
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1703,8 +1731,29 @@ source = "auto"
 note = "WELCOME TO SECRET ROUND"
 
 [[range]]
-start = 0x5776
-end = 0x5783
+start = 0x563F
+end = 0x56B1
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x56B4
+end = 0x56C8
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x56CA
+end = 0x56DE
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x56E0
+end = 0x57DE
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1717,21 +1766,49 @@ source = "auto"
 note = "TIME"
 
 [[range]]
+start = 0x57E4
+end = 0x57FA
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5A0D
+end = 0x5A3A
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5A3D
+end = 0x5A67
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5A6A
+end = 0x5A7C
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5A85
+end = 0x5AB1
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5AC7
+end = 0x5AED
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
 start = 0x5B3C
-end = 0x5B64
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x5B6E
-end = 0x5B9C
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x5B9F
 end = 0x5C27
 kind = "code"
 source = "trace"
@@ -1745,6 +1822,20 @@ source = "trace"
 note = "executed in MAME"
 
 [[range]]
+start = 0x5CE8
+end = 0x5CF7
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x5D12
+end = 0x5D54
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
 start = 0x5D57
 end = 0x5DD6
 kind = "code"
@@ -1753,20 +1844,13 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x5DE5
-end = 0x5E93
+end = 0x5EB0
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
 start = 0x5F0B
-end = 0x5F58
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x5F5C
 end = 0x5F70
 kind = "code"
 source = "trace"
@@ -1830,13 +1914,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x626C
-end = 0x6277
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x627A
 end = 0x62A4
 kind = "code"
 source = "trace"
@@ -1844,20 +1921,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x62AB
-end = 0x630E
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x634A
-end = 0x63C2
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x63D1
 end = 0x63E0
 kind = "code"
 source = "trace"
@@ -1865,7 +1928,7 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x63E5
-end = 0x648C
+end = 0x6492
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1900,14 +1963,63 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x6616
-end = 0x6632
+end = 0x669C
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x66A1
+end = 0x66AC
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x66AF
+end = 0x6750
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
 start = 0x6755
-end = 0x6768
+end = 0x6803
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x6806
+end = 0x69F1
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x69F4
+end = 0x6A51
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x6A5E
+end = 0x6A6D
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x6A77
+end = 0x6BDC
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x6BEC
+end = 0x6BF6
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1927,22 +2039,99 @@ source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x6ED3
-end = 0x6ED8
+start = 0x6EBB
+end = 0x6EC9
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x6EDD
-end = 0x6F0B
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x6F1B
+start = 0x6ECD
 end = 0x6F22
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x6F30
+end = 0x6FE2
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7007
+end = 0x7012
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7015
+end = 0x70BE
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x70C6
+end = 0x7209
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7293
+end = 0x769A
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x769F
+end = 0x76BC
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x76BF
+end = 0x76DC
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x76DE
+end = 0x76F4
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7732
+end = 0x7744
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7748
+end = 0x7775
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7782
+end = 0x77ED
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x780B
+end = 0x785F
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -1953,6 +2142,27 @@ end = 0x788D
 kind = "fill"
 source = "auto"
 note = "0x23 x 00"
+
+[[range]]
+start = 0x788E
+end = 0x78D7
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x78DB
+end = 0x798E
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x7991
+end = 0x79A6
+kind = "code"
+source = "trace"
+note = "executed in MAME"
 
 [[range]]
 start = 0x79E9
@@ -2005,13 +2215,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x7CA5
-end = 0x7CAA
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x7CB0
 end = 0x7CB5
 kind = "code"
 source = "trace"
@@ -2037,17 +2240,3 @@ end = 0x7FFF
 kind = "code"
 source = "trace"
 note = "executed in MAME"
-
-[[range]]
-start = 0x0847
-end = 0x085E
-kind = "data"
-source = "manual"
-note = "after the RET Z of the tamper compare of (0004) with START: 4-byte records and a byte table"
-
-[[range]]
-start = 0x5406
-end = 0x5415
-kind = "data"
-source = "manual"
-note = "8 words (395E 3968 395F ...) after the RST 18 that ends the routine at 53CF"

@@ -66,13 +66,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x0151
-end = 0x0160
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x0163
 end = 0x0166
 kind = "code"
 source = "trace"
@@ -283,7 +276,7 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x0B98
-end = 0x0BA9
+end = 0x0BB6
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -318,14 +311,14 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x0C9D
-end = 0x0CB2
+end = 0x0CE4
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x0CC5
-end = 0x0CDB
+start = 0x0CED
+end = 0x0CFB
 kind = "code"
 source = "trace"
 note = "executed in MAME"

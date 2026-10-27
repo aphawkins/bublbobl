@@ -684,7 +684,7 @@ ROUND_TIMER_CHECK:      ; 8691
         bit     7,(hl)
         jr      z,L_869D
         ld      (hl),0x01
-        jp      0x0B82
+        jp      ROUND_PAL_SHIFT
 
 L_869D:                 ; 869D
         ld      hl,TIMER_DONE
@@ -1871,7 +1871,7 @@ L_8F0E:                 ; 8F0E
         inc     hl
         ld      (hl),0x12
         ld      a,0x08
-        call    0x189D
+        call    ROUND_REC_BYTE
         ld      (ix+12),a
         ld      a,(0xED46)
         ld      (ix+9),a
@@ -2830,7 +2830,7 @@ L_964C:                 ; 964C
         ld      (ix+22),0x78
         call    ENEMY_TURN_DELAY
         ld      a,0x08
-        call    0x189D
+        call    ROUND_REC_BYTE
         ld      (ix+12),a
         ld      de,0x001B
         add     ix,de
@@ -3504,7 +3504,7 @@ L_9BB2:                 ; 9BB2
         ld      (ix+17),h
         pop     hl
         ld      a,(hl)
-        ld      hl,0x9CD7
+        ld      hl,L_9CD7
         call    TABLE_WORD
         ex      de,hl
         jp      (hl)
@@ -3713,7 +3713,18 @@ L_9CCF:                 ; 9CCF
         .word   ENEMY4_FLY_RD
         .word   ENEMY4_FLY_LD
         .word   ENEMY4_FLY_LU
-        .incbin "main_bank0.bin", 0x1CD7, 0x00BF
+L_9CD7:                 ; 9CD7
+        .word   L_9BCA
+        .word   L_9BCF
+        .word   L_9BD7
+        .word   L_9BDE
+        .word   L_9BE6
+        .word   L_9BEB
+        .word   L_9BF3
+        .word   L_9BFA
+        .word   L_9C02
+        .word   L_9C03
+        .incbin "main_bank0.bin", 0x1CEB, 0x00AB
 L_9D96:                 ; 9D96
         ld      a,(0xF10E)
         and     a
@@ -4399,7 +4410,7 @@ L_A2B7:                 ; A2B7
         ld      a,(ix+17)
         call    OBJ_PTR
         ld      bc,0xA2FE
-        call    0x0D7F
+        call    ADD_BC_A
         ld      a,(bc)
         ld      (hl),a
         inc     bc
@@ -4835,7 +4846,7 @@ L_A5B6:                 ; A5B6
         ld      (ix+22),0x00
         call    ENEMY_TURN_DELAY
         ld      a,0x08
-        call    0x189D
+        call    ROUND_REC_BYTE
         ld      (ix+12),a
         ld      de,0x0019
         add     ix,de
@@ -5288,7 +5299,7 @@ L_A9E1:                 ; A9E1
         ld      hl,0xAF6C
         ld      c,0x29
 L_A9EB:                 ; A9EB
-        call    0x14E4
+        call    SPRITE_GRID_FX
         jr      L_A9FD
 
 L_A9F0:                 ; A9F0
@@ -5445,7 +5456,7 @@ L_AAB0:                 ; AAB0
         call    SHL4
         ld      hl,0xAFAC
         call    ADD_HL_A
-        call    0x14E4
+        call    SPRITE_GRID_FX
         jr      L_AAE2
 
 L_AADF:                 ; AADF
@@ -5528,7 +5539,7 @@ L_AB62:                 ; AB62
         ld      hl,0xAF6C
         ld      c,0x29
 L_AB93:                 ; AB93
-        call    0x14E4
+        call    SPRITE_GRID_FX
         ret
 
 L_AB97:                 ; AB97
@@ -5642,7 +5653,7 @@ L_AC58:                 ; AC58
         bit     1,(ix+7)
         jr      nz,L_AC7E
         ld      hl,0xAFDC
-        call    0x14E4
+        call    SPRITE_GRID_FX
         ret
 
 L_AC7E:                 ; AC7E
@@ -5731,7 +5742,7 @@ L_ACF2:                 ; ACF2
         ld      hl,0xB020
 L_AD11:                 ; AD11
         call    ADD_HL_A
-        call    0x14E4
+        call    SPRITE_GRID_FX
         ret
 
 L_AD18:                 ; AD18
@@ -6969,7 +6980,7 @@ ENEMY2B_SHOTS_INIT:     ; BBCF
         and     a
         ret     z
         ld      a,0x0C
-        call    0x189D
+        call    ROUND_REC_BYTE
         bit     4,a
         ret     z
         ld      ix,ENEMY2B_SHOTS
@@ -7015,7 +7026,7 @@ L_BC23:                 ; BC23
         and     a
         ret     z
         ld      a,0x0C
-        call    0x189D
+        call    ROUND_REC_BYTE
         bit     4,a
         ret     z
         ld      ix,ENEMY2B_SHOTS

@@ -386,7 +386,7 @@ L_84FD:                 ; 84FD
         jr      L_853D
 
 L_850C:                 ; 850C
-        call    0x65D0
+        call    ROM_SUM_STEP_R
         ld      hl,(POINTS_TIMER)
         dec     hl
         ld      (POINTS_TIMER),hl
@@ -441,7 +441,7 @@ POINTS_TAKE:            ; 854E
         ld      a,d
         add     a,0x08
         ld      h,a
-        call    0x1444
+        call    OBJ_NEAR_0E
         ret     nc
         ld      a,(POINTS_KIND)
         ld      b,0x05
@@ -719,7 +719,7 @@ SPECIAL_TAKE:           ; 873E
         ld      a,d
         add     a,0x08
         ld      h,a
-        call    0x1444
+        call    OBJ_NEAR_0E
         ret     nc
         ld      a,(SPECIAL_KIND)
         ld      b,0x05
@@ -1555,7 +1555,7 @@ L_8CD1:                 ; 8CD1
         add     a,0x10
         ld      h,a
         ld      bc,0x1818
-        call    0x1447
+        call    OBJ_NEAR
         ret     nc
         ld      a,(0xF46D)
         ld      hl,0x8D46
@@ -2224,7 +2224,7 @@ INVINCIBLE_ITEM_TAKE:   ; 91A3
         ld      a,d
         add     a,0x08
         ld      h,a
-        call    0x1444
+        call    OBJ_NEAR_0E
         ret     nc
         push    ix
         ld      ix,P1_REC
@@ -2367,7 +2367,7 @@ ITEM_HINT_RUN:          ; 92CF
         ld      c,0x28
         call    SOUND_PUSH
 L_92ED:                 ; 92ED
-        call    0x340B
+        call    ROM_SUM_STEP_Q
         ld      hl,0xF51A
         inc     (hl)
         ld      a,(hl)
@@ -2645,7 +2645,7 @@ L_94DC:                 ; 94DC
 L_94EF:                 ; 94EF
         call    OBJ_POS
         inc     l
-        call    0x16C5
+        call    TILE_ADDR
         inc     hl
         ld      a,(hl)
         cp      0x00
@@ -3135,7 +3135,7 @@ L_9863:                 ; 9863
 L_9873:                 ; 9873
         call    OBJ_POS
         inc     l
-        call    0x16C5
+        call    TILE_ADDR
         inc     hl
         ld      a,(hl)
         cp      0x1D
@@ -3498,7 +3498,7 @@ L_9B07:                 ; 9B07
 L_9B13:                 ; 9B13
         call    OBJ_POS
         inc     l
-        call    0x16C5
+        call    TILE_ADDR
         inc     hl
         ld      a,(hl)
         cp      0x1D
@@ -3871,7 +3871,7 @@ L_9DF7:                 ; 9DF7
         ld      b,0x04
         ld      d,0x02
         ld      e,0x06
-        call    0x14E6
+        call    SPRITE_GRID_FX_D
         bit     1,(ix+0)
         jr      z,L_9E1A
         inc     (ix+8)
@@ -4133,11 +4133,11 @@ L_A0B2:                 ; A0B2
         ld      a,(0xE737)
         and     a
         jp      nz,L_A0C0
-        call    0x16C2
+        call    OBJ_TILE_ADDR
         jp      L_A0C3
 
 L_A0C0:                 ; A0C0
-        call    0x16E1
+        call    OBJ_TILE_ADDR_D5
 L_A0C3:                 ; A0C3
         pop     de
         push    hl
@@ -4867,7 +4867,7 @@ L_A5E2:                 ; A5E2
         ld      bc,0x041C
         call    SPRITE
         ld      a,0x0A
-        call    0x189D
+        call    ROUND_REC_BYTE
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
@@ -4895,7 +4895,7 @@ L_A624:                 ; A624
         ld      e,0x00
         call    SPRITE_GRID
         ld      a,0x0A
-        call    0x189D
+        call    ROUND_REC_BYTE
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
@@ -4947,7 +4947,7 @@ L_A684:                 ; A684
         ld      e,0x00
         call    SPRITE_GRID
         ld      a,0x0A
-        call    0x189D
+        call    ROUND_REC_BYTE
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
@@ -4999,7 +4999,7 @@ L_A6F8:                 ; A6F8
         ld      e,0x00
         call    SPRITE_GRID
         ld      a,0x0A
-        call    0x189D
+        call    ROUND_REC_BYTE
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
@@ -6397,8 +6397,8 @@ L_B227:                 ; B227
         ld      (hl),0x01
         ld      hl,PLAYER_NOW
         ld      (hl),0x00
-        call    0x35FF
-        call    0x22DA
+        call    HIGH_ENTRY_CONTINUE
+        call    DIFFICULTY_CAP
         call    P1_SCORE_RESET
         call    P1_REC_INIT
         call    P1_STATS_INIT
@@ -6482,8 +6482,8 @@ L_B2F0:                 ; B2F0
         set     1,(hl)
         ld      hl,PLAYER_NOW
         ld      (hl),0x01
-        call    0x35FF
-        call    0x22DA
+        call    HIGH_ENTRY_CONTINUE
+        call    DIFFICULTY_CAP
         ld      hl,0xE5D8
         ld      (hl),0x01
         ld      hl,0xF61C
@@ -6679,7 +6679,7 @@ L_BA60:                 ; BA60
         ld      a,(ix+1)
         call    GRID_CELL_A
         jr      z,L_BAAA
-        call    0x16E1
+        call    OBJ_TILE_ADDR_D5
         push    hl
         ld      a,(ix+5)
         ld      hl,0xBB40
@@ -6728,7 +6728,7 @@ L_BAB5:                 ; BAB5
         ld      a,(0xE6A4)
         and     a
         ret     nz
-        jp      0x4B51
+        jp      P1_BURN
 
 L_BAD2:                 ; BAD2
         ld      a,(0xE6F0)
@@ -6740,7 +6740,7 @@ L_BAD2:                 ; BAD2
         ld      a,(0xE6D6)
         and     a
         ret     nz
-        jp      0x4B5D
+        jp      P2_BURN
 
 L_BAE5:                 ; BAE5
         ld      e,(ix+1)

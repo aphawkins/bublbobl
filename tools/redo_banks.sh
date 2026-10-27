@@ -19,7 +19,7 @@ BANK0_ENTRIES="--entry BF48 --entry B34F --entry B391 --entry B3AF --entry B3B5 
 BANK3_ENTRIES="--entry BE00"
 # jump tables (ADDR:COUNT), found from the TABLE_WORD callers
 BANK0_TABLES="--table 8442:4 --table 8E5F:6 --table 9218:6 --table 95F9:6 --table 987D:6
-  --table 9CCF:4 --table A0FB:5 --table A4BE:4 --table A80C:6 --table AAA8:4
+  --table 9CCF:4 --table 9CD7:10 --table A0FB:5 --table A4BE:4 --table A80C:6 --table AAA8:4
   --table B33E:4 --table BBA7:4 --table BE8F:4"
 BANK2_TABLES="--table 8AFF:54 --table 9F22:6 --table B0E7:4"
 python tools/dasmz80.py main_bank0 --probe $BANK0_ENTRIES $BANK0_TABLES --out src/main/bank0.s

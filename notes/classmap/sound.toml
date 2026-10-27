@@ -157,13 +157,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x04D4
-end = 0x068A
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x068E
 end = 0x06A7
 kind = "code"
 source = "trace"
@@ -206,7 +199,7 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x0864
-end = 0x08BB
+end = 0x08C1
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -430,41 +423,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x125E
-end = 0x129D
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x12B4
-end = 0x12F3
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x130A
-end = 0x1349
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x1360
-end = 0x139F
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x13AE
-end = 0x13DB
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x13DE
 end = 0x1471
 kind = "code"
 source = "trace"
@@ -486,13 +444,6 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x14C7
-end = 0x14FF
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x150B
 end = 0x1567
 kind = "code"
 source = "trace"
@@ -522,6 +473,20 @@ note = "executed in MAME"
 [[range]]
 start = 0x16DC
 end = 0x16E1
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x1716
+end = 0x1721
+kind = "code"
+source = "trace"
+note = "executed in MAME"
+
+[[range]]
+start = 0x172E
+end = 0x1739
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -576,15 +541,8 @@ source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x1A91
-end = 0x1A9D
-kind = "code"
-source = "trace"
-note = "executed in MAME"
-
-[[range]]
-start = 0x1A9F
-end = 0x1ABA
+start = 0x1A7D
+end = 0x1ACF
 kind = "code"
 source = "trace"
 note = "executed in MAME"
@@ -633,13 +591,13 @@ note = "executed in MAME"
 
 [[range]]
 start = 0x1E28
-end = 0x1E6D
+end = 0x1E7A
 kind = "code"
 source = "trace"
 note = "executed in MAME"
 
 [[range]]
-start = 0x1E87
+start = 0x1E7C
 end = 0x1E8D
 kind = "code"
 source = "trace"

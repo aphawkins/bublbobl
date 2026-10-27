@@ -411,6 +411,24 @@ PLAYER_FACE_INPUT = { addr = 0x43A0, note = "IX+8 (facing) from the player's inp
 SECRET_ROUND_EXIT = { addr = 0x53CF, note = "leaves the secret room: ends task 3, SCREEN_FLASH, ROUND_MAIN = E726 (the round after the one left), sound 30, E723 and SECRET_DEATH 0, ENEMY_TOTAL 0 (the round is over), then sleeps. From SECRET_EXIT_CHECK, or 539F when E731 b1 is set and a playing player's object stands at Y 18, X 77-79" }
 SECRET_EXIT_CHECK = { addr = 0x5416, note = "SECRET_ROUND_FRAME: SECRET_ROUND_EXIT once SECRET_DEATH b7 is set" }
 CAPTIVE_HEART = { addr = 0x6B80, note = "Seen in MAME (end2p, endsuper, r100pop: sprites.csv caller 6B9B): round 100, a small heart sprite in the captive's third object at Y 30, X 38 (IX+8 = 0) or B8 (IX+8 = 1), tile 44, attribute 26. Drawn when the captive's countdown IX+11 ends (6AE3, before HEART_DRAW), or from 6A41 for a captive whose player is not playing" }
+ROUND_PAL_SHIFT = { addr = 0x0B82, note = "as LOAD_ROUND_PAL with the palette index + 3 (mod 8): bank0 ROUND_TIMER_CHECK jumps here when TIMER_RUN b7 is set, and LOAD_ROUND_PAL puts the round's own back at TIMER_DONE. Ran in MAME (the special04 run). Tamper check: the word at 0004 must be START, else PUSH AF, PUSH BC" }
+ADD_BC_A = { addr = 0x0D7F, note = "BC += A" }
+OBJ_NEAR_0E = { addr = 0x1444, note = "OBJ_NEAR with B = C = 0E" }
+OBJ_NEAR = { addr = 0x1447, note = "carry set when L is within B of (IX+1) (Y) and H within C of (IX+2) (X)" }
+SPRITE_GRID_FX = { addr = 0x14E4, note = "as SPRITE_GRID through SPRITE_FLIPX" }
+SPRITE_GRID_FX_D = { addr = 0x14E6, note = "SPRITE_GRID_FX with D already set" }
+OBJ_TILE_ADDR = { addr = 0x16C2, note = "OBJ_POS, then TILE_ADDR" }
+TILE_ADDR = { addr = 0x16C5, note = "HL = the tile-column word in CD00-D4FF at X = H, Y = L: CD00 + (H / 8) x 64 + ((-L / 4) & 3E)" }
+OBJ_TILE_ADDR_D5 = { addr = 0x16E1, note = "as OBJ_TILE_ADDR in the copy at D500" }
+ROUND_REC_BYTE = { addr = 0x189D, note = "A = ROUND_RECORD byte A" }
+DIFFICULTY_CAP = { addr = 0x22DA, note = "DIFFICULTY = the DSW1 b0-1 start value (table 22D6) if it is above it. Called by bank 2 when a player joins or continues" }
+ROM_SUM_STEP_Q = { addr = 0x340B, note = "one byte a call of a sum of every 3rd byte from 028E to 757A, in E652 (E64F starts it, E650 is the pointer); the end compares with E653 and on a mismatch runs into HIGH_TABLE_INIT with DE pushed" }
+HIGH_ENTRY_CONTINUE = { addr = 0x35FF, note = "a player continues: HIGH_BEST_OF, HIGH_ENTRY_INSERT, and if the score made the table its row's name is 'CNT'. Called by bank 2 before the player's score is reset" }
+HIGH_ENTRY_INSERT = { addr = 0x3648, note = "E677 = the row (0-4, 5 = none) where PLAYER_NOW's E643 / E648 group goes in the five rows from E658 (7 bytes each, SCORE_CMP), and the rows below move down" }
+P1_BURN = { addr = 0x4B51, note = "P1_REC +27 b0 set and +28 = 1E, unless it is already set: PLAYER_BURN_STEP then holds PLAYER_SPEED_SET 38 for 30 frames. From FIRE_RUN when a flame is within 8 of player 1 and +2D b5, +25 and +19 (invincible) are clear. Read from the code, not seen" }
+P2_BURN = { addr = 0x4B5D, note = "as P1_BURN for P2_REC" }
+PLAYER_BURN_STEP = { addr = 0x4B62, note = "while (IX+27) b0: counts (IX+28) down with PLAYER_SPEED_SET 38, and clears b0 at 0" }
+ROM_SUM_STEP_R = { addr = 0x65D0, note = "one byte a call of a sum from 0038 to 142C, in EB34 (EB31 starts it, EB32 is the pointer); the end compares with EB35 and on a mismatch runs RST 28 and into BUBBLE_WATER_POP with AF pushed" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }

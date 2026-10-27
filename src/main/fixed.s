@@ -1680,7 +1680,8 @@ L_0B7A:                 ; 0B7A
         ldir
         jp      BANK_RESTORE
 
-L_0B82:                 ; 0B82
+; as LOAD_ROUND_PAL with the palette index + 3 (mod 8): bank0 ROUND_TIMER_CHECK jumps here when TIMER_RUN b7 is set, and LOAD_ROUND_PAL puts the round's own back at TIMER_DONE. Ran in MAME (the special04 run). Tamper check: the word at 0004 must be START, else PUSH AF, PUSH BC
+ROUND_PAL_SHIFT:        ; 0B82
         ld      hl,(0x0004)
         ld      bc,START
         or      a
@@ -1991,6 +1992,8 @@ SAR6:                   ; 0D72
         sra     a
         ret
 
+; BC += A
+ADD_BC_A:               ; 0D7F
         add     a,c
         ld      c,a
         ret     nc
@@ -2667,7 +2670,11 @@ L_1442:                 ; 1442
         xor     a
         ret
 
+; OBJ_NEAR with B = C = 0E
+OBJ_NEAR_0E:            ; 1444
         ld      bc,0x0E0E
+; carry set when L is within B of (IX+1) (Y) and H within C of (IX+2) (X)
+OBJ_NEAR:               ; 1447
         ld      a,l
         sub     (ix+1)
         jp      p,L_1450
@@ -2778,8 +2785,11 @@ L_14D2:                 ; 14D2
 ; as SPRITE_LIST through SPRITE_FLIPX
 SPRITE_LIST_FX:         ; 14E1
         ld      e,(ix+7)
+; as SPRITE_GRID through SPRITE_FLIPX
+SPRITE_GRID_FX:         ; 14E4
         ld      d,0x00
-L_14E6:                 ; 14E6
+; SPRITE_GRID_FX with D already set
+SPRITE_GRID_FX_D:       ; 14E6
         ld      a,d
         call    SHL5
         or      e
@@ -2801,7 +2811,7 @@ L_14F6:                 ; 14F6
         pop     bc
         pop     de
         inc     hl
-        djnz    L_14E6
+        djnz    SPRITE_GRID_FX_D
         ret
 
 ; B sprites from 3-byte records at HL: gfx_num, tile, attribute
@@ -3122,8 +3132,11 @@ GRID_PROBE_UNDER3:      ; 169F
         ld      a,(ix+1)
         jp      GRID_CELL_A
 
-L_16C2:                 ; 16C2
+; OBJ_POS, then TILE_ADDR
+OBJ_TILE_ADDR:          ; 16C2
         call    OBJ_POS
+; HL = the tile-column word in CD00-D4FF at X = H, Y = L: CD00 + (H / 8) x 64 + ((-L / 4) & 3E)
+TILE_ADDR:              ; 16C5
         ld      a,l
         neg
         srl     a
@@ -3140,7 +3153,8 @@ L_16C2:                 ; 16C2
         res     0,l
         ret
 
-L_16E1:                 ; 16E1
+; as OBJ_TILE_ADDR in the copy at D500
+OBJ_TILE_ADDR_D5:       ; 16E1
         call    OBJ_POS
         ld      a,l
         neg
@@ -3351,7 +3365,14 @@ L_184D:                 ; 184D
         ld      (0xE5A0),a
         ret
 
-        .incbin "main_fixed.bin", 0x1851, 0x0054
+        .incbin "main_fixed.bin", 0x1851, 0x004C
+; A = ROUND_RECORD byte A
+ROUND_REC_BYTE:         ; 189D
+        ld      hl,ROUND_RECORD
+        call    ADD_HL_A
+        ld      a,(hl)
+        ret
+
 ; B records of 4 bytes at HL+1 (stride 4) get gfx_num = D x 32 | E, 4 to a row
 GFX_GRID_FILL:          ; 18A5
         inc     hl
@@ -4636,11 +4657,9 @@ DIFFICULTY_INIT:        ; 22C6
         ld      (DIFFICULTY),a
         ret
 
-L_22D6:                 ; 22D6
-        dec     c
-        ld      a,(bc)
-        inc     b
-        rlca
+        .incbin "main_fixed.bin", 0x22D6, 0x0004
+; DIFFICULTY = the DSW1 b0-1 start value (table 22D6) if it is above it. Called by bank 2 when a player joins or continues
+DIFFICULTY_CAP:         ; 22DA
         ld      a,(DIFFICULTY)
         ld      c,a
         ld      a,(DSW1_COPY)
@@ -5838,7 +5857,7 @@ L_2FE4:                 ; 2FE4
         ld      hl,0xD006
         ld      de,0xE64E
         call    SCORE_DRAW
-        jp      L_340B
+        jp      ROM_SUM_STEP_Q
 
 ; SCORE_DRAW of the current player's score at CD46 (player 1) or D286 (player 2)
 SCORE_SHOW:             ; 2FF0
@@ -6322,7 +6341,8 @@ P1_LABEL_DRAW:          ; 33BC
         jp      PRINT_TEXT
 
         .incbin "main_fixed.bin", 0x33C7, 0x0044
-L_340B:                 ; 340B
+; one byte a call of a sum of every 3rd byte from 028E to 757A, in E652 (E64F starts it, E650 is the pointer); the end compares with E653 and on a mismatch runs into HIGH_TABLE_INIT with DE pushed
+ROM_SUM_STEP_Q:         ; 340B
         ld      a,(0xE64F)
         and     a
         jr      nz,L_3421
@@ -6504,9 +6524,10 @@ L_3558:                 ; 3558
         ret
 
         .incbin "main_fixed.bin", 0x3574, 0x008B
-L_35FF:                 ; 35FF
+; a player continues: HIGH_BEST_OF, HIGH_ENTRY_INSERT, and if the score made the table its row's name is 'CNT'. Called by bank 2 before the player's score is reset
+HIGH_ENTRY_CONTINUE:    ; 35FF
         call    HIGH_BEST_OF
-        call    L_3648
+        call    HIGH_ENTRY_INSERT
         ld      a,(0xE677)
         cp      0x05
         ret     z
@@ -6537,13 +6558,14 @@ HIGH_ENTRY_BOTH:        ; 361D
 
 ; one player's high score entry
 HIGH_ENTRY:             ; 363C
-        call    L_3648
+        call    HIGH_ENTRY_INSERT
         ld      a,(0xE677)
         cp      0x05
         ret     z
         jp      HIGH_ENTRY_NEW_ROW
 
-L_3648:                 ; 3648
+; E677 = the row (0-4, 5 = none) where PLAYER_NOW's E643 / E648 group goes in the five rows from E658 (7 bytes each, SCORE_CMP), and the rows below move down
+HIGH_ENTRY_INSERT:      ; 3648
         ld      a,(PLAYER_NOW)
         and     a
         jr      nz,L_3653
@@ -7842,7 +7864,7 @@ PLAYER_PLAY_STEP:       ; 419F
         call    L_4B76
         call    L_4708
         call    L_4247
-        call    L_4B62
+        call    PLAYER_BURN_STEP
         call    PLAYER_SPRITE
         ld      a,0x02
         call    BANK_SELECT
@@ -8858,8 +8880,25 @@ L_4AE0:                 ; 4AE0
         ld      (ix+12),a
         ret
 
-        .incbin "main_fixed.bin", 0x4AED, 0x0075
-L_4B62:                 ; 4B62
+        .incbin "main_fixed.bin", 0x4AED, 0x0064
+; P1_REC +27 b0 set and +28 = 1E, unless it is already set: PLAYER_BURN_STEP then holds PLAYER_SPEED_SET 38 for 30 frames. From FIRE_RUN when a flame is within 8 of player 1 and +2D b5, +25 and +19 (invincible) are clear. Read from the code, not seen
+P1_BURN:                ; 4B51
+        ld      hl,0xE6AC
+L_4B54:                 ; 4B54
+        bit     0,(hl)
+        ret     nz
+        set     0,(hl)
+        inc     hl
+        ld      (hl),0x1E
+        ret
+
+; as P1_BURN for P2_REC
+P2_BURN:                ; 4B5D
+        ld      hl,0xE6DE
+        jr      L_4B54
+
+; while (IX+27) b0: counts (IX+28) down with PLAYER_SPEED_SET 38, and clears b0 at 0
+PLAYER_BURN_STEP:       ; 4B62
         bit     0,(ix+27)
         ret     z
         dec     (ix+28)
@@ -11898,7 +11937,7 @@ L_63A9:                 ; 63A9
         ld      (ix+0),0x02
         ld      c,0x31
         call    SOUND_PUSH
-        call    L_65D0
+        call    ROM_SUM_STEP_R
         xor     a
         ret
 
@@ -12101,7 +12140,8 @@ L_65BC:                 ; 65BC
         inc     (hl)
         jp      L_602A
 
-L_65D0:                 ; 65D0
+; one byte a call of a sum from 0038 to 142C, in EB34 (EB31 starts it, EB32 is the pointer); the end compares with EB35 and on a mismatch runs RST 28 and into BUBBLE_WATER_POP with AF pushed
+ROM_SUM_STEP_R:         ; 65D0
         ld      a,(0xEB31)
         and     a
         jr      nz,L_65E6
@@ -12142,7 +12182,7 @@ BUBBLE_WATER_POP:       ; 660D
         pop     de
         pop     af
 L_6616:                 ; 6616
-        call    L_340B
+        call    ROM_SUM_STEP_Q
         call    OBJ_POS
         ex      de,hl
         ld      hl,0xF557

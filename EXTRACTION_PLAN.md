@@ -625,6 +625,19 @@ Started (2026-10-17) with the sub CPU, which is now done:
   heart over each captive in the round 100 ending (the end2p trace's sprite sheet shows it).
   Read from the code, not watched: a Skel-Monsta death in the secret room, and the exit at Y 18,
   X 77-79 (`539F`).
+- Coverage and the banks' calls (2026-10-27): `tools/coverage.py` had not been run since the
+  ending and special-item traces, so it now merges every run in `build/traces/` into the class
+  maps. That joined neighbouring trace ranges, and `dasmz80.py` lost code that it had only reached
+  from a range start (`0B82`, bank 2 `A310` ..). It now also traces from every byte of a trace
+  range that no decoded instruction covers, and labels a start that nothing falls into. Bank 0's
+  `9CD7` table (10 words, read at `9BB2`) is a `--table`. `redo_fixed.sh` now passes the 16 fixed
+  ROM addresses the banks call or jump to (`BANK_CALLS`); each is named: `ROUND_PAL_SHIFT`,
+  `ADD_BC_A`, `OBJ_NEAR`, `SPRITE_GRID_FX`, `OBJ_TILE_ADDR`, `TILE_ADDR`, `ROUND_REC_BYTE`,
+  `DIFFICULTY_CAP`, `HIGH_ENTRY_CONTINUE` (a continuing player's score goes in the table as `CNT`),
+  `HIGH_ENTRY_INSERT`, `P1_BURN`/`P2_BURN` with `PLAYER_BURN_STEP` (fire slows a player for 30
+  frames; not seen), and two more ROM sums, `ROM_SUM_STEP_Q` (`340B`) and `ROM_SUM_STEP_R` (`65D0`).
+  The fixed ROM is 12763 instructions, bank 0 6052, bank 2 5824; still byte-exact. Rerun
+  `coverage.py` after each new trace, before the redo scripts.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).

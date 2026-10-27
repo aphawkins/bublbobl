@@ -458,12 +458,28 @@ class Dasm:
 VALUE_LABELS = ("START", "IRQ_HANDLER")
 
 
-def traced_starts(cpu: str) -> list[int]:
+def traced_ranges(cpu: str) -> list[tuple[int, int]]:
     path = ROOT / "notes" / "classmap" / f"{IMAGES[cpu][0].removesuffix('.bin')}.toml"
     if not path.exists():
         return []
     ranges = tomllib.loads(path.read_text(encoding="utf-8")).get("range", [])
-    return [r["start"] for r in ranges if r["kind"] == "code" and r.get("source") == "trace"]
+    return [(r["start"], r["end"] + 1) for r in ranges
+            if r["kind"] == "code" and r.get("source") == "trace"]
+
+
+def untraced_in_ranges(d: "Dasm", ranges: list[tuple[int, int]]) -> list[int]:
+    """Bytes in a traced range that no decoded instruction covers, each at the end of a covered
+    stretch (or the range start). Every byte of a traced range belongs to an instruction MAME
+    ran, so each is the start of one: code reached only after a JP, RET or JR."""
+    covered = set()
+    for a, i in d.insns.items():
+        covered.update(range(a, a + i.n))
+    out = []
+    for start, end in ranges:
+        for a in range(start, end):
+            if a not in covered and (a == start or a - 1 in covered):
+                out.append(a)
+    return out
 
 
 def blocked_ranges(cpu: str) -> list[tuple[int, int]]:
@@ -510,8 +526,25 @@ def main() -> int:
         addr, count = t.split(":")
         entries += d.table(int(addr, 16), int(count))
     d.trace([a for a in entries if a not in data_names])
-    # traced starts are entry points but get no label of their own
-    d.trace([a for a in traced_starts(args.cpu) if a not in data_names], label=False)
+    # traced code is an entry point. Repeat until every byte of every traced range is decoded
+    traced = traced_ranges(args.cpu)
+    seeds = {a for a, _ in traced if a not in data_names}
+    d.trace(sorted(seeds), label=False)
+    while todo := [a for a in untraced_in_ranges(d, traced) if a not in data_names]:
+        before = len(d.insns)
+        d.trace(todo, label=False)
+        seeds |= set(todo)
+        if len(d.insns) == before:
+            break
+    # a seed gets a label when it is reached only by a jump or a call: the code before it ends
+    # in a JP, RET or JR, or the byte before it is not code that ran (an instruction that runs
+    # over the end of the image into the bank window is code that ran)
+    ends = {a + i.n: i for a, i in d.insns.items()}
+    ran = {a for lo, hi in traced for a in range(lo, hi)}
+    if base == 0x8000:  # the fixed ROM's instruction at 7FFF ends at 8000 (seen in bank 0)
+        ran.add(0x8000)
+    d.entries |= {a for a in seeds if a in d.insns
+                  and (ends[a].flow == "stop" if a in ends else a - 1 not in ran)}
     if args.probe:
         print(f"probe: {d.probe()} gaps taken", file=sys.stderr)
     out = args.out or ROOT / "disasm" / f"{args.cpu}.s"
