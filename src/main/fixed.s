@@ -3050,7 +3050,8 @@ GRID_PROBE_LEFT:        ; 1604
         ld      a,(ix+1)
         jp      GRID_CELL_A
 
-L_161F:                 ; 161F
+; BUBBLE_RISE: the cell at X, Y + 8 of the object at IX (GRID_CELL_A); a Y + 8 of D8-DF gives A = 0 and Z
+GRID_PROBE_ABOVE:       ; 161F
         ld      a,(ix+1)
         add     a,0x08
         cp      0xD8
@@ -11003,7 +11004,7 @@ L_5C29:                 ; 5C29
 
 ; each frame: steps the BUBBLE_SLOTS from the first, E75D counting down
 BUBBLES_STEP:           ; 5C2B
-        call    L_60F3
+        call    BUBBLE_CROWD_CHECK
         ld      ix,BUBBLE_SLOTS
         ld      hl,0xE75D
         dec     (hl)
@@ -11043,7 +11044,7 @@ L_5C78:                 ; 5C78
         and     a
         jp      nz,L_5F7B
         call    OBJ_POS_LOAD
-        call    L_64C5
+        call    BUBBLE_NO_CHECK
         jp      c,L_602A
         ld      de,0x0208
         call    ANIM_STEP
@@ -11147,12 +11148,12 @@ L_5D57:                 ; 5D57
         ld      a,(0xE76A)
         and     a
         jp      nz,L_5F7B
-        call    L_6102
+        call    BUBBLE_CROWD_POP
         jp      c,L_5F7B
-        call    L_64C5
+        call    BUBBLE_NO_CHECK
         jp      c,L_602A
         call    BUBBLE_SPEED
-        call    L_6115
+        call    BUBBLE_FLOAT_SPRITE
         ld      a,(ix+14)
         and     a
         jp      m,L_5F7B
@@ -11178,7 +11179,7 @@ L_5D96:                 ; 5D96
         and     a
         jp      nz,L_5F7B
         call    OBJ_POS_LOAD
-        call    L_63D1
+        call    BUBBLE_BLOWN_FLY
         jr      z,L_5DBF
         ld      a,(ix+18)
         sub     (ix+31)
@@ -11245,7 +11246,7 @@ L_5E10:                 ; 5E10
         and     a
         jr      nz,L_5E6C
         call    BUBBLE_SPEED
-        call    L_645C
+        call    TRAPPED_BUBBLE_SPRITE
         ld      a,(ix+14)
         cp      0xFF
         jp      nz,L_602A
@@ -11584,7 +11585,8 @@ L_60EB:                 ; 60EB
         ret
 
         .incbin "main_fixed.bin", 0x60EF, 0x0004
-L_60F3:                 ; 60F3
+; BUBBLES_STEP: with 0x14 or more bubbles floating (E75B) and E755 = 0, E755 = 2
+BUBBLE_CROWD_CHECK:     ; 60F3
         ld      a,(0xE75B)
         cp      0x14
         ret     c
@@ -11595,7 +11597,8 @@ L_60F3:                 ; 60F3
         ld      (hl),0x02
         ret
 
-L_6102:                 ; 6102
+; an empty floating bubble (state b0): carry and E755 - 1 while E755 is nonzero (not in round 100), and the caller pops it (5F7B); so with 0x14 or more bubbles two of them pop
+BUBBLE_CROWD_POP:       ; 6102
         ld      a,(ROUND_MAIN)
         cp      0x63
         jr      z,L_6110
@@ -11612,7 +11615,8 @@ L_6112:                 ; 6112
         scf
         ret
 
-L_6115:                 ; 6115
+; an empty floating bubble: BUBBLE_TIMER, then BUBBLE_SPRITE_1C with frame 6140[(IX+14)] + (IX+27); every 6 frames (IX+37) clears (IX+27)
+BUBBLE_FLOAT_SPRITE:    ; 6115
         inc     (ix+37)
         ld      a,(ix+37)
         cp      0x06
@@ -11627,7 +11631,8 @@ L_6127:                 ; 6127
         ld      a,(ix+27)
         add     a,(hl)
         ld      b,a
-L_6138:                 ; 6138
+; SPRITE (IX+7) with frame B, colour 1C
+BUBBLE_SPRITE_1C:       ; 6138
         ld      c,0x1C
         ld      a,(ix+7)
         jp      SPRITE
@@ -11810,7 +11815,7 @@ BUBBLE_RISE:            ; 6283
         call    OBJ_POS_LOAD
         ex      af,af'
         jp      m,L_62A5
-        call    L_161F
+        call    GRID_PROBE_ABOVE
         jp      nz,L_62B9
         jp      L_62AB
 
@@ -11910,7 +11915,8 @@ EXTEND_LETTER_DRAW:     ; 6322
         ld      (iy+67),e
         ret
 
-L_634A:                 ; 634A
+; a free bubble slot: takes the blow request of player 1 (E75E) or else player 2 (E764) written by PLAYER_BLOW: owner (IX+22), Y and 7 clear, X and 1 clear, direction (IX+15), (IX+18), speed (IX+31), the sprite at Y - 8; carry when there is none, and the slot runs SPAWN_BUBBLE instead
+BLOW_REQUEST_TAKE:      ; 634A
         ld      hl,0xE75E
         ld      a,(hl)
         and     a
@@ -11990,7 +11996,8 @@ L_63C3:                 ; 63C3
         xor     a
         ret
 
-L_63D1:                 ; 63D1
+; a bubble just blown (state b1): the blow animation (0A06; frames from 04, or 34 for player 2, 1C / 4C every 8th frame), then (IX+31) pixels right or left by (IX+15) b0; Z when a wall stops it, else A = FF and NZ
+BUBBLE_BLOWN_FLY:       ; 63D1
         ld      a,0x05
         bit     0,(ix+32)
         jr      nz,L_63E5
@@ -12018,7 +12025,7 @@ L_63FC:                 ; 63FC
 L_6406:                 ; 6406
         add     a,b
         ld      b,a
-        call    L_6138
+        call    BUBBLE_SPRITE_1C
         bit     0,(ix+15)
         jr      z,L_6429
         ld      b,(ix+31)
@@ -12068,7 +12075,8 @@ L_642C:                 ; 642C
         and     a
         ret
 
-L_645C:                 ; 645C
+; a bubble holding an enemy (state b2, (IX+25) = 4 x the enemy's kind): BUBBLE_TIMER, then (unless (IX+14) is FF) frame 64A5[(IX+14) + (IX+25)] + 4 x the 050A animation step from 649B, colour 1D (1E for (IX+25) 0C-1B)
+TRAPPED_BUBBLE_SPRITE:  ; 645C
         call    BUBBLE_TIMER
         ld      a,(ix+14)
         cp      0xFF
@@ -12101,7 +12109,8 @@ L_6495:                 ; 6495
         jp      SPRITE
 
         .incbin "main_fixed.bin", 0x649B, 0x002A
-L_64C5:                 ; 64C5
+; XOR A, RET: never carry, so its callers' JP C to 602A never runs (64C7 after it is reached only by other jumps)
+BUBBLE_NO_CHECK:        ; 64C5
         xor     a
         ret
 
@@ -12667,7 +12676,7 @@ L_6966:                 ; 6966
         jp      L_6BEC
 
 L_6976:                 ; 6976
-        call    L_69BE
+        call    CAPTIVE_PLAYER_WALK
         bit     3,(ix+0)
         jr      nz,L_6994
         call    OBJ_PTR
@@ -12702,7 +12711,8 @@ L_69B8:                 ; 69B8
         call    SPRITE_FLIPX
         jp      L_6BEC
 
-L_69BE:                 ; 69BE
+; round 100 ending, the captive at IX with (IX+12) set: its player's sprite (E2C5 for captive 0, E2B5 for 1) drops to Y 18, then once +0 b7 walks to X 40 (player 1) or B0 (player 2), facing (E699 / E6CB) the way it walks, frames 44 + 4 x step (every 5 frames, 4 steps), colour (IX+12). There: with two players +0 b6 is set and the players face each other; with one, a captive whose player is not playing gets CAPTIVE_HEART
+CAPTIVE_PLAYER_WALK:    ; 69BE
         ld      a,(ix+12)
         or      a
         jp      z,L_6A88
@@ -12939,8 +12949,8 @@ L_6B6D:                 ; 6B6D
         call    ADD_HL_A
         call    SPRITE_LIST_FX
 L_6B77:                 ; 6B77
-        call    L_6B9F
-        call    L_6BC2
+        call    CAPTIVES_SIDE_TILES
+        call    CAPTIVES_MID_TILES
         jp      L_6BEC
 
 ; Seen in MAME (end2p, endsuper, r100pop: sprites.csv caller 6B9B): round 100, a small heart sprite in the captive's third object at Y 30, X 38 (IX+8 = 0) or B8 (IX+8 = 1), tile 44, attribute 26. Drawn when the captive's countdown IX+11 ends (6AE3, before HEART_DRAW), or from 6A41 for a captive whose player is not playing
@@ -12962,7 +12972,8 @@ L_6B97:                 ; 6B97
         call    SPRITE
         ret
 
-L_6B9F:                 ; 6B9F
+; round 100, two players only: the 4 x 0A tiles at 6C5F at D560 and at DA20, colour 1C. Not checked in MAME which picture this is
+CAPTIVES_SIDE_TILES:    ; 6B9F
         ld      a,(0xE5D7)
         cp      0x03
         ret     nz
@@ -12978,7 +12989,8 @@ L_6B9F:                 ; 6B9F
         call    TILE_RECT
         ret
 
-L_6BC2:                 ; 6BC2
+; round 100, two players only: the 2 x 14 tiles at 6C87 at D690, colour 1C, or 20 while F2A3 is set. Not checked in MAME
+CAPTIVES_MID_TILES:     ; 6BC2
         ld      a,(0xE5D7)
         cp      0x03
         ret     nz
@@ -13010,7 +13022,7 @@ L_6BEC:                 ; 6BEC
 
         .incbin "main_fixed.bin", 0x6BF7, 0x0194
 L_6D8B:                 ; 6D8B
-        call    L_634A
+        call    BLOW_REQUEST_TAKE
         jp      c,SPAWN_BUBBLE
         bit     7,(ix+33)
         jp      nz,L_5CE8

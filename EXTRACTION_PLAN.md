@@ -752,6 +752,14 @@ Started (2026-10-17) with the sub CPU, which is now done:
   of them `SECRET_EXIT_GAP` opens the way out, and a player at Y 18, X 77-79 leaves by
   `SECRET_ROUND_EXIT` (the exit noted earlier). Also `SECRET_TILES_FLICKER` and
   `SECRET_WELCOME_RUN`. Still byte-exact; 27 calls left.
+- The bubbles and captives (2026-10-27), read from the code: `BLOW_REQUEST_TAKE` gives a free
+  bubble slot the request `PLAYER_BLOW` wrote, `BUBBLE_BLOWN_FLY` flies it until a wall,
+  `BUBBLE_FLOAT_SPRITE` and `TRAPPED_BUBBLE_SPRITE` draw an empty bubble and one holding an enemy.
+  With 0x14 or more bubbles floating, `BUBBLE_CROWD_CHECK` and `BUBBLE_CROWD_POP` pop two empty
+  ones. `BUBBLE_NO_CHECK` is `XOR A, RET`, so the jumps after its calls never run. In the round
+  100 ending `CAPTIVE_PLAYER_WALK` walks each player to their captive (X 40 or B0), and
+  `CAPTIVES_SIDE_TILES` and `_MID_TILES` draw two-player tiles not yet matched to the screen.
+  Still byte-exact; 15 calls left, all small helpers.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).

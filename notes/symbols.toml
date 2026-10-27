@@ -500,6 +500,18 @@ SECRET_DROP_GAP = { addr = 0x52B6, note = "once 0x18 gems are taken (E725): ever
 SECRET_EXIT_GAP = { addr = 0x5353, note = "once all 0x24 gems are taken: every 30 frames one of 2 steps of tiles from 5406 (to D0F6 and D136), then E731 b1; after that a player at Y 18, X 77-79 runs SECRET_ROUND_EXIT" }
 SECRET_TILES_FLICKER = { addr = 0x541E, note = "every 7 frames the 2 x 2 tiles at CD8A/CDCA and D40A/D44A swap between 5488/548C and 5490/5494" }
 SECRET_WELCOME_RUN = { addr = 0x55DB, note = "E729 0: SECRET_WELCOME_SHOW; negative: SECRET_WELCOME_STEP; else nothing" }
+BUBBLE_CROWD_CHECK = { addr = 0x60F3, note = "BUBBLES_STEP: with 0x14 or more bubbles floating (E75B) and E755 = 0, E755 = 2" }
+BUBBLE_CROWD_POP = { addr = 0x6102, note = "an empty floating bubble (state b0): carry and E755 - 1 while E755 is nonzero (not in round 100), and the caller pops it (5F7B); so with 0x14 or more bubbles two of them pop" }
+BUBBLE_FLOAT_SPRITE = { addr = 0x6115, note = "an empty floating bubble: BUBBLE_TIMER, then BUBBLE_SPRITE_1C with frame 6140[(IX+14)] + (IX+27); every 6 frames (IX+37) clears (IX+27)" }
+BUBBLE_SPRITE_1C = { addr = 0x6138, note = "SPRITE (IX+7) with frame B, colour 1C" }
+BUBBLE_BLOWN_FLY = { addr = 0x63D1, note = "a bubble just blown (state b1): the blow animation (0A06; frames from 04, or 34 for player 2, 1C / 4C every 8th frame), then (IX+31) pixels right or left by (IX+15) b0; Z when a wall stops it, else A = FF and NZ" }
+TRAPPED_BUBBLE_SPRITE = { addr = 0x645C, note = "a bubble holding an enemy (state b2, (IX+25) = 4 x the enemy's kind): BUBBLE_TIMER, then (unless (IX+14) is FF) frame 64A5[(IX+14) + (IX+25)] + 4 x the 050A animation step from 649B, colour 1D (1E for (IX+25) 0C-1B)" }
+BUBBLE_NO_CHECK = { addr = 0x64C5, note = "XOR A, RET: never carry, so its callers' JP C to 602A never runs (64C7 after it is reached only by other jumps)" }
+GRID_PROBE_ABOVE = { addr = 0x161F, note = "BUBBLE_RISE: the cell at X, Y + 8 of the object at IX (GRID_CELL_A); a Y + 8 of D8-DF gives A = 0 and Z" }
+BLOW_REQUEST_TAKE = { addr = 0x634A, note = "a free bubble slot: takes the blow request of player 1 (E75E) or else player 2 (E764) written by PLAYER_BLOW: owner (IX+22), Y and 7 clear, X and 1 clear, direction (IX+15), (IX+18), speed (IX+31), the sprite at Y - 8; carry when there is none, and the slot runs SPAWN_BUBBLE instead" }
+CAPTIVE_PLAYER_WALK = { addr = 0x69BE, note = "round 100 ending, the captive at IX with (IX+12) set: its player's sprite (E2C5 for captive 0, E2B5 for 1) drops to Y 18, then once +0 b7 walks to X 40 (player 1) or B0 (player 2), facing (E699 / E6CB) the way it walks, frames 44 + 4 x step (every 5 frames, 4 steps), colour (IX+12). There: with two players +0 b6 is set and the players face each other; with one, a captive whose player is not playing gets CAPTIVE_HEART" }
+CAPTIVES_SIDE_TILES = { addr = 0x6B9F, note = "round 100, two players only: the 4 x 0A tiles at 6C5F at D560 and at DA20, colour 1C. Not checked in MAME which picture this is" }
+CAPTIVES_MID_TILES = { addr = 0x6BC2, note = "round 100, two players only: the 2 x 14 tiles at 6C87 at D690, colour 1C, or 20 while F2A3 is set. Not checked in MAME" }
 
 [main.data]
 END_PICK_TABLE = { addr = 0x0706, size = 42, note = "10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710" }
