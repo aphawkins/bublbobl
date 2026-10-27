@@ -646,6 +646,15 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `A7B9`), and a player record copy in bank 2 (`AFD8`). None was moved to data. Every score
   routine from the 2026-10-17 note ran in MAME, and the high score starts at bonus table entry 0:
   with DSW1 = FF (bonus setting 3) every game snapshot has `HIGH_SCORE` = 003000.
+- Skel-Monsta (2026-10-27): `GHOST_UPDATE` (bank 0 `A150`) runs two ghosts, one for each player
+  (`IX+9`); all of it ran in the game2p and bub39 traces. `GHOST_APPEAR` starts each at one of
+  four `GHOST_CORNERS` picked from the players' positions (the middle of the room in the secret
+  round) and fades it in (`GHOST_FADE`). `GHOST_CHASE` moves it by a speed pattern that
+  `GHOST_STEER` points at its player, one axis at a time, switching axis every 0x3A pixels and
+  getting faster as `F1E6` runs down. It leaves (`GHOST_LEAVE`, `GHOST_FADE` backwards,
+  `GHOST_REMOVE`) when its player is hit or the round is cleared, and `GHOST_OFF_CHECK` clears
+  `GHOST_ON` once both are gone. A ghost that kills the other player swaps targets with the other
+  ghost first.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -657,6 +666,7 @@ Started (2026-10-17) with the sub CPU, which is now done:
      (2026-10-27): the 16 regions left are code MAME never ran, and the score code ran.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
+     The ghost is done (2026-10-27).
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

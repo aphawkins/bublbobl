@@ -614,6 +614,17 @@ STARFIELD_TWINKLE = { addr = 0xB738, note = "Seen in MAME: per frame, colours F9
 HEART_PALETTE = { addr = 0xB878, note = "Seen in MAME (--boss-pop, two players): round 100 after the boss (6AE3, then HEART_DRAW and sound 1C): palette 7 (F8E0) copied to palette 9 (F920)" }
 HEART_DRAW    = { addr = 0xB884, note = "Seen in MAME: the big heart between the two HAPPY END!! at the end of round 100, the 8 x 8 tiles of HEART_TILES at D818, tile bank 26" }
 HEART_CYCLE   = { addr = 0xB8D3, note = "Seen in MAME: round 100 cleared and a captive record (EB36, EB46) b5: every 2nd call F35D steps 0-5 and colour F93A of palette 9 comes from HEART_COLOURS, so the heart turns yellow, orange, pink" }
+GHOST_LEAVE_CHECK = { addr = 0xA1A7, note = "the ghost's player (IX+9) is hit (its record +0 b1): GHOST_LEAVE; else GHOST_CLEAR_CHECK" }
+GHOST_LEAVE = { addr = 0xA1B8, note = "+0 b2 (leaving), object state 13 (not in the secret round), stopped, then GHOST_FADE. Also when the sub CPU's GHOST_HITS sets +0 b0 (b1 = the player it killed): if that is the other ghost's player, the two ghosts swap players (F1CB, F1DD) first" }
+GHOST_CLEAR_CHECK = { addr = 0xA1CB, note = "ENEMY_TOTAL 0 (the round is cleared): leaves as GHOST_LEAVE; else GHOST_APPEAR until it is out (+0 b7), then GHOST_CHASE" }
+GHOST_APPEAR = { addr = 0xA1DF, note = "only if its player is playing (E5D7): in the secret round at Y 78, X 78; else at a GHOST_CORNERS start picked from both players' positions (A210 for player 0, A269 for player 1). Then +0 b7 (out) and b3, +14 b2 (fading in), facing 1, speed pattern 0A, F1E6 = B4, sound 2A (19 in the secret round)" }
+GHOST_CHASE = { addr = 0xA306, note = "Seen in MAME (game2p, bub39): one step of (IX+13) pixels from SPEED_PATTERNS pattern (IX+12), position (IX+11). (IX+16) counts the pixels moved; every 3A it flips +0 b3 (vertical or horizontal) and, once F1E6 has run down, (IX+12) goes up by one, to 1E. GHOST_STEER picks the mode, then GHOST_FLY_UP/R/DOWN/L" }
+GHOST_SPRITE = { addr = 0xA3CD, note = "ANIM_STEP 2 frames of 8; tiles E4 + 4 x frame, colour 1C (F8, colour 3C in the secret round); SPRITE or SPRITE_FLIPX by (IX+8) b1" }
+GHOST_FADE = { addr = 0xA3FC, note = "the fade in or out: ANIM_STEP 3 frames of 0A (14 in the secret round), tiles B0 + 4 x frame (EC in the secret round), backwards when leaving. At the end of a fade in +14 b2 is cleared (object state 15); at the end of a fade out GHOST_REMOVE" }
+GHOST_REMOVE = { addr = 0xA41D, note = "hides the ghost and clears its record, F1E6 = 3C, +14 b3 set (gone)" }
+GHOST_OFF_CHECK = { addr = 0xA452, note = "a gone ghost (+14 b3): once neither ghost is out (+0 b7), GHOST_ON = 0 and both records are cleared" }
+GHOST_NEXT = { addr = 0xA4B1, note = "next ghost record (0x12 bytes), 2 in all" }
+GHOST_STEER = { addr = 0xA4C6, note = "Seen in MAME (game2p, bub39): sets (IX+7) toward the ghost's player (Z if that player is out). With +0 b3: left or right (3, 1) toward the player's X; without: up or down (0, 2) toward the player's Y. Near X 50-5F and A0-AF it may switch axis by setting (IX+16) to 3A or 0" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
@@ -625,6 +636,7 @@ STAR_CYCLE    = { addr = 0xB800, size = 0x3C, note = "10 x 3 colours for F960, F
 STAR_FADE_IN  = { addr = 0xB83C, size = 0x3C, note = "10 x 3 colours, steps 1-9 used: STARFIELD_TWINKLE's fade-in" }
 HEART_TILES   = { addr = 0xB893, size = 0x40, note = "8 x 8 tiles for HEART_DRAW" }
 HEART_COLOURS = { addr = 0xB8F1, size = 0x0C, note = "6 colour words for HEART_CYCLE" }
+GHOST_CORNERS = { addr = 0xA2FE, note = "4 (Y, X) starts for GHOST_APPEAR by (IX+17) = 0, 2, 4, 6: C0,D8 top right; 20,D8 bottom right; 20,18 bottom left; C0,18 top left" }
 
 [bank1.data]
 # a78-05-1.52 page 1 (file 0x4000-0x7FFF), mapped at 8000 when FB40 = 5.

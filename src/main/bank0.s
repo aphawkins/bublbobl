@@ -4245,15 +4245,15 @@ L_A163:                 ; A163
         and     a
         jr      nz,L_A170
         call    OBJ_HIDE
-        jp      L_A4B1
+        jp      GHOST_NEXT
 
 L_A170:                 ; A170
         bit     3,(ix+14)
-        jp      nz,L_A452
+        jp      nz,GHOST_OFF_CHECK
         bit     2,(ix+0)
-        jp      nz,L_A3FC
+        jp      nz,GHOST_FADE
         bit     0,(ix+0)
-        jp      z,L_A1A7
+        jp      z,GHOST_LEAVE_CHECK
         ld      b,0x00
         bit     1,(ix+0)
         jr      z,L_A18F
@@ -4261,24 +4261,26 @@ L_A170:                 ; A170
 L_A18F:                 ; A18F
         ld      a,(ix+9)
         cp      b
-        jp      z,L_A1B8
+        jp      z,GHOST_LEAVE
         ld      a,(0xF1CB)
         ld      b,a
         ld      a,(0xF1DD)
         ld      (0xF1CB),a
         ld      a,b
         ld      (0xF1DD),a
-        jp      L_A1B8
+        jp      GHOST_LEAVE
 
-L_A1A7:                 ; A1A7
+; the ghost's player (IX+9) is hit (its record +0 b1): GHOST_LEAVE; else GHOST_CLEAR_CHECK
+GHOST_LEAVE_CHECK:      ; A1A7
         ld      hl,P1_REC
         bit     0,(ix+9)
         jr      z,L_A1B3
         ld      hl,P2_REC
 L_A1B3:                 ; A1B3
         bit     1,(hl)
-        jp      z,L_A1CB
-L_A1B8:                 ; A1B8
+        jp      z,GHOST_CLEAR_CHECK
+; +0 b2 (leaving), object state 13 (not in the secret round), stopped, then GHOST_FADE. Also when the sub CPU's GHOST_HITS sets +0 b0 (b1 = the player it killed): if that is the other ghost's player, the two ghosts swap players (F1CB, F1DD) first
+GHOST_LEAVE:            ; A1B8
         set     2,(ix+0)
         ld      a,(0xE723)
         and     a
@@ -4286,31 +4288,33 @@ L_A1B8:                 ; A1B8
         call    OBJ_STATE_13
 L_A1C5:                 ; A1C5
         call    IX_SPEED_CLEAR
-        jp      L_A3FC
+        jp      GHOST_FADE
 
-L_A1CB:                 ; A1CB
+; ENEMY_TOTAL 0 (the round is cleared): leaves as GHOST_LEAVE; else GHOST_APPEAR until it is out (+0 b7), then GHOST_CHASE
+GHOST_CLEAR_CHECK:      ; A1CB
         ld      hl,ENEMY_TOTAL
         ld      a,(hl)
         and     a
-        jr      nz,L_A1DF
+        jr      nz,GHOST_APPEAR
         set     2,(ix+0)
         call    OBJ_STATE_13
         call    IX_SPEED_CLEAR
-        jp      L_A3FC
+        jp      GHOST_FADE
 
-L_A1DF:                 ; A1DF
+; only if its player is playing (E5D7): in the secret round at Y 78, X 78; else at a GHOST_CORNERS start picked from both players' positions (A210 for player 0, A269 for player 1). Then +0 b7 (out) and b3, +14 b2 (fading in), facing 1, speed pattern 0A, F1E6 = B4, sound 2A (19 in the secret round)
+GHOST_APPEAR:           ; A1DF
         bit     7,(ix+0)
-        jp      nz,L_A306
+        jp      nz,GHOST_CHASE
         ld      hl,0xE5D7
         bit     0,(ix+9)
         jr      nz,L_A1F6
         bit     0,(hl)
-        jp      z,L_A4B1
+        jp      z,GHOST_NEXT
         jr      L_A1FB
 
 L_A1F6:                 ; A1F6
         bit     1,(hl)
-        jp      z,L_A4B1
+        jp      z,GHOST_NEXT
 L_A1FB:                 ; A1FB
         ld      a,(0xE723)
         and     a
@@ -4329,7 +4333,7 @@ L_A210:                 ; A210
         jr      nz,L_A269
         ld      hl,0xE5D7
         bit     0,(hl)
-        jp      z,L_A4B1
+        jp      z,GHOST_NEXT
         ld      hl,0xE692
         ld      a,(hl)
         sub     0x78
@@ -4370,7 +4374,7 @@ L_A248:                 ; A248
 L_A269:                 ; A269
         ld      hl,0xE5D7
         bit     1,(hl)
-        jp      z,L_A4B1
+        jp      z,GHOST_NEXT
         ld      hl,0xE6C4
         ld      a,(hl)
         sub     0x78
@@ -4432,18 +4436,21 @@ L_A2CA:                 ; A2CA
         jr      z,L_A2F6
         ld      c,0x19
         call    SOUND_PUSH
-        jp      L_A4B1
+        jp      GHOST_NEXT
 
 L_A2F6:                 ; A2F6
         ld      c,0x2A
         call    SOUND_PUSH
-        jp      L_A4B1
+        jp      GHOST_NEXT
 
+; 4 (Y, X) starts for GHOST_APPEAR by (IX+17) = 0, 2, 4, 6: C0,D8 top right; 20,D8 bottom right; 20,18 bottom left; C0,18 top left
+GHOST_CORNERS:          ; A2FE
         .incbin "main_bank0.bin", 0x22FE, 0x0008
-L_A306:                 ; A306
+; Seen in MAME (game2p, bub39): one step of (IX+13) pixels from SPEED_PATTERNS pattern (IX+12), position (IX+11). (IX+16) counts the pixels moved; every 3A it flips +0 b3 (vertical or horizontal) and, once F1E6 has run down, (IX+12) goes up by one, to 1E. GHOST_STEER picks the mode, then GHOST_FLY_UP/R/DOWN/L
+GHOST_CHASE:            ; A306
         call    OBJ_POS_LOAD
         bit     2,(ix+14)
-        jp      nz,L_A3FC
+        jp      nz,GHOST_FADE
 L_A310:                 ; A310
         ld      a,(ix+12)
         ld      hl,SPEED_PATTERNS
@@ -4472,7 +4479,7 @@ L_A32B:                 ; A32B
         and     a
         jr      z,L_A355
         sub     b
-        jp      nc,L_A3CD
+        jp      nc,GHOST_SPRITE
         dec     (hl)
         dec     (hl)
         dec     (hl)
@@ -4485,8 +4492,8 @@ L_A355:                 ; A355
         jr      nc,L_A367
         inc     (ix+12)
 L_A367:                 ; A367
-        call    L_A4C6
-        jp      z,L_A3CD
+        call    GHOST_STEER
+        jp      z,GHOST_SPRITE
         ld      a,(ix+7)
         ld      hl,L_A4BE
         call    TABLE_WORD
@@ -4508,7 +4515,7 @@ L_A380:                 ; A380
         ld      a,(ix+16)
         add     a,b
         ld      (ix+16),a
-        jp      L_A3CD
+        jp      GHOST_SPRITE
 
 ; Skel-Monsta: X + (IX+13)
 GHOST_FLY_R:            ; A393
@@ -4522,7 +4529,7 @@ GHOST_FLY_R:            ; A393
         ld      a,(ix+16)
         add     a,b
         ld      (ix+16),a
-        jp      L_A3CD
+        jp      GHOST_SPRITE
 
 ; Skel-Monsta: Y - (IX+13)
 GHOST_FLY_DOWN:         ; A3A8
@@ -4534,7 +4541,7 @@ GHOST_FLY_DOWN:         ; A3A8
         ld      a,(ix+16)
         add     a,b
         ld      (ix+16),a
-        jp      L_A3CD
+        jp      GHOST_SPRITE
 
 ; Skel-Monsta: X - (IX+13)
 GHOST_FLY_L:            ; A3BB
@@ -4548,7 +4555,8 @@ GHOST_FLY_L:            ; A3BB
         ld      a,(ix+16)
         add     a,b
         ld      (ix+16),a
-L_A3CD:                 ; A3CD
+; ANIM_STEP 2 frames of 8; tiles E4 + 4 x frame, colour 1C (F8, colour 3C in the secret round); SPRITE or SPRITE_FLIPX by (IX+8) b1
+GHOST_SPRITE:           ; A3CD
         ld      de,0x0802
         call    ANIM_STEP
         add     a,a
@@ -4569,13 +4577,14 @@ L_A3E6:                 ; A3E6
         bit     1,(ix+8)
         jr      z,L_A3F6
         call    SPRITE
-        jp      L_A4B1
+        jp      GHOST_NEXT
 
 L_A3F6:                 ; A3F6
         call    SPRITE_FLIPX
-        jp      L_A4B1
+        jp      GHOST_NEXT
 
-L_A3FC:                 ; A3FC
+; the fade in or out: ANIM_STEP 3 frames of 0A (14 in the secret round), tiles B0 + 4 x frame (EC in the secret round), backwards when leaving. At the end of a fade in +14 b2 is cleared (object state 15); at the end of a fade out GHOST_REMOVE
+GHOST_FADE:             ; A3FC
         ld      (ix+2),0x00
         ld      de,0x0A03
         ld      a,(0xE723)
@@ -4586,11 +4595,12 @@ L_A40C:                 ; A40C
         call    ANIM_STEP
         jr      nz,L_A48D
         bit     2,(ix+0)
-        jr      nz,L_A41D
+        jr      nz,GHOST_REMOVE
         res     2,(ix+14)
         jr      L_A481
 
-L_A41D:                 ; A41D
+; hides the ghost and clears its record, F1E6 = 3C, +14 b3 set (gone)
+GHOST_REMOVE:           ; A41D
         call    OBJ_HIDE
         xor     a
         ld      (0xF1E6),a
@@ -4608,9 +4618,10 @@ L_A41D:                 ; A41D
         res     7,(ix+0)
         ld      hl,0xF1E6
         ld      (hl),0x3C
-        jp      L_A4B1
+        jp      GHOST_NEXT
 
-L_A452:                 ; A452
+; a gone ghost (+14 b3): once neither ghost is out (+0 b7), GHOST_ON = 0 and both records are cleared
+GHOST_OFF_CHECK:        ; A452
         ld      hl,GHOST_SLOTS
         ld      a,(hl)
         and     0x80
@@ -4620,7 +4631,7 @@ L_A452:                 ; A452
         ld      a,(hl)
         and     0x80
         or      b
-        jp      nz,L_A4B1
+        jp      nz,GHOST_NEXT
         ld      hl,GHOST_ON
         ld      (hl),0x00
         ld      hl,GHOST_SLOTS
@@ -4631,7 +4642,7 @@ L_A452:                 ; A452
         ld      (hl),0x00
         ld      hl,0xF1E2
         ld      (hl),0x00
-        jp      L_A4B1
+        jp      GHOST_NEXT
 
 L_A481:                 ; A481
         ld      a,(0xE723)
@@ -4663,7 +4674,8 @@ L_A4AA:                 ; A4AA
         ld      b,a
         ld      a,(ix+10)
         call    SPRITE
-L_A4B1:                 ; A4B1
+; next ghost record (0x12 bytes), 2 in all
+GHOST_NEXT:             ; A4B1
         ld      de,0x0012
         add     ix,de
         pop     af
@@ -4677,7 +4689,8 @@ L_A4BE:                 ; A4BE
         .word   GHOST_FLY_R
         .word   GHOST_FLY_DOWN
         .word   GHOST_FLY_L
-L_A4C6:                 ; A4C6
+; Seen in MAME (game2p, bub39): sets (IX+7) toward the ghost's player (Z if that player is out). With +0 b3: left or right (3, 1) toward the player's X; without: up or down (0, 2) toward the player's Y. Near X 50-5F and A0-AF it may switch axis by setting (IX+16) to 3A or 0
+GHOST_STEER:            ; A4C6
         ld      a,(ix+9)
         and     a
         jr      nz,L_A4D3
