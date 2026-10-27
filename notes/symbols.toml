@@ -625,6 +625,42 @@ GHOST_REMOVE = { addr = 0xA41D, note = "hides the ghost and clears its record, F
 GHOST_OFF_CHECK = { addr = 0xA452, note = "a gone ghost (+14 b3): once neither ghost is out (+0 b7), GHOST_ON = 0 and both records are cleared" }
 GHOST_NEXT = { addr = 0xA4B1, note = "next ghost record (0x12 bytes), 2 in all" }
 GHOST_STEER = { addr = 0xA4C6, note = "Seen in MAME (game2p, bub39): sets (IX+7) toward the ghost's player (Z if that player is out). With +0 b3: left or right (3, 1) toward the player's X; without: up or down (0, 2) toward the player's Y. Near X 50-5F and A0-AF it may switch axis by setting (IX+16) to 3A or 0" }
+ENEMY4_MOVE = { addr = 0x995D, note = "Seen in MAME (bub22): a group 4 enemy in play: ENEMY_SPEED, then ENEMY_DROP until it is out (+0 b5); keeps Y in 22-D0, then ENEMY4_TURN while (IX+24) b4, else the ENEMY4_MODES fly by (IX+7)" }
+ENEMY4_TURN = { addr = 0x9B40, note = "Seen in MAME (bub22): one turn step: ENEMY4_TURN_WALL, ENEMY4_TURN_STEP, OBJ_POS_LOAD. Tamper check: the IM 2 entry (I, FC00) must be IRQ_VECTOR_ENTRY, else PUSH IY" }
+ENEMY4_SPRITE = { addr = 0x9B5A, note = "ANIM_STEP 4 frames, colour 1F: tiles 88 while F44E or (IX+14) b4, 78 (faster) when angry (+0 b7) or HURRY, else 68" }
+ENEMY4_NEXT = { addr = 0x9BA3, note = "next ENEMY4_SLOTS record (0x19 bytes), ED42 in all" }
+ENEMY4_TURN_STEP = { addr = 0x9BB2, note = "the next byte of the turn script at (IX+16) through ENEMY4_STEP_TABLE" }
+ENEMY4_STEP_U = { addr = 0x9BCA, note = "turn step 0: Y + 1" }
+ENEMY4_STEP_RU = { addr = 0x9BCF, note = "turn step 1: Y + 1, X + 1" }
+ENEMY4_STEP_R = { addr = 0x9BD7, note = "turn step 2: X + 1" }
+ENEMY4_STEP_RD = { addr = 0x9BDE, note = "turn step 3: Y - 1, X + 1" }
+ENEMY4_STEP_D = { addr = 0x9BE6, note = "turn step 4: Y - 1" }
+ENEMY4_STEP_LD = { addr = 0x9BEB, note = "turn step 5: Y - 1, X - 1" }
+ENEMY4_STEP_L = { addr = 0x9BF3, note = "turn step 6: X - 1" }
+ENEMY4_STEP_LU = { addr = 0x9BFA, note = "turn step 7: Y + 1, X - 1" }
+ENEMY4_STEP_NONE = { addr = 0x9C02, note = "turn step 8: no move" }
+ENEMY4_STEP_END = { addr = 0x9C03, note = "turn step 9: the mode becomes (IX+8) and (IX+24) is cleared" }
+ENEMY4_TURN_WALL = { addr = 0x9C0E, note = "during a turn, by the (IX+24) bit of the wall that started it: b0 ENEMY_WALL_R, b1 ENEMY_WALL_L, b2 the cell at Y+8, b3 ENEMY_FLOOR_BELOW; at a wall ENEMY4_TURN_BACK" }
+ENEMY4_TURN_BACK = { addr = 0x9C3F, note = "the turn ends early: (IX+7) xor 2 (the opposite fly) and (IX+24) cleared" }
+ENEMY4_CELL_U = { addr = 0x9C4C, note = "the cell at X, Y+8" }
+ENEMY4_CELL_UP_L = { addr = 0x9C57, note = "the cell at X-8, Y+0C" }
+ENEMY4_CELL_DOWN_L = { addr = 0x9C66, note = "the cell at X-8, Y-0C" }
+ENEMY4_CELL_UP_R = { addr = 0x9C75, note = "the cell at X+8, Y+0C" }
+ENEMY4_CELL_DOWN_R = { addr = 0x9C84, note = "the cell at X+8, Y-0C" }
+ENEMY4_CELL_R_UP = { addr = 0x9C93, note = "the cell at X+0C, Y+8" }
+ENEMY4_CELL_R_DOWN = { addr = 0x9CA2, note = "the cell at X+0C, Y-8" }
+ENEMY4_CELL_L_UP = { addr = 0x9CB1, note = "the cell at X-0C, Y+8" }
+ENEMY4_CELL_L_DOWN = { addr = 0x9CC0, note = "the cell at X-0C, Y-8" }
+ENEMY4_TURN_SET = { addr = 0x9B20, note = "(IX+16) = DE, the turn script, then ENEMY4_SPRITE" }
+ENEMY4_LU_WALL = { addr = 0x9A11, note = "ENEMY4_FLY_LU meets a wall on the left (ENEMY4_CELL_L_UP): (IX+24) b4 b2, then mode 0 (RU) after turn script 9D54" }
+ENEMY4_LU_CEILING = { addr = 0x99FA, note = "ENEMY4_FLY_LU meets a ceiling (ENEMY4_CELL_UP_L): (IX+24) b4 b1, then mode 2 (LD) after turn script 9D3F. Not seen" }
+ENEMY4_LD_WALL = { addr = 0x9A6C, note = "ENEMY4_FLY_LD meets a wall on the left (ENEMY4_CELL_L_DOWN): (IX+24) b4 b3, then mode 1 (RD) after turn script 9D7E" }
+ENEMY4_LD_FLOOR = { addr = 0x9A52, note = "ENEMY4_FLY_LD meets a floor (ENEMY4_CELL_DOWN_L): ROM_SUM_STEP_S, (IX+24) b4 b1, then mode 3 (LU) after turn script 9D69. Not seen" }
+ENEMY4_RU_WALL = { addr = 0x9AC8, note = "ENEMY4_FLY_RU meets a wall on the right (ENEMY4_CELL_R_UP): (IX+24) b4 b2, then mode 3 (LU) after turn script 9D00" }
+ENEMY4_RU_CEILING = { addr = 0x9AB1, note = "ENEMY4_FLY_RU meets a ceiling (ENEMY4_CELL_UP_R): (IX+24) b4 b0, then mode 1 (RD) after turn script 9CEB" }
+ENEMY4_RD_WALL = { addr = 0x9B29, note = "ENEMY4_FLY_RD meets a wall on the right (ENEMY4_CELL_R_DOWN): (IX+24) b4 b3, then mode 2 (LD) after turn script 9D2A" }
+ENEMY4_RD_FLOOR = { addr = 0x9B0C, note = "ENEMY4_FLY_RD meets a floor (ENEMY4_CELL_DOWN_R): (IX+24) b4 b0, then mode 0 (RU) after turn script 9D15" }
+ROM_SUM_STEP_S = { addr = 0x9D96, note = "one byte a call of a sum from bank 0 8150 to 94FD, in F111 (F10E starts it, F10F is the pointer); the end compares with F112 and on a mismatch runs into ENEMY5_INIT with DE pushed" }
 
 [bank0.data]
 BOSS_PIECE_XY = { addr = 0xAF0C, size = 0x20, note = "16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces" }
@@ -637,6 +673,9 @@ STAR_FADE_IN  = { addr = 0xB83C, size = 0x3C, note = "10 x 3 colours, steps 1-9 
 HEART_TILES   = { addr = 0xB893, size = 0x40, note = "8 x 8 tiles for HEART_DRAW" }
 HEART_COLOURS = { addr = 0xB8F1, size = 0x0C, note = "6 colour words for HEART_CYCLE" }
 GHOST_CORNERS = { addr = 0xA2FE, note = "4 (Y, X) starts for GHOST_APPEAR by (IX+17) = 0, 2, 4, 6: C0,D8 top right; 20,D8 bottom right; 20,18 bottom left; C0,18 top left" }
+ENEMY4_MODES = { addr = 0x9CCF, note = "ENEMY4_FLY_RU, _RD, _LD, _LU for (IX+7) = 0-3 (ENEMY4_MOVE)" }
+ENEMY4_STEP_TABLE = { addr = 0x9CD7, note = "10 words: the turn script steps 0-9 for ENEMY4_TURN_STEP" }
+ENEMY4_TURNS = { addr = 0x9CEB, note = "8 turn scripts of 0x15 step bytes, each ended by 9 (ENEMY4_STEP_END): steps 0 up, 1 up right, 2 right, 3 down right, 4 down, 5 down left, 6 left, 7 up left, 8 none. A wall hit picks one through (IX+16)" }
 
 [bank1.data]
 # a78-05-1.52 page 1 (file 0x4000-0x7FFF), mapped at 8000 when FB40 = 5.

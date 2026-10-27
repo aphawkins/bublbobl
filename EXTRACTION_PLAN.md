@@ -655,6 +655,13 @@ Started (2026-10-17) with the sub CPU, which is now done:
   `GHOST_REMOVE`) when its player is hit or the round is cleared, and `GHOST_OFF_CHECK` clears
   `GHOST_ON` once both are gone. A ghost that kills the other player swaps targets with the other
   ghost first.
+- Group 4 (2026-10-27), seen in the bub22 trace: it has no attack. `ENEMY4_MOVE` flies it on a
+  diagonal (`ENEMY4_MODES`); each fly probes a side wall and a ceiling or floor with the
+  `ENEMY4_CELL_*` probes. A hit (`ENEMY4_LU_WALL` .. `ENEMY4_RD_FLOOR`) starts one of eight 21-step
+  scripts in `ENEMY4_TURNS` (moves 0-7 by direction, 8 none, 9 end), so the enemy curves away from
+  the wall; `ENEMY4_TURN` plays it one step a frame and `ENEMY4_TURN_BACK` reverses it early if it
+  meets a wall. At the end the mode becomes the one the hit chose. `ENEMY4_LD_FLOOR` hides one more
+  ROM sum, `ROM_SUM_STEP_S` (bank 0 `8150`-`94FD`).
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`).
@@ -666,7 +673,7 @@ Started (2026-10-17) with the sub CPU, which is now done:
      (2026-10-27): the 16 regions left are code MAME never ran, and the score code ran.
   4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
      named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
-     The ghost is done (2026-10-27).
+     The ghost and group 4 are done (2026-10-27); group 4 has no attack.
   5. Then Phase 7 (sound) and the Phase 8 relocation test.
 
 ---

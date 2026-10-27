@@ -3155,7 +3155,7 @@ L_98F3:                 ; 98F3
 L_98FD:                 ; 98FD
         push    af
         bit     3,(ix+0)
-        jp      nz,L_9BA3
+        jp      nz,ENEMY4_NEXT
         ld      a,(ix+0)
         bit     2,a
         jr      z,L_9913
@@ -3166,10 +3166,10 @@ L_9913:                 ; 9913
         bit     1,a
         jp      nz,L_9957
         call    ENEMY_HIT_REACT
-        jp      c,L_9BA3
+        jp      c,ENEMY4_NEXT
         call    ENEMY_ANGER
         bit     0,(ix+0)
-        jr      nz,L_995D
+        jr      nz,ENEMY4_MOVE
         ld      a,(ix+10)
         ld      bc,0x681F
         call    SPRITE
@@ -3178,36 +3178,37 @@ L_9913:                 ; 9913
         ld      (hl),0x01
         call    ENEMY_ENTRY
         set     0,(ix+0)
-        jp      L_9BA3
+        jp      ENEMY4_NEXT
 
 L_9943:                 ; 9943
         call    ENEMY_TRAP_IF_B6
-        jp      c,L_9BA3
+        jp      c,ENEMY4_NEXT
         call    ENEMY_ANGRY_IF_B5
         set     5,(ix+24)
         res     6,(ix+24)
-        jp      L_9BA3
+        jp      ENEMY4_NEXT
 
 L_9957:                 ; 9957
         call    ENEMY_DEFEATED
-        jp      L_9BA3
+        jp      ENEMY4_NEXT
 
-L_995D:                 ; 995D
+; Seen in MAME (bub22): a group 4 enemy in play: ENEMY_SPEED, then ENEMY_DROP until it is out (+0 b5); keeps Y in 22-D0, then ENEMY4_TURN while (IX+24) b4, else the ENEMY4_MODES fly by (IX+7)
+ENEMY4_MOVE:            ; 995D
         call    OBJ_POS_LOAD
         ld      c,0x04
         call    ENEMY_HIT_REPORT
         call    ENEMY_REMOVE_IF_B7
-        jp      c,L_9BA3
+        jp      c,ENEMY4_NEXT
         call    ENEMY_SPEED
-        jp      nc,L_9B5A
+        jp      nc,ENEMY4_SPRITE
         call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
-        jp      nz,L_9BA3
+        jp      nz,ENEMY4_NEXT
         bit     5,(ix+0)
         jr      nz,L_9987
         call    ENEMY_DROP
-        jp      L_9B5A
+        jp      ENEMY4_SPRITE
 
 L_9987:                 ; 9987
         bit     5,(ix+24)
@@ -3221,7 +3222,7 @@ L_9998:                 ; 9998
         call    OBJ_PTR
         dec     (hl)
         call    OBJ_POS_LOAD
-        jp      L_9B5A
+        jp      ENEMY4_SPRITE
 
 L_99A2:                 ; 99A2
         ld      a,(ix+1)
@@ -3239,9 +3240,9 @@ L_99AF:                 ; 99AF
         dec     (hl)
 L_99BA:                 ; 99BA
         bit     4,(ix+24)
-        jp      nz,L_9B40
+        jp      nz,ENEMY4_TURN
         ld      a,(ix+7)
-        ld      hl,L_9CCF
+        ld      hl,ENEMY4_MODES
         call    TABLE_WORD
         ex      de,hl
         jp      (hl)
@@ -3250,14 +3251,14 @@ L_99BA:                 ; 99BA
 ENEMY4_FLY_LU:          ; 99CC
         ld      a,(ix+13)
         or      a
-        jp      z,L_9B20
+        jp      z,ENEMY4_TURN_SET
         ld      b,a
 L_99D4:                 ; 99D4
         push    bc
-        call    L_9CB1
-        jr      z,L_9A11
-        call    L_9C57
-        jr      z,L_99FA
+        call    ENEMY4_CELL_L_UP
+        jr      z,ENEMY4_LU_WALL
+        call    ENEMY4_CELL_UP_L
+        jr      z,ENEMY4_LU_CEILING
         call    OBJ_PTR
         inc     (ix+18)
         ld      a,(ix+18)
@@ -3271,37 +3272,39 @@ L_99F1:                 ; 99F1
         dec     (hl)
         pop     bc
         djnz    L_99D4
-        jp      L_9B5A
+        jp      ENEMY4_SPRITE
 
-L_99FA:                 ; 99FA
+; ENEMY4_FLY_LU meets a ceiling (ENEMY4_CELL_UP_L): (IX+24) b4 b1, then mode 2 (LD) after turn script 9D3F. Not seen
+ENEMY4_LU_CEILING:      ; 99FA
         pop     bc
         set     4,(ix+24)
         set     1,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x02
         ld      de,0x9D3F
-        jp      L_9B20
+        jp      ENEMY4_TURN_SET
 
-L_9A11:                 ; 9A11
+; ENEMY4_FLY_LU meets a wall on the left (ENEMY4_CELL_L_UP): (IX+24) b4 b2, then mode 0 (RU) after turn script 9D54
+ENEMY4_LU_WALL:         ; 9A11
         pop     bc
         set     4,(ix+24)
         set     2,(ix+24)
         ld      (ix+8),0x00
         ld      de,0x9D54
-        jp      L_9B20
+        jp      ENEMY4_TURN_SET
 
 ; flies left and down (Y - 1 every third step, X - 1)
 ENEMY4_FLY_LD:          ; 9A24
         ld      a,(ix+13)
         or      a
-        jp      z,L_9B20
+        jp      z,ENEMY4_TURN_SET
         ld      b,a
 L_9A2C:                 ; 9A2C
         push    bc
-        call    L_9CC0
-        jr      z,L_9A6C
-        call    L_9C66
-        jr      z,L_9A52
+        call    ENEMY4_CELL_L_DOWN
+        jr      z,ENEMY4_LD_WALL
+        call    ENEMY4_CELL_DOWN_L
+        jr      z,ENEMY4_LD_FLOOR
         call    OBJ_PTR
         inc     (ix+18)
         ld      a,(ix+18)
@@ -3315,39 +3318,41 @@ L_9A49:                 ; 9A49
         dec     (hl)
         pop     bc
         djnz    L_9A2C
-        jp      L_9B5A
+        jp      ENEMY4_SPRITE
 
-L_9A52:                 ; 9A52
+; ENEMY4_FLY_LD meets a floor (ENEMY4_CELL_DOWN_L): ROM_SUM_STEP_S, (IX+24) b4 b1, then mode 3 (LU) after turn script 9D69. Not seen
+ENEMY4_LD_FLOOR:        ; 9A52
         pop     bc
-        call    L_9D96
+        call    ROM_SUM_STEP_S
         set     4,(ix+24)
         set     1,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x03
         ld      de,0x9D69
-        jp      L_9B20
+        jp      ENEMY4_TURN_SET
 
-L_9A6C:                 ; 9A6C
+; ENEMY4_FLY_LD meets a wall on the left (ENEMY4_CELL_L_DOWN): (IX+24) b4 b3, then mode 1 (RD) after turn script 9D7E
+ENEMY4_LD_WALL:         ; 9A6C
         pop     bc
         set     4,(ix+24)
         set     3,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x01
         ld      de,0x9D7E
-        jp      L_9B20
+        jp      ENEMY4_TURN_SET
 
 ; flies right and up (Y + 1 every third step, X + 1)
 ENEMY4_FLY_RU:          ; 9A83
         ld      a,(ix+13)
         or      a
-        jp      z,L_9B20
+        jp      z,ENEMY4_TURN_SET
         ld      b,a
 L_9A8B:                 ; 9A8B
         push    bc
-        call    L_9C93
-        jr      z,L_9AC8
-        call    L_9C75
-        jr      z,L_9AB1
+        call    ENEMY4_CELL_R_UP
+        jr      z,ENEMY4_RU_WALL
+        call    ENEMY4_CELL_UP_R
+        jr      z,ENEMY4_RU_CEILING
         call    OBJ_PTR
         inc     (ix+18)
         ld      a,(ix+18)
@@ -3361,38 +3366,40 @@ L_9AA8:                 ; 9AA8
         inc     (hl)
         pop     bc
         djnz    L_9A8B
-        jp      L_9B5A
+        jp      ENEMY4_SPRITE
 
-L_9AB1:                 ; 9AB1
+; ENEMY4_FLY_RU meets a ceiling (ENEMY4_CELL_UP_R): (IX+24) b4 b0, then mode 1 (RD) after turn script 9CEB
+ENEMY4_RU_CEILING:      ; 9AB1
         pop     bc
         set     4,(ix+24)
         set     0,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x01
         ld      de,0x9CEB
-        jp      L_9B20
+        jp      ENEMY4_TURN_SET
 
-L_9AC8:                 ; 9AC8
+; ENEMY4_FLY_RU meets a wall on the right (ENEMY4_CELL_R_UP): (IX+24) b4 b2, then mode 3 (LU) after turn script 9D00
+ENEMY4_RU_WALL:         ; 9AC8
         pop     bc
         set     4,(ix+24)
         set     2,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x03
         ld      de,0x9D00
-        jp      L_9B20
+        jp      ENEMY4_TURN_SET
 
 ; flies right and down (Y - 1 every third step, X + 1)
 ENEMY4_FLY_RD:          ; 9ADF
         ld      a,(ix+13)
         or      a
-        jp      z,L_9B20
+        jp      z,ENEMY4_TURN_SET
         ld      b,a
 L_9AE7:                 ; 9AE7
         push    bc
-        call    L_9CA2
-        jr      z,L_9B29
-        call    L_9C84
-        jr      z,L_9B0C
+        call    ENEMY4_CELL_R_DOWN
+        jr      z,ENEMY4_RD_WALL
+        call    ENEMY4_CELL_DOWN_R
+        jr      z,ENEMY4_RD_FLOOR
         call    OBJ_PTR
         inc     (ix+18)
         ld      a,(ix+18)
@@ -3406,32 +3413,36 @@ L_9B04:                 ; 9B04
         inc     (hl)
         pop     bc
         djnz    L_9AE7
-        jr      L_9B5A
+        jr      ENEMY4_SPRITE
 
-L_9B0C:                 ; 9B0C
+; ENEMY4_FLY_RD meets a floor (ENEMY4_CELL_DOWN_R): (IX+24) b4 b0, then mode 0 (RU) after turn script 9D15
+ENEMY4_RD_FLOOR:        ; 9B0C
         pop     bc
         set     4,(ix+24)
         set     0,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x00
         ld      de,0x9D15
-L_9B20:                 ; 9B20
+; (IX+16) = DE, the turn script, then ENEMY4_SPRITE
+ENEMY4_TURN_SET:        ; 9B20
         ld      (ix+16),e
         ld      (ix+17),d
-        jp      L_9B5A
+        jp      ENEMY4_SPRITE
 
-L_9B29:                 ; 9B29
+; ENEMY4_FLY_RD meets a wall on the right (ENEMY4_CELL_R_DOWN): (IX+24) b4 b3, then mode 2 (LD) after turn script 9D2A
+ENEMY4_RD_WALL:         ; 9B29
         pop     bc
         set     4,(ix+24)
         set     3,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x02
         ld      de,0x9D2A
-        jp      L_9B20
+        jp      ENEMY4_TURN_SET
 
-L_9B40:                 ; 9B40
-        call    L_9C0E
-        call    L_9BB2
+; Seen in MAME (bub22): one turn step: ENEMY4_TURN_WALL, ENEMY4_TURN_STEP, OBJ_POS_LOAD. Tamper check: the IM 2 entry (I, FC00) must be IRQ_VECTOR_ENTRY, else PUSH IY
+ENEMY4_TURN:            ; 9B40
+        call    ENEMY4_TURN_WALL
+        call    ENEMY4_TURN_STEP
         call    OBJ_POS_LOAD
         ld      a,i
         ld      h,a
@@ -3440,9 +3451,10 @@ L_9B40:                 ; 9B40
         ld      de,IRQ_VECTOR_ENTRY
         or      a
         sbc     hl,de
-        jr      z,L_9B5A
+        jr      z,ENEMY4_SPRITE
         push    iy
-L_9B5A:                 ; 9B5A
+; ANIM_STEP 4 frames, colour 1F: tiles 88 while F44E or (IX+14) b4, 78 (faster) when angry (+0 b7) or HURRY, else 68
+ENEMY4_SPRITE:          ; 9B5A
         ld      c,0x1F
         ld      a,(0xF44E)
         and     a
@@ -3483,9 +3495,10 @@ L_9B99:                 ; 9B99
         ld      b,a
         ld      a,(ix+10)
         call    SPRITE
-        jp      L_9BA3
+        jp      ENEMY4_NEXT
 
-L_9BA3:                 ; 9BA3
+; next ENEMY4_SLOTS record (0x19 bytes), ED42 in all
+ENEMY4_NEXT:            ; 9BA3
         ld      de,0x0019
         add     ix,de
         pop     af
@@ -3495,7 +3508,8 @@ L_9BA3:                 ; 9BA3
         jp      nz,L_98FD
         ret
 
-L_9BB2:                 ; 9BB2
+; the next byte of the turn script at (IX+16) through ENEMY4_STEP_TABLE
+ENEMY4_TURN_STEP:       ; 9BB2
         ld      l,(ix+16)
         ld      h,(ix+17)
         push    hl
@@ -3504,32 +3518,36 @@ L_9BB2:                 ; 9BB2
         ld      (ix+17),h
         pop     hl
         ld      a,(hl)
-        ld      hl,L_9CD7
+        ld      hl,ENEMY4_STEP_TABLE
         call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-L_9BCA:                 ; 9BCA
+; turn step 0: Y + 1
+ENEMY4_STEP_U:          ; 9BCA
         call    OBJ_PTR
         inc     (hl)
         ret
 
-L_9BCF:                 ; 9BCF
+; turn step 1: Y + 1, X + 1
+ENEMY4_STEP_RU:         ; 9BCF
         call    OBJ_PTR
         inc     (hl)
-        inc     hl
-        inc     hl
-        inc     (hl)
-        ret
-
-L_9BD7:                 ; 9BD7
-        call    OBJ_PTR
         inc     hl
         inc     hl
         inc     (hl)
         ret
 
-L_9BDE:                 ; 9BDE
+; turn step 2: X + 1
+ENEMY4_STEP_R:          ; 9BD7
+        call    OBJ_PTR
+        inc     hl
+        inc     hl
+        inc     (hl)
+        ret
+
+; turn step 3: Y - 1, X + 1
+ENEMY4_STEP_RD:         ; 9BDE
         call    OBJ_PTR
         dec     (hl)
         inc     hl
@@ -3537,27 +3555,31 @@ L_9BDE:                 ; 9BDE
         inc     (hl)
         ret
 
-L_9BE6:                 ; 9BE6
+; turn step 4: Y - 1
+ENEMY4_STEP_D:          ; 9BE6
         call    OBJ_PTR
         dec     (hl)
         ret
 
-L_9BEB:                 ; 9BEB
+; turn step 5: Y - 1, X - 1
+ENEMY4_STEP_LD:         ; 9BEB
         call    OBJ_PTR
         dec     (hl)
-        inc     hl
-        inc     hl
-        dec     (hl)
-        ret
-
-L_9BF3:                 ; 9BF3
-        call    OBJ_PTR
         inc     hl
         inc     hl
         dec     (hl)
         ret
 
-L_9BFA:                 ; 9BFA
+; turn step 6: X - 1
+ENEMY4_STEP_L:          ; 9BF3
+        call    OBJ_PTR
+        inc     hl
+        inc     hl
+        dec     (hl)
+        ret
+
+; turn step 7: Y + 1, X - 1
+ENEMY4_STEP_LU:         ; 9BFA
         call    OBJ_PTR
         inc     (hl)
         inc     hl
@@ -3565,16 +3587,19 @@ L_9BFA:                 ; 9BFA
         dec     (hl)
         ret
 
-L_9C02:                 ; 9C02
+; turn step 8: no move
+ENEMY4_STEP_NONE:       ; 9C02
         ret
 
-L_9C03:                 ; 9C03
+; turn step 9: the mode becomes (IX+8) and (IX+24) is cleared
+ENEMY4_STEP_END:        ; 9C03
         ld      a,(ix+8)
         ld      (ix+7),a
         ld      (ix+24),0x00
         ret
 
-L_9C0E:                 ; 9C0E
+; during a turn, by the (IX+24) bit of the wall that started it: b0 ENEMY_WALL_R, b1 ENEMY_WALL_L, b2 the cell at Y+8, b3 ENEMY_FLOOR_BELOW; at a wall ENEMY4_TURN_BACK
+ENEMY4_TURN_WALL:       ; 9C0E
         bit     0,(ix+24)
         jr      nz,L_9C27
         bit     1,(ix+24)
@@ -3587,32 +3612,34 @@ L_9C0E:                 ; 9C0E
 
 L_9C27:                 ; 9C27
         call    ENEMY_WALL_R
-        jr      z,L_9C3F
+        jr      z,ENEMY4_TURN_BACK
         ret
 
 L_9C2D:                 ; 9C2D
         call    ENEMY_WALL_L
-        jr      z,L_9C3F
+        jr      z,ENEMY4_TURN_BACK
         ret
 
 L_9C33:                 ; 9C33
-        call    L_9C4C
-        jr      z,L_9C3F
+        call    ENEMY4_CELL_U
+        jr      z,ENEMY4_TURN_BACK
         ret
 
 L_9C39:                 ; 9C39
         call    ENEMY_FLOOR_BELOW
-        jr      z,L_9C3F
+        jr      z,ENEMY4_TURN_BACK
         ret
 
-L_9C3F:                 ; 9C3F
+; the turn ends early: (IX+7) xor 2 (the opposite fly) and (IX+24) cleared
+ENEMY4_TURN_BACK:       ; 9C3F
         ld      a,(ix+7)
         xor     0x02
         ld      (ix+7),a
         ld      (ix+24),0x00
         ret
 
-L_9C4C:                 ; 9C4C
+; the cell at X, Y+8
+ENEMY4_CELL_U:          ; 9C4C
         call    OBJ_POS
         ld      a,l
         add     a,0x08
@@ -3620,7 +3647,8 @@ L_9C4C:                 ; 9C4C
         call    GRID_CELL
         ret
 
-L_9C57:                 ; 9C57
+; the cell at X-8, Y+0C
+ENEMY4_CELL_UP_L:       ; 9C57
         call    OBJ_POS
         ld      a,l
         add     a,0x0C
@@ -3631,7 +3659,8 @@ L_9C57:                 ; 9C57
         call    GRID_CELL
         ret
 
-L_9C66:                 ; 9C66
+; the cell at X-8, Y-0C
+ENEMY4_CELL_DOWN_L:     ; 9C66
         call    OBJ_POS
         ld      a,l
         sub     0x0C
@@ -3642,7 +3671,8 @@ L_9C66:                 ; 9C66
         call    GRID_CELL
         ret
 
-L_9C75:                 ; 9C75
+; the cell at X+8, Y+0C
+ENEMY4_CELL_UP_R:       ; 9C75
         call    OBJ_POS
         ld      a,l
         add     a,0x0C
@@ -3653,7 +3683,8 @@ L_9C75:                 ; 9C75
         call    GRID_CELL
         ret
 
-L_9C84:                 ; 9C84
+; the cell at X+8, Y-0C
+ENEMY4_CELL_DOWN_R:     ; 9C84
         call    OBJ_POS
         ld      a,l
         sub     0x0C
@@ -3664,7 +3695,8 @@ L_9C84:                 ; 9C84
         call    GRID_CELL
         ret
 
-L_9C93:                 ; 9C93
+; the cell at X+0C, Y+8
+ENEMY4_CELL_R_UP:       ; 9C93
         call    OBJ_POS
         ld      a,l
         add     a,0x08
@@ -3675,7 +3707,8 @@ L_9C93:                 ; 9C93
         call    GRID_CELL
         ret
 
-L_9CA2:                 ; 9CA2
+; the cell at X+0C, Y-8
+ENEMY4_CELL_R_DOWN:     ; 9CA2
         call    OBJ_POS
         ld      a,l
         sub     0x08
@@ -3686,7 +3719,8 @@ L_9CA2:                 ; 9CA2
         call    GRID_CELL
         ret
 
-L_9CB1:                 ; 9CB1
+; the cell at X-0C, Y+8
+ENEMY4_CELL_L_UP:       ; 9CB1
         call    OBJ_POS
         ld      a,l
         add     a,0x08
@@ -3697,7 +3731,8 @@ L_9CB1:                 ; 9CB1
         call    GRID_CELL
         ret
 
-L_9CC0:                 ; 9CC0
+; the cell at X-0C, Y-8
+ENEMY4_CELL_L_DOWN:     ; 9CC0
         call    OBJ_POS
         ld      a,l
         sub     0x08
@@ -3708,24 +3743,29 @@ L_9CC0:                 ; 9CC0
         call    GRID_CELL
         ret
 
-L_9CCF:                 ; 9CCF
+; ENEMY4_FLY_RU, _RD, _LD, _LU for (IX+7) = 0-3 (ENEMY4_MOVE)
+ENEMY4_MODES:           ; 9CCF
         .word   ENEMY4_FLY_RU
         .word   ENEMY4_FLY_RD
         .word   ENEMY4_FLY_LD
         .word   ENEMY4_FLY_LU
-L_9CD7:                 ; 9CD7
-        .word   L_9BCA
-        .word   L_9BCF
-        .word   L_9BD7
-        .word   L_9BDE
-        .word   L_9BE6
-        .word   L_9BEB
-        .word   L_9BF3
-        .word   L_9BFA
-        .word   L_9C02
-        .word   L_9C03
+; 10 words: the turn script steps 0-9 for ENEMY4_TURN_STEP
+ENEMY4_STEP_TABLE:      ; 9CD7
+        .word   ENEMY4_STEP_U
+        .word   ENEMY4_STEP_RU
+        .word   ENEMY4_STEP_R
+        .word   ENEMY4_STEP_RD
+        .word   ENEMY4_STEP_D
+        .word   ENEMY4_STEP_LD
+        .word   ENEMY4_STEP_L
+        .word   ENEMY4_STEP_LU
+        .word   ENEMY4_STEP_NONE
+        .word   ENEMY4_STEP_END
+; 8 turn scripts of 0x15 step bytes, each ended by 9 (ENEMY4_STEP_END): steps 0 up, 1 up right, 2 right, 3 down right, 4 down, 5 down left, 6 left, 7 up left, 8 none. A wall hit picks one through (IX+16)
+ENEMY4_TURNS:           ; 9CEB
         .incbin "main_bank0.bin", 0x1CEB, 0x00AB
-L_9D96:                 ; 9D96
+; one byte a call of a sum from bank 0 8150 to 94FD, in F111 (F10E starts it, F10F is the pointer); the end compares with F112 and on a mismatch runs into ENEMY5_INIT with DE pushed
+ROM_SUM_STEP_S:         ; 9D96
         ld      a,(0xF10E)
         and     a
         jr      nz,L_9DAC
