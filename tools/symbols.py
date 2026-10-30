@@ -56,8 +56,21 @@ def render(data: dict, cpu: str) -> str:
     return "\n".join(lines)
 
 
+def check_order(data: dict) -> None:
+    """Each table must be in address order (two names may share an address, as RAM_START does)."""
+    for cpu, kinds in data.items():
+        for kind, names in kinds.items():
+            last = None
+            for name, v in names.items():
+                if last is not None and v["addr"] < last[1]:
+                    raise SystemExit(f"[{cpu}.{kind}] {name} (0x{v['addr']:04X}) is after "
+                                     f"{last[0]} (0x{last[1]:04X}): keep each table in address order")
+                last = (name, v["addr"])
+
+
 def write_includes(out: Path) -> list[Path]:
     data = tomllib.loads(SYMBOLS.read_text(encoding="utf-8"))
+    check_order(data)
     seen: dict[str, str] = {}  # a code label and a RAM name must not share a name
     for cpu in ("main", "bank0", "bank1", "bank2", "bank3"):
         for kind, names in data.get(cpu, {}).items():
