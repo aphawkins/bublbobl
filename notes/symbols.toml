@@ -1153,20 +1153,142 @@ COMMAND_F_NONE  = { addr = 0x0480 }
 SEQ_END_NOTIFY  = { addr = 0x049F, note = "a record's sequence has ended: with +4 b0 its command (+3) is the reply, waiting until NMI_ENABLE b0 reads clear; then +8 is queued as the next command (and sent to DIAG_ROM, if fitted)" }
 OPL_TICK_A      = { addr = 0x04D8, note = "timer A: the YM3526's 9 A records (98, 9C ... B8); each one playing sets its bit in OPL_TAKEN" }
 OPL_TICK_B      = { addr = 0x0535, note = "the 9 B records (9A, 9E ... BA), each skipped while its A record plays; one whose OPL_TAKEN bit is set is flagged to rewrite its voice" }
+OPL_RECS_STEP   = { addr = 0x05C4, note = "IX = HL = a layer's first record: for each of the 9 channels OPL_REC_START if asked (+0 b0); while playing (+0 b1) the gate count (+20) keys off at 0, the duration (+18) runs OPL_STEP at 0, then OPL_MOD_TICK. +9 = the channel" }
+OPL_REC_START   = { addr = 0x060B, note = "HL = record: +0 = 06 (playing, keyed notes); the block's (+1/+2) header to +4 flags, +6 passes (low nibble, 0 = 16), +7 phrases, +8 next command; the first phrase by OPL_PHRASE_LOAD, then OPL_REC_CLEAR" }
+OPL_PHRASE_LOAD = { addr = 0x0636, note = "DE = a 3-byte phrase entry: +5 = its high nibble (priority), +10 = its low nibble (repeats, 0 = for ever), +11/+12 = the event pointer" }
+OPL_REC_CLEAR   = { addr = 0x064D, note = "duration 1, volume (+22) FF, length (+19) and gate (+21) 0, LFO and envelope off; +16 = 02 (key off)" }
+OPL_PHRASE_END  = { addr = 0x0682, note = "a 00 duration: the phrase again while its repeats (+10) last, then the next phrase (+7), then the next pass from the first phrase (+6); after the last, the record stops and SEQ_END_NOTIFY" }
+OPL_STEP        = { addr = 0x06E8, note = "the duration has run out: the byte at +11/+12 is the next duration (00: OPL_PHRASE_END), the gate is duration x +21 / 256, and OPL_EVENTS reads the events after it; a re-keyed note gets a fast release (RR F) before the key on. +0 b5: a second note in one step waits for the next step, at the length +19" }
 OPL_EVENTS      = { addr = 0x077D, note = "YM3526: the bytes after BC with b7 set, into the record at IX (low nibble below 0C: a note from OPL_NOTES)" }
+OPL_EV_NOTE_FINE = { addr = 0x0858, note = "8F: the next byte is a note (as OPL_EVENTS); with its b7 set, the byte after is added to the F-number (signed)" }
+OPL_NOTE_FNUM   = { addr = 0x0892, note = "A = note byte: HL = its OPL_NOTES F-number, A = block << 2; carry set for a low nibble of C and up" }
+OPL_EV_MULT1    = { addr = 0x08C6, note = "9C: operator 1 MULT (register 20 b0-3)" }
+OPL_EV_MULT2    = { addr = 0x08D6, note = "9D: operator 2 MULT" }
+OPL_EV_AMVIBEG1 = { addr = 0x08E6, note = "9E: operator 1 AM, VIB and EG-TYP (register 20 b5-7) from b0-2" }
+OPL_EV_AMVIBEG2 = { addr = 0x08F9, note = "9F: operator 2" }
+OPL_EV_TL1      = { addr = 0x090C, note = "AC: operator 1 total level (register 40 b0-5)" }
+OPL_EV_TL2      = { addr = 0x091F, note = "AD: operator 2 total level" }
+OPL_EV_KSL1     = { addr = 0x0932, note = "AE: operator 1 KSR (b4, to register 20) and KSL (b0-1, to register 40 b6-7)" }
+OPL_EV_KSL2     = { addr = 0x0954, note = "AF: operator 2" }
+OPL_EV_ADR1     = { addr = 0x0976, note = "BC: operator 1 attack and decay (register 60)" }
+OPL_EV_ADR2     = { addr = 0x097D, note = "BD: operator 2" }
+OPL_EV_SLRR1    = { addr = 0x0984, note = "BE: operator 1 sustain level and release (register 80)" }
+OPL_EV_SLRR2    = { addr = 0x098B, note = "BF: operator 2" }
+OPL_EV_CTRL     = { addr = 0x0992, note = "CC: an argument below 80 is feedback (b4-6) and connection (b0), register C0; 80 and up go through OPL_CC_JUMPS by the high nibble" }
+OPL_CC_DRUMS    = { addr = 0x09BB, note = "CC 80-9F: the rhythm key bits (register BD b0-4)" }
+OPL_CC_KEYING   = { addr = 0x09CB, note = "CC A0: notes key on (+0 b2, the default); A1: notes only change the pitch (legato)" }
+OPL_CC_TIMER    = { addr = 0x09E1, note = "CC B0-B3: the YM2203's timer A (b0-1 and the next byte, OPN_TIMER_A); B4, B5, B6: the next byte into 8FA5, 8FA6, 8FA7. Each sets its TIMER_A_NEW bit" }
+OPL_CC_RHYTHM   = { addr = 0x0A36, note = "CC C0: rhythm mode on (register BD b5); C1: off" }
+OPL_CC_DEPTH    = { addr = 0x0A4F, note = "CC D0-DF: AM and vibrato depth (register BD b6-7) from b0-1" }
+OPL_CC_NOTESEL  = { addr = 0x0A62, note = "CC E0: register 08 b6 (NOTE-SEL) on; E1: off" }
+OPL_CC_NONE     = { addr = 0x0A7B, note = "CC F0-FF" }
+OPL_EV_TL_BOTH  = { addr = 0x0A8E, note = "CD: both operators' total levels, two bytes" }
+OPL_EV_LENGTH   = { addr = 0x0AB2, note = "CE: +19, the length of a second note in one step (OPL_STEP)" }
+OPL_EV_VOICE    = { addr = 0x0AB8, note = "CF: voice n from OPL_VOICES (13 bytes: feedback and connection, the two operators' registers 20, 40, 60 and 80, then arguments for OPL_EV_LFO, _LFO_SET, _ENV, _ENV_SET and _ENV_DEPTH)" }
+OPL_EV_LFO      = { addr = 0x0B53, note = "DC: an LFO (+41-+50), 3 bytes: rate and depth (+42-+45), then the shape (b0-2, OPL_LFO_SHAPES) and b7, restart on each keyed note" }
+OPL_EV_LFO_SET  = { addr = 0x0B78, note = "DD: 0 stops the LFO; else a mask (+49) and one byte for each bit set, from +51" }
+OPL_EV_ENV      = { addr = 0x0BA8, note = "DE: a stepped envelope (+54-+66): entry b0-6 of the 5-byte table at 3A71; b7 and the next byte its mode and start" }
+OPL_ENV_LOAD    = { addr = 0x0BC9, note = "E = entry: its 5 bytes to +57, +61, +62 and the step pointer +58/+59" }
+OPL_ENV_CLEAR   = { addr = 0x0BFA, note = "clears +70-+77" }
+OPL_EV_ENV_SET  = { addr = 0x0C16, note = "DF: 0 stops the envelope; else a mask (+65) and one byte for each of its 3 low bits set (+69, +72, +75)" }
+OPL_EV_ENV_DEPTH = { addr = 0x0C52, note = "EC: +68; 0 also clears +67" }
+OPL_EV_GATE     = { addr = 0x0C5E, note = "ED: the gate (+21): a note keys off after duration x gate / 256" }
+OPL_MUL         = { addr = 0x0C72, note = "HL = H x E" }
+OPL_EV_REST     = { addr = 0x0CB1, note = "EE (no argument): key off" }
+OPL_EV_REKEY    = { addr = 0x0CC9, note = "EF (no argument): key the note on again" }
+OPL_EV_VOLUME   = { addr = 0x0CE4, note = "FC: +22, which scales the carrier's total level (OPL_TL_WRITE)" }
+OPL_EV_NONE     = { addr = 0x0CEA, note = "8C-8E, FD-FF: the argument is skipped" }
+OPL_VOICE_WRITE = { addr = 0x0CED, note = "+15 b7 (a new voice): every register of the channel, then clear the dirty bits (+15-+17), carry set; else carry clear" }
+OPL_DIRTY_WRITE = { addr = 0x0D6B, note = "the registers flagged in +15 (b2 frequency, b3 C0, b5 A0), +16 (b0/b1 key on/off, b4-b7 20 and 40) and +17 (60 and 80), then clear them" }
+OPL_OP_PAIR     = { addr = 0x0E18, note = "D b0/b1 = operator 1/2: call the writer at (8F98) for each" }
+OPL_FREQ_WRITE  = { addr = 0x0E4A, note = "A = channel: register B0 (block and F-number high, no key), then A0" }
+OPL_FNUM_WRITE  = { addr = 0x0E57, note = "A = channel: register A0" }
+OPL_C0_WRITE    = { addr = 0x0E61, note = "A = channel: register C0, feedback and connection (+24)" }
+OPL_20_WRITE    = { addr = 0x0E6D, note = "A = slot: register 20 (IY+2)" }
+OPL_TL_WRITE    = { addr = 0x0E77, note = "A = slot: register 40 (IY+1); the carrier, or both operators with connection 1, scaled by the volume (+22)" }
+OPL_TL_SCALE    = { addr = 0x0EA5, note = "C = C x volume (+22) / 256" }
+OPL_60_WRITE    = { addr = 0x0EB7, note = "A = slot: register 60 (IY+3)" }
+OPL_80_WRITE    = { addr = 0x0EC1, note = "A = slot: register 80 (IY+4)" }
 OPL_WRITE       = { addr = 0x0ECB, note = "HL = YM3526, B = register, A = value; fixed delays, no status read" }
+OPL_MOD_TICK    = { addr = 0x0EE8, note = "every tick while playing: restores the total levels after a re-key, then the envelope, its depth, the LFO and 10AF" }
 OPN_FM_TICK     = { addr = 0x125E, note = "timer B: the YM2203's 3 FM channels, the second record of each pair skipped while the first plays" }
+OPN_RECS_STEP   = { addr = 0x1385, note = "as OPL_RECS_STEP, for the 3 FM channels" }
+OPN_REC_START   = { addr = 0x13CC, note = "as OPL_REC_START" }
+OPN_PHRASE_LOAD = { addr = 0x13F7, note = "as OPL_PHRASE_LOAD" }
+OPN_REC_CLEAR   = { addr = 0x140E, note = "as OPL_REC_CLEAR" }
+OPN_PHRASE_END  = { addr = 0x144C, note = "as OPL_PHRASE_END" }
+OPN_STEP        = { addr = 0x14B2, note = "as OPL_STEP" }
 OPN_EVENTS      = { addr = 0x1557, note = "YM2203 FM: as OPL_EVENTS, notes from OPN_NOTES" }
+OPN_EV_OP1_NOTE = { addr = 0x1631, note = "8C: a note (as OPN_EV_NOTE_FINE) for operator 1 alone, for channel 3's special mode (+26-+30)" }
+OPN_EV_OP2_NOTE = { addr = 0x1649, note = "8D: operator 2 (+39-+43)" }
+OPN_EV_OP3_NOTE = { addr = 0x1661, note = "8E: operator 3 (+52-+56)" }
+OPN_EV_NOTE_FINE = { addr = 0x1679, note = "8F: the channel's note (+65-+69), with a signed F-number offset after it when its b7 is set" }
+OPN_NOTE_FNUM   = { addr = 0x16B3, note = "as OPL_NOTE_FNUM, from OPN_NOTES; A = block << 3" }
+OPN_EV_DTMUL1   = { addr = 0x16E6, note = "9C: operator 1 detune and MULT (register 30). Each operator has 13 bytes from +26: its note (5), TL twice, then registers 30, 90, 50, 60, 70, 80" }
+OPN_EV_DTMUL2   = { addr = 0x16EF, note = "9D: operator 2" }
+OPN_EV_DTMUL3   = { addr = 0x16F8, note = "9E: operator 3" }
+OPN_EV_DTMUL4   = { addr = 0x1701, note = "9F: operator 4" }
+OPN_EV_TL1      = { addr = 0x170A, note = "AC: operator 1 total level (register 40)" }
+OPN_EV_TL2      = { addr = 0x1716, note = "AD: operator 2" }
+OPN_EV_TL3      = { addr = 0x1722, note = "AE: operator 3" }
+OPN_EV_TL4      = { addr = 0x172E, note = "AF: operator 4" }
+OPN_EV_ENVREGS1 = { addr = 0x173A, note = "BC: operator 1 registers 90, 50, 60, 70 and 80, from 5 bytes (OPN_ENVREGS_READ)" }
+OPN_EV_ENVREGS2 = { addr = 0x1750, note = "BD: operator 2" }
+OPN_EV_ENVREGS3 = { addr = 0x1766, note = "BE: operator 3" }
+OPN_EV_ENVREGS4 = { addr = 0x177C, note = "BF: operator 4" }
+OPN_ENVREGS_READ = { addr = 0x1792, note = "AND 00 drops the first byte, so register 90 (SSG-EG) is always 0; then 50 (AND DF), 60 and 70 (AND 1F, so AM is off), 80" }
+OPN_EV_CTRL     = { addr = 0x17A7, note = "CC: below 80 feedback (b4-6) and algorithm (b0-2), register B0; 80-9F +24; A0/A1 keyed notes / legato; B0-B6 timers (as OPL_CC_TIMER); C0-FF the low nibble into +78-+81 by b4-5" }
+OPN_EV_TL_ALL   = { addr = 0x1859, note = "CD: the 4 operators' total levels, 4 bytes" }
+OPN_EV_LENGTH   = { addr = 0x1883, note = "CE: as OPL_EV_LENGTH (+20)" }
+OPN_EV_VOICE    = { addr = 0x1889, note = "CF: voice n from OPN_VOICES (33 bytes)" }
+OPN_EV_LFO      = { addr = 0x1943, note = "DC: as OPL_EV_LFO (+82-+91)" }
+OPN_EV_LFO_SET  = { addr = 0x1968, note = "DD: as OPL_EV_LFO_SET" }
+OPN_EV_ENV      = { addr = 0x1998, note = "DE: as OPL_EV_ENV (+100-+112), from the table at 3A79" }
+OPN_ENV_CLEAR   = { addr = 0x19EA, note = "as OPL_ENV_CLEAR" }
+OPN_EV_ENV_SET  = { addr = 0x1A15, note = "DF: as OPL_EV_ENV_SET; channel 3 takes up to 3 more bytes" }
+OPN_EV_ENV_DEPTH = { addr = 0x1A71, note = "EC: as OPL_EV_ENV_DEPTH" }
+OPN_EV_GATE     = { addr = 0x1A7D, note = "ED: as OPL_EV_GATE (+22)" }
+OPN_MUL         = { addr = 0x1A91, note = "HL = H x E, as OPL_MUL" }
+OPN_EV_REST     = { addr = 0x1AD4, note = "EE (no argument): key off" }
+OPN_EV_REKEY    = { addr = 0x1AEC, note = "EF (no argument): key the note on again" }
+OPN_EV_VOLUME   = { addr = 0x1B07, note = "FC: +23" }
+OPN_EV_NONE     = { addr = 0x1B0D, note = "FD-FF: the argument is skipped" }
+OPN_VOICE_WRITE = { addr = 0x1B10, note = "as OPL_VOICE_WRITE" }
+OPN_DIRTY_WRITE = { addr = 0x1BAE, note = "as OPL_DIRTY_WRITE" }
 OPN_WRITE       = { addr = 0x1DD6, note = "HL = YM2203, B = register, A = value; waits while the busy flag (b7) is set" }
+OPN_MOD_TICK    = { addr = 0x1DE3, note = "as OPL_MOD_TICK" }
 OPN_SSG_TICK    = { addr = 0x225B, note = "the SSG records: SSG_REC_B skipped while SSG_REC_A plays" }
+SSG_REC_START   = { addr = 0x234A, note = "as OPL_REC_START" }
+SSG_PHRASE_LOAD = { addr = 0x2378, note = "as OPL_PHRASE_LOAD" }
+SSG_REC_CLEAR   = { addr = 0x238F, note = "as OPL_REC_CLEAR" }
+SSG_PHRASE_END  = { addr = 0x23B5, note = "as OPL_PHRASE_END" }
+SSG_STEP        = { addr = 0x241B, note = "as OPL_STEP, with SSG_EVENTS" }
 SSG_EVENTS      = { addr = 0x243C, note = "YM2203 SSG: the byte after BC, by its high nibble (b6-b7 set) through SSG_EVENT_JUMPS" }
+SSG_EV_TONE_A   = { addr = 0x2458, note = "4x: channel A tone period, coarse from the low nibble (register 1), fine from the next byte (register 0)" }
+SSG_EV_TONE_B   = { addr = 0x2466, note = "5x: channel B (registers 2, 3)" }
+SSG_EV_TONE_C   = { addr = 0x2473, note = "6x: channel C (registers 4, 5)" }
+SSG_EV_VOL_A    = { addr = 0x2491, note = "8x: channel A volume (register 8) from the low nibble" }
+SSG_EV_VOL_B    = { addr = 0x24A1, note = "9x: channel B (register 9)" }
+SSG_EV_VOL_C    = { addr = 0x24B1, note = "Ax: channel C (register A)" }
+SSG_EV_F        = { addr = 0x24D5, note = "Fx: SSG_F_JUMPS by the low nibble, with the next byte; a returned DE with b15 set ends the step" }
+SSG_EV_NOISE    = { addr = 0x251F, note = "F1: noise period (register 6, b0-4)" }
+SSG_EV_MIXER    = { addr = 0x2533, note = "F3: the mixer (+33, +15, +16); a channel turned off has its volume set to 10 (envelope)" }
+SSG_ENV_START   = { addr = 0x260C, note = "HL = a 5-byte table, DE = an offset in the record: a stepped envelope, as OPL_EV_ENV" }
 
 [sound.data]
 RECORD_TABLE    = { addr = 0x0378, size = 0x38, note = "words by record id - 84 (ids 84-BA, even): the record; 88 and 8A are 0" }
 COMMAND_F_JUMPS = { addr = 0x0481, size = 0x1E, note = "15 words for F0-FE" }
+OPL_EVENT_JUMPS = { addr = 0x0800, size = 0x40, note = "32 words for OPL_EVENTS' bytes 8C-FF: (b4-b6) x 4 + (low nibble - C)" }
 OPL_NOTES       = { addr = 0x0840, size = 0x18, note = "12 words" }
+OPL_CC_JUMPS    = { addr = 0x0A7E, size = 0x10, note = "8 words for OPL_EV_CTRL's arguments 80-FF, by the high nibble" }
+OPL_LFO_SHAPES  = { addr = 0x1043, size = 0x10, note = "8 words: the LFO shapes (OPL_EV_LFO's b0-2)" }
+OPN_EVENT_JUMPS = { addr = 0x15D9, size = 0x40, note = "32 words for OPN_EVENTS' bytes 8C-FF, as OPL_EVENT_JUMPS" }
 OPN_NOTES       = { addr = 0x1619, size = 0x18, note = "12 words" }
+OPN_LFO_SHAPES  = { addr = 0x1F73, size = 0x10, note = "8 words, as OPL_LFO_SHAPES" }
 SSG_EVENT_JUMPS = { addr = 0x24F1, size = 0x18 }
+SSG_F_JUMPS     = { addr = 0x25BC, size = 0x40, note = "16 x (handler, DE) for SSG_EV_F" }
+OPL_VOICES      = { addr = 0x28D7, size = 0x3A, note = "29 words: 13-byte voices for OPL_EV_VOICE" }
+OPN_VOICES      = { addr = 0x2A8A, size = 0x76, note = "59 words: 33-byte voices for OPN_EV_VOICE" }
 COMMAND_TABLE   = { addr = 0x329C, size = 0x6A, note = "53 words for commands 00-34" }
 COMMAND_F_TABLE = { addr = 0x3306, size = 0x0E, note = "COMMAND_F_ENTRY reads the words at +0, +4, +8 and +C (F2-F8)" }
 

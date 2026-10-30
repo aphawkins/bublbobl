@@ -4,13 +4,20 @@
 set -e
 cd "$(dirname "$0")/.."
 python tools/symbols.py > /dev/null
-# jump tables (ADDR:COUNT): COMMAND_F_JUMPS
-python tools/dasmz80.py sound --table 0481:15 --out disasm/sound.s
+# jump tables (ADDR:COUNT): COMMAND_F_JUMPS, OPL_EVENT_JUMPS, OPL_CC_JUMPS, OPL_LFO_SHAPES,
+# OPN_EVENT_JUMPS, OPN_LFO_SHAPES, SSG_EVENT_JUMPS;
+# entries: the handlers in SSG_F_JUMPS, whose 4-byte entries --table cannot read
+python tools/dasmz80.py sound --table 0481:15 --table 0800:32 --table 0A7E:8 --table 1043:8 --table 15D9:32 \
+  --table 1F73:8 --table 24F1:12 \
+  --entry 251D --entry 251F --entry 2525 --entry 2533 --entry 2587 --entry 2591 --entry 2597 \
+  --entry 25A1 --entry 25BB --out disasm/sound.s
 python - <<'P'
 import re
 s = open('disasm/sound.s', encoding='utf-8').read()
 # 8000 and 9000 as RAM bounds, not as the record and chip that share the address
 s = s.replace('ld      sp,YM2203', 'ld      sp,0x9000')
+# dirty flags (D = 08, E = 00), not the table at the same address
+s = s.replace('ld      de,OPL_EVENT_JUMPS', 'ld      de,0x0800')
 s = re.sub(r'(SOUND_START:[^\n]*\n(?:[^\n]*\n){5}\s+ld\s+hl,)SSG_REC_A', r'\1RAM', s)
 head = '''; Sound Z80, 3 MHz
 ; a78-07.46, linked at 0x0000. Built by tools/build.py.

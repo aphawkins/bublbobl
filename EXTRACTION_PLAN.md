@@ -886,8 +886,17 @@ Started (2026-10-27):
   31, 33 and 34 start one YM2203 FM record, 05, 06 and 2E one SSG record; 00 and F2-F8 start
   every record. Which is which piece is not yet heard.
 - `DIAG_ROM` (`E000`): the code calls into an empty socket when a JP is there.
-- Next: the sequence players (`OPL_TICK_A`/`_B`, `OPN_FM_TICK`, `OPN_SSG_TICK` and what they
-  call) and the event formats, then the command catalogue (step 2) against MAME recordings.
+- The players and the event format (2026-10-30), read from the code; written up in
+  `notes/sound.md`. The event handlers are reached through jump tables (`OPL_EVENT_JUMPS`,
+  `OPL_CC_JUMPS`, `OPN_EVENT_JUMPS`, `SSG_EVENT_JUMPS`, `SSG_F_JUMPS`, the LFO shapes), now
+  followed, so 0x26D8 bytes are instructions. A block is a record id, priority and passes, a
+  phrase count, a next command and 3-byte phrases. A phrase is steps: a duration, then events
+  with b7 set (notes, or C-F commands with an argument byte: operator registers, voice, LFO,
+  envelope, gate, key off, volume). Every FM and SSG event handler and each player's start,
+  phrase, step and register writers are named. Still byte-exact.
+- Next: what the per-tick modulation (`OPL_MOD_TICK` and twins) does with the LFO and
+  envelope fields, then the command catalogue (step 2) and a phrase decoder to JSON, checked
+  against MAME recordings.
 
 ---
 

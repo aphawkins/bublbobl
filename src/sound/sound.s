@@ -714,8 +714,8 @@ OPL_TICK_A:             ; 04D8
 L_04EA:                 ; 04EA
         push    af
         push    iy
-        call    L_0CED
-        call    nc,L_0D6B
+        call    OPL_VOICE_WRITE
+        call    nc,OPL_DIRTY_WRITE
         bit     1,(ix+0)
         jr      z,L_0515
         ld      bc,0x0001
@@ -751,7 +751,7 @@ L_0525:                 ; 0525
         ld      (OPL_LAYER),a
         ld      ix,OPL_RECS
         ld      hl,OPL_RECS
-        call    L_05C4
+        call    OPL_RECS_STEP
         ret
 
 ; the 9 B records (9A, 9E ... BA), each skipped while its A record plays; one whose OPL_TAKEN bit is set is flagged to rewrite its voice
@@ -811,8 +811,8 @@ L_0573:                 ; 0573
 L_059B:                 ; 059B
         ld      (ix+16),a
 L_059E:                 ; 059E
-        call    L_0CED
-        call    nc,L_0D6B
+        call    OPL_VOICE_WRITE
+        call    nc,OPL_DIRTY_WRITE
 L_05A4:                 ; 05A4
         pop     iy
         pop     af
@@ -829,17 +829,18 @@ L_05B4:                 ; 05B4
         ld      (OPL_LAYER),a
         ld      ix,0x8490
         ld      hl,0x8490
-        call    L_05C4
+        call    OPL_RECS_STEP
         ret
 
-L_05C4:                 ; 05C4
+; IX = HL = a layer's first record: for each of the 9 channels OPL_REC_START if asked (+0 b0); while playing (+0 b1) the gate count (+20) keys off at 0, the duration (+18) runs OPL_STEP at 0, then OPL_MOD_TICK. +9 = the channel
+OPL_RECS_STEP:          ; 05C4
         ld      (ix+9),0x00
         ld      a,0x09
 L_05CA:                 ; 05CA
         push    af
         ld      (CUR_RECORD),hl
         bit     0,(hl)
-        call    nz,L_060B
+        call    nz,OPL_REC_START
         bit     1,(ix+0)
         jr      z,L_05F6
         ld      a,(ix+20)
@@ -852,8 +853,8 @@ L_05CA:                 ; 05CA
         res     0,(ix+16)
 L_05ED:                 ; 05ED
         dec     (ix+18)
-        call    z,L_06E8
-        call    L_0EE8
+        call    z,OPL_STEP
+        call    OPL_MOD_TICK
 L_05F6:                 ; 05F6
         pop     af
         dec     a
@@ -867,7 +868,8 @@ L_05F6:                 ; 05F6
         ld      (ix+9),d
         jr      L_05CA
 
-L_060B:                 ; 060B
+; HL = record: +0 = 06 (playing, keyed notes); the block's (+1/+2) header to +4 flags, +6 passes (low nibble, 0 = 16), +7 phrases, +8 next command; the first phrase by OPL_PHRASE_LOAD, then OPL_REC_CLEAR
+OPL_REC_START:          ; 060B
         ld      (hl),0x06
         inc     hl
         ld      e,(hl)
@@ -897,11 +899,12 @@ L_061D:                 ; 061D
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_0636
-        call    L_064D
+        call    OPL_PHRASE_LOAD
+        call    OPL_REC_CLEAR
         ret
 
-L_0636:                 ; 0636
+; DE = a 3-byte phrase entry: +5 = its high nibble (priority), +10 = its low nibble (repeats, 0 = for ever), +11/+12 = the event pointer
+OPL_PHRASE_LOAD:        ; 0636
         ld      a,(de)
         and     0xF0
         ld      (ix+5),a
@@ -916,7 +919,8 @@ L_0636:                 ; 0636
         ld      (ix+12),a
         ret
 
-L_064D:                 ; 064D
+; duration 1, volume (+22) FF, length (+19) and gate (+21) 0, LFO and envelope off; +16 = 02 (key off)
+OPL_REC_CLEAR:          ; 064D
         ld      a,0x00
         ld      (ix+32),a
         ld      (ix+37),a
@@ -936,7 +940,8 @@ L_064D:                 ; 064D
         ld      (ix+47),a
         ret
 
-L_0682:                 ; 0682
+; a 00 duration: the phrase again while its repeats (+10) last, then the next phrase (+7), then the next pass from the first phrase (+6); after the last, the record stops and SEQ_END_NOTIFY
+OPL_PHRASE_END:         ; 0682
         ld      a,(ix+10)
         and     a
         jr      z,L_068E
@@ -965,7 +970,7 @@ L_06A3:                 ; 06A3
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_0636
+        call    OPL_PHRASE_LOAD
         ld      (ix+18),0x01
         ret
 
@@ -973,7 +978,7 @@ L_06BF:                 ; 06BF
         dec     (ix+6)
         jr      nz,L_06CD
         ld      (hl),0x00
-        call    L_064D
+        call    OPL_REC_CLEAR
         call    SEQ_END_NOTIFY
         ret
 
@@ -988,11 +993,12 @@ L_06CD:                 ; 06CD
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_0636
-        call    L_064D
+        call    OPL_PHRASE_LOAD
+        call    OPL_REC_CLEAR
         ret
 
-L_06E8:                 ; 06E8
+; the duration has run out: the byte at +11/+12 is the next duration (00: OPL_PHRASE_END), the gate is duration x +21 / 256, and OPL_EVENTS reads the events after it; a re-keyed note gets a fast release (RR F) before the key on. +0 b5: a second note in one step waits for the next step, at the length +19
+OPL_STEP:               ; 06E8
         ld      c,(ix+11)
         ld      b,(ix+12)
         ld      a,(bc)
@@ -1004,14 +1010,14 @@ L_06E8:                 ; 06E8
 L_06FD:                 ; 06FD
         and     a
         jr      nz,L_0704
-        call    L_0682
+        call    OPL_PHRASE_END
         ret
 
 L_0704:                 ; 0704
         ld      (ix+18),a
         ld      e,a
         ld      h,(ix+21)
-        call    L_0C72
+        call    OPL_MUL
         ld      de,0x0080
         add     hl,de
         ld      (ix+20),h
@@ -1117,7 +1123,7 @@ L_07CC:                 ; 07CC
         add     a,e
         ld      d,0x00
         ld      e,a
-        ld      hl,0x0800
+        ld      hl,OPL_EVENT_JUMPS
         add     hl,de
         ld      e,(hl)
         inc     hl
@@ -1144,11 +1150,45 @@ L_07E8:                 ; 07E8
         ld      (hl),a
         jp      OPL_EVENTS
 
-        .incbin "sound.bin", 0x0800, 0x0040
+; 32 words for OPL_EVENTS' bytes 8C-FF: (b4-b6) x 4 + (low nibble - C)
+OPL_EVENT_JUMPS:        ; 0800
+        .word   OPL_EV_NONE
+        .word   OPL_EV_NONE
+        .word   OPL_EV_NONE
+        .word   OPL_EV_NOTE_FINE
+        .word   OPL_EV_MULT1
+        .word   OPL_EV_MULT2
+        .word   OPL_EV_AMVIBEG1
+        .word   OPL_EV_AMVIBEG2
+        .word   OPL_EV_TL1
+        .word   OPL_EV_TL2
+        .word   OPL_EV_KSL1
+        .word   OPL_EV_KSL2
+        .word   OPL_EV_ADR1
+        .word   OPL_EV_ADR2
+        .word   OPL_EV_SLRR1
+        .word   OPL_EV_SLRR2
+        .word   OPL_EV_CTRL
+        .word   OPL_EV_TL_BOTH
+        .word   OPL_EV_LENGTH
+        .word   OPL_EV_VOICE
+        .word   OPL_EV_LFO
+        .word   OPL_EV_LFO_SET
+        .word   OPL_EV_ENV
+        .word   OPL_EV_ENV_SET
+        .word   OPL_EV_ENV_DEPTH
+        .word   OPL_EV_GATE
+        .word   OPL_EV_REST
+        .word   OPL_EV_REKEY
+        .word   OPL_EV_VOLUME
+        .word   OPL_EV_NONE
+        .word   OPL_EV_NONE
+        .word   OPL_EV_NONE
 ; 12 words
 OPL_NOTES:              ; 0840
         .incbin "sound.bin", 0x0840, 0x0018
-L_0858:                 ; 0858
+; 8F: the next byte is a note (as OPL_EVENTS); with its b7 set, the byte after is added to the F-number (signed)
+OPL_EV_NOTE_FINE:       ; 0858
         bit     3,(ix+0)
         jr      z,L_0864
         set     5,(ix+0)
@@ -1156,7 +1196,7 @@ L_0858:                 ; 0858
         ret
 
 L_0864:                 ; 0864
-        call    L_0892
+        call    OPL_NOTE_FNUM
         ret     c
         set     3,(ix+0)
         ld      (ix+26),l
@@ -1175,7 +1215,8 @@ L_088E:                 ; 088E
         ld      de,0x0400
         ret
 
-L_0892:                 ; 0892
+; A = note byte: HL = its OPL_NOTES F-number, A = block << 2; carry set for a low nibble of C and up
+OPL_NOTE_FNUM:          ; 0892
         and     0x0F
         cp      0x0C
         jr      nc,L_08C2
@@ -1219,8 +1260,70 @@ L_08C2:                 ; 08C2
         scf
         ret
 
-        .incbin "sound.bin", 0x08C6, 0x0059
-L_091F:                 ; 091F
+; 9C: operator 1 MULT (register 20 b0-3)
+OPL_EV_MULT1:           ; 08C6
+        and     0x0F
+        ld      d,a
+        ld      a,(ix+33)
+        and     0xF0
+        or      d
+        ld      (ix+33),a
+        ld      de,0x1001
+        ret
+
+; 9D: operator 2 MULT
+OPL_EV_MULT2:           ; 08D6
+        and     0x0F
+        ld      d,a
+        ld      a,(ix+38)
+        and     0xF0
+        or      d
+        ld      (ix+38),a
+        ld      de,0x2001
+        ret
+
+; 9E: operator 1 AM, VIB and EG-TYP (register 20 b5-7) from b0-2
+OPL_EV_AMVIBEG1:        ; 08E6
+        and     0x07
+        rrca
+        rrca
+        rrca
+        ld      d,a
+        ld      a,(ix+33)
+        and     0x1F
+        or      d
+        ld      (ix+33),a
+        ld      de,0x1001
+        ret
+
+; 9F: operator 2
+OPL_EV_AMVIBEG2:        ; 08F9
+        and     0x07
+        rrca
+        rrca
+        rrca
+        ld      d,a
+        ld      a,(ix+38)
+        and     0x1F
+        or      d
+        ld      (ix+38),a
+        ld      de,0x2001
+        ret
+
+; AC: operator 1 total level (register 40 b0-5)
+OPL_EV_TL1:             ; 090C
+        and     0x3F
+        ld      (ix+31),a
+        ld      d,a
+        ld      a,(ix+32)
+        and     0xC0
+        or      d
+        ld      (ix+32),a
+        ld      de,0x4001
+        ret
+
+; AD: operator 2 total level
+OPL_EV_TL2:             ; 091F
         and     0x3F
         ld      (ix+36),a
         ld      d,a
@@ -1231,8 +1334,76 @@ L_091F:                 ; 091F
         ld      de,0x8001
         ret
 
-        .incbin "sound.bin", 0x0932, 0x0060
-L_0992:                 ; 0992
+; AE: operator 1 KSR (b4, to register 20) and KSL (b0-1, to register 40 b6-7)
+OPL_EV_KSL1:            ; 0932
+        and     0x13
+        bit     4,a
+        jr      z,L_093E
+        set     4,(ix+33)
+        jr      L_0942
+
+L_093E:                 ; 093E
+        res     4,(ix+33)
+L_0942:                 ; 0942
+        and     0x03
+        rrca
+        rrca
+        ld      d,a
+        ld      a,(ix+32)
+        and     0x3F
+        or      d
+        ld      (ix+32),a
+        ld      de,0x0100
+        ret
+
+; AF: operator 2
+OPL_EV_KSL2:            ; 0954
+        and     0x13
+        bit     4,a
+        jr      z,L_0960
+        set     4,(ix+38)
+        jr      L_0964
+
+L_0960:                 ; 0960
+        res     4,(ix+38)
+L_0964:                 ; 0964
+        and     0x03
+        rrca
+        rrca
+        ld      d,a
+        ld      a,(ix+37)
+        and     0x3F
+        or      d
+        ld      (ix+37),a
+        ld      de,0x0200
+        ret
+
+; BC: operator 1 attack and decay (register 60)
+OPL_EV_ADR1:            ; 0976
+        ld      (ix+34),a
+        ld      de,0x0402
+        ret
+
+; BD: operator 2
+OPL_EV_ADR2:            ; 097D
+        ld      (ix+39),a
+        ld      de,0x0802
+        ret
+
+; BE: operator 1 sustain level and release (register 80)
+OPL_EV_SLRR1:           ; 0984
+        ld      (ix+35),a
+        ld      de,0x0102
+        ret
+
+; BF: operator 2
+OPL_EV_SLRR2:           ; 098B
+        ld      (ix+40),a
+        ld      de,0x0202
+        ret
+
+; CC: an argument below 80 is feedback (b4-6) and connection (b0), register C0; 80 and up go through OPL_CC_JUMPS by the high nibble
+OPL_EV_CTRL:            ; 0992
         bit     7,a
         jr      nz,L_09A7
         and     0x01
@@ -1255,7 +1426,7 @@ L_09A7:                 ; 09A7
         rrca
         ld      d,0x00
         ld      e,a
-        ld      hl,0x0A7E
+        ld      hl,OPL_CC_JUMPS
         add     hl,de
         ld      e,(hl)
         inc     hl
@@ -1264,8 +1435,35 @@ L_09A7:                 ; 09A7
         ld      a,(bc)
         jp      (hl)
 
-        .incbin "sound.bin", 0x09BB, 0x0026
-L_09E1:                 ; 09E1
+; CC 80-9F: the rhythm key bits (register BD b0-4)
+OPL_CC_DRUMS:           ; 09BB
+        and     0x1F
+        ld      d,a
+        ld      a,(ix+25)
+        and     0xE0
+        or      d
+        ld      (ix+25),a
+        ld      de,0x0401
+        ret
+
+; CC A0: notes key on (+0 b2, the default); A1: notes only change the pitch (legato)
+OPL_CC_KEYING:          ; 09CB
+        cp      0xA0
+        jr      nz,L_09D6
+        set     2,(ix+0)
+        ld      d,0x00
+        ret
+
+L_09D6:                 ; 09D6
+        cp      0xA1
+        jr      nz,L_09DE
+        res     2,(ix+0)
+L_09DE:                 ; 09DE
+        ld      d,0x00
+        ret
+
+; CC B0-B3: the YM2203's timer A (b0-1 and the next byte, OPN_TIMER_A); B4, B5, B6: the next byte into 8FA5, 8FA6, 8FA7. Each sets its TIMER_A_NEW bit
+OPL_CC_TIMER:           ; 09E1
         cp      0xB4
         jr      nc,L_09FA
         and     0x03
@@ -1316,8 +1514,75 @@ L_0A33:                 ; 0A33
         ld      d,0x00
         ret
 
-        .incbin "sound.bin", 0x0A36, 0x0058
-L_0A8E:                 ; 0A8E
+; CC C0: rhythm mode on (register BD b5); C1: off
+OPL_CC_RHYTHM:          ; 0A36
+        cp      0xC0
+        jr      nz,L_0A40
+        set     5,(ix+25)
+        jr      L_0A48
+
+L_0A40:                 ; 0A40
+        cp      0xC1
+        jr      nz,L_0A4C
+        res     5,(ix+25)
+L_0A48:                 ; 0A48
+        ld      de,0x0801
+        ret
+
+L_0A4C:                 ; 0A4C
+        ld      d,0x00
+        ret
+
+; CC D0-DF: AM and vibrato depth (register BD b6-7) from b0-1
+OPL_CC_DEPTH:           ; 0A4F
+        ld      e,a
+        and     0x03
+        rrca
+        rrca
+        ld      d,a
+        ld      a,(ix+25)
+        and     0x3F
+        or      d
+        ld      (ix+25),a
+        ld      de,0x1001
+        ret
+
+; CC E0: register 08 b6 (NOTE-SEL) on; E1: off
+OPL_CC_NOTESEL:         ; 0A62
+        cp      0xE0
+        jr      nz,L_0A6C
+        set     6,(ix+23)
+        jr      L_0A74
+
+L_0A6C:                 ; 0A6C
+        cp      0xE1
+        jr      nz,L_0A78
+        res     6,(ix+23)
+L_0A74:                 ; 0A74
+        ld      de,0x1000
+        ret
+
+L_0A78:                 ; 0A78
+        ld      d,0x00
+        ret
+
+; CC F0-FF
+OPL_CC_NONE:            ; 0A7B
+        ld      d,0x00
+        ret
+
+; 8 words for OPL_EV_CTRL's arguments 80-FF, by the high nibble
+OPL_CC_JUMPS:           ; 0A7E
+        .word   OPL_CC_DRUMS
+        .word   OPL_CC_DRUMS
+        .word   OPL_CC_KEYING
+        .word   OPL_CC_TIMER
+        .word   OPL_CC_RHYTHM
+        .word   OPL_CC_DEPTH
+        .word   OPL_CC_NOTESEL
+        .word   OPL_CC_NONE
+; CD: both operators' total levels, two bytes
+OPL_EV_TL_BOTH:         ; 0A8E
         and     0x3F
         ld      (ix+31),a
         ld      d,a
@@ -1337,13 +1602,19 @@ L_0A8E:                 ; 0A8E
         ld      de,0xC001
         ret
 
-        .incbin "sound.bin", 0x0AB2, 0x0006
-L_0AB8:                 ; 0AB8
+; CE: +19, the length of a second note in one step (OPL_STEP)
+OPL_EV_LENGTH:          ; 0AB2
+        ld      (ix+19),a
+        ld      d,0x00
+        ret
+
+; CF: voice n from OPL_VOICES (13 bytes: feedback and connection, the two operators' registers 20, 40, 60 and 80, then arguments for OPL_EV_LFO, _LFO_SET, _ENV, _ENV_SET and _ENV_DEPTH)
+OPL_EV_VOICE:           ; 0AB8
         push    bc
         ld      l,a
         ld      h,0x00
         add     hl,hl
-        ld      de,0x28D7
+        ld      de,OPL_VOICES
         add     hl,de
         ld      e,(hl)
         inc     hl
@@ -1421,13 +1692,13 @@ L_0AB8:                 ; 0AB8
         jr      z,L_0B2D
         inc     bc
         ld      a,(bc)
-        call    L_0B53
+        call    OPL_EV_LFO
         sub     a
         ld      (ix+46),a
         ld      (ix+47),a
 L_0B2D:                 ; 0B2D
         ld      a,h
-        call    L_0B78
+        call    OPL_EV_LFO_SET
         inc     bc
         ld      a,(bc)
         ld      h,a
@@ -1435,10 +1706,10 @@ L_0B2D:                 ; 0B2D
         jr      z,L_0B3C
         inc     bc
         ld      a,(bc)
-        call    L_0BA8
+        call    OPL_EV_ENV
 L_0B3C:                 ; 0B3C
         ld      a,h
-        call    L_0C16
+        call    OPL_EV_ENV_SET
         inc     bc
         ld      a,(bc)
         and     a
@@ -1451,7 +1722,8 @@ L_0B48:                 ; 0B48
         pop     bc
         ret
 
-L_0B53:                 ; 0B53
+; DC: an LFO (+41-+50), 3 bytes: rate and depth (+42-+45), then the shape (b0-2, OPL_LFO_SHAPES) and b7, restart on each keyed note
+OPL_EV_LFO:             ; 0B53
         and     0x7F
         ld      (ix+43),a
         ld      (ix+45),a
@@ -1472,7 +1744,8 @@ L_0B6D:                 ; 0B6D
         ld      d,0x00
         ret
 
-L_0B78:                 ; 0B78
+; DD: 0 stops the LFO; else a mask (+49) and one byte for each bit set, from +51
+OPL_EV_LFO_SET:         ; 0B78
         and     a
         jr      nz,L_0B8D
         ld      (ix+41),a
@@ -1506,7 +1779,8 @@ L_0BA3:                 ; 0BA3
         ld      (hl),a
         jr      L_0B99
 
-L_0BA8:                 ; 0BA8
+; DE: a stepped envelope (+54-+66): entry b0-6 of the 5-byte table at 3A71; b7 and the next byte its mode and start
+OPL_EV_ENV:             ; 0BA8
         ld      d,0xC1
         bit     7,a
         jr      z,L_0BB0
@@ -1525,8 +1799,9 @@ L_0BB0:                 ; 0BB0
         sub     a
 L_0BC6:                 ; 0BC6
         ld      (ix+56),a
-L_0BC9:                 ; 0BC9
-        call    L_0BFA
+; E = entry: its 5 bytes to +57, +61, +62 and the step pointer +58/+59
+OPL_ENV_LOAD:           ; 0BC9
+        call    OPL_ENV_CLEAR
         ld      d,0x00
         ld      h,d
         ld      l,e
@@ -1556,7 +1831,8 @@ L_0BC9:                 ; 0BC9
         ld      d,0x00
         ret
 
-L_0BFA:                 ; 0BFA
+; clears +70-+77
+OPL_ENV_CLEAR:          ; 0BFA
         ld      a,e
         ld      hl,(CUR_RECORD)
         ld      de,0x0045
@@ -1581,13 +1857,14 @@ L_0C07:                 ; 0C07
         ld      b,d
         ret
 
-L_0C16:                 ; 0C16
+; DF: 0 stops the envelope; else a mask (+65) and one byte for each of its 3 low bits set (+69, +72, +75)
+OPL_EV_ENV_SET:         ; 0C16
         and     a
         jr      nz,L_0C28
         ld      (ix+54),a
         ld      (ix+66),a
         ld      (ix+65),a
-        call    L_0BFA
+        call    OPL_ENV_CLEAR
         ld      d,0x00
         ret
 
@@ -1624,19 +1901,30 @@ L_0C4A:                 ; 0C4A
 L_0C51:                 ; 0C51
         ret
 
-        .incbin "sound.bin", 0x0C52, 0x000C
-L_0C5E:                 ; 0C5E
+; EC: +68; 0 also clears +67
+OPL_EV_ENV_DEPTH:       ; 0C52
+        and     a
+        jr      nz,L_0C58
+        ld      (ix+67),a
+L_0C58:                 ; 0C58
+        ld      (ix+68),a
+        ld      d,0x00
+        ret
+
+; ED: the gate (+21): a note keys off after duration x gate / 256
+OPL_EV_GATE:            ; 0C5E
         ld      (ix+21),a
         ld      h,a
         ld      e,(ix+18)
-        call    L_0C72
+        call    OPL_MUL
         ld      de,0x0080
         add     hl,de
         ld      (ix+20),h
         ld      d,0x00
         ret
 
-L_0C72:                 ; 0C72
+; HL = H x E
+OPL_MUL:                ; 0C72
         ld      l,0x00
         ld      a,h
         and     a
@@ -1700,7 +1988,8 @@ L_0CAC:                 ; 0CAC
         add     hl,hl
         ret
 
-L_0CB1:                 ; 0CB1
+; EE (no argument): key off
+OPL_EV_REST:            ; 0CB1
         dec     bc
         bit     3,(ix+0)
         jr      z,L_0CBD
@@ -1713,14 +2002,34 @@ L_0CBD:                 ; 0CBD
         ld      de,0x0201
         ret
 
-        .incbin "sound.bin", 0x0CC9, 0x001B
-L_0CE4:                 ; 0CE4
+; EF (no argument): key the note on again
+OPL_EV_REKEY:           ; 0CC9
+        dec     bc
+        bit     3,(ix+0)
+        jr      z,L_0CD5
+        set     5,(ix+0)
+        ret
+
+L_0CD5:                 ; 0CD5
+        set     3,(ix+0)
+        set     4,(ix+0)
+        set     7,(ix+0)
+        ld      d,0x00
+        ret
+
+; FC: +22, which scales the carrier's total level (OPL_TL_WRITE)
+OPL_EV_VOLUME:          ; 0CE4
         ld      (ix+22),a
         ld      d,0x00
         ret
 
-        .incbin "sound.bin", 0x0CEA, 0x0003
-L_0CED:                 ; 0CED
+; 8C-8E, FD-FF: the argument is skipped
+OPL_EV_NONE:            ; 0CEA
+        ld      d,0x00
+        ret
+
+; +15 b7 (a new voice): every register of the channel, then clear the dirty bits (+15-+17), carry set; else carry clear
+OPL_VOICE_WRITE:        ; 0CED
         bit     7,(ix+15)
         jr      nz,L_0CF5
         and     a
@@ -1729,9 +2038,9 @@ L_0CED:                 ; 0CED
 L_0CF5:                 ; 0CF5
         bit     2,(ix+15)
         ld      a,e
-        call    nz,L_0E4A
+        call    nz,OPL_FREQ_WRITE
         ld      a,e
-        call    L_0E61
+        call    OPL_C0_WRITE
         push    de
         ld      a,e
         ld      e,0x00
@@ -1744,25 +2053,25 @@ L_0CF5:                 ; 0CF5
 L_0D11:                 ; 0D11
         add     a,e
         ld      e,a
-        call    L_0E6D
+        call    OPL_20_WRITE
         ld      a,e
-        call    L_0E77
+        call    OPL_TL_WRITE
         ld      a,e
-        call    L_0EB7
+        call    OPL_60_WRITE
         ld      a,e
-        call    L_0EC1
+        call    OPL_80_WRITE
         ld      bc,0x0005
         add     iy,bc
         ld      a,0x03
         add     a,e
         ld      e,a
-        call    L_0E6D
+        call    OPL_20_WRITE
         ld      a,e
-        call    L_0E77
+        call    OPL_TL_WRITE
         ld      a,e
-        call    L_0EB7
+        call    OPL_60_WRITE
         ld      a,e
-        call    L_0EC1
+        call    OPL_80_WRITE
         pop     de
         bit     1,(ix+16)
         jr      z,L_0D5F
@@ -1788,7 +2097,8 @@ L_0D5F:                 ; 0D5F
         scf
         ret
 
-L_0D6B:                 ; 0D6B
+; the registers flagged in +15 (b2 frequency, b3 C0, b5 A0), +16 (b0/b1 key on/off, b4-b7 20 and 40) and +17 (60 and 80), then clear them
+OPL_DIRTY_WRITE:        ; 0D6B
         sub     a
         cp      (ix+15)
         jr      nz,L_0D7A
@@ -1801,10 +2111,10 @@ L_0D7A:                 ; 0D7A
         ld      d,(ix+15)
         bit     2,d
         ld      a,e
-        call    nz,L_0E4A
+        call    nz,OPL_FREQ_WRITE
         bit     5,d
         ld      a,e
-        call    nz,L_0E57
+        call    nz,OPL_FNUM_WRITE
         push    de
         ld      a,e
         ld      e,0x00
@@ -1821,9 +2131,9 @@ L_0D9D:                 ; 0D9D
         and     0x03
         jr      z,L_0DB2
         ld      bc,0x0E77
-        call    L_0E18
+        call    OPL_OP_PAIR
         ld      bc,0x0E6D
-        call    L_0E18
+        call    OPL_OP_PAIR
         jr      L_0DC9
 
 L_0DB2:                 ; 0DB2
@@ -1831,25 +2141,25 @@ L_0DB2:                 ; 0DB2
         rlc     d
         rlc     d
         ld      bc,0x0E77
-        call    L_0E18
+        call    OPL_OP_PAIR
         rlc     d
         rlc     d
         ld      bc,0x0E6D
-        call    L_0E18
+        call    OPL_OP_PAIR
 L_0DC9:                 ; 0DC9
         ld      d,(ix+17)
         rrc     d
         rrc     d
         ld      bc,0x0EB7
-        call    L_0E18
+        call    OPL_OP_PAIR
         rlc     d
         rlc     d
         ld      bc,0x0EC1
-        call    L_0E18
+        call    OPL_OP_PAIR
         pop     de
         bit     3,(ix+15)
         ld      a,e
-        call    nz,L_0E61
+        call    nz,OPL_C0_WRITE
         bit     1,(ix+16)
         jr      z,L_0E0D
         ld      a,e
@@ -1873,7 +2183,8 @@ L_0E0D:                 ; 0E0D
         ld      (ix+17),a
         ret
 
-L_0E18:                 ; 0E18
+; D b0/b1 = operator 1/2: call the writer at (8F98) for each
+OPL_OP_PAIR:            ; 0E18
         ld      a,0x03
         and     d
         ret     z
@@ -1904,7 +2215,8 @@ L_0E45:                 ; 0E45
         ld      iy,(0x8F94)
         ret
 
-L_0E4A:                 ; 0E4A
+; A = channel: register B0 (block and F-number high, no key), then A0
+OPL_FREQ_WRITE:         ; 0E4A
         ld      c,a
         add     a,0xB0
         ld      b,a
@@ -1912,14 +2224,16 @@ L_0E4A:                 ; 0E4A
         and     0x1F
         call    OPL_WRITE
         ld      a,c
-L_0E57:                 ; 0E57
+; A = channel: register A0
+OPL_FNUM_WRITE:         ; 0E57
         add     a,0xA0
         ld      b,a
         ld      a,(ix+27)
         call    OPL_WRITE
         ret
 
-L_0E61:                 ; 0E61
+; A = channel: register C0, feedback and connection (+24)
+OPL_C0_WRITE:           ; 0E61
         add     a,0xC0
         ld      b,a
         ld      a,(ix+24)
@@ -1927,14 +2241,16 @@ L_0E61:                 ; 0E61
         call    OPL_WRITE
         ret
 
-L_0E6D:                 ; 0E6D
+; A = slot: register 20 (IY+2)
+OPL_20_WRITE:           ; 0E6D
         add     a,0x20
         ld      b,a
         ld      a,(iy+2)
         call    OPL_WRITE
         ret
 
-L_0E77:                 ; 0E77
+; A = slot: register 40 (IY+1); the carrier, or both operators with connection 1, scaled by the volume (+22)
+OPL_TL_WRITE:           ; 0E77
         ld      b,a
         ld      a,(iy+1)
         and     0x3F
@@ -1945,11 +2261,11 @@ L_0E77:                 ; 0E77
         jr      nc,L_0E8F
         ld      a,(ix+24)
         and     0x01
-        call    nz,L_0EA5
+        call    nz,OPL_TL_SCALE
         jr      L_0E92
 
 L_0E8F:                 ; 0E8F
-        call    L_0EA5
+        call    OPL_TL_SCALE
 L_0E92:                 ; 0E92
         ld      a,b
         add     a,0x40
@@ -1964,13 +2280,14 @@ L_0E92:                 ; 0E92
         call    OPL_WRITE
         ret
 
-L_0EA5:                 ; 0EA5
+; C = C x volume (+22) / 256
+OPL_TL_SCALE:           ; 0EA5
         push    de
         push    hl
         ld      a,(ix+22)
         ld      e,a
         ld      h,c
-        call    L_0C72
+        call    OPL_MUL
         ld      de,0x0080
         add     hl,de
         ld      c,h
@@ -1978,14 +2295,16 @@ L_0EA5:                 ; 0EA5
         pop     de
         ret
 
-L_0EB7:                 ; 0EB7
+; A = slot: register 60 (IY+3)
+OPL_60_WRITE:           ; 0EB7
         add     a,0x60
         ld      b,a
         ld      a,(iy+3)
         call    OPL_WRITE
         ret
 
-L_0EC1:                 ; 0EC1
+; A = slot: register 80 (IY+4)
+OPL_80_WRITE:           ; 0EC1
         add     a,0x80
         ld      b,a
         ld      a,(iy+4)
@@ -2024,7 +2343,8 @@ OPL_WRITE:              ; 0ECB
         nop
         ret
 
-L_0EE8:                 ; 0EE8
+; every tick while playing: restores the total levels after a re-key, then the envelope, its depth, the LFO and 10AF
+OPL_MOD_TICK:           ; 0EE8
         bit     4,(ix+0)
         jr      z,L_0F18
         set     5,(ix+15)
@@ -2072,7 +2392,7 @@ L_0F29:                 ; 0F29
         sub     a
 L_0F4C:                 ; 0F4C
         ld      (ix+56),a
-        call    L_0BC9
+        call    OPL_ENV_LOAD
         set     7,(ix+54)
         ret
 
@@ -2134,7 +2454,7 @@ L_0F74:                 ; 0F74
         sub     a
 L_0FA5:                 ; 0FA5
         ld      (ix+56),a
-        call    L_0BC9
+        call    OPL_ENV_LOAD
         ld      (ix+60),0x01
         ld      c,(hl)
         inc     hl
@@ -2225,7 +2545,7 @@ L_1019:                 ; 1019
         add     a,a
         ld      c,a
         ld      b,0x00
-        ld      hl,0x1043
+        ld      hl,OPL_LFO_SHAPES
         add     hl,bc
         ld      bc,0x103F
         push    bc
@@ -2239,7 +2559,16 @@ L_103F:                 ; 103F
         ld      (ix+50),a
         ret
 
-        .incbin "sound.bin", 0x1043, 0x0010
+; 8 words: the LFO shapes (OPL_EV_LFO's b0-2)
+OPL_LFO_SHAPES:         ; 1043
+        .word   L_1053
+        .word   L_1068
+        .word   L_107D
+        .word   L_107F
+        .word   L_1083
+        .word   L_108D
+        .word   L_1097
+        .word   L_10A3
 L_1053:                 ; 1053
         ex      de,hl
         add     hl,hl
@@ -2259,7 +2588,78 @@ L_1062:                 ; 1062
         neg
         ret
 
-        .incbin "sound.bin", 0x1068, 0x0047
+L_1068:                 ; 1068
+        ex      de,hl
+        add     hl,hl
+        ld      a,h
+        jr      c,L_1073
+        bit     7,a
+        ret     nz
+        neg
+        ret
+
+L_1073:                 ; 1073
+        bit     7,a
+        ret     z
+        neg
+        cp      0x80
+        ret     nz
+        dec     a
+        ret
+
+L_107D:                 ; 107D
+        ld      a,d
+        ret
+
+L_107F:                 ; 107F
+        ld      a,d
+        neg
+        ret
+
+L_1083:                 ; 1083
+        bit     7,d
+        jr      nz,L_108A
+        ld      a,0x7F
+        ret
+
+L_108A:                 ; 108A
+        ld      a,0x81
+        ret
+
+L_108D:                 ; 108D
+        bit     7,d
+        jr      nz,L_1094
+        ld      a,0x81
+        ret
+
+L_1094:                 ; 1094
+        ld      a,0x7F
+        ret
+
+L_1097:                 ; 1097
+        bit     7,d
+        jr      nz,L_109D
+        ld      a,d
+        ret
+
+L_109D:                 ; 109D
+        ld      a,d
+        add     a,0x80
+        neg
+        ret
+
+L_10A3:                 ; 10A3
+        bit     7,d
+        jr      nz,L_10AB
+        ld      a,d
+        neg
+        ret
+
+L_10AB:                 ; 10AB
+        ld      a,d
+        add     a,0x80
+        ret
+
 L_10AF:                 ; 10AF
         ld      iy,(CUR_RECORD)
         ld      bc,0x0045
@@ -2576,8 +2976,8 @@ OPN_FM_TICK:            ; 125E
         ld      ix,OPN_RECS
         ld      iy,0x80FA
         ld      e,0x00
-        call    L_1B10
-        call    nc,L_1BAE
+        call    OPN_VOICE_WRITE
+        call    nc,OPN_DIRTY_WRITE
         bit     1,(ix+0)
         jr      z,L_1284
         ld      a,(OPN_TAKEN)
@@ -2605,14 +3005,14 @@ L_1284:                 ; 1284
 L_12B1:                 ; 12B1
         ld      (ix+18),a
 L_12B4:                 ; 12B4
-        call    L_1B10
-        call    nc,L_1BAE
+        call    OPN_VOICE_WRITE
+        call    nc,OPN_DIRTY_WRITE
 L_12BA:                 ; 12BA
         ld      ix,0x8200
         ld      iy,0x821A
         ld      e,0x01
-        call    L_1B10
-        call    nc,L_1BAE
+        call    OPN_VOICE_WRITE
+        call    nc,OPN_DIRTY_WRITE
         bit     1,(ix+0)
         jr      z,L_12DA
         ld      a,(OPN_TAKEN)
@@ -2640,14 +3040,14 @@ L_12DA:                 ; 12DA
 L_1307:                 ; 1307
         ld      (ix+18),a
 L_130A:                 ; 130A
-        call    L_1B10
-        call    nc,L_1BAE
+        call    OPN_VOICE_WRITE
+        call    nc,OPN_DIRTY_WRITE
 L_1310:                 ; 1310
         ld      ix,0x8320
         ld      iy,0x833A
         ld      e,0x02
-        call    L_1B10
-        call    nc,L_1BAE
+        call    OPN_VOICE_WRITE
+        call    nc,OPN_DIRTY_WRITE
         bit     1,(ix+0)
         jr      z,L_1330
         ld      a,(OPN_TAKEN)
@@ -2675,29 +3075,30 @@ L_1330:                 ; 1330
 L_135D:                 ; 135D
         ld      (ix+18),a
 L_1360:                 ; 1360
-        call    L_1B10
-        call    nc,L_1BAE
+        call    OPN_VOICE_WRITE
+        call    nc,OPN_DIRTY_WRITE
 L_1366:                 ; 1366
         ld      a,0x00
         ld      (OPN_LAYER),a
         ld      ix,OPN_RECS
         ld      hl,OPN_RECS
-        call    L_1385
+        call    OPN_RECS_STEP
         ld      a,0x01
         ld      (OPN_LAYER),a
         ld      ix,0x8170
         ld      hl,0x8170
-        call    L_1385
+        call    OPN_RECS_STEP
         ret
 
-L_1385:                 ; 1385
+; as OPL_RECS_STEP, for the 3 FM channels
+OPN_RECS_STEP:          ; 1385
         ld      (ix+9),0x00
         ld      a,0x03
 L_138B:                 ; 138B
         push    af
         ld      (CUR_RECORD),hl
         bit     0,(hl)
-        call    nz,L_13CC
+        call    nz,OPN_REC_START
         bit     1,(ix+0)
         jr      z,L_13B7
         ld      a,(ix+21)
@@ -2710,8 +3111,8 @@ L_138B:                 ; 138B
         res     6,(ix+18)
 L_13AE:                 ; 13AE
         dec     (ix+19)
-        call    z,L_14B2
-        call    L_1DE3
+        call    z,OPN_STEP
+        call    OPN_MOD_TICK
 L_13B7:                 ; 13B7
         pop     af
         dec     a
@@ -2725,7 +3126,8 @@ L_13B7:                 ; 13B7
         ld      (ix+9),d
         jr      L_138B
 
-L_13CC:                 ; 13CC
+; as OPL_REC_START
+OPN_REC_START:          ; 13CC
         ld      (hl),0x06
         inc     hl
         ld      e,(hl)
@@ -2755,11 +3157,12 @@ L_13DE:                 ; 13DE
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_13F7
-        call    L_140E
+        call    OPN_PHRASE_LOAD
+        call    OPN_REC_CLEAR
         ret
 
-L_13F7:                 ; 13F7
+; as OPL_PHRASE_LOAD
+OPN_PHRASE_LOAD:        ; 13F7
         ld      a,(de)
         and     0xF0
         ld      (ix+5),a
@@ -2774,7 +3177,8 @@ L_13F7:                 ; 13F7
         ld      (ix+12),a
         ret
 
-L_140E:                 ; 140E
+; as OPL_REC_CLEAR
+OPN_REC_CLEAR:          ; 140E
         ld      a,0x00
         ld      (ix+32),a
         ld      (ix+45),a
@@ -2797,7 +3201,8 @@ L_140E:                 ; 140E
         ld      (ix+88),a
         ret
 
-L_144C:                 ; 144C
+; as OPL_PHRASE_END
+OPN_PHRASE_END:         ; 144C
         ld      a,(ix+10)
         and     a
         jr      z,L_1458
@@ -2826,7 +3231,7 @@ L_146D:                 ; 146D
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_13F7
+        call    OPN_PHRASE_LOAD
         ld      (ix+19),0x01
         ret
 
@@ -2834,7 +3239,7 @@ L_1489:                 ; 1489
         dec     (ix+6)
         jr      nz,L_1497
         ld      (hl),0x00
-        call    L_140E
+        call    OPN_REC_CLEAR
         call    SEQ_END_NOTIFY
         ret
 
@@ -2849,11 +3254,12 @@ L_1497:                 ; 1497
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_13F7
-        call    L_140E
+        call    OPN_PHRASE_LOAD
+        call    OPN_REC_CLEAR
         ret
 
-L_14B2:                 ; 14B2
+; as OPL_STEP
+OPN_STEP:               ; 14B2
         ld      c,(ix+11)
         ld      b,(ix+12)
         ld      a,(bc)
@@ -2865,14 +3271,14 @@ L_14B2:                 ; 14B2
 L_14C7:                 ; 14C7
         and     a
         jr      nz,L_14CE
-        call    L_144C
+        call    OPN_PHRASE_END
         ret
 
 L_14CE:                 ; 14CE
         ld      (ix+19),a
         ld      e,a
         ld      h,(ix+22)
-        call    L_1A91
+        call    OPN_MUL
         ld      de,0x0080
         add     hl,de
         ld      (ix+21),h
@@ -2983,7 +3389,7 @@ L_15A5:                 ; 15A5
         add     a,e
         ld      d,0x00
         ld      e,a
-        ld      hl,0x15D9
+        ld      hl,OPN_EVENT_JUMPS
         add     hl,de
         ld      e,(hl)
         inc     hl
@@ -3010,11 +3416,84 @@ L_15C1:                 ; 15C1
         ld      (hl),a
         jp      OPN_EVENTS
 
-        .incbin "sound.bin", 0x15D9, 0x0040
+; 32 words for OPN_EVENTS' bytes 8C-FF, as OPL_EVENT_JUMPS
+OPN_EVENT_JUMPS:        ; 15D9
+        .word   OPN_EV_OP1_NOTE
+        .word   OPN_EV_OP2_NOTE
+        .word   OPN_EV_OP3_NOTE
+        .word   OPN_EV_NOTE_FINE
+        .word   OPN_EV_DTMUL1
+        .word   OPN_EV_DTMUL2
+        .word   OPN_EV_DTMUL3
+        .word   OPN_EV_DTMUL4
+        .word   OPN_EV_TL1
+        .word   OPN_EV_TL2
+        .word   OPN_EV_TL3
+        .word   OPN_EV_TL4
+        .word   OPN_EV_ENVREGS1
+        .word   OPN_EV_ENVREGS2
+        .word   OPN_EV_ENVREGS3
+        .word   OPN_EV_ENVREGS4
+        .word   OPN_EV_CTRL
+        .word   OPN_EV_TL_ALL
+        .word   OPN_EV_LENGTH
+        .word   OPN_EV_VOICE
+        .word   OPN_EV_LFO
+        .word   OPN_EV_LFO_SET
+        .word   OPN_EV_ENV
+        .word   OPN_EV_ENV_SET
+        .word   OPN_EV_ENV_DEPTH
+        .word   OPN_EV_GATE
+        .word   OPN_EV_REST
+        .word   OPN_EV_REKEY
+        .word   OPN_EV_VOLUME
+        .word   OPN_EV_NONE
+        .word   OPN_EV_NONE
+        .word   OPN_EV_NONE
 ; 12 words
 OPN_NOTES:              ; 1619
-        .incbin "sound.bin", 0x1619, 0x0060
-L_1679:                 ; 1679
+        .incbin "sound.bin", 0x1619, 0x0018
+; 8C: a note (as OPN_EV_NOTE_FINE) for operator 1 alone, for channel 3's special mode (+26-+30)
+OPN_EV_OP1_NOTE:        ; 1631
+        call    OPN_NOTE_FNUM
+        ret     c
+        ld      (ix+26),l
+        ld      (ix+28),h
+        ld      (ix+29),a
+        or      h
+        ld      (ix+27),l
+        ld      (ix+30),a
+        ld      de,0x1001
+        ret
+
+; 8D: operator 2 (+39-+43)
+OPN_EV_OP2_NOTE:        ; 1649
+        call    OPN_NOTE_FNUM
+        ret     c
+        ld      (ix+39),l
+        ld      (ix+41),h
+        ld      (ix+42),a
+        or      h
+        ld      (ix+40),l
+        ld      (ix+43),a
+        ld      de,0x2001
+        ret
+
+; 8E: operator 3 (+52-+56)
+OPN_EV_OP3_NOTE:        ; 1661
+        call    OPN_NOTE_FNUM
+        ret     c
+        ld      (ix+52),l
+        ld      (ix+54),h
+        ld      (ix+55),a
+        or      h
+        ld      (ix+53),l
+        ld      (ix+56),a
+        ld      de,0x4001
+        ret
+
+; 8F: the channel's note (+65-+69), with a signed F-number offset after it when its b7 is set
+OPN_EV_NOTE_FINE:       ; 1679
         bit     3,(ix+0)
         jr      z,L_1685
         set     5,(ix+0)
@@ -3022,7 +3501,7 @@ L_1679:                 ; 1679
         ret
 
 L_1685:                 ; 1685
-        call    L_16B3
+        call    OPN_NOTE_FNUM
         ret     c
         set     3,(ix+0)
         ld      (ix+65),l
@@ -3041,7 +3520,8 @@ L_16AF:                 ; 16AF
         ld      de,0x8001
         ret
 
-L_16B3:                 ; 16B3
+; as OPL_NOTE_FNUM, from OPN_NOTES; A = block << 3
+OPN_NOTE_FNUM:          ; 16B3
         and     0x0F
         cp      0x0C
         jr      nc,L_16E2
@@ -3084,24 +3564,249 @@ L_16E2:                 ; 16E2
         scf
         ret
 
-        .incbin "sound.bin", 0x16E6, 0x0030
-L_1716:                 ; 1716
+; 9C: operator 1 detune and MULT (register 30). Each operator has 13 bytes from +26: its note (5), TL twice, then registers 30, 90, 50, 60, 70, 80
+OPN_EV_DTMUL1:          ; 16E6
+        and     0x7F
+        ld      (ix+33),a
+        ld      de,0x0102
+        ret
+
+; 9D: operator 2
+OPN_EV_DTMUL2:          ; 16EF
+        and     0x7F
+        ld      (ix+46),a
+        ld      de,0x0202
+        ret
+
+; 9E: operator 3
+OPN_EV_DTMUL3:          ; 16F8
+        and     0x7F
+        ld      (ix+59),a
+        ld      de,0x0402
+        ret
+
+; 9F: operator 4
+OPN_EV_DTMUL4:          ; 1701
+        and     0x7F
+        ld      (ix+72),a
+        ld      de,0x0802
+        ret
+
+; AC: operator 1 total level (register 40)
+OPN_EV_TL1:             ; 170A
+        and     0x7F
+        ld      (ix+31),a
+        ld      (ix+32),a
+        ld      de,0x0101
+        ret
+
+; AD: operator 2
+OPN_EV_TL2:             ; 1716
         and     0x7F
         ld      (ix+44),a
         ld      (ix+45),a
         ld      de,0x0201
         ret
 
-        .incbin "sound.bin", 0x1722, 0x000C
-L_172E:                 ; 172E
+; AE: operator 3
+OPN_EV_TL3:             ; 1722
+        and     0x7F
+        ld      (ix+57),a
+        ld      (ix+58),a
+        ld      de,0x0401
+        ret
+
+; AF: operator 4
+OPN_EV_TL4:             ; 172E
         and     0x7F
         ld      (ix+70),a
         ld      (ix+71),a
         ld      de,0x0801
         ret
 
-        .incbin "sound.bin", 0x173A, 0x011F
-L_1859:                 ; 1859
+; BC: operator 1 registers 90, 50, 60, 70 and 80, from 5 bytes (OPN_ENVREGS_READ)
+OPN_EV_ENVREGS1:        ; 173A
+        call    OPN_ENVREGS_READ
+        ld      (ix+34),d
+        ld      (ix+35),e
+        ld      (ix+36),h
+        ld      (ix+37),l
+        ld      (ix+38),a
+        ld      de,0x0103
+        ret
+
+; BD: operator 2
+OPN_EV_ENVREGS2:        ; 1750
+        call    OPN_ENVREGS_READ
+        ld      (ix+47),d
+        ld      (ix+48),e
+        ld      (ix+49),h
+        ld      (ix+50),l
+        ld      (ix+51),a
+        ld      de,0x0203
+        ret
+
+; BE: operator 3
+OPN_EV_ENVREGS3:        ; 1766
+        call    OPN_ENVREGS_READ
+        ld      (ix+60),d
+        ld      (ix+61),e
+        ld      (ix+62),h
+        ld      (ix+63),l
+        ld      (ix+64),a
+        ld      de,0x0403
+        ret
+
+; BF: operator 4
+OPN_EV_ENVREGS4:        ; 177C
+        call    OPN_ENVREGS_READ
+        ld      (ix+73),d
+        ld      (ix+74),e
+        ld      (ix+75),h
+        ld      (ix+76),l
+        ld      (ix+77),a
+        ld      de,0x0803
+        ret
+
+; AND 00 drops the first byte, so register 90 (SSG-EG) is always 0; then 50 (AND DF), 60 and 70 (AND 1F, so AM is off), 80
+OPN_ENVREGS_READ:       ; 1792
+        and     0x00
+        ld      d,a
+        inc     bc
+        ld      a,(bc)
+        and     0xDF
+        ld      e,a
+        inc     bc
+        ld      a,(bc)
+        and     0x1F
+        ld      h,a
+        inc     bc
+        ld      a,(bc)
+        and     0x1F
+        ld      l,a
+        inc     bc
+        ld      a,(bc)
+        ret
+
+; CC: below 80 feedback (b4-6) and algorithm (b0-2), register B0; 80-9F +24; A0/A1 keyed notes / legato; B0-B6 timers (as OPL_CC_TIMER); C0-FF the low nibble into +78-+81 by b4-5
+OPN_EV_CTRL:            ; 17A7
+        bit     7,a
+        jr      nz,L_17BA
+        and     0x07
+        ld      e,a
+        ld      a,(bc)
+        and     0x70
+        rrca
+        or      e
+        ld      (ix+25),a
+        ld      de,0x1003
+        ret
+
+L_17BA:                 ; 17BA
+        bit     6,a
+        jr      nz,L_183A
+        bit     5,a
+        jr      nz,L_17CF
+        and     0x1F
+        rrca
+        rrca
+        rrca
+        rrca
+        ld      (ix+24),a
+        ld      de,0x2003
+        ret
+
+L_17CF:                 ; 17CF
+        cp      0xA0
+        jr      nz,L_17DA
+        set     2,(ix+0)
+        ld      d,0x00
+        ret
+
+L_17DA:                 ; 17DA
+        cp      0xA1
+        jr      nz,L_17E5
+        res     2,(ix+0)
+        ld      d,0x00
+        ret
+
+L_17E5:                 ; 17E5
+        cp      0xB4
+        jr      nc,L_17FE
+        and     0x03
+        ld      (0x8FA4),a
+        inc     bc
+        ld      a,(bc)
+        ld      (OPN_TIMER_A),a
+        ld      a,(TIMER_A_NEW)
+        set     0,a
+        ld      (TIMER_A_NEW),a
+        ld      d,0x00
+        ret
+
+L_17FE:                 ; 17FE
+        cp      0xB4
+        jr      nz,L_1812
+        inc     bc
+        ld      a,(bc)
+        ld      (0x8FA5),a
+        ld      a,(TIMER_A_NEW)
+        set     1,a
+        ld      (TIMER_A_NEW),a
+        ld      d,0x00
+        ret
+
+L_1812:                 ; 1812
+        cp      0xB5
+        jr      nz,L_1826
+        inc     bc
+        ld      a,(bc)
+        ld      (0x8FA6),a
+        ld      a,(TIMER_A_NEW)
+        set     2,a
+        ld      (TIMER_A_NEW),a
+        ld      d,0x00
+        ret
+
+L_1826:                 ; 1826
+        cp      0xB6
+        jr      nz,L_1837
+        inc     bc
+        ld      a,(bc)
+        ld      (0x8FA7),a
+        ld      a,(TIMER_A_NEW)
+        set     3,a
+        ld      (TIMER_A_NEW),a
+L_1837:                 ; 1837
+        ld      d,0x00
+        ret
+
+L_183A:                 ; 183A
+        ld      hl,(CUR_RECORD)
+        ld      de,0x004E
+        add     hl,de
+        and     0x30
+        rrca
+        rrca
+        rrca
+        rrca
+        ld      e,a
+        add     hl,de
+        ld      de,0x1002
+        and     a
+        jr      z,L_1854
+L_184F:                 ; 184F
+        sla     d
+        dec     a
+        jr      nz,L_184F
+L_1854:                 ; 1854
+        ld      a,(bc)
+        and     0x0F
+        ld      (hl),a
+        ret
+
+; CD: the 4 operators' total levels, 4 bytes
+OPN_EV_TL_ALL:          ; 1859
         and     0x7F
         ld      (ix+31),a
         ld      (ix+32),a
@@ -3123,13 +3828,19 @@ L_1859:                 ; 1859
         ld      de,0x0F01
         ret
 
-        .incbin "sound.bin", 0x1883, 0x0006
-L_1889:                 ; 1889
+; CE: as OPL_EV_LENGTH (+20)
+OPN_EV_LENGTH:          ; 1883
+        ld      (ix+20),a
+        ld      d,0x00
+        ret
+
+; CF: voice n from OPN_VOICES (33 bytes)
+OPN_EV_VOICE:           ; 1889
         push    bc
         ld      l,a
         ld      h,0x00
         add     hl,hl
-        ld      de,0x2A8A
+        ld      de,OPN_VOICES
         add     hl,de
         ld      e,(hl)
         inc     hl
@@ -3228,13 +3939,13 @@ L_1889:                 ; 1889
         jr      z,L_191D
         inc     bc
         ld      a,(bc)
-        call    L_1943
+        call    OPN_EV_LFO
         sub     a
         ld      (ix+87),a
         ld      (ix+88),a
 L_191D:                 ; 191D
         ld      a,h
-        call    L_1968
+        call    OPN_EV_LFO_SET
         inc     bc
         ld      a,(bc)
         ld      h,a
@@ -3242,10 +3953,10 @@ L_191D:                 ; 191D
         jr      z,L_192C
         inc     bc
         ld      a,(bc)
-        call    L_1998
+        call    OPN_EV_ENV
 L_192C:                 ; 192C
         ld      a,h
-        call    L_1A15
+        call    OPN_EV_ENV_SET
         inc     bc
         ld      a,(bc)
         and     a
@@ -3258,7 +3969,8 @@ L_1938:                 ; 1938
         pop     bc
         ret
 
-L_1943:                 ; 1943
+; DC: as OPL_EV_LFO (+82-+91)
+OPN_EV_LFO:             ; 1943
         and     0x7F
         ld      (ix+84),a
         ld      (ix+86),a
@@ -3279,7 +3991,8 @@ L_195D:                 ; 195D
         ld      d,0x00
         ret
 
-L_1968:                 ; 1968
+; DD: as OPL_EV_LFO_SET
+OPN_EV_LFO_SET:         ; 1968
         and     a
         jr      nz,L_197D
         ld      (ix+82),a
@@ -3313,7 +4026,8 @@ L_1993:                 ; 1993
         ld      (hl),a
         jr      L_1989
 
-L_1998:                 ; 1998
+; DE: as OPL_EV_ENV (+100-+112), from the table at 3A79
+OPN_EV_ENV:             ; 1998
         ld      d,0xC1
         bit     7,a
         jr      z,L_19A0
@@ -3333,7 +4047,7 @@ L_19A0:                 ; 19A0
 L_19B6:                 ; 19B6
         ld      (ix+102),a
 L_19B9:                 ; 19B9
-        call    L_19EA
+        call    OPN_ENV_CLEAR
         ld      d,0x00
         ld      h,d
         ld      l,e
@@ -3363,7 +4077,8 @@ L_19B9:                 ; 19B9
         ld      d,0x00
         ret
 
-L_19EA:                 ; 19EA
+; as OPL_ENV_CLEAR
+OPN_ENV_CLEAR:          ; 19EA
         ld      a,e
         ld      hl,(CUR_RECORD)
         ld      de,0x0073
@@ -3398,13 +4113,14 @@ L_1A0A:                 ; 1A0A
         ld      b,d
         ret
 
-L_1A15:                 ; 1A15
+; DF: as OPL_EV_ENV_SET; channel 3 takes up to 3 more bytes
+OPN_EV_ENV_SET:         ; 1A15
         and     a
         jr      nz,L_1A27
         ld      (ix+100),a
         ld      (ix+112),a
         ld      (ix+111),a
-        call    L_19EA
+        call    OPN_ENV_CLEAR
         ld      d,0x00
         ret
 
@@ -3460,19 +4176,30 @@ L_1A6C:                 ; 1A6C
         inc     hl
         ret
 
-        .incbin "sound.bin", 0x1A71, 0x000C
-L_1A7D:                 ; 1A7D
+; EC: as OPL_EV_ENV_DEPTH
+OPN_EV_ENV_DEPTH:       ; 1A71
+        and     a
+        jr      nz,L_1A77
+        ld      (ix+113),a
+L_1A77:                 ; 1A77
+        ld      (ix+114),a
+        ld      d,0x00
+        ret
+
+; ED: as OPL_EV_GATE (+22)
+OPN_EV_GATE:            ; 1A7D
         ld      (ix+22),a
         ld      h,a
         ld      e,(ix+19)
-        call    L_1A91
+        call    OPN_MUL
         ld      de,0x0080
         add     hl,de
         ld      (ix+21),h
         ld      d,0x00
         ret
 
-L_1A91:                 ; 1A91
+; HL = H x E, as OPL_MUL
+OPN_MUL:                ; 1A91
         ld      l,0x00
         ld      a,h
         and     a
@@ -3537,7 +4264,8 @@ L_1ACB:                 ; 1ACB
         ret
 
         .incbin "sound.bin", 0x1AD0, 0x0004
-L_1AD4:                 ; 1AD4
+; EE (no argument): key off
+OPN_EV_REST:            ; 1AD4
         dec     bc
         bit     3,(ix+0)
         jr      z,L_1AE0
@@ -3550,8 +4278,34 @@ L_1AE0:                 ; 1AE0
         ld      de,0x8003
         ret
 
-        .incbin "sound.bin", 0x1AEC, 0x0024
-L_1B10:                 ; 1B10
+; EF (no argument): key the note on again
+OPN_EV_REKEY:           ; 1AEC
+        dec     bc
+        bit     3,(ix+0)
+        jr      z,L_1AF8
+        set     5,(ix+0)
+        ret
+
+L_1AF8:                 ; 1AF8
+        set     3,(ix+0)
+        set     4,(ix+0)
+        set     7,(ix+0)
+        ld      d,0x00
+        ret
+
+; FC: +23
+OPN_EV_VOLUME:          ; 1B07
+        ld      (ix+23),a
+        ld      d,0x00
+        ret
+
+; FD-FF: the argument is skipped
+OPN_EV_NONE:            ; 1B0D
+        ld      d,0x00
+        ret
+
+; as OPL_VOICE_WRITE
+OPN_VOICE_WRITE:        ; 1B10
         bit     2,(ix+15)
         res     2,(ix+15)
         jr      nz,L_1B1C
@@ -3635,7 +4389,8 @@ L_1BA2:                 ; 1BA2
         scf
         ret
 
-L_1BAE:                 ; 1BAE
+; as OPL_DIRTY_WRITE
+OPN_DIRTY_WRITE:        ; 1BAE
         sub     a
         cp      (ix+16)
         jr      nz,L_1BBD
@@ -3872,7 +4627,7 @@ L_1D55:                 ; 1D55
         ld      a,(ix+23)
         ld      e,a
         ld      h,c
-        call    L_1A91
+        call    OPN_MUL
         ld      de,0x0080
         add     hl,de
         ld      c,h
@@ -3957,7 +4712,8 @@ L_1DDB:                 ; 1DDB
         dec     hl
         ret
 
-L_1DE3:                 ; 1DE3
+; as OPL_MOD_TICK
+OPN_MOD_TICK:           ; 1DE3
         bit     4,(ix+0)
         jr      z,L_1E48
         ld      a,(ix+9)
@@ -4176,7 +4932,7 @@ L_1F49:                 ; 1F49
         add     a,a
         ld      c,a
         ld      b,0x00
-        ld      hl,0x1F73
+        ld      hl,OPN_LFO_SHAPES
         add     hl,bc
         ld      bc,0x1F6F
         push    bc
@@ -4190,7 +4946,16 @@ L_1F6F:                 ; 1F6F
         ld      (ix+91),a
         ret
 
-        .incbin "sound.bin", 0x1F73, 0x0010
+; 8 words, as OPL_LFO_SHAPES
+OPN_LFO_SHAPES:         ; 1F73
+        .word   L_1F83
+        .word   L_1F98
+        .word   L_1FAD
+        .word   L_1FAF
+        .word   L_1FB3
+        .word   L_1FBD
+        .word   L_1FC7
+        .word   L_1FD3
 L_1F83:                 ; 1F83
         ex      de,hl
         add     hl,hl
@@ -4210,7 +4975,78 @@ L_1F92:                 ; 1F92
         neg
         ret
 
-        .incbin "sound.bin", 0x1F98, 0x0047
+L_1F98:                 ; 1F98
+        ex      de,hl
+        add     hl,hl
+        ld      a,h
+        jr      c,L_1FA3
+        bit     7,a
+        ret     nz
+        neg
+        ret
+
+L_1FA3:                 ; 1FA3
+        bit     7,a
+        ret     z
+        neg
+        cp      0x80
+        ret     nz
+        dec     a
+        ret
+
+L_1FAD:                 ; 1FAD
+        ld      a,d
+        ret
+
+L_1FAF:                 ; 1FAF
+        ld      a,d
+        neg
+        ret
+
+L_1FB3:                 ; 1FB3
+        bit     7,d
+        jr      nz,L_1FBA
+        ld      a,0x7F
+        ret
+
+L_1FBA:                 ; 1FBA
+        ld      a,0x81
+        ret
+
+L_1FBD:                 ; 1FBD
+        bit     7,d
+        jr      nz,L_1FC4
+        ld      a,0x81
+        ret
+
+L_1FC4:                 ; 1FC4
+        ld      a,0x7F
+        ret
+
+L_1FC7:                 ; 1FC7
+        bit     7,d
+        jr      nz,L_1FCD
+        ld      a,d
+        ret
+
+L_1FCD:                 ; 1FCD
+        ld      a,d
+        add     a,0x80
+        neg
+        ret
+
+L_1FD3:                 ; 1FD3
+        bit     7,d
+        jr      nz,L_1FDB
+        ld      a,d
+        neg
+        ret
+
+L_1FDB:                 ; 1FDB
+        ld      a,d
+        add     a,0x80
+        ret
+
 L_1FDF:                 ; 1FDF
         ld      iy,(CUR_RECORD)
         ld      bc,0x0073
@@ -4658,22 +5494,22 @@ L_229E:                 ; 229E
         ld      hl,SSG_REC_A
         ld      (CUR_RECORD),hl
         bit     0,(hl)
-        call    nz,L_234A
+        call    nz,SSG_REC_START
         bit     1,(ix+0)
         jr      z,L_22BC
         dec     (ix+19)
-        call    z,L_241B
+        call    z,SSG_STEP
         call    L_265A
 L_22BC:                 ; 22BC
         ld      ix,SSG_REC_B
         ld      hl,SSG_REC_B
         ld      (CUR_RECORD),hl
         bit     0,(hl)
-        call    nz,L_234A
+        call    nz,SSG_REC_START
         bit     1,(ix+0)
         ret     z
         dec     (ix+19)
-        call    z,L_241B
+        call    z,SSG_STEP
         call    L_265A
         ret
 
@@ -4772,7 +5608,8 @@ L_2345:                 ; 2345
         inc     de
         ret
 
-L_234A:                 ; 234A
+; as OPL_REC_START
+SSG_REC_START:          ; 234A
         ld      (hl),0x02
         inc     hl
         ld      e,(hl)
@@ -4802,12 +5639,13 @@ L_235C:                 ; 235C
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_2378
+        call    SSG_PHRASE_LOAD
         ld      hl,(CUR_RECORD)
-        call    L_238F
+        call    SSG_REC_CLEAR
         ret
 
-L_2378:                 ; 2378
+; as OPL_PHRASE_LOAD
+SSG_PHRASE_LOAD:        ; 2378
         ld      a,(de)
         and     0xF0
         ld      (ix+5),a
@@ -4822,7 +5660,8 @@ L_2378:                 ; 2378
         ld      (ix+12),a
         ret
 
-L_238F:                 ; 238F
+; as OPL_REC_CLEAR
+SSG_REC_CLEAR:          ; 238F
         ld      de,0x0010
         add     hl,de
         sub     a
@@ -4850,7 +5689,8 @@ L_23B0:                 ; 23B0
         djnz    L_23B0
         ret
 
-L_23B5:                 ; 23B5
+; as OPL_PHRASE_END
+SSG_PHRASE_END:         ; 23B5
         ld      a,(ix+10)
         and     a
         jr      z,L_23C1
@@ -4879,7 +5719,7 @@ L_23D6:                 ; 23D6
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_2378
+        call    SSG_PHRASE_LOAD
         ld      (ix+19),0x01
         ret
 
@@ -4887,7 +5727,7 @@ L_23F2:                 ; 23F2
         dec     (ix+6)
         jr      nz,L_2400
         res     1,(hl)
-        call    L_238F
+        call    SSG_REC_CLEAR
         call    SEQ_END_NOTIFY
         ret
 
@@ -4902,11 +5742,12 @@ L_2400:                 ; 2400
         inc     de
         ld      (ix+13),e
         ld      (ix+14),d
-        call    L_2378
-        call    L_238F
+        call    SSG_PHRASE_LOAD
+        call    SSG_REC_CLEAR
         ret
 
-L_241B:                 ; 241B
+; as OPL_STEP, with SSG_EVENTS
+SSG_STEP:               ; 241B
         ld      c,(ix+11)
         ld      b,(ix+12)
         ld      a,(bc)
@@ -4917,7 +5758,7 @@ L_241B:                 ; 241B
 L_2428:                 ; 2428
         and     a
         jr      nz,L_242F
-        call    L_23B5
+        call    SSG_PHRASE_END
         ret
 
 L_242F:                 ; 242F
@@ -4951,7 +5792,8 @@ SSG_EVENTS:             ; 243C
         and     0x0F
         jp      (hl)
 
-L_2458:                 ; 2458
+; 4x: channel A tone period, coarse from the low nibble (register 1), fine from the next byte (register 0)
+SSG_EV_TONE_A:          ; 2458
         ld      (ix+21),a
         inc     bc
         ld      a,(bc)
@@ -4959,7 +5801,8 @@ L_2458:                 ; 2458
         ld      de,0x0001
         jp      L_24E0
 
-L_2466:                 ; 2466
+; 5x: channel B (registers 2, 3)
+SSG_EV_TONE_B:          ; 2466
         ld      (ix+23),a
         inc     bc
         ld      a,(bc)
@@ -4967,7 +5810,8 @@ L_2466:                 ; 2466
         ld      de,0x0002
         jr      L_24E0
 
-L_2473:                 ; 2473
+; 6x: channel C (registers 4, 5)
+SSG_EV_TONE_C:          ; 2473
         ld      (ix+25),a
         inc     bc
         ld      a,(bc)
@@ -4975,8 +5819,20 @@ L_2473:                 ; 2473
         ld      de,0x0004
         jr      L_24E0
 
-        .incbin "sound.bin", 0x2480, 0x0011
-L_2491:                 ; 2491
+L_2480:                 ; 2480
+        rlca
+        rlca
+        rlca
+        rlca
+        ld      (ix+31),a
+        inc     bc
+        ld      a,(bc)
+        ld      (ix+32),a
+        ld      de,0x0300
+        jr      L_24E0
+
+; 8x: channel A volume (register 8) from the low nibble
+SSG_EV_VOL_A:           ; 2491
         ld      (ix+28),a
         ld      de,0x0020
         ld      a,e
@@ -4985,7 +5841,8 @@ L_2491:                 ; 2491
         ld      (ix+16),a
         jr      L_24E0
 
-L_24A1:                 ; 24A1
+; 9x: channel B (register 9)
+SSG_EV_VOL_B:           ; 24A1
         ld      (ix+29),a
         ld      de,0x0040
         ld      a,e
@@ -4994,7 +5851,8 @@ L_24A1:                 ; 24A1
         ld      (ix+16),a
         jr      L_24E0
 
-L_24B1:                 ; 24B1
+; Ax: channel C (register A)
+SSG_EV_VOL_C:           ; 24B1
         ld      (ix+30),a
         ld      de,0x0080
         ld      a,e
@@ -5003,8 +5861,24 @@ L_24B1:                 ; 24B1
         ld      (ix+16),a
         jr      L_24E0
 
-        .incbin "sound.bin", 0x24C1, 0x0014
-L_24D5:                 ; 24D5
+L_24C1:                 ; 24C1
+        ld      de,0x0000
+        jr      L_24E0
+
+L_24C6:                 ; 24C6
+        ld      de,0x0000
+        jr      L_24E0
+
+L_24CB:                 ; 24CB
+        ld      de,0x0000
+        jr      L_24E0
+
+L_24D0:                 ; 24D0
+        ld      de,0x0000
+        jr      L_24E0
+
+; Fx: SSG_F_JUMPS by the low nibble, with the next byte; a returned DE with b15 set ends the step
+SSG_EV_F:               ; 24D5
         call    L_2509
         ld      a,d
         or      e
@@ -5021,13 +5895,24 @@ L_24E0:                 ; 24E0
         jp      SSG_EVENTS
 
 SSG_EVENT_JUMPS:        ; 24F1
-        .incbin "sound.bin", 0x24F1, 0x0018
+        .word   SSG_EV_TONE_A
+        .word   SSG_EV_TONE_B
+        .word   SSG_EV_TONE_C
+        .word   L_2480
+        .word   SSG_EV_VOL_A
+        .word   SSG_EV_VOL_B
+        .word   SSG_EV_VOL_C
+        .word   L_24C1
+        .word   L_24C6
+        .word   L_24CB
+        .word   L_24D0
+        .word   SSG_EV_F
 L_2509:                 ; 2509
         add     a,a
         add     a,a
         ld      e,a
         ld      d,0x00
-        ld      hl,0x25BC
+        ld      hl,SSG_F_JUMPS
         add     hl,de
         ld      e,(hl)
         inc     hl
@@ -5041,13 +5926,136 @@ L_2509:                 ; 2509
         ld      a,(bc)
         ret
 
-        .incbin "sound.bin", 0x251D, 0x0074
+L_251D:                 ; 251D
+        dec     bc
+        ret
+
+; F1: noise period (register 6, b0-4)
+SSG_EV_NOISE:           ; 251F
+        and     0x1F
+        ld      (ix+26),a
+        ret
+
+L_2525:                 ; 2525
+        ld      hl,0x3B3D
+        call    SSG_ENV_START
+        set     1,(iy+0)
+        ld      de,0x0000
+        ret
+
+; F3: the mixer (+33, +15, +16); a channel turned off has its volume set to 10 (envelope)
+SSG_EV_MIXER:           ; 2533
+        and     0x07
+        or      0x08
+        ld      (ix+33),a
+        ld      a,(bc)
+        rlca
+        jr      c,L_254D
+        rlca
+        jr      c,L_2547
+        ld      (ix+15),0x00
+        jr      L_255A
+
+L_2547:                 ; 2547
+        ld      (ix+15),0x01
+        jr      L_255A
+
+L_254D:                 ; 254D
+        rlca
+        jr      c,L_2556
+        ld      (ix+15),0x02
+        jr      L_255A
+
+L_2556:                 ; 2556
+        ld      (ix+15),0x04
+L_255A:                 ; 255A
+        and     0xE0
+        ld      (ix+16),a
+        rlca
+        jr      nc,L_256C
+        ld      (ix+30),0x10
+        ld      (ix+100),0x00
+        set     7,e
+L_256C:                 ; 256C
+        rlca
+        jr      nc,L_2579
+        ld      (ix+29),0x10
+        ld      (ix+89),0x00
+        set     6,e
+L_2579:                 ; 2579
+        rlca
+        jr      nc,L_2586
+        ld      (ix+28),0x10
+        ld      (ix+78),0x00
+        set     5,e
+L_2586:                 ; 2586
+        ret
+
+L_2587:                 ; 2587
+        ld      hl,0x3B60
+        call    SSG_ENV_START
+        ld      de,0x0000
+        ret
+
 L_2591:                 ; 2591
         and     0x3F
         ld      (ix+27),a
         ret
 
-        .incbin "sound.bin", 0x2597, 0x009C
+L_2597:                 ; 2597
+        ld      hl,0x3B3D
+        call    SSG_ENV_START
+        ld      de,0x0000
+        ret
+
+L_25A1:                 ; 25A1
+        and     0xF0
+        jr      nz,L_25B9
+        ld      a,(bc)
+        and     0x0F
+        ld      e,a
+        ld      d,0x00
+        ld      hl,0x25FC
+        add     hl,de
+        ld      a,(hl)
+        and     a
+        jr      z,L_25B9
+        ld      hl,(CUR_RECORD)
+        ld      e,a
+        add     hl,de
+        ld      (hl),d
+L_25B9:                 ; 25B9
+        ld      e,d
+        ret
+
+L_25BB:                 ; 25BB
+        ret
+
+; 16 x (handler, DE) for SSG_EV_F
+SSG_F_JUMPS:            ; 25BC
+        .incbin "sound.bin", 0x25BC, 0x0050
+; HL = a 5-byte table, DE = an offset in the record: a stepped envelope, as OPL_EV_ENV
+SSG_ENV_START:          ; 260C
+        ld      iy,(CUR_RECORD)
+        add     iy,de
+        ld      d,0xC1
+        bit     7,a
+        jr      z,L_261A
+        set     5,d
+L_261A:                 ; 261A
+        ld      (iy+0),d
+        and     0x7F
+        ld      (iy+9),a
+        ld      e,a
+        inc     bc
+        ld      a,(bc)
+        ld      (iy+1),a
+        ld      (iy+10),a
+        bit     5,d
+        jr      z,L_2630
+        sub     a
+L_2630:                 ; 2630
+        ld      (iy+2),a
 L_2633:                 ; 2633
         push    hl
         ld      d,0x00
@@ -5441,7 +6449,12 @@ L_28D5:                 ; 28D5
         scf
         ret
 
-        .incbin "sound.bin", 0x28D7, 0x09C5
+; 29 words: 13-byte voices for OPL_EV_VOICE
+OPL_VOICES:             ; 28D7
+        .incbin "sound.bin", 0x28D7, 0x01B3
+; 59 words: 33-byte voices for OPN_EV_VOICE
+OPN_VOICES:             ; 2A8A
+        .incbin "sound.bin", 0x2A8A, 0x0812
 ; 53 words for commands 00-34
 COMMAND_TABLE:          ; 329C
         .incbin "sound.bin", 0x329C, 0x006A
