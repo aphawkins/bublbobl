@@ -34,7 +34,7 @@ SOUND_QUEUE   = { addr = 0xE381, size = 0x10, note = "sound commands waiting for
 SOUND_QUEUE_LEN = { addr = 0xE391, note = "commands in SOUND_QUEUE" }
 GRID_REQUEST  = { addr = 0xE397, note = "LOAD_GRID_EDGES sets 1 and waits; the sub CPU's GRID_UNPACK fills ROUND_GRID rows 5-28 and sets FF" }
 ROUND_GRID    = { addr = 0xE398, size = 0x200, note = "32 x 32 cells of 8 x 8, 16 bytes a row, high nibble first: 0 = wall, 1-4 = open (air current?). Rows 0-4 and 29-31 from LOAD_GRID_EDGES, 5-28 from the sub CPU" }
-ROUND_RECORD  = { addr = 0xE598, note = "0x2B bytes: the round's record from bank1:ROUND_RECORDS, shifted by DIFFICULTY and SUPER_MODE; fields in notes/levels.md" }
+ROUND_RECORD  = { addr = 0xE598, size = 0x2B, note = "0x2B bytes: the round's record from bank1:ROUND_RECORDS, shifted by DIFFICULTY and SUPER_MODE; fields in notes/levels.md" }
 ENEMY_SWAP    = { addr = 0xE5A4, note = "ROUND_RECORD byte 12: b0 = group 0 is ENEMY0B, not ENEMY0; b4 = group 2 is ENEMY2B, not ENEMY2" }
 GRID_DRAW_ROW = { addr = 0xE5C4, note = "next ROUND_GRID row DRAW_GRID_ROW draws at round start; 0x20 when done" }
 CODE_INPUTS   = { addr = 0xE5C8, size = 8, note = "the first 8 changes of P1's inputs (IN1_COPY & 7F) on the title; CODE_COUNT in E5D0, the last input in E5C7" }
@@ -119,7 +119,7 @@ GHOST_SLOTS   = { addr = 0xF1C2, note = "set up by GHOST_INIT; drew Skel-Monsta,
 ENEMY2B_SLOTS = { addr = 0xF1E7, note = "group 2 when ENEMY_SWAP b4, 0x19 bytes each (drew Drunk in the traced rounds)" }
 BOSS_SLOT     = { addr = 0xF296, size = 0x14, note = "the round 100 boss, set up by BOSS_INIT (drew Super Drunk). +0B = hits taken: from 0x46 it flashes (bank0:AE73), from 0x50 bank0:A960 traps it in a bubble (+0 = 2) when X is 80-87; unpopped, it escapes angry (+0 = 9) with hits 0" }
 ENEMY0B_SLOTS = { addr = 0xF2AA, note = "group 0 when ENEMY_SWAP b0, 0x19 bytes each (drew Invader in the traced rounds)" }
-BOSS_SHOTS    = { addr = 0xF367, size = 0x67, note = "the boss's bottles, 0x0C bytes each, set up by BOSS_SHOTS_INIT" }
+BOSS_SHOTS    = { addr = 0xF367, size = 0x60, note = "the boss's 8 bottles, 0x0C bytes each; BOSS_SHOTS_INIT clears 0x67 bytes, these and F3C7-F3CD" }
 BOSS_SHOTS_LEFT = { addr = 0xF3C7, note = "bottles of the boss's volley still on screen: 8 at the start, BOSS_SHOT_OFF_* take one each; at 0 BOSS_SHOT_NEXT clears the volley" }
 BOSS_VOLLEY_TIMER = { addr = 0xF3C8, note = "frames since the last volley; at 78 BOSS_FIGHT starts the next (BOSS_VOLLEY = 1, sound 15)" }
 BOSS_VOLLEY = { addr = 0xF3C9, note = "1 = a volley is out: BOSS_SHOT_LOOP launches every bottle not yet thrown" }
@@ -417,14 +417,14 @@ HIGH_ENTRY_INSERT = { addr = 0x3648, note = "E677 = the row (0-4, 5 = none) wher
 HIGH_BEST_OF = { addr = 0x36AC, note = "E67B/E67C: the larger of the two players' E644 and E649 groups" }
 HIGH_ENTRY_NEW_ROW = { addr = 0x36D1, note = "zeroes the new row's score (7 bytes x E677 + E658), redraws, then fills it from the player's score" }
 INITIALS_ENTRY = { addr = 0x372B, note = "E679, E678, E67A = 0, ENTRY_LETTER_DRAW; loop for 0x12C x 8 frames reading the player's inputs for 3 letters" }
-INITIALS_CODE_CHECK = { addr = 0x375A, note = "HIGH_ENTRY: the entered initials at HL against the 10 INITIALS_CODES; a match runs INITIALS_CODE_RUN, else HIGH_ENTRY_END" }
+INITIALS_CODE_CHECK = { addr = 0x375A, note = "the entered initials at HL against the 10 INITIALS_CODES: a match runs its INITIALS_CODE_JUMPS handler through INITIALS_CODE_RUN, else HIGH_ENTRY_END" }
 INITIALS_CODE_RUN = { addr = 0x377F, note = "jumps to INITIALS_CODE_JUMPS entry B (the matched code)" }
-INITIALS_SEX = { addr = 0x378A, note = "SEX: the initials become 'H.!' (48 2E 21), sound 12, SCREEN_FLASH, SEX_COUNT + 1. Then BIT 3 of ROM byte 0002 (5E) is tested; it is always set, so it ends at HIGH_ENTRY_END, and the PUSH DE / EX (SP),IX running on into INITIALS_TAK is never reached" }
-INITIALS_TAK = { addr = 0x37AE, note = "TAK: TAK_COUNT + 1" }
-INITIALS_STR = { addr = 0x37B4, note = "STR: STR_COUNT + 1" }
-INITIALS_KTT = { addr = 0x37BA, note = "KTT: KTT_COUNT + 1" }
-INITIALS_DOTS = { addr = 0x37C0, note = "'...': DOTS_COUNT + 1" }
-INITIALS_STAFF = { addr = 0x37C6, note = "I.F, MTJ, NSO, KIM, YSH: STAFF_COUNT + 1, sound 2D" }
+INITIALS_SEX = { addr = 0x378A, note = "SEX: the initials become 'H.!' (48 2E 21), sound 12, SCREEN_FLASH, SEX_COUNT + 1 (special kind 1D). Then BIT 3 of ROM byte 0002 (5E) is tested; it is always set, so it ends at HIGH_ENTRY_END, and the PUSH DE / EX (SP),IX running on into INITIALS_TAK is never reached" }
+INITIALS_TAK = { addr = 0x37AE, note = "TAK: TAK_COUNT + 1 (special kind 2A)" }
+INITIALS_STR = { addr = 0x37B4, note = "STR: STR_COUNT + 1 (special kind 2B)" }
+INITIALS_KTT = { addr = 0x37BA, note = "KTT: KTT_COUNT + 1 (special kind 2C)" }
+INITIALS_DOTS = { addr = 0x37C0, note = "'...': DOTS_COUNT + 1 (special kind 2D)" }
+INITIALS_STAFF = { addr = 0x37C6, note = "I.F, MTJ, NSO, KIM, YSH (staff initials): STAFF_COUNT + 1 (special kind 35), sound 2D" }
 HIGH_ENTRY_END = { addr = 0x37D1, note = "BEST5_DRAW, ENTRY_COLUMN_CLEAR, E677 = 0, waits 0x78 frames" }
 HIGH_ENTRY_PTR = { addr = 0x3811, note = "HL = E658 + 7 x (E677)" }
 ENTRY_LETTER_NEXT = { addr = 0x381E, note = "INITIALS_ENTRY: the current player's input (IN1_COPY or IN2_COPY) b1 clear: E679 + 1 (0x1C wraps to 0), ENTRY_LETTER_DRAW" }
@@ -1113,13 +1113,19 @@ QUEUE_IN       = { addr = 0x8F80, note = "CMD_QUEUE index last written" }
 QUEUE_OUT      = { addr = 0x8F81, note = "CMD_QUEUE index last read" }
 CMD_QUEUE      = { addr = 0x8F82, size = 0x10, note = "16-byte ring of commands; when full the oldest is dropped" }
 CUR_RECORD     = { addr = 0x8F92, note = "word: the record being started or run" }
+OP_PAIR_IY     = { addr = 0x8F94, size = 2, note = "IY saved by OPL_DIRTY_WRITE and its YM2203 twin while OPL_OP_PAIR moves it to the second operator" }
+OP_PAIR_WRITER = { addr = 0x8F98, size = 2, note = "word: the register writer OPL_OP_PAIR calls for each operator" }
 CHIP_PORT      = { addr = 0x8F9A, note = "word: YM2203 or YM3526, the chip being written" }
 OPN_TAKEN      = { addr = 0x8F9C, note = "b0-b2: an FM channel's first record played this tick (OPN_FM_TICK)" }
 OPN_LAYER      = { addr = 0x8F9D, note = "BLOCK_NOW: 0 = the first record of the channel's pair, 1 = the second" }
+REG27_BASE     = { addr = 0x8F9E, note = "YM2203 register 27 (timer control) as SOUND_START set it, low nibble; OPN_VOICE_WRITE ORs in 40 for channel 3 special mode" }
 OPN_TIMER_MODE = { addr = 0x8F9F, note = "b0: write 5F/6F, not 1F/2F, to register 27 (channel 3 special mode)" }
 OPL_TAKEN      = { addr = 0x8FA0, size = 2, note = "9 bits: a channel's A record played this tick (OPL_TICK_A); OPL_TICK_B clears them" }
 OPL_LAYER      = { addr = 0x8FA2, note = "as OPN_LAYER, for the YM3526" }
 OPN_TIMER_A    = { addr = 0x8FA3, size = 2, note = "10-bit timer A value, loaded at the next IRQ when TIMER_A_NEW b0 is set" }
+CC_B4_BYTE     = { addr = 0x8FA5, note = "the byte after CC B4 (TIMER_A_NEW b1); nothing reads it" }
+CC_B5_BYTE     = { addr = 0x8FA6, note = "the byte after CC B5 (TIMER_A_NEW b2); nothing reads it" }
+CC_B6_BYTE     = { addr = 0x8FA7, note = "the byte after CC B6 (TIMER_A_NEW b3); nothing reads it" }
 TIMER_A_NEW    = { addr = 0x8FA8 }
 SSG_TAKEN      = { addr = 0x8FA9, note = "1 while SSG_REC_A plays" }
 SOUND_ON       = { addr = 0x8FAA, note = "0 after reset and command EE: BLOCK_START starts nothing; 1 after EF" }
@@ -1176,7 +1182,7 @@ OPL_EV_SLRR2    = { addr = 0x098B, note = "BF: operator 2" }
 OPL_EV_CTRL     = { addr = 0x0992, note = "CC: an argument below 80 is feedback (b4-6) and connection (b0), register C0; 80 and up go through OPL_CC_JUMPS by the high nibble" }
 OPL_CC_DRUMS    = { addr = 0x09BB, note = "CC 80-9F: the rhythm key bits (register BD b0-4)" }
 OPL_CC_KEYING   = { addr = 0x09CB, note = "CC A0: notes key on (+0 b2, the default); A1: notes only change the pitch (legato)" }
-OPL_CC_TIMER    = { addr = 0x09E1, note = "CC B0-B3: the YM2203's timer A (b0-1 and the next byte, OPN_TIMER_A); B4, B5, B6: the next byte into 8FA5, 8FA6, 8FA7. Each sets its TIMER_A_NEW bit" }
+OPL_CC_TIMER    = { addr = 0x09E1, note = "CC B0-B3: the YM2203's timer A (b0-1 and the next byte, OPN_TIMER_A); B4, B5, B6: the next byte into CC_B4_BYTE, _B5_, _B6_. Each sets its TIMER_A_NEW bit, but the IRQ only acts on b0" }
 OPL_CC_RHYTHM   = { addr = 0x0A36, note = "CC C0: rhythm mode on (register BD b5); C1: off" }
 OPL_CC_DEPTH    = { addr = 0x0A4F, note = "CC D0-DF: AM and vibrato depth (register BD b6-7) from b0-1" }
 OPL_CC_NOTESEL  = { addr = 0x0A62, note = "CC E0: register 08 b6 (NOTE-SEL) on; E1: off" }
@@ -1199,7 +1205,7 @@ OPL_EV_VOLUME   = { addr = 0x0CE4, note = "FC: +22, which scales the carrier's t
 OPL_EV_NONE     = { addr = 0x0CEA, note = "8C-8E, FD-FF: the argument is skipped" }
 OPL_VOICE_WRITE = { addr = 0x0CED, note = "+15 b7 (a new voice): every register of the channel, then clear the dirty bits (+15-+17), carry set; else carry clear" }
 OPL_DIRTY_WRITE = { addr = 0x0D6B, note = "the registers flagged in +15 (b2 frequency, b3 C0, b5 A0), +16 (b0/b1 key on/off, b4-b7 20 and 40) and +17 (60 and 80), then clear them" }
-OPL_OP_PAIR     = { addr = 0x0E18, note = "D b0/b1 = operator 1/2: call the writer at (8F98) for each" }
+OPL_OP_PAIR     = { addr = 0x0E18, note = "D b0/b1 = operator 1/2: call OP_PAIR_WRITER for each" }
 OPL_FREQ_WRITE  = { addr = 0x0E4A, note = "A = channel: register B0 (block and F-number high, no key), then A0" }
 OPL_FNUM_WRITE  = { addr = 0x0E57, note = "A = channel: register A0" }
 OPL_C0_WRITE    = { addr = 0x0E61, note = "A = channel: register C0, feedback and connection (+24)" }
@@ -1398,7 +1404,7 @@ SERVICE_EDGE = { addr = 0x45 }
 EDGE_TEMP    = { addr = 0x46 }
 COIN1_COUNT  = { addr = 0x48, note = "coins towards the next credit, slot 1" }
 COIN2_COUNT  = { addr = 0x49 }
-X_TO_D       = { addr = 0x4A, note = "2 bytes: X stored here to load it into D" }
+X_TO_D       = { addr = 0x4A, size = 2, note = "2 bytes: X stored here to load it into D" }
 WATCH_LAST   = { addr = 0x4C }
 WATCH_COUNT  = { addr = 0x4D }
 DSW0         = { addr = 0x4E }
@@ -1411,8 +1417,8 @@ ROUND_OK     = { addr = 0x54 }
 PROX_X       = { addr = 0x55 }
 PROX_Y       = { addr = 0x56 }
 PROX_INDEX   = { addr = 0x57 }
-PROX_OBJ     = { addr = 0x58, note = "2 bytes: bus address of the object" }
-PROX_OUT     = { addr = 0x5A, note = "2 bytes: bus address of its results" }
+PROX_OBJ     = { addr = 0x58, size = 2, note = "2 bytes: bus address of the object" }
+PROX_OUT     = { addr = 0x5A, size = 2, note = "2 bytes: bus address of its results" }
 PROX_X_NEAR  = { addr = 0x5C, note = "count of objects within 8 in X" }
 SPEED0_POS   = { addr = 0x5D }
 SPEED1_POS   = { addr = 0x5E }

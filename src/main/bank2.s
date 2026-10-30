@@ -994,7 +994,7 @@ TAKE_BLOW_POINTS:       ; 8909
         set     2,(ix+45)
         ret
 
-; special kind 12 (the blue cross): F590 = 1 starts the flood; WATER_CROSSES + 1, ROM_SUM_STEP_E
+; special kind 12 (the blue cross): F590 = 1 starts the flood (seen in MAME); WATER_CROSSES + 1, ROM_SUM_STEP_E
 TAKE_FLOOD:             ; 8911
         call    ROM_SUM_STEP_E
         ld      hl,0xF590
@@ -1013,7 +1013,7 @@ TAKE_LIGHTNING:         ; 891E
         inc     (hl)
         ret
 
-; special kind 14 (the red cross): IX+45 b6 and IX+40 = 10: the next 16 blows are fireballs
+; special kind 14 (the red cross): IX+45 b6 and IX+40 = 10: the next 16 blows are fireballs (seen in MAME)
 TAKE_FIRE_BREATH:       ; 892F
         set     6,(ix+45)
         ld      (ix+40),0x10

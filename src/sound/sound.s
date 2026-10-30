@@ -156,7 +156,7 @@ L_011D:                 ; 011D
         ld      a,0x3F
         call    OPN_WRITE
         and     0x0F
-        ld      (0x8F9E),a
+        ld      (REG27_BASE),a
         call    SSG_OFF_CHECK
         ld      hl,YM3526
         ld      b,0x02
@@ -1462,7 +1462,7 @@ L_09DE:                 ; 09DE
         ld      d,0x00
         ret
 
-; CC B0-B3: the YM2203's timer A (b0-1 and the next byte, OPN_TIMER_A); B4, B5, B6: the next byte into 8FA5, 8FA6, 8FA7. Each sets its TIMER_A_NEW bit
+; CC B0-B3: the YM2203's timer A (b0-1 and the next byte, OPN_TIMER_A); B4, B5, B6: the next byte into CC_B4_BYTE, _B5_, _B6_. Each sets its TIMER_A_NEW bit, but the IRQ only acts on b0
 OPL_CC_TIMER:           ; 09E1
         cp      0xB4
         jr      nc,L_09FA
@@ -1482,7 +1482,7 @@ L_09FA:                 ; 09FA
         jr      nz,L_0A0E
         inc     bc
         ld      a,(bc)
-        ld      (0x8FA5),a
+        ld      (CC_B4_BYTE),a
         ld      a,(TIMER_A_NEW)
         set     1,a
         ld      (TIMER_A_NEW),a
@@ -1494,7 +1494,7 @@ L_0A0E:                 ; 0A0E
         jr      nz,L_0A22
         inc     bc
         ld      a,(bc)
-        ld      (0x8FA6),a
+        ld      (CC_B5_BYTE),a
         ld      a,(TIMER_A_NEW)
         set     2,a
         ld      (TIMER_A_NEW),a
@@ -1506,7 +1506,7 @@ L_0A22:                 ; 0A22
         jr      nz,L_0A33
         inc     bc
         ld      a,(bc)
-        ld      (0x8FA7),a
+        ld      (CC_B6_BYTE),a
         ld      a,(TIMER_A_NEW)
         set     3,a
         ld      (TIMER_A_NEW),a
@@ -2107,7 +2107,7 @@ OPL_DIRTY_WRITE:        ; 0D6B
         cp      (ix+17)
         ret     z
 L_0D7A:                 ; 0D7A
-        ld      (0x8F94),iy
+        ld      (OP_PAIR_IY),iy
         ld      d,(ix+15)
         bit     2,d
         ld      a,e
@@ -2183,18 +2183,18 @@ L_0E0D:                 ; 0E0D
         ld      (ix+17),a
         ret
 
-; D b0/b1 = operator 1/2: call the writer at (8F98) for each
+; D b0/b1 = operator 1/2: call OP_PAIR_WRITER for each
 OPL_OP_PAIR:            ; 0E18
         ld      a,0x03
         and     d
         ret     z
-        ld      (0x8F98),bc
+        ld      (OP_PAIR_WRITER),bc
         bit     0,d
         jr      z,L_0E2F
         ld      bc,0x0E2F
         push    bc
         ld      a,e
-        ld      bc,(0x8F98)
+        ld      bc,(OP_PAIR_WRITER)
         push    bc
         ret
 
@@ -2207,12 +2207,12 @@ L_0E2F:                 ; 0E2F
         push    bc
         ld      a,e
         add     a,0x03
-        ld      bc,(0x8F98)
+        ld      bc,(OP_PAIR_WRITER)
         push    bc
         ret
 
 L_0E45:                 ; 0E45
-        ld      iy,(0x8F94)
+        ld      iy,(OP_PAIR_IY)
         ret
 
 ; A = channel: register B0 (block and F-number high, no key), then A0
@@ -3749,7 +3749,7 @@ L_17FE:                 ; 17FE
         jr      nz,L_1812
         inc     bc
         ld      a,(bc)
-        ld      (0x8FA5),a
+        ld      (CC_B4_BYTE),a
         ld      a,(TIMER_A_NEW)
         set     1,a
         ld      (TIMER_A_NEW),a
@@ -3761,7 +3761,7 @@ L_1812:                 ; 1812
         jr      nz,L_1826
         inc     bc
         ld      a,(bc)
-        ld      (0x8FA6),a
+        ld      (CC_B5_BYTE),a
         ld      a,(TIMER_A_NEW)
         set     2,a
         ld      (TIMER_A_NEW),a
@@ -3773,7 +3773,7 @@ L_1826:                 ; 1826
         jr      nz,L_1837
         inc     bc
         ld      a,(bc)
-        ld      (0x8FA7),a
+        ld      (CC_B6_BYTE),a
         ld      a,(TIMER_A_NEW)
         set     3,a
         ld      (TIMER_A_NEW),a
@@ -4320,7 +4320,7 @@ L_1B1C:                 ; 1B1C
         ld      (OPN_TIMER_MODE),a
         bit     0,a
         jr      z,L_1B3D
-        ld      a,(0x8F9E)
+        ld      a,(REG27_BASE)
         or      0x40
         ld      b,0x27
         call    OPN_WRITE
@@ -4329,7 +4329,7 @@ L_1B1C:                 ; 1B1C
         jr      L_1B47
 
 L_1B3D:                 ; 1B3D
-        ld      a,(0x8F9E)
+        ld      a,(REG27_BASE)
         or      0x00
         ld      b,0x27
         call    OPN_WRITE
@@ -4399,7 +4399,7 @@ OPN_DIRTY_WRITE:        ; 1BAE
         cp      (ix+18)
         ret     z
 L_1BBD:                 ; 1BBD
-        ld      (0x8F94),iy
+        ld      (OP_PAIR_IY),iy
         ld      d,(ix+16)
         ld      (ix+16),0x00
         ld      a,e
@@ -4411,7 +4411,7 @@ L_1BBD:                 ; 1BBD
         ld      (OPN_TIMER_MODE),a
         bit     0,a
         jr      z,L_1BEC
-        ld      a,(0x8F9E)
+        ld      a,(REG27_BASE)
         or      0x40
         ld      b,0x27
         call    OPN_WRITE
@@ -4419,7 +4419,7 @@ L_1BBD:                 ; 1BBD
         jr      L_1BF6
 
 L_1BEC:                 ; 1BEC
-        ld      a,(0x8F9E)
+        ld      a,(REG27_BASE)
         or      0x00
         ld      b,0x27
         call    OPN_WRITE
@@ -4459,13 +4459,13 @@ L_1C3D:                 ; 1C3D
         ld      a,0x0F
         and     d
         ret     z
-        ld      (0x8F98),bc
+        ld      (OP_PAIR_WRITER),bc
         bit     0,d
         jr      z,L_1C54
         ld      bc,0x1C54
         push    bc
         ld      a,e
-        ld      bc,(0x8F98)
+        ld      bc,(OP_PAIR_WRITER)
         push    bc
         ret
 
@@ -4478,7 +4478,7 @@ L_1C54:                 ; 1C54
         push    bc
         ld      a,e
         add     a,0x08
-        ld      bc,(0x8F98)
+        ld      bc,(OP_PAIR_WRITER)
         push    bc
         ret
 
@@ -4491,7 +4491,7 @@ L_1C6A:                 ; 1C6A
         push    bc
         ld      a,e
         add     a,0x04
-        ld      bc,(0x8F98)
+        ld      bc,(OP_PAIR_WRITER)
         push    bc
         ret
 
@@ -4504,12 +4504,12 @@ L_1C80:                 ; 1C80
         push    bc
         ld      a,e
         add     a,0x0C
-        ld      bc,(0x8F98)
+        ld      bc,(OP_PAIR_WRITER)
         push    bc
         ret
 
 L_1C96:                 ; 1C96
-        ld      iy,(0x8F94)
+        ld      iy,(OP_PAIR_IY)
         ret
 
 L_1C9B:                 ; 1C9B

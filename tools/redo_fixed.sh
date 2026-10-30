@@ -16,5 +16,11 @@ fx = open('disasm/main_fixed.s', encoding='utf-8').read()
 v = {'RESET': '0x0000', 'TASK_KILL': '0x0008', 'TASK_START': '0x0010', 'TASK_SLEEP': '0x0018',
      'TASK_YIELD': '0x0020', 'TASKS_CLEAR': '0x0028', 'TASK_SPAWN': '0x0030'}
 fx = re.sub(r'(\bld\s+(?:bc|de|hl|sp|ix|iy),)(' + '|'.join(v) + r')\b', lambda m: m.group(1) + v[m.group(2)], fx)
+# coin B's half of COIN_TABLE; the INITIALS_CODES table; GAME_VARS_CLEAR's block, which only starts at BLOWS_COUNT
+for old, new in (('ld      de,0xE372', 'ld      de,COIN_TABLE+8'),
+                 ('ld      de,0x37DF', 'ld      de,INITIALS_CODES'),
+                 ('ld      hl,BLOWS_COUNT\n        ld      bc,0x0035', 'ld      hl,0xE5DF\n        ld      bc,0x0035')):
+    assert fx.count(old) == 1, old
+    fx = fx.replace(old, new)
 open('src/main/fixed.s', 'w', encoding='utf-8', newline='\n').write(fx)
 P

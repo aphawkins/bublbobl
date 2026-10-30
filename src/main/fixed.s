@@ -1775,7 +1775,7 @@ L_0C27:                 ; 0C27
         jr      c,L_0C4E
         jr      L_0C5A
 
-; adds the credits a coin switch earns (table at DE) to E366 and CREDITS; the COIN_SCAN helper
+; adds the credits a coin switch earns (COIN_TABLE pair by the DSW0 coin field) to E366 and writes E366 to CREDITS; the COIN_SCAN helper. Seen in MAME: CREDITS follows this count, not the MCU's COINAGE
 COIN_ADD:               ; 0C39
         call    SHR3
         and     0x06
@@ -6751,7 +6751,7 @@ L_373B:                 ; 373B
 L_3756:                 ; 3756
         rst     0x20
         call    HIGH_ENTRY_PTR
-; the entered initials at HL against the 10 INITIALS_CODES: a match runs its INITIALS_CODE_JUMPS handler, else HIGH_ENTRY_END
+; the entered initials at HL against the 10 INITIALS_CODES: a match runs its INITIALS_CODE_JUMPS handler through INITIALS_CODE_RUN, else HIGH_ENTRY_END
 INITIALS_CODE_CHECK:    ; 375A
         ld      de,INITIALS_CODES
         ld      b,0x00
@@ -6783,6 +6783,7 @@ L_3771:                 ; 3771
         jr      nz,L_375F
         jp      HIGH_ENTRY_END
 
+; jumps to INITIALS_CODE_JUMPS entry B (the matched code)
 INITIALS_CODE_RUN:      ; 377F
         pop     de
         pop     hl
@@ -6792,7 +6793,7 @@ INITIALS_CODE_RUN:      ; 377F
         ex      de,hl
         jp      (hl)
 
-; SEX: the initials become 'H.!', sound 12, SCREEN_FLASH and SEX_COUNT + 1 (special kind 1D). Then a test of bit 3 of ROM byte 0002 (5E), always set, so it ends there; the PUSH DE / EX (SP),IX after it, which would run on into INITIALS_TAK, is never reached
+; SEX: the initials become 'H.!' (48 2E 21), sound 12, SCREEN_FLASH, SEX_COUNT + 1 (special kind 1D). Then BIT 3 of ROM byte 0002 (5E) is tested; it is always set, so it ends at HIGH_ENTRY_END, and the PUSH DE / EX (SP),IX running on into INITIALS_TAK is never reached
 INITIALS_SEX:           ; 378A
         call    HIGH_ENTRY_PTR
         ld      (hl),0x48
@@ -6852,10 +6853,10 @@ HIGH_ENTRY_END:         ; 37D1
         rst     0x18
         ret
 
-; the 10 high-score initials that give a special item: SEX TAK STR KTT ... I.F MTJ NSO KIM YSH
+; the 10 high-score initials checked by INITIALS_CODE_CHECK: SEX TAK STR KTT ... I.F MTJ NSO KIM YSH. Five are staff initials (Mitsuji, Nishiyori, Kimijima, Yoshida; I.F probably Ichiro Fujisue). Seen in MAME: these five are also the default best-5 initials, so a default entry matches nothing else
 INITIALS_CODES:         ; 37DF
         .incbin "main_fixed.bin", 0x37DF, 0x001E
-; INITIALS_CODE_RUN's handler for each of INITIALS_CODES
+; word table, one handler for each INITIALS_CODES entry: INITIALS_SEX, _TAK, _STR, _KTT, _DOTS, then INITIALS_STAFF five times
 INITIALS_CODE_JUMPS:    ; 37FD
         .word   INITIALS_SEX
         .word   INITIALS_TAK
@@ -9584,7 +9585,7 @@ L_503B:                 ; 503B
         ld      (hl),0xFF
         ret
 
-; Seen in MAME (--special 31-33): when E723 = 29 (special kinds 31-33): clears the bubbles, timer E72E = 960, ENEMY_TOTAL 0A, ends tasks 3 and 4, ROUND_MAIN + 1 kept in E726, then round record 65 (the secret room: a statue, rows of gems and a plate in the secret alphabet)
+; Seen in MAME (--special 31-33): when E723 = 29 (special kinds 31-33): clears the bubbles, timer E72E = 960, ENEMY_TOTAL 0A, ends tasks 3 and 4, ROUND_MAIN + 1 kept in E726, then round record and layout 65 (101; round 102 on screen): the secret room, a statue, rows of gems and a plate in the secret alphabet. Seen in MAME: ROUND_GRID in the room is layout 101
 SECRET_ROUND_START:     ; 5046
         ld      a,(SECRET_ROOM)
         cp      0x29
@@ -11082,7 +11083,7 @@ L_5C78:                 ; 5C78
         jp      nc,L_602A
         jp      L_5FE4
 
-; a popped fireball bubble (+38 b5): 100,000 points, and the popping player gets 16 fireballs (+45 b6, +40 = 10) now and at the start of the next 5 rounds (+42 = 5, PLAYER_FIRE_RENEW)
+; a popped fireball bubble (+38 b5): 100,000 points, and the popping player gets 16 fireballs (+45 b6, +40 = 10) now and at the start of the next 5 rounds (+42 = 5, PLAYER_FIRE_RENEW). Not seen in MAME
 FIREBALL_BUBBLE_POP:    ; 5CB0
         ld      de,0x5000
         call    BUBBLE_SCORE_UPDATE
