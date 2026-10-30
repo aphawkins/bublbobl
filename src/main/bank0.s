@@ -4349,7 +4349,7 @@ L_A1B3:                 ; A1B3
 ; +0 b2 (leaving), object state 13 (not in the secret round), stopped, then GHOST_FADE. Also when the sub CPU's GHOST_HITS sets +0 b0 (b1 = the player it killed): if that is the other ghost's player, the two ghosts swap players (F1CB, F1DD) first
 GHOST_LEAVE:            ; A1B8
         set     2,(ix+0)
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         and     a
         jr      nz,L_A1C5
         call    OBJ_STATE_13
@@ -4383,7 +4383,7 @@ L_A1F6:                 ; A1F6
         bit     1,(hl)
         jp      z,GHOST_NEXT
 L_A1FB:                 ; A1FB
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         and     a
         jr      z,L_A210
         call    OBJ_PTR
@@ -4498,7 +4498,7 @@ L_A2CA:                 ; A2CA
         ld      (ix+16),0x3A
         ld      hl,0xF1E6
         ld      (hl),0xB4
-        ld      hl,0xE723
+        ld      hl,SECRET_ROOM
         bit     0,(hl)
         jr      z,L_A2F6
         ld      c,0x19
@@ -4628,7 +4628,7 @@ GHOST_SPRITE:           ; A3CD
         call    ANIM_STEP
         add     a,a
         add     a,a
-        ld      hl,0xE723
+        ld      hl,SECRET_ROOM
         bit     0,(hl)
         jr      nz,L_A3E2
         add     a,0xE4
@@ -4654,7 +4654,7 @@ L_A3F6:                 ; A3F6
 GHOST_FADE:             ; A3FC
         ld      (ix+2),0x00
         ld      de,0x0A03
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         and     a
         jr      z,L_A40C
         ld      de,0x1403
@@ -4712,7 +4712,7 @@ GHOST_OFF_CHECK:        ; A452
         jp      GHOST_NEXT
 
 L_A481:                 ; A481
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         and     a
         jr      nz,L_A48A
         call    OBJ_STATE_15
@@ -4727,7 +4727,7 @@ L_A48D:                 ; A48D
 L_A497:                 ; A497
         add     a,a
         add     a,a
-        ld      hl,0xE723
+        ld      hl,SECRET_ROOM
         bit     0,(hl)
         jr      nz,L_A4A6
         add     a,0xB0
@@ -6437,7 +6437,7 @@ ENDING_START:           ; B34F
         ld      (hl),0x00
         call    SET_E2F5_RECS
         call    SET_E2F8_1A
-        ld      hl,0xF458
+        ld      hl,ENDINGS_COUNT
         inc     (hl)
         ld      iy,0x0038
         bit     3,(iy-54)

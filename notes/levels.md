@@ -42,8 +42,9 @@ Three pieces fill the grid at round start:
   bit stream, 3 bits a cell, and writes each pair of cells as bits 6-4 and 2-0 of one byte.
   Then it sets `GRID_REQUEST` to FF. The 100 layouts fill sub `0CFC–7D7B`. Two more
   follow: layout 100 (`ATTRACT_LAYOUT`, `7D7C`) is in `ROUND_GRID` in every attract and
-  title snapshot, where `ROUND_MAIN` is 0x64; layout 101 (`7E9C`) is in no trace or
-  snapshot. This is most of what the sub CPU's ROM holds. The rest of the sub CPU is the
+  title snapshot, where `ROUND_MAIN` is 0x64; layout 101 (`7E9C`) is the secret room's
+  (`SECRET_ROUND_START` sets `ROUND_MAIN` to 0x65; seen in MAME, `ROUND_GRID` in the room
+  matches it). This is most of what the sub CPU's ROM holds. The rest of the sub CPU is the
   hit tests (`notes/sub.md`).
 - **Rows 0–4 and 29–31 come from bank 1.** `ROUND_RECORD` byte 3 holds two pattern
   numbers. The high nibble picks a 0x50-byte top pattern (rows 0–4) and the low nibble a
@@ -162,14 +163,102 @@ bubble no state in `IX+0`.
   and is cleared. If none has, no special item comes this round. Kind 0E does not appear:
   it calls `90DD` and sets `F513` to FF instead.
 
-The counters count what the players do. Several counters feed more than one rule with rising
-thresholds, and the higher kind is tried first: `E5E3` gives kind 06 at 15, 07 at 20 and 08 at
-25, and these three set `E350` to 3, 5 and 7 when taken, probably the umbrellas that skip 3, 5
-and 7 rounds.
-`E5E7` gives kinds 09–0D at 15–19. Counters confirmed so far: `E5F6` counts the special items
-taken (`8794`), `E5FE` the HURRY UPs (`0839`) and `E611` the times Skel-Monsta came (`0888`),
-which gives kind 30. `E5F4` counts the enemies killed by a bubble in state b5 (sub `0572`). Kind 2E sets `F44D` (`8AA3`), so both items come after 0xF0 frames. The
-rest of the counters are listed by address in `items.json`; what each counts is still open.
+The counters count what the players do; `symbols.toml` says what each one counts and where it
+is raised. All but `F457`, `F458` and `F676` lie in `E5D9–E613`, and `GAME_VARS_CLEAR`
+(`E5DF–E613`) clears most of them only when the attract demo ends, so a new game can start with
+an item due. Several counters feed more than one rule with rising thresholds, and the higher
+kind is tried first (`WATER_POPS`, `WRAPS_COUNT`). Kind 2E sets `F44D` (`8AA3`), so both items
+come after 0xF0 frames.
+
+The table is the ROM's (`SPECIAL_RULES`); the threshold is one number, or four for `DIFFICULTY`
+0–4 / 5–7 / 8–11 / 12 and up. "Bell" is the rule's last byte, which `ITEM_HINT_INIT` reads
+through `F463`: with the bell (kind 29) taken, those items are announced. The item names are
+from Chris Moore's special items list (tjasink.com/games/bb/bb-stuff.txt, 1998), whose 54 rules
+match these exactly. Each counter was checked at the code that raises it; `DROWNED_COUNT`'s path
+from the water to `ENEMY_DEFEATED` was followed in the code but not seen in MAME.
+
+| Kind | Item | Counter | Threshold | Bell | Effect |
+|---|---|---|---|---|---|
+| 00 | red and white sweet (bubble range) | `BLOWS_COUNT` (`E5DF`) | 35 |  | `TAKE_BUBBLE_RANGE` |
+| 01 | blue sweet (bubble speed) | `EMPTY_POPS` (`E5E0`) | 35 |  | `TAKE_BUBBLE_SPEED` |
+| 02 | yellow sweet (bubble rate) | `JUMPS_COUNT` (`E5E4`) | 35 |  | `TAKE_BUBBLE_RATE` |
+| 03 | red shoe (walk faster) | `WALK_DISTANCE+1` (`E5E6`) | 12 |  | `TAKE_FAST_WALK` |
+| 04 | clock (enemies freeze) | `LIGHTNING_POPS` (`E5E1`) | 12 |  | `TAKE_FREEZE` |
+| 05 | bomb | `FIRE_POPS` (`E5E2`) | 10/13/16/19 | yes | `TAKE_KILL_ALL_A` |
+| 06 | orange umbrella (skip 3) | `WATER_POPS` (`E5E3`) | 15 |  | `TAKE_SKIP_3` |
+| 07 | red umbrella (skip 5) | `WATER_POPS` (`E5E3`) | 20 |  | `TAKE_SKIP_5` |
+| 08 | purple umbrella (skip 7) | `WATER_POPS` (`E5E3`) | 25 |  | `TAKE_SKIP_7` |
+| 09 | orange potion | `WRAPS_COUNT` (`E5E7`) | 15 |  | `TAKE_RUSH_A1` |
+| 0A | red potion | `WRAPS_COUNT` (`E5E7`) | 16 |  | `TAKE_RUSH_A2` |
+| 0B | green potion | `WRAPS_COUNT` (`E5E7`) | 17 |  | `TAKE_RUSH_A0` |
+| 0C | rainbow potion | `WRAPS_COUNT` (`E5E7`) | 18 |  | `TAKE_RUSH_C` |
+| 0D | cyan potion | `WRAPS_COUNT` (`E5E7`) | 19 |  | `TAKE_RUSH_B` |
+| 0E | flashing heart | `FRUITS_EATEN` (`E5E8`) | 50/55/60/65 | yes | `TAKE_NONE` |
+| 0F | cyan ring (walk points) | `SPEED_SWEETS` (`E5E9`) | 3 |  | `TAKE_WALK_POINTS` |
+| 10 | purple ring (jump points) | `RATE_SWEETS` (`E5EA`) | 3 |  | `TAKE_JUMP_POINTS` |
+| 11 | red ring (blow points) | `RANGE_SWEETS` (`E5EB`) | 3 |  | `TAKE_BLOW_POINTS` |
+| 12 | blue cross (flood) | `SPECIALS_TAKEN` (`E5F6`) | 10/11/12/13 | yes | `TAKE_FLOOD` |
+| 13 | yellow cross (lightning) | `POINTS_TAKEN` (`E5F7`) | 10/12/14/16 | yes | `TAKE_LIGHTNING` |
+| 14 | red cross (fire breath) | `DROWNED_COUNT` (`E5EE`) | 4/5/6/7 | yes | `TAKE_FIRE_BREATH` |
+| 15 | cyan lantern (all rings) | `P1_JOINS` (`E5EF`) | 5 |  | `TAKE_ALL_POINTS` |
+| 16 | red lantern (rings and sweets) | `P2_JOINS` (`E5F0`) | 5 |  | `TAKE_ALL_BOOSTS` |
+| 17 | purple lantern (explodes) | `SKIPS_TAKEN` (`E5EC`) | 1/1/2/2 | yes | `TAKE_BOMB` |
+| 18 | yellow lantern (all sweets) | `CLOCKS_TAKEN` (`E5ED`) | 1/2/3/4 |  | `TAKE_ALL_BUBBLE` |
+| 19 | book (screen shake) | `FIRE_KILLS` (`E5F3`) | 10/12/14/16 | yes | `TAKE_KILL_ALL_SHAKE` |
+| 1A | star tiara (falling stars) | `LIGHTNING_KILLS` (`E5F4`) | 10/12/14/16 | yes | `TAKE_STARS` |
+| 1B | red necklace (10 letters) | `GAMES_STARTED` (`E5D9`) | 15/20/25/30 |  | `TAKE_FREE_LETTERS` |
+| 1C | silver necklace (bouncing ball) | `ROUNDS_PLAYED` (`E5DA`) | 15/20/25/30 | yes | `TAKE_KILL_ALL_B` |
+| 1D | fork | `SEX_COUNT` (`F457`) | 1 | yes | `TAKE_FOOD_RAIN` |
+| 1E | purple chest | `ENDINGS_COUNT` (`F458`) | 1 |  | `TAKE_BIG_ITEM_1E` |
+| 1F | pink chest | `BOOKS_TAKEN` (`E601`) | 3 |  | `TAKE_BIG_ITEM_1F` |
+| 20 | brown chest | `BOMBS_TAKEN` (`E602`) | 3 |  | `TAKE_BIG_ITEM_20` |
+| 21 | cyan chest | `WATER_CROSSES` (`E600`) | 3 |  | `TAKE_BIG_ITEM_21` |
+| 22 | grey chest | `LIGHTNING_CROSSES` (`E5FF`) | 3 |  | `TAKE_BIG_ITEM_22` |
+| 23 | pink cane | `LETTER_COUNTS+5` (`E5FD`) | 3 |  | `TAKE_BIG_ITEM_23` |
+| 24 | red-brown cane | `LETTER_COUNTS+4` (`E5FC`) | 3 |  | `TAKE_BIG_ITEM_24` |
+| 25 | red cane | `LETTER_COUNTS+3` (`E5FB`) | 3 |  | `TAKE_BIG_ITEM_25` |
+| 26 | orange cane | `LETTER_COUNTS+2` (`E5FA`) | 3 |  | `TAKE_BIG_ITEM_26` |
+| 27 | light brown cane | `LETTER_COUNTS+1` (`E5F9`) | 3 |  | `TAKE_BIG_ITEM_27` |
+| 28 | cyan cane | `LETTER_COUNTS` (`E5F8`) | 3 |  | `TAKE_BIG_ITEM_28` |
+| 29 | bell | `HURRY_COUNT` (`E5FE`) | 8/10/12/14 |  | `TAKE_HINT_KEY` |
+| 2A | octopus | `TAK_COUNT` (`E604`) | 1 |  | `TAKE_END_ITEM_30` |
+| 2B | flamingo | `STR_COUNT` (`E605`) | 1 |  | `TAKE_END_ITEM_31` |
+| 2C | beer mug | `KTT_COUNT` (`E606`) | 1 |  | `TAKE_END_ITEM_32` |
+| 2D | knife | `DOTS_COUNT` (`E607`) | 1 | yes | `TAKE_FOOD_RAIN_B` |
+| 2E | crystal ball | `CROWNS_TAKEN` (`E609`) | 1 |  | `TAKE_ITEMS_EARLY` |
+| 2F | crayon | `ROUNDS_777` (`E60A`) | 1 |  | `TAKE_RUSH_C_SKIP` |
+| 30 | skull | `GHOST_COUNT` (`E611`) | 30/27/25/20 |  | `TAKE_HURRY_HAND` |
+| 31 | door (round 20) | `DOOR_20_DUE` (`E60D`) | 1 |  | `SECRET_ROUND_A` |
+| 32 | door (round 30) | `DOOR_30_DUE` (`E60E`) | 1 |  | `SECRET_ROUND_B` |
+| 33 | door (round 40) | `DOOR_40_DUE` (`E60F`) | 1 |  | `SECRET_ROUND_C` |
+| 34 | door (round 50 to 70) | `WARP_50_DUE` (`E610`) | 1 |  | `TAKE_SKIP_TO_70` |
+| 35 | red can | `STAFF_COUNT` (`E608`) | 1 | yes | `TAKE_FOOD_RAIN_C` |
+
+**High-score initials.** After the name entry, `INITIALS_CODE_CHECK` (`375A`) compares the
+initials with the 10 in `INITIALS_CODES` (`37DF`). A match adds 1 to a counter whose rule has
+threshold 1, so the special item comes at the start of the next round played:
+
+| Initials | Handler | Counter | Kind | Item seen in MAME | Effect described by arcade-history.com |
+|---|---|---|---|---|---|
+| SEX | `378A` | `SEX_COUNT` (`F457`) | 1D | a fork | items fly across the screen and the enemies become 6000-point diamonds |
+| TAK | `37AE` | `TAK_COUNT` (`E604`) | 2A | an octopus | the bubbles left at the round's end become X's |
+| STR | `37B4` | `STR_COUNT` (`E605`) | 2B | a flamingo | the same, other items |
+| KTT | `37BA` | `KTT_COUNT` (`E606`) | 2C | a beer mug | the same, pizzas |
+| ... | `37C0` | `DOTS_COUNT` (`E607`) | 2D | a knife | as SEX |
+| I.F, MTJ, NSO, KIM, YSH | `37C6` | `STAFF_COUNT` (`E608`) | 35 | a red can | as SEX, with sunflowers |
+
+The three "as SEX" kinds (1D, 2D, 35) are the ones whose rule sets `F463`; TAK, STR and KTT do
+not. SEX also changes the initials to "H.!", with sound 12 and `SCREEN_FLASH`; the staff
+initials play sound 2D. The five staff initials are from the credits (Mitsuji, Nishiyori,
+Kimijima, Yoshida; I.F is probably Ichiro Fujisue). They are also the default best-5 initials.
+
+Seen in MAME, for each of the six handlers (one set of initials each, MTJ for the staff): the
+initials entered at `375A` (SEX's shown as "H.!") set the counter, and when a game was started
+straight away its round 1 had that special kind; the item appeared and `SPECIAL_PICK` cleared
+the counter. `E604–E608` are in `GAME_VARS_CLEAR`, which the end of the attract demo runs
+(`BEST5_SCREEN`): with no new game, `TAK_COUNT` was cleared about 66 s after the entry.
+`SEX_COUNT` is outside it and was still set after 150 s of the attract loop, so the fork comes
+in the next game whenever it starts. What the items do when taken was not checked.
 
 `BANK2_CHECK` (`85AE`), called from kind 0's effect (`87B1`), `9104`, `A318` and `A978`, is
 a tamper check: it adds
@@ -245,9 +334,14 @@ The round 1 preview matches MAME's screenshot of round 1.
 
 ## Still open
 
-- What most of the `SPECIAL_RULES` counters count, and each kind's effect
-  (`SPECIAL_EFFECTS`, `bank2:8AFF`) and name.
-- What `ORIGINAL_GAME` changes (read at `227C`), and what `F463` does.
+- Why, after the last life was lost in the secret room (MAME, one life, kind 31 on round 1),
+  the zap screen ("ROUND 57", `ZAP_ROUND`'s picture) showed before GAME OVER.
+- The falling food (tjasink.com, not checked): when the last enemy goes, the bubbles left
+  become 700-point items on rounds 1, 5, 10 ... 50, 85, 86 and 92–94, or when a player's
+  score ends in two equal digits before the 0 (the digit picks the item), or when both
+  players' tens and hundreds digits match.
+- What the initials' special items (above) do when taken: kinds 1D, 2A-2D and 35 (try
+  `trace.py --special`).
+- What `ORIGINAL_GAME` changes besides the doors (read at `227C`, `ROUND_MILESTONE_FLAGS`).
 - What moves `DIFFICULTY` up and down.
-- Whether layout 101 (sub `7E9C`) is ever used.
 - Round 100's walls are drawn as usual, but the boss and the endings draw over them.

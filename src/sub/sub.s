@@ -522,7 +522,7 @@ FIND_ENEMY_NEXT:        ; 02D4
 ; set and a player is within 0x0A, +0 b0 is set, b1 = which player, and that
 ; player is killed. In main state E723 = 29, E730 = 1 too.
 GHOST_HITS:             ; 02E0
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         cp      0x29
         jr      z,GHOST_HITS_ON
         ld      a,(SUB_CHECKS)
@@ -539,7 +539,7 @@ GHOST_HITS_ON:          ; 02ED
         and     a
         jr      nz,GHOST_KILLS_P2
         res     1,(ix+0)
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         cp      0x29
         jp      nz,P1_KILL
         ld      hl,0xE730
@@ -548,7 +548,7 @@ GHOST_HITS_ON:          ; 02ED
 
 GHOST_KILLS_P2:         ; 0319
         set     1,(ix+0)
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         cp      0x29
         jp      nz,P2_KILL
         ld      hl,0xE730
@@ -566,7 +566,7 @@ GHOST2_HIT:             ; 032D
         and     a
         jr      nz,GHOST2_KILLS_P2
         res     1,(ix+0)
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         cp      0x29
         jp      nz,P1_KILL
         ld      hl,0xE730
@@ -575,7 +575,7 @@ GHOST2_HIT:             ; 032D
 
 GHOST2_KILLS_P2:        ; 0357
         set     1,(ix+0)
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         cp      0x29
         jp      nz,P2_KILL
         ld      hl,0xE730
@@ -843,7 +843,7 @@ STATE5_ENEMIES:         ; 0552
         ld      (hl),0x08
         ld      hl,ENEMY_TOTAL
         dec     (hl)
-        ld      hl,0xE5F4
+        ld      hl,LIGHTNING_KILLS
         inc     (hl)
         ld      (ix+26),0x20
         jp      BUBBLE_NEXT
@@ -1391,12 +1391,12 @@ POP_CHAIN_HIT:          ; 0968
         cp      0x02
         jr      c,L_099E
         ex      de,hl
-        ld      hl,0xF676
+        ld      hl,FREE_LETTERS
         inc     (hl)
         ld      a,(0xE5D7)
         cp      0x03
         jr      nz,L_099D
-        ld      hl,0xF676
+        ld      hl,FREE_LETTERS
         inc     (hl)
 L_099D:                 ; 099D
         ex      de,hl
@@ -1451,12 +1451,12 @@ POP_BY_PLAYER:          ; 09C7
         cp      0x02
         jr      c,L_0A02
         ex      de,hl
-        ld      hl,0xF676
+        ld      hl,FREE_LETTERS
         inc     (hl)
         ld      a,(0xE5D7)
         cp      0x03
         jr      nz,L_0A01
-        ld      hl,0xF676
+        ld      hl,FREE_LETTERS
         inc     (hl)
 L_0A01:                 ; 0A01
         ex      de,hl

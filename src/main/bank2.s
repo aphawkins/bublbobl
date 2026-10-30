@@ -473,12 +473,12 @@ L_857F:                 ; 857F
         call    PLAYER_SCORE_UPDATE
         ld      c,0x20
         call    SOUND_PUSH
-        ld      hl,0xE5F7
+        ld      hl,POINTS_TAKEN
         inc     (hl)
         ld      a,(POINTS_KIND)
         cp      0x36
         jr      c,L_85A0
-        ld      hl,0xE609
+        ld      hl,CROWNS_TAKEN
         inc     (hl)
 L_85A0:                 ; 85A0
         ld      hl,0x0078
@@ -758,7 +758,7 @@ L_876F:                 ; 876F
         set     1,(hl)
         ld      c,0x16
         call    SOUND_PUSH
-        ld      hl,0xE5F6
+        ld      hl,SPECIALS_TAKEN
         inc     (hl)
         ld      hl,(IRQ_VECTOR_ENTRY)
         ld      bc,IRQ_HANDLER
@@ -777,7 +777,7 @@ L_87A6:                 ; 87A6
 ; special kind 00: the player's bubbles travel twice as far (IX+49 = 80, from 40: the bubble's distance (IX+18)); BANK2_CHECK, E5EB + 1
 TAKE_BUBBLE_RANGE:      ; 87B1
         call    BANK2_CHECK
-        ld      hl,0xE5EB
+        ld      hl,RANGE_SWEETS
         inc     (hl)
         ld      (ix+49),0x80
         ret
@@ -785,7 +785,7 @@ TAKE_BUBBLE_RANGE:      ; 87B1
 ; special kind 01: the player's bubbles move 6 pixels a frame (IX+47 = 6, from 3: the bubble's (IX+31)); ROM_SUM_STEP_H, E5E9 + 1
 TAKE_BUBBLE_SPEED:      ; 87BD
         call    ROM_SUM_STEP_H
-        ld      hl,0xE5E9
+        ld      hl,SPEED_SWEETS
         inc     (hl)
         ld      (ix+47),0x06
         ret
@@ -793,7 +793,7 @@ TAKE_BUBBLE_SPEED:      ; 87BD
 ; special kind 02: shorter wait between bubbles (IX+46 = 5, from 14, copied to (IX+38) at each blow); ROM_SUM_STEP_I, E5EA + 1. Tamper check: byte 0004 must be START's low byte, else PUSH AF, PUSH IX
 TAKE_BUBBLE_RATE:       ; 87C9
         call    ROM_SUM_STEP_I
-        ld      hl,0xE5EA
+        ld      hl,RATE_SWEETS
         inc     (hl)
         ld      (ix+46),0x05
         ld      a,(0x0004)
@@ -830,7 +830,7 @@ TAKE_FREEZE:            ; 87FF
         jr      nz,L_880A
         push    hl
 L_880A:                 ; 880A
-        ld      hl,0xE5ED
+        ld      hl,CLOCKS_TAKEN
         inc     (hl)
         ld      hl,0xE341
         ld      (hl),0xFF
@@ -866,7 +866,7 @@ TAKE_SKIP_7:            ; 8836
         ld      (hl),0x07
 ; E5EC + 1; ends tasks 4, 5 and 2, SCREEN_FLASH, starts task 2 (ROUND_TASK) again; E34F = 1 and POINTS_FLAG_U = 1. E350 is the number of rounds to skip, counted down in the round code (0A8x)
 TAKE_SKIP:              ; 883E
-        ld      hl,0xE5EC
+        ld      hl,SKIPS_TAKEN
         inc     (hl)
         ld      a,0x04
         rst     0x08
@@ -994,12 +994,12 @@ TAKE_BLOW_POINTS:       ; 8909
         set     2,(ix+45)
         ret
 
-; special kind 12: F590 = 1 starts ROUND_SKIP; E600 + 1, ROM_SUM_STEP_E
-TAKE_ROUND_SKIP:        ; 8911
+; special kind 12 (the blue cross): F590 = 1 starts the flood; WATER_CROSSES + 1, ROM_SUM_STEP_E
+TAKE_FLOOD:             ; 8911
         call    ROM_SUM_STEP_E
         ld      hl,0xF590
         ld      (hl),0x01
-        ld      hl,0xE600
+        ld      hl,WATER_CROSSES
         inc     (hl)
         ret
 
@@ -1009,12 +1009,12 @@ TAKE_LIGHTNING:         ; 891E
         ld      hl,0xF595
         ld      (hl),0x01
         set     4,(ix+45)
-        ld      hl,0xE5FF
+        ld      hl,LIGHTNING_CROSSES
         inc     (hl)
         ret
 
-; special kind 14: IX+45 b6 and IX+40 = 10: the next 16 blows each make two bubbles
-TAKE_DOUBLE_BUBBLES:    ; 892F
+; special kind 14 (the red cross): IX+45 b6 and IX+40 = 10: the next 16 blows are fireballs
+TAKE_FIRE_BREATH:       ; 892F
         set     6,(ix+45)
         ld      (ix+40),0x10
         ret
@@ -1064,7 +1064,7 @@ L_8963:                 ; 8963
         ld      hl,0xF5B6
         ld      (hl),0x01
         set     5,(ix+45)
-        ld      hl,0xE602
+        ld      hl,BOMBS_TAKEN
         inc     (hl)
         ret
 
@@ -1078,7 +1078,7 @@ TAKE_ALL_BUBBLE:        ; 898E
 TAKE_KILL_ALL_SHAKE:    ; 8997
         ld      hl,0xE720
         ld      (hl),0x01
-        ld      hl,0xE601
+        ld      hl,BOOKS_TAKEN
         inc     (hl)
         ld      a,(0x0005)
         ld      de,START
@@ -1097,9 +1097,9 @@ TAKE_STARS:             ; 89AA
         ld      (hl),0x01
         ret
 
-; special kind 1B: F676 = 0A; meaning not known
-TAKE_1B:                ; 89BC
-        ld      hl,0xF676
+; special kind 1B (the red necklace): FREE_LETTERS = 0A, so the next 10 bubbles from the gaps are EXTEND letters
+TAKE_FREE_LETTERS:      ; 89BC
+        ld      hl,FREE_LETTERS
         ld      (hl),0x0A
         ret
 
@@ -1287,7 +1287,7 @@ TAKE_HURRY_HAND:        ; 8AB1
 SECRET_ROUND_A:         ; 8AB7
         ld      hl,0xE724
         ld      (hl),0x00
-        ld      hl,0xE723
+        ld      hl,SECRET_ROOM
         ld      (hl),0x29
         ret
 
@@ -1295,7 +1295,7 @@ SECRET_ROUND_A:         ; 8AB7
 SECRET_ROUND_B:         ; 8AC2
         ld      hl,0xE724
         ld      (hl),0x01
-        ld      hl,0xE723
+        ld      hl,SECRET_ROOM
         ld      (hl),0x29
         ret
 
@@ -1303,7 +1303,7 @@ SECRET_ROUND_B:         ; 8AC2
 SECRET_ROUND_C:         ; 8ACD
         ld      hl,0xE724
         ld      (hl),0x02
-        ld      hl,0xE723
+        ld      hl,SECRET_ROOM
         ld      (hl),0x29
         ret
 
@@ -1351,16 +1351,16 @@ SPECIAL_EFFECTS:        ; 8AFF
         .word   TAKE_WALK_POINTS
         .word   TAKE_JUMP_POINTS
         .word   TAKE_BLOW_POINTS
-        .word   TAKE_ROUND_SKIP
+        .word   TAKE_FLOOD
         .word   TAKE_LIGHTNING
-        .word   TAKE_DOUBLE_BUBBLES
+        .word   TAKE_FIRE_BREATH
         .word   TAKE_ALL_POINTS
         .word   TAKE_ALL_BOOSTS
         .word   TAKE_BOMB
         .word   TAKE_ALL_BUBBLE
         .word   TAKE_KILL_ALL_SHAKE
         .word   TAKE_STARS
-        .word   TAKE_1B
+        .word   TAKE_FREE_LETTERS
         .word   TAKE_KILL_ALL_B
         .word   TAKE_FOOD_RAIN
         .word   TAKE_BIG_ITEM_1E
@@ -1782,7 +1782,7 @@ L_8E14:                 ; 8E14
         ld      a,r
         and     0x01
         ld      (ix+8),a
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         and     a
         jr      nz,L_8E60
         ld      c,0x1E
@@ -4047,7 +4047,7 @@ WATER_RUN:              ; 9F7F
         ld      a,(0xF590)
         and     a
         ret     nz
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         and     a
         ret     nz
         ld      ix,0xF54B
@@ -4548,8 +4548,8 @@ L_A2EE:                 ; A2EE
         cp      (hl)
         ret     z
         push    de
-; Seen in MAME (--special 12): the playfield scrolls on to a later round. round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12
-ROUND_SKIP_INIT:        ; A2FC
+; Seen in MAME (special kind 12): water rises from the bottom of the playfield and the enemies drown and become diamonds; the round then ends. round start, called by OBJECTS_TASK: clears the state record at F590 (FLOOD). Part of the effect started by special kind 12
+FLOOD_INIT:             ; A2FC
         ld      hl,0xF590
         ld      bc,0x0005
         call    ZERO_BC
@@ -6479,7 +6479,7 @@ L_B227:                 ; B227
         call    CLOCK_RESET
         ld      hl,P1_REC
         ld      (hl),0x04
-        ld      hl,0xE5EF
+        ld      hl,P1_JOINS
         inc     (hl)
         ld      a,0x16
         call    SWB7_OUT
@@ -6568,7 +6568,7 @@ L_B2F0:                 ; B2F0
         call    CLOCK_RESET
         ld      hl,P2_REC
         ld      (hl),0x04
-        ld      hl,0xE5F0
+        ld      hl,P2_JOINS
         inc     (hl)
         ld      a,0x17
         call    SWB7_OUT
@@ -6828,7 +6828,7 @@ FIRE_ENEMY_HIT:         ; BAE5
         inc     hl
         inc     hl
         ld      (hl),0x09
-        ld      hl,0xE5F3
+        ld      hl,FIRE_KILLS
         inc     (hl)
         ld      hl,ENEMY_TOTAL
         dec     (hl)

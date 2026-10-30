@@ -254,7 +254,7 @@ L_0158:                 ; 0158
         jp      0x8000
 
 L_0171:                 ; 0171
-        call    BANK3_ROW_COPY
+        call    COIN_TABLE_LOAD
         ld      a,0xEF
         ld      (SOUND_CMD),a
         call    VIDEO_OFF
@@ -1227,7 +1227,7 @@ L_081A:                 ; 081A
         ld      (hl),0x01
         ld      hl,POINTS_FLAG_H
         ld      (hl),0x01
-        ld      hl,0xE5FE
+        ld      hl,HURRY_COUNT
         inc     (hl)
         ld      hl,(0x0004)
         ld      de,START
@@ -1263,7 +1263,7 @@ GHOST_CLOCK:            ; 085F
         ld      (hl),0xFF
         ld      hl,POINTS_FLAG_G
         ld      (hl),0x01
-        ld      hl,0xE611
+        ld      hl,GHOST_COUNT
         inc     (hl)
         ld      a,(MCU_READY)
         bit     0,a
@@ -1720,15 +1720,15 @@ L_0BC0:                 ; 0BC0
         ldir
         jp      BANK_RESTORE
 
-; bank 3: 16 bytes from BFDF + 16 x (BFFF) to E36A
-BANK3_ROW_COPY:         ; 0BC8
+; at start-up: the COIN_TABLES entry COIN_REGION picks (16 bytes from bank 3) to COIN_TABLE
+COIN_TABLE_LOAD:        ; 0BC8
         ld      a,0x03
         call    BANK_SELECT
         ld      a,(0xBFFF)
         call    SHL4
         ld      hl,0xBFDF
         call    ADD_HL_A
-        ld      de,0xE36A
+        ld      de,COIN_TABLE
         ld      bc,0x0010
         ldir
         jp      BANK_RESTORE
@@ -1753,7 +1753,7 @@ L_0BF2:                 ; 0BF2
         jr      nz,L_0C10
         ld      hl,0xE364
         ld      a,(DSW0_COPY)
-        ld      de,0xE36A
+        ld      de,COIN_TABLE
         call    COIN_ADD
 L_0C10:                 ; 0C10
         ld      a,(0xE35F)
@@ -1763,7 +1763,7 @@ L_0C10:                 ; 0C10
         ld      a,(DSW0_COPY)
         srl     a
         srl     a
-        ld      de,0xE372
+        ld      de,COIN_TABLE+8
         call    COIN_ADD
 L_0C27:                 ; 0C27
         ld      a,(0xE363)
@@ -4101,7 +4101,7 @@ L_1DB5:                 ; 1DB5
         call    SET_E1D0_10
         xor     a
         ld      (ROUND_MAIN),a
-        ld      (0xF676),a
+        ld      (FREE_LETTERS),a
         ld      (0xE34F),a
         ld      (0xE350),a
         ld      (0xE742),a
@@ -4356,7 +4356,7 @@ START_BUTTON_CHECK:     ; 1FF7
         bit     6,a
         jr      nz,L_205C
         dec     (hl)
-        ld      hl,0xE5D9
+        ld      hl,GAMES_STARTED
         inc     (hl)
         jr      L_202B
 
@@ -4365,7 +4365,7 @@ L_200D:                 ; 200D
         bit     6,a
         jr      nz,L_201B
         dec     (hl)
-        ld      hl,0xE5D9
+        ld      hl,GAMES_STARTED
         inc     (hl)
         jr      L_202B
 
@@ -4375,7 +4375,7 @@ L_201B:                 ; 201B
         jr      nz,L_205C
         dec     (hl)
         dec     (hl)
-        ld      hl,0xE5D9
+        ld      hl,GAMES_STARTED
         inc     (hl)
         inc     (hl)
         jr      L_2041
@@ -4605,19 +4605,19 @@ L_224E:                 ; 224E
         .incbin "main_fixed.bin", 0x2250, 0x000C
 ; ROUND_LOOP at each round's end: the word E60B + 1 (at 0x309 it goes back to 0 and E60A + 1), and E5DA + 1
 ROUND_COUNT_UP:         ; 225C
-        ld      de,(0xE60B)
+        ld      de,(ROUND_TALLY)
         inc     de
-        ld      (0xE60B),de
+        ld      (ROUND_TALLY),de
         ld      hl,0x0309
         or      a
         sbc     hl,de
         jr      nz,L_2277
         ld      hl,0x0000
-        ld      (0xE60B),hl
-        ld      hl,0xE60A
+        ld      (ROUND_TALLY),hl
+        ld      hl,ROUNDS_777
         inc     (hl)
 L_2277:                 ; 2277
-        ld      hl,0xE5DA
+        ld      hl,ROUNDS_PLAYED
         inc     (hl)
         ret
 
@@ -4643,28 +4643,28 @@ L_229C:                 ; 229C
         ld      a,(ROUND_MAIN)
         cp      0x13
         jr      nz,L_22A9
-        ld      hl,0xE60D
+        ld      hl,DOOR_20_DUE
         ld      (hl),0x01
         ret
 
 L_22A9:                 ; 22A9
         cp      0x1D
         jr      nz,L_22B3
-        ld      hl,0xE60E
+        ld      hl,DOOR_30_DUE
         ld      (hl),0x01
         ret
 
 L_22B3:                 ; 22B3
         cp      0x27
         jr      nz,L_22BD
-        ld      hl,0xE60F
+        ld      hl,DOOR_40_DUE
         ld      (hl),0x01
         ret
 
 L_22BD:                 ; 22BD
         cp      0x31
         ret     nz
-        ld      hl,0xE610
+        ld      hl,WARP_50_DUE
         ld      (hl),0x01
         ret
 
@@ -5480,7 +5480,7 @@ TITLE_TASK:             ; 2AF8
 ; attract demo: E635 b0 picks the how-to-play round (this routine) or the 2-player demo game (DEMO_GAME)
 DEMO_SELECT:            ; 2B15
         call    SET_E2D5_RECS
-        ld      hl,0xF676
+        ld      hl,FREE_LETTERS
         ld      (hl),0x00
         call    PLAYERS_CLEAR
         ld      hl,0xE635
@@ -6751,8 +6751,9 @@ L_373B:                 ; 373B
 L_3756:                 ; 3756
         rst     0x20
         call    HIGH_ENTRY_PTR
-NAME_TABLE_LD:          ; 375A
-        ld      de,0x37DF
+; the entered initials at HL against the 10 INITIALS_CODES: a match runs its INITIALS_CODE_JUMPS handler, else HIGH_ENTRY_END
+INITIALS_CODE_CHECK:    ; 375A
+        ld      de,INITIALS_CODES
         ld      b,0x00
 L_375F:                 ; 375F
         push    hl
@@ -6769,7 +6770,7 @@ L_375F:                 ; 375F
         inc     de
         ld      a,(de)
         cp      (hl)
-        jr      z,L_377F
+        jr      z,INITIALS_CODE_RUN
 L_3771:                 ; 3771
         pop     de
         pop     hl
@@ -6782,16 +6783,17 @@ L_3771:                 ; 3771
         jr      nz,L_375F
         jp      HIGH_ENTRY_END
 
-L_377F:                 ; 377F
+INITIALS_CODE_RUN:      ; 377F
         pop     de
         pop     hl
         ld      a,b
-        ld      hl,L_37FD
+        ld      hl,INITIALS_CODE_JUMPS
         call    TABLE_WORD
         ex      de,hl
         jp      (hl)
 
-L_378A:                 ; 378A
+; SEX: the initials become 'H.!', sound 12, SCREEN_FLASH and SEX_COUNT + 1 (special kind 1D). Then a test of bit 3 of ROM byte 0002 (5E), always set, so it ends there; the PUSH DE / EX (SP),IX after it, which would run on into INITIALS_TAK, is never reached
+INITIALS_SEX:           ; 378A
         call    HIGH_ENTRY_PTR
         ld      (hl),0x48
         inc     hl
@@ -6801,35 +6803,40 @@ L_378A:                 ; 378A
         ld      c,0x12
         call    SOUND_PUSH
         call    SCREEN_FLASH
-        ld      hl,0xF457
+        ld      hl,SEX_COUNT
         inc     (hl)
         ld      iy,0x0061
         bit     3,(iy-95)
         jr      nz,HIGH_ENTRY_END
         push    de
         ex      (sp),ix
-L_37AE:                 ; 37AE
-        ld      hl,0xE604
+; TAK: TAK_COUNT + 1 (special kind 2A)
+INITIALS_TAK:           ; 37AE
+        ld      hl,TAK_COUNT
         inc     (hl)
         jr      HIGH_ENTRY_END
 
-L_37B4:                 ; 37B4
-        ld      hl,0xE605
+; STR: STR_COUNT + 1 (special kind 2B)
+INITIALS_STR:           ; 37B4
+        ld      hl,STR_COUNT
         inc     (hl)
         jr      HIGH_ENTRY_END
 
-L_37BA:                 ; 37BA
-        ld      hl,0xE606
+; KTT: KTT_COUNT + 1 (special kind 2C)
+INITIALS_KTT:           ; 37BA
+        ld      hl,KTT_COUNT
         inc     (hl)
         jr      HIGH_ENTRY_END
 
-L_37C0:                 ; 37C0
-        ld      hl,0xE607
+; '...': DOTS_COUNT + 1 (special kind 2D)
+INITIALS_DOTS:          ; 37C0
+        ld      hl,DOTS_COUNT
         inc     (hl)
         jr      HIGH_ENTRY_END
 
-L_37C6:                 ; 37C6
-        ld      hl,0xE608
+; I.F, MTJ, NSO, KIM, YSH (staff initials): STAFF_COUNT + 1 (special kind 35), sound 2D
+INITIALS_STAFF:         ; 37C6
+        ld      hl,STAFF_COUNT
         inc     (hl)
         ld      c,0x2D
         call    SOUND_PUSH
@@ -6845,20 +6852,21 @@ HIGH_ENTRY_END:         ; 37D1
         rst     0x18
         ret
 
-; 3-letter names (default hi-score initials?)
-NAME_TABLE:             ; 37DF
+; the 10 high-score initials that give a special item: SEX TAK STR KTT ... I.F MTJ NSO KIM YSH
+INITIALS_CODES:         ; 37DF
         .incbin "main_fixed.bin", 0x37DF, 0x001E
-L_37FD:                 ; 37FD
-        .word   L_378A
-        .word   L_37AE
-        .word   L_37B4
-        .word   L_37BA
-        .word   L_37C0
-        .word   L_37C6
-        .word   L_37C6
-        .word   L_37C6
-        .word   L_37C6
-        .word   L_37C6
+; INITIALS_CODE_RUN's handler for each of INITIALS_CODES
+INITIALS_CODE_JUMPS:    ; 37FD
+        .word   INITIALS_SEX
+        .word   INITIALS_TAK
+        .word   INITIALS_STR
+        .word   INITIALS_KTT
+        .word   INITIALS_DOTS
+        .word   INITIALS_STAFF
+        .word   INITIALS_STAFF
+        .word   INITIALS_STAFF
+        .word   INITIALS_STAFF
+        .word   INITIALS_STAFF
 ; HL = E658 + 7 x (E677)
 HIGH_ENTRY_PTR:         ; 3811
         ld      a,(0xE677)
@@ -7576,7 +7584,7 @@ L_3EE4:                 ; 3EE4
         ld      a,(ix+45)
         and     0x38
         ld      (ix+45),a
-        call    PLAYER_SHIELD_START
+        call    PLAYER_FIRE_RENEW
         call    POWER_UP_STATS
         xor     a
         ld      (POTION_P1),a
@@ -7634,7 +7642,7 @@ L_3F68:                 ; 3F68
         ld      a,(ix+45)
         and     0x38
         ld      (ix+45),a
-        call    PLAYER_SHIELD_START
+        call    PLAYER_FIRE_RENEW
         call    POWER_UP_STATS
         xor     a
         ld      (POTION_P2),a
@@ -7657,7 +7665,7 @@ L_3FC1:                 ; 3FC1
         ld      (ix+46),0x14
         ld      (ix+47),0x03
         ld      (ix+45),0x00
-        call    PLAYER_SHIELD_START
+        call    PLAYER_FIRE_RENEW
 ; unless ATTRACT: with POWER_UP or in round 100 (IX+48) = 14 and (IX+47) = 06
 POWER_UP_STATS:         ; 3FDC
         ld      a,(ATTRACT)
@@ -7680,8 +7688,8 @@ P2_STATS_INIT:          ; 3FFA
         ld      ix,P2_REC
         jr      L_3FC1
 
-; if (IX+42) is nonzero: counts it down and starts the blink: (IX+45) b6, (IX+40) = 10
-PLAYER_SHIELD_START:    ; 4000
+; at round start, if (IX+42) (rounds of fire breath left from the fireball bubble) is nonzero: counts it down and gives the player 16 fireballs: (IX+45) b6, (IX+40) = 10
+PLAYER_FIRE_RENEW:      ; 4000
         ld      a,(ix+42)
         or      a
         ret     z
@@ -8081,7 +8089,7 @@ L_4313:                 ; 4313
         call    OBJ_PTR
         dec     (hl)
         jr      nz,L_431D
-        ld      hl,0xE5E7
+        ld      hl,WRAPS_COUNT
         inc     (hl)
 L_431D:                 ; 431D
         pop     bc
@@ -8557,7 +8565,7 @@ L_4759:                 ; 4759
         .incbin "main_fixed.bin", 0x475B, 0x00B4
 ; the word E5E5 + (IX+32) (pixels walked); with +45 b0 (TAKE_WALK_POINTS) 10 points
 PLAYER_WALK_SCORE:      ; 480F
-        ld      hl,0xE5E5
+        ld      hl,WALK_DISTANCE
         ld      a,(hl)
         add     a,(ix+32)
         ld      (hl),a
@@ -8649,7 +8657,7 @@ L_48A6:                 ; 48A6
         ld      de,0x0050
         call    nz,PLAYER_SCORE_UPDATE
         set     0,(ix+12)
-        ld      hl,0xE5E4
+        ld      hl,JUMPS_COUNT
         inc     (hl)
         call    PLAYER_FLAGS_GET
         bit     0,a
@@ -8947,7 +8955,7 @@ L_4B71:                 ; 4B71
         res     0,(ix+27)
         ret
 
-; PLAYER_PLAY_STEP: the bubble button (input b5 clear, once a press: +10 b1) writes the blow request at E75E (P1) or E764 (P2): 1 (2 while +45 b6, the double bubble, counting (IX+40) down), Y, X, facing, range (+49), speed (+47); then a speed from the table at 4C1B by (IX+18). Tamper check: MCU_READY & 25 zero pushes BC
+; PLAYER_PLAY_STEP: the bubble button (input b5 clear, once a press: +10 b1) writes the blow request at E75E (P1) or E764 (P2): 1 (2, a fireball, while +45 b6, counting (IX+40) down), Y, X, facing, range (+49), speed (+47); then a speed from the table at 4C1B by (IX+18). Tamper check: MCU_READY & 25 zero pushes BC
 PLAYER_BLOW:            ; 4B76
         bit     0,(ix+10)
         jp      nz,L_4C03
@@ -9009,7 +9017,7 @@ L_4BDD:                 ; 4BDD
         inc     hl
         ld      a,(hl)
         call    PLAYER_SPEED_SET
-        ld      hl,0xE5DF
+        ld      hl,BLOWS_COUNT
         inc     (hl)
         bit     2,(ix+45)
         ld      de,0x0010
@@ -9578,7 +9586,7 @@ L_503B:                 ; 503B
 
 ; Seen in MAME (--special 31-33): when E723 = 29 (special kinds 31-33): clears the bubbles, timer E72E = 960, ENEMY_TOTAL 0A, ends tasks 3 and 4, ROUND_MAIN + 1 kept in E726, then round record 65 (the secret room: a statue, rows of gems and a plate in the secret alphabet)
 SECRET_ROUND_START:     ; 5046
-        ld      a,(0xE723)
+        ld      a,(SECRET_ROOM)
         cp      0x29
         ret     nz
         ld      hl,SUB_CHECKS
@@ -10000,7 +10008,7 @@ SECRET_ROUND_EXIT:      ; 53CF
         call    SOUND_PUSH
         ld      hl,0xE342
         ld      (hl),0x01
-        ld      hl,0xE723
+        ld      hl,SECRET_ROOM
         ld      (hl),0x00
         ld      hl,0xE357
         ld      (hl),0x01
@@ -11052,7 +11060,7 @@ L_5C37:                 ; 5C37
 
 L_5C78:                 ; 5C78
         bit     5,(ix+38)
-        jr      nz,L_5CB0
+        jr      nz,FIREBALL_BUBBLE_POP
         ld      a,(0xE76A)
         and     a
         jp      nz,L_5F7B
@@ -11074,7 +11082,8 @@ L_5C78:                 ; 5C78
         jp      nc,L_602A
         jp      L_5FE4
 
-L_5CB0:                 ; 5CB0
+; a popped fireball bubble (+38 b5): 100,000 points, and the popping player gets 16 fireballs (+45 b6, +40 = 10) now and at the start of the next 5 rounds (+42 = 5, PLAYER_FIRE_RENEW)
+FIREBALL_BUBBLE_POP:    ; 5CB0
         ld      de,0x5000
         call    BUBBLE_SCORE_UPDATE
         push    ix
@@ -11178,7 +11187,7 @@ L_5D57:                 ; 5D57
 L_5D89:                 ; 5D89
         ld      de,0x0001
         call    BUBBLE_SCORE_UPDATE
-        ld      hl,0xE5E0
+        ld      hl,EMPTY_POPS
         inc     (hl)
         jp      L_5F7B
 
@@ -11325,7 +11334,7 @@ L_5EB1:                 ; 5EB1
         ld      a,(0xE76A)
         and     a
         jr      z,L_5EC4
-        ld      hl,0xF676
+        ld      hl,FREE_LETTERS
         inc     (hl)
         jp      L_5F7B
 
@@ -11350,7 +11359,7 @@ L_5EDD:                 ; 5EDD
         ld      (hl),a
         push    af
         ld      a,(ix+23)
-        ld      hl,0xE5F8
+        ld      hl,LETTER_COUNTS
         call    ADD_HL_A
         inc     (hl)
         call    EXTEND_LETTERS_DRAW
@@ -13123,7 +13132,7 @@ L_6E16:                 ; 6E16
         ld      a,0x25
         call    RAND_BELOW
         jr      nc,L_6E71
-        ld      a,(0xF676)
+        ld      a,(FREE_LETTERS)
         and     a
         jr      nz,L_6E82
         ld      a,(0xE380)
@@ -13162,7 +13171,7 @@ L_6E71:                 ; 6E71
         jp      L_602A
 
 L_6E82:                 ; 6E82
-        ld      hl,0xF676
+        ld      hl,FREE_LETTERS
         dec     (hl)
         ld      iy,0x0026
         ld      de,START
@@ -15002,7 +15011,7 @@ L_7C0B:                 ; 7C0B
         set     6,(hl)
         ld      hl,ENEMY_TOTAL
         dec     (hl)
-        ld      hl,0xE5EE
+        ld      hl,DROWNED_COUNT
         inc     (hl)
         set     2,(ix+14)
         set     0,(ix+14)
@@ -15342,7 +15351,7 @@ L_7EE4:                 ; 7EE4
         dec     hl
         dec     hl
         dec     hl
-        ld      hl,0xE5E8
+        ld      hl,FRUITS_EATEN
         inc     (hl)
         ld      a,b
         ld      (PLAYER_NOW),a

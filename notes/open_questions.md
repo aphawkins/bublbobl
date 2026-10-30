@@ -13,10 +13,6 @@ still differ.
   MCU's round copy is 12, the MCU sets `CREDITS` to 42. Does the main CPU ever write
   `FC71`? Is this a test or operator feature, or a leftover?
   Traces so far: the main CPU writes `FC71` only in its start-up RAM test.
-- **Coinage order (`mcu:$F187`).** The MCU table gives DSW coin field 0 = 2 coins 1
-  credit and field 1 = 2 coins 3 credits. MAME's DIP list for `bublbobl` has 0x00 =
-  2C_3C and 0x10 = 2C_1C. Check in MAME by setting the DIP and inserting coins. If the
-  MCU is right, report it to MAME.
 - **`FETCH_BLOCKS` (`mcu:$F9B1`).** 5 × 256 bytes that the main CPU can read one byte at
   a time through `FF88–FF93`. Parts are equal to sound ROM bytes (`a78-07` at `23B0`,
   `2450`, `2532`), and the rest reads as Z80 code. Which blocks, indexes and offsets

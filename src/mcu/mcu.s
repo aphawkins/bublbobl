@@ -248,7 +248,10 @@ L_F182:                 ; F182
         rts
 
 ; Data: 4 x (coins, credits) for a 2-bit DSW0 coin field 0-3:
-; 2C1C, 2C3C, 1C2C, 1C1C. MAME's DIP list has fields 0 and 1 the other way round.
+; 2C1C, 2C3C, 1C2C, 1C1C. MAME's DIP list has fields 0 and 1 the other way round, and
+; MAME is right for the game: seen in MAME, the main CPU counts coins itself (COIN_ADD, from
+; its COIN_TABLE: 2C3C, 2C1C, 1C2C, 1C1C) and writes its count to CREDITS after each coin,
+; over the MCU's (which showed 4 after two coins in both 2-coin settings).
 COINAGE:                ; F187
         .incbin "mcu.bin", 0x0187, 0x0008
 ; P1 b5 = 1: coin counter mode (MAME: 1-way or 2-way counter).

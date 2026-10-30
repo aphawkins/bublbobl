@@ -57,6 +57,52 @@ POINTS_STATE  = { addr = 0xF44F, note = "b0 shown, b1 taken (its score rises), b
 POINTS_TIMER  = { addr = 0xF450, size = 2, note = "frames: 1A4 (F0 if F44D) until it appears, then 258 on show" }
 SPECIAL_KIND  = { addr = 0xF45E, note = "the special item: entry in bank2:SPECIAL_ITEMS" }
 BANK2_SUM     = { addr = 0xF45D, note = "bank3:938A (FA), copied at 2529: the sum of bank2 9532-B787, every other byte, that BANK2_CHECK expects" }
+TAK_COUNT     = { addr = 0xE604, note = "the high-score initials TAK (INITIALS_TAK): SPECIAL_RULES counter for kind 2A (threshold 1). In GAME_VARS_CLEAR: seen in MAME, the item (an octopus) comes on round 1 of a game started straight after the entry, and the end of the attract demo (BEST5_SCREEN, about 66 s on) clears it" }
+STR_COUNT     = { addr = 0xE605, note = "as TAK_COUNT for STR, kind 2B" }
+KTT_COUNT     = { addr = 0xE606, note = "as TAK_COUNT for KTT, kind 2C" }
+DOTS_COUNT    = { addr = 0xE607, note = "as TAK_COUNT for '...', kind 2D" }
+STAFF_COUNT   = { addr = 0xE608, note = "as TAK_COUNT for the staff initials I.F, MTJ, NSO, KIM and YSH, kind 35" }
+SEX_COUNT     = { addr = 0xF457, note = "the high-score initials SEX (INITIALS_SEX): SPECIAL_RULES counter for kind 1D (threshold 1). Seen in MAME: outside GAME_VARS_CLEAR, it outlasts the attract loop (still 1 after 150 s); SPECIAL_PICK clears it when the item (a fork) comes" }
+GAMES_STARTED = { addr = 0xE5D9, note = "games started, + 1 for each player (START_BUTTON_CHECK): SPECIAL_RULES counter for kind 1B (15-30)" }
+ROUNDS_PLAYED = { addr = 0xE5DA, note = "rounds finished (ROUND_COUNT_UP): SPECIAL_RULES counter for kind 1C (15-30)" }
+BLOWS_COUNT   = { addr = 0xE5DF, note = "bubbles blown by either player (4BE5): SPECIAL_RULES counter for kind 00 (35). First byte of GAME_VARS_CLEAR" }
+EMPTY_POPS    = { addr = 0xE5E0, note = "empty bubbles popped, 10 points each (5D92): SPECIAL_RULES counter for kind 01 (35)" }
+LIGHTNING_POPS = { addr = 0xE5E1, note = "lightning bubbles popped (5F6D, through the word table at 5F75 by IX+24 - 1): SPECIAL_RULES counter for kind 04 (12)" }
+FIRE_POPS     = { addr = 0xE5E2, note = "fire bubbles popped (as LIGHTNING_POPS): SPECIAL_RULES counter for kind 05 (10-19)" }
+WATER_POPS    = { addr = 0xE5E3, note = "water bubbles popped (as LIGHTNING_POPS): SPECIAL_RULES counter for kind 06, 07 and 08 (15, 20, 25)" }
+JUMPS_COUNT   = { addr = 0xE5E4, note = "jumps by either player (48CC): SPECIAL_RULES counter for kind 02 (35)" }
+WALK_DISTANCE = { addr = 0xE5E5, size = 2, note = "pixels walked by either player (PLAYER_WALK_SCORE adds (IX+32)); the high byte E5E6 is the SPECIAL_RULES counter for kind 03 (12, so 12 x 256 pixels)" }
+WRAPS_COUNT   = { addr = 0xE5E7, note = "falls off the bottom of the screen to the top (PLAYER_FALL, 431C): SPECIAL_RULES counter for kind 09-0D (15-19)" }
+FRUITS_EATEN  = { addr = 0xE5E8, note = "fruits from beaten enemies taken (7EEA): SPECIAL_RULES counter for kind 0E (50-65)" }
+SPEED_SWEETS  = { addr = 0xE5E9, note = "kind 01 items taken (TAKE_BUBBLE_SPEED): SPECIAL_RULES counter for kind 0F (3)" }
+RATE_SWEETS   = { addr = 0xE5EA, note = "kind 02 items taken (TAKE_BUBBLE_RATE): SPECIAL_RULES counter for kind 10 (3)" }
+RANGE_SWEETS  = { addr = 0xE5EB, note = "kind 00 items taken (TAKE_BUBBLE_RANGE): SPECIAL_RULES counter for kind 11 (3)" }
+SKIPS_TAKEN   = { addr = 0xE5EC, note = "TAKE_SKIP runs: the umbrellas (kinds 06-08) and kind 34: SPECIAL_RULES counter for kind 17 (1-2)" }
+CLOCKS_TAKEN  = { addr = 0xE5ED, note = "kind 04 items taken (TAKE_FREEZE, 880A): SPECIAL_RULES counter for kind 18 (1-4)" }
+DROWNED_COUNT = { addr = 0xE5EE, note = "enemies the water carries off (ENEMY_DEFEATED with +14 b2, which ENEMY_HIT_REACT sets from the ENEMY_HITS record's b2, the state WATER_ENEMY_TAKE writes): SPECIAL_RULES counter for kind 14 (4-7)" }
+P1_JOINS      = { addr = 0xE5EF, note = "player 1 joining a game in progress (the join code from bank2:B227): SPECIAL_RULES counter for kind 15 (5)" }
+P2_JOINS      = { addr = 0xE5F0, note = "player 2 joining a game in progress (the join code from bank2:B2F0): SPECIAL_RULES counter for kind 16 (5)" }
+FIRE_KILLS    = { addr = 0xE5F3, note = "enemies killed by a fire bubble's flames (FIRE_ENEMY_HIT): SPECIAL_RULES counter for kind 19 (10-16)" }
+LIGHTNING_KILLS = { addr = 0xE5F4, note = "enemies killed by lightning, a bubble in state b5 (sub 0572): SPECIAL_RULES counter for kind 1A (10-16)" }
+SPECIALS_TAKEN = { addr = 0xE5F6, note = "special items taken (bank2:8797): SPECIAL_RULES counter for kind 12 (10-13)" }
+POINTS_TAKEN  = { addr = 0xE5F7, note = "points items taken (bank2:8594): SPECIAL_RULES counter for kind 13 (10-16)" }
+LETTER_COUNTS = { addr = 0xE5F8, size = 6, note = "EXTEND letters taken, one byte a letter (E X T E N D, by the bubble's IX+23): SPECIAL_RULES counter for kinds 28 down to 23 (3 each), the candy canes" }
+HURRY_COUNT   = { addr = 0xE5FE, note = "HURRY UPs (083C): SPECIAL_RULES counter for kind 29 (8-14)" }
+LIGHTNING_CROSSES = { addr = 0xE5FF, note = "kind 13 items taken (TAKE_LIGHTNING): SPECIAL_RULES counter for kind 22 (3)" }
+WATER_CROSSES = { addr = 0xE600, note = "kind 12 items taken (TAKE_FLOOD): SPECIAL_RULES counter for kind 21 (3)" }
+BOOKS_TAKEN   = { addr = 0xE601, note = "kind 19 items taken (TAKE_KILL_ALL_SHAKE): SPECIAL_RULES counter for kind 1F (3)" }
+BOMBS_TAKEN   = { addr = 0xE602, note = "kind 17 items taken (TAKE_BOMB): SPECIAL_RULES counter for kind 20 (3)" }
+CROWNS_TAKEN  = { addr = 0xE609, note = "points items of kind 36 or above (the crowns) taken (bank2:859F): SPECIAL_RULES counter for kind 2E (1)" }
+ROUNDS_777    = { addr = 0xE60A, note = "ROUND_COUNT_UP: + 1 each time ROUND_TALLY reaches 777 (0x309): SPECIAL_RULES counter for kind 2F (1)" }
+ROUND_TALLY   = { addr = 0xE60B, size = 2, note = "rounds finished, 0-776 (ROUND_COUNT_UP)" }
+DOOR_20_DUE   = { addr = 0xE60D, note = "1 from ROUND_MILESTONE_FLAGS on reaching round 20 without a death (or ORIGINAL_GAME): SPECIAL_RULES counter for kind 31, the secret room door" }
+DOOR_30_DUE   = { addr = 0xE60E, note = "as DOOR_20_DUE for round 30: kind 32" }
+DOOR_40_DUE   = { addr = 0xE60F, note = "as DOOR_20_DUE for round 40: kind 33" }
+WARP_50_DUE   = { addr = 0xE610, note = "as DOOR_20_DUE for round 50: kind 34, the door to round 70 (TAKE_SKIP_TO_70)" }
+GHOST_COUNT   = { addr = 0xE611, note = "Skel-Monsta's arrivals (GHOST_CLOCK, 0888): SPECIAL_RULES counter for kind 30 (20-30)" }
+ENDINGS_COUNT = { addr = 0xF458, note = "round 100 finished (ENDING_START): SPECIAL_RULES counter for kind 1E (1)" }
+FREE_LETTERS  = { addr = 0xF676, note = "while nonzero, each bubble SPAWN_BUBBLE makes is an EXTEND letter (EXTEND_LETTER, 6E82) and this - 1; a letter bubble leaving the screen gives it back (5EC0). Raised by the sub CPU's POP_CHAIN_HIT for enemies popped in one chain (+ 1, + 2 in a two-player game, past the start of the chain), so letters owed for a big pop come out of the gaps of a later round with gaps; set to 0A by kind 1B (TAKE_FREE_LETTERS); 0 at game start (1DD0, 2B1B)" }
+COIN_TABLE    = { addr = 0xE36A, size = 0x10, note = "4 (coins, credits) pairs for coin A by the DSW0 field (bits 4-5), then 4 for coin B (bits 6-7), from COIN_TABLES. Seen in MAME (this set): coin A fields 0-3 give 2C3C, 2C1C, 1C2C, 1C1C, as MAME's DIP list says" }
 SKIP_KINDS    = { addr = 0xE612, note = "set to 3 by special kind 2F (bank2:8AA9): the next 3 special items are kinds 0B, 0A, 09" }
 SPECIAL_STATE = { addr = 0xF45F, note = "as POINTS_STATE" }
 SPECIAL_TIMER = { addr = 0xF461, size = 2, note = "frames: 2D0 (F0 if F44D) until it appears, then 384 on show" }
@@ -98,6 +144,7 @@ BOSS_SHOTS    = { addr = 0xF367, size = 0x67, note = "the boss's bottles, 0x0C b
 ENEMY5_SLOTS  = { addr = 0xF113, note = "group 5, 0x19 bytes each (drew Monsta in the traced rounds)" }
 POTION_P1 = { addr = 0xF60F, note = "1 = player 1 took a round 100 potion (POTIONS_RUN): their bubbles are lightning bubbles (POTION_BUBBLE)" }
 POTION_P2 = { addr = 0xF610, note = "as POTION_P1 for player 2" }
+SECRET_ROOM = { addr = 0xE723, note = "29 while the secret room is due or running: set by special kinds 31-33 (SECRET_ROUND_A-C), read by SECRET_ROUND_START at round start, cleared only by SECRET_ROUND_EXIT. Seen in MAME: a game over in the room leaves it at 29, so the attract demo's how-to-play round and the next game's first round go into the secret room (the trick in Gareth Hall's FAQ)" }
 SECRET_DEATH = { addr = 0xE730, note = "1 = the Skel-Monsta killed a player in the secret round (sub GHOST_HITS, only while E723 = 29); SECRET_DEATH_SLEEP sets b7, SECRET_EXIT_CHECK then ends the room; SECRET_ROUND_EXIT clears it" }
 ENEMY3_SHOTS_FREE = { addr = 0xF05E, note = "group 3 shots that may still be thrown: 2 when a group 3 enemy enters (ENEMY3_ENTER), ENEMY3_ATTACK_START takes one, ENEMY3_SHOT_END gives it back" }
 BOSS_SHOTS_LEFT = { addr = 0xF3C7, note = "bottles of the boss's volley still on screen: 8 at the start, BOSS_SHOT_OFF_* take one each; at 0 BOSS_SHOT_NEXT clears the volley" }
@@ -147,7 +194,14 @@ ENEMY3_SHOTS_INIT = { addr = 0x79E9, note = "clears ENEMY3_SHOTS (8 x 0x12), the
 TAMPER_CHECK   = { addr = 0x333F, note = "low byte of the IM 2 vector entry at 0B2E must be 4D; else runs 'dead copy' at 334A" }
 SWB7_SCORE_A   = { addr = 0x0F26, note = "F7FE/F7FF score output mystery" }
 SWB7_SCORE_B   = { addr = 0x0F74 }
-NAME_TABLE_LD  = { addr = 0x375A }
+INITIALS_CODE_CHECK = { addr = 0x375A, note = "HIGH_ENTRY: the entered initials at HL against the 10 INITIALS_CODES; a match runs INITIALS_CODE_RUN, else HIGH_ENTRY_END" }
+INITIALS_CODE_RUN = { addr = 0x377F, note = "jumps to INITIALS_CODE_JUMPS entry B (the matched code)" }
+INITIALS_SEX = { addr = 0x378A, note = "SEX: the initials become 'H.!' (48 2E 21), sound 12, SCREEN_FLASH, SEX_COUNT + 1. Then BIT 3 of ROM byte 0002 (5E) is tested; it is always set, so it ends at HIGH_ENTRY_END, and the PUSH DE / EX (SP),IX running on into INITIALS_TAK is never reached" }
+INITIALS_TAK = { addr = 0x37AE, note = "TAK: TAK_COUNT + 1" }
+INITIALS_STR = { addr = 0x37B4, note = "STR: STR_COUNT + 1" }
+INITIALS_KTT = { addr = 0x37BA, note = "KTT: KTT_COUNT + 1" }
+INITIALS_DOTS = { addr = 0x37C0, note = "'...': DOTS_COUNT + 1" }
+INITIALS_STAFF = { addr = 0x37C6, note = "I.F, MTJ, NSO, KIM, YSH: STAFF_COUNT + 1, sound 2D" }
 TASK_KILL = { addr = 0x0008, note = "RST 08: task A stops (its timer E000+A = 0)" }
 TASK_START = { addr = 0x0010, note = "RST 10: task A runs at the next scheduler pass (timer = 1)" }
 TASK_SLEEP = { addr = 0x0018, note = "RST 18: the running task saves its registers and sleeps A frames (0 = until started)" }
@@ -255,8 +309,8 @@ GRID_DRAW_NEXT = { addr = 0x18EE, note = "draws ROUND_GRID rows until GRID_DRAW_
 ROM_SUM_STEP_B = { addr = 0x6065, note = "as ROM_SUM_STEP_A, one byte of every 2nd from 2642 to 731B into EB2F, then compared with EB30" }
 ROUND_NUMBER_DRAW = { addr = 0x30DF, note = "tiles at D508/D548: the round number ROUND_MAIN + 1 (tens, units); nothing in the attract loop; round 100 has its own tiles (8A)" }
 BOSS_RECS_INIT = { addr = 0x0339, note = "round 100: 16 four-byte records at E2F5, each a zero, a word from the table at 0352 and a zero" }
-BANK3_ROW_COPY = { addr = 0x0BC8, note = "bank 3: 16 bytes from BFDF + 16 x (BFFF) to E36A" }
-COIN_ADD = { addr = 0x0C39, note = "adds the credits a coin switch earns (table at DE) to E366 and CREDITS; the COIN_SCAN helper" }
+COIN_TABLE_LOAD = { addr = 0x0BC8, note = "at start-up: the COIN_TABLES entry COIN_REGION picks (16 bytes from bank 3) to COIN_TABLE" }
+COIN_ADD = { addr = 0x0C39, note = "adds the credits a coin switch earns (COIN_TABLE pair by the DSW0 coin field) to E366 and writes E366 to CREDITS; the COIN_SCAN helper. Seen in MAME: CREDITS follows this count, not the MCU's COINAGE" }
 ROM_SUM_STEP_C = { addr = 0x0D14, note = "one byte a call of a sum from 0030 up to 314F, in E37D (E37A starts it, E37B is the pointer)" }
 ROM_SUM_STEP_D = { addr = 0x1387, note = "one byte a call of a sum from 0000, in E395 (E392 starts it, E393 is the pointer); the end compares with E396" }
 MUL64_DE = { addr = 0x0D8E, note = "DE = A x 64" }
@@ -326,7 +380,8 @@ P2_REC_INIT = { addr = 0x3F39, note = "as P1_REC_INIT for P2_REC (player 1, spri
 P1_STATS_INIT = { addr = 0x3FBD, note = "P1_REC stats: (IX+48) 0C, 49 40, 46 14, 47 03 (POWER_UP_STATS if POWER_UP or round 100)" }
 P2_STATS_INIT = { addr = 0x3FFA, note = "as P1_STATS_INIT for P2_REC" }
 POWER_UP_STATS = { addr = 0x3FDC, note = "unless ATTRACT: with POWER_UP or in round 100 (IX+48) = 14 and (IX+47) = 06" }
-PLAYER_SHIELD_START = { addr = 0x4000, note = "if (IX+42) is nonzero: counts it down and starts the blink: (IX+45) b6, (IX+40) = 10" }
+PLAYER_FIRE_RENEW = { addr = 0x4000, note = "at round start, if (IX+42) (rounds of fire breath left from the fireball bubble) is nonzero: counts it down and gives the player 16 fireballs: (IX+45) b6, (IX+40) = 10" }
+FIREBALL_BUBBLE_POP = { addr = 0x5CB0, note = "a popped fireball bubble (+38 b5): 100,000 points, and the popping player gets 16 fireballs (+45 b6, +40 = 10) now and at the start of the next 5 rounds (+42 = 5, PLAYER_FIRE_RENEW). Not seen in MAME" }
 PLAYERS_STEP = { addr = 0x4012, note = "each frame: the two player records, by the state bits of byte 0" }
 PLAYER_SCORE_UPDATE = { addr = 0x41EC, note = "PLAYER_NOW = (IX+9), then SCORE_UPDATE" }
 PLAYER_PROX_SET = { addr = 0x41F5, note = "P1_PROX_X or P2_PROX_X (by (IX+9) b0) = (IX+1), (IX+2)" }
@@ -378,7 +433,7 @@ ENDING_SCROLL = { addr = 0x563F, note = "Seen in MAME (--boss-pop, two players):
 ENDING_SCROLL_STEP = { addr = 0x56AB, note = "moves every tile column (E2F5) and every object in use up by 1. Tamper check: byte 0002 must be 5E, else two pushes wreck the stack" }
 ENDING_ROW_CLEAR = { addr = 0x5701, note = "clears tile row GRID_DRAW_ROW & 1F (D500 + 2 x row, 32 columns)" }
 ENDING_ROW_DRAW = { addr = 0x5719, note = "below the row count: from bank 1 at (E734), records of colour, column, length and characters into row GRID_DRAW_ROW & 1F; FF ends the row" }
-SECRET_ROUND_START = { addr = 0x5046, note = "Seen in MAME (--special 31-33): when E723 = 29 (special kinds 31-33): clears the bubbles, timer E72E = 960, ENEMY_TOTAL 0A, ends tasks 3 and 4, ROUND_MAIN + 1 kept in E726, then round record 65 (the secret room: a statue, rows of gems and a plate in the secret alphabet)" }
+SECRET_ROUND_START = { addr = 0x5046, note = "Seen in MAME (--special 31-33): when E723 = 29 (special kinds 31-33): clears the bubbles, timer E72E = 960, ENEMY_TOTAL 0A, ends tasks 3 and 4, ROUND_MAIN + 1 kept in E726, then round record and layout 65 (101; round 102 on screen): the secret room, a statue, rows of gems and a plate in the secret alphabet. Seen in MAME: ROUND_GRID in the room is layout 101" }
 SECRET_ROUND_INIT = { addr = 0x50CB, note = "the room's effect by E724 (table 50F6): 0 STARS_START, 1 LIGHTNING_START, 2 STARS_START with F47B = 1; sound 29. SECRET_WELCOME_SHOW (55E5) comes with it" }
 SECRET_ROUND_FRAME = { addr = 0x5127, note = "the secret round, per frame: SECRET_WELCOME_RUN, SECRET_DROP_GAP, SECRET_EXIT_GAP, SECRET_EXIT_CHECK, GHOST_COUNTDOWN, the Skel-Monsta update, SECRET_TILES_FLICKER, then the 0x24 gems (BUBBLE_SLOTS records of 0x0A): each is placed once from 51D7 (Y, X, frame, colour), and a player within 10 takes it for 10000 (no sound; a score sprite 98 in the player's colour rises for 60 frames) and E725 + 1" }
 EXTEND_LETTERS_DRAW = { addr = 0x62FB, note = "the EXTEND letters each player has, down the side: E742 at D51C (P1), E743 at DC9C (P2)" }
@@ -482,7 +537,7 @@ PLAYER_PUSHED = { addr = 0x4708, note = "while (IX+34) (cleared each frame) is n
 PLAYER_WALK_SCORE = { addr = 0x480F, note = "the word E5E5 + (IX+32) (pixels walked); with +45 b0 (TAKE_WALK_POINTS) 10 points" }
 PLAYER_JUMP_INPUT = { addr = 0x4869, note = "PLAYER_PLAY_STEP: on the ground and not jumping, jump (input b4 clear, once a press: +12 b1) starts a jump; so does a bounce off a bubble while falling or jumping (+36 b0, with jump held), which scores 10. Starting: sound 2C, +12 = b0 b1 and b5 (no direction), b4 (b0 held) or b3 (b1 held), path 4AED (+13/14, +15, +16, speed), E5E4 + 1, 500 with +45 b1 (TAKE_JUMP_POINTS), ROM_SUM_STEP_D. Then (4912) PLAYER_FACE_INPUT, PLAYER_FALL_DRIFT and PLAYER_JUMP_MOVE (IX+32) times" }
 PLAYER_JUMP_MOVE = { addr = 0x4926, note = "one pixel of a jump: +35 = 3 going down ((IX+15) negative) or 1 going up; probes the cells 9 to the side ((IX+12) b5 none, b4 left), and on the playfield edges sets +12 b6" }
-PLAYER_BLOW = { addr = 0x4B76, note = "PLAYER_PLAY_STEP: the bubble button (input b5 clear, once a press: +10 b1) writes the blow request at E75E (P1) or E764 (P2): 1 (2 while +45 b6, the double bubble, counting (IX+40) down), Y, X, facing, range (+49), speed (+47); then a speed from the table at 4C1B by (IX+18). Tamper check: MCU_READY & 25 zero pushes BC" }
+PLAYER_BLOW = { addr = 0x4B76, note = "PLAYER_PLAY_STEP: the bubble button (input b5 clear, once a press: +10 b1) writes the blow request at E75E (P1) or E764 (P2): 1 (2, a fireball, while +45 b6, counting (IX+40) down), Y, X, facing, range (+49), speed (+47); then a speed from the table at 4C1B by (IX+18). Tamper check: MCU_READY & 25 zero pushes BC" }
 ROM_SUM_STEP_V = { addr = 0x4F0F, note = "one byte a call of a sum of every 8th byte from 598A to 7FFA, in E71E (E71B starts it, E71C is the pointer); the end compares with E71F and on a mismatch runs into 4F52 with HL pushed. From BEST5_SCREEN and 4FA3" }
 ROUND_ENTRY_INIT = { addr = 0x4C35, note = "OBJECTS_TASK at a round's start: E6FF-E71A cleared, bank 2 9C7D; E71A = E5D7 (who plays). Each playing player's bubble (records of 0x0C at E700 and E70C, 4 sprites at E2C5 / E2B5, gfx 18 / 19) starts where the player was (P1_REC or P2_REC +1, +2; Y 50 and X 48 or B0 in round 1 and the attract loop), with (IX+10) b0 for Y 20 and over, b1 for X under 28" }
 ROUND_ENTRY_RUN = { addr = 0x4D13, note = "OBJECTS_FRAME until E6FF is negative: bank 2 9D35, then each bubble: b0 the start animation (4EE3), b1 floating (4EF7, ROUND_ENTRY_MOVE) until (IX+9) = 3, then E718 marks it; once all are in, unless E351 or F536 = 1, b2 the burst (4F03), and E719 marks it. When every playing player's bubble has burst: E6FF = FF, P1_REC_INIT / P2_REC_INIT, task 5 started (and task 4 in round 1, round 100 or with F536 negative), a 2-frame sleep, SUB_CHECKS = 49" }
@@ -539,7 +594,8 @@ TIME_ERROR_TEXT = { addr = 0x04A2, size = 0x0B, note = "length-prefixed TIME ERR
 IRQ_VECTOR_ENTRY = { addr = 0x0B2E, size = 2, note = "word 044D: the IM 2 table entry (I = 0B, FC00 = 2E); checked at 333F and bank0:950A" }
 SPEED_PATTERNS = { addr = 0x11CE, note = "word table of step patterns, picked by SPEED2_SEL for bubbles and (IX+0C) for enemies" }
 DEAD_COPY      = { addr = 0x334A, note = "ASCII that executes as opcodes" }
-NAME_TABLE     = { addr = 0x37DF, note = "3-letter names (default hi-score initials?)" }
+INITIALS_CODES = { addr = 0x37DF, size = 0x1E, note = "the 10 high-score initials checked by INITIALS_CODE_CHECK: SEX TAK STR KTT ... I.F MTJ NSO KIM YSH. Five are staff initials (Mitsuji, Nishiyori, Kimijima, Yoshida; I.F probably Ichiro Fujisue). Seen in MAME: these five are also the default best-5 initials, so a default entry matches nothing else" }
+INITIALS_CODE_JUMPS = { addr = 0x37FD, size = 0x14, note = "word table, one handler for each INITIALS_CODES entry: INITIALS_SEX, _TAK, _STR, _KTT, _DOTS, then INITIALS_STAFF five times" }
 ENTRY_ALPHABET = { addr = 0x38D4, note = "name-entry alphabet" }
 
 BANK_PAGES       = { addr = 0x0293, size = 8, note = "FB40 bank bits for pages 0-3: 04-07 if DSW-B:8 (ROM type) is off, else 04 05 00 01 (pages 2-3 in IC53)" }
@@ -861,7 +917,7 @@ PICKUP_RUSH_C_INIT = { addr = 0x99E2, note = "Seen in MAME (--special 0C, 2F): a
 PICKUP_RUSH_C_RUN = { addr = 0x99EB, note = "Seen in MAME (--special 0C, 2F): as PICKUP_RUSH_A with arches as the pickups. each frame: steps the record at F531. Part of the effect started by special kind 0C" }
 WATER_INIT = { addr = 0x9F76, note = "Seen in MAME (round 13). round start, called by OBJECTS_TASK: clears the water record at F54B (0x40 bytes)" }
 WATER_RUN = { addr = 0x9F7F, note = "each frame: once a water bubble pops (BUBBLE_WATER_POP sets F557 = 1 with its position), sound 1E and water pours from there down and along the platforms" }
-ROUND_SKIP_INIT = { addr = 0xA2FC, note = "Seen in MAME (--special 12): the playfield scrolls on to a later round. round start, called by OBJECTS_TASK: clears the state record at F590. Part of the effect started by special kind 12" }
+FLOOD_INIT = { addr = 0xA2FC, note = "Seen in MAME (special kind 12): water rises from the bottom of the playfield and the enemies drown and become diamonds; the round then ends. round start, called by OBJECTS_TASK: clears the state record at F590 (FLOOD). Part of the effect started by special kind 12" }
 KILL_ALL_A_INIT = { addr = 0xA59B, note = "Seen in MAME (trace.py --special 05): every enemy turns into a gem. round start, called by OBJECTS_TASK: clears the state record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
 KILL_ALL_A_RUN = { addr = 0xA5A4, note = "Seen in MAME (trace.py --special 05): every enemy turns into a gem. each frame: steps the record at F59E. Part of the effect started by special kind 05 (88F8 table index 5) and sub BUBBLE_HITS wait while it runs" }
 KILL_ALL_B_INIT = { addr = 0xA820, note = "Seen in MAME (--special 1C): every enemy turns into a gem, by another path than KILL_ALL_A. round start, called by OBJECTS_TASK: clears the state record at F5AC. Part of the effect started by special kind 1C (effect D in the sub CPU hit tests)" }
@@ -927,16 +983,16 @@ TAKE_NONE = { addr = 0x88F8, note = "special kind 0E: nothing (INVINCIBLE_ITEM h
 TAKE_WALK_POINTS = { addr = 0x88F9, note = "special kind 0F: IX+45 b0: walking scores (L_480F, 1 for each step of E5E5); ROM_SUM_STEP_A" }
 TAKE_JUMP_POINTS = { addr = 0x8901, note = "special kind 10: IX+45 b1: each jump scores 50 BCD (500 on screen); ROM_SUM_STEP_C" }
 TAKE_BLOW_POINTS = { addr = 0x8909, note = "special kind 11: IX+45 b2: each bubble blown scores 10 BCD (100 on screen); ROM_SUM_STEP_D" }
-TAKE_ROUND_SKIP = { addr = 0x8911, note = "special kind 12: F590 = 1 starts ROUND_SKIP; E600 + 1, ROM_SUM_STEP_E" }
+TAKE_FLOOD = { addr = 0x8911, note = "special kind 12 (the blue cross): F590 = 1 starts the flood (seen in MAME); WATER_CROSSES + 1, ROM_SUM_STEP_E" }
 TAKE_LIGHTNING = { addr = 0x891E, note = "special kind 13: LIGHTNING_START, F595 = 1, IX+45 b4; E5FF + 1" }
-TAKE_DOUBLE_BUBBLES = { addr = 0x892F, note = "special kind 14: IX+45 b6 and IX+40 = 10: the next 16 blows each make two bubbles" }
+TAKE_FIRE_BREATH = { addr = 0x892F, note = "special kind 14 (the red cross): IX+45 b6 and IX+40 = 10: the next 16 blows are fireballs (seen in MAME)" }
 TAKE_ALL_POINTS = { addr = 0x8938, note = "special kind 15: TAKE_JUMP_POINTS, TAKE_BLOW_POINTS and TAKE_WALK_POINTS" }
 TAKE_ALL_BOOSTS = { addr = 0x8941, note = "special kind 16: as TAKE_ALL_POINTS, then TAKE_BUBBLE_RANGE, _SPEED and _RATE" }
 TAKE_BOMB = { addr = 0x8953, note = "special kind 17: ends task 5, E341 = 1, clears the bubbles' objects, BOMB_INIT, F5B6 = 1 (BOMB_RUN), IX+45 b5; E602 + 1. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX" }
 TAKE_ALL_BUBBLE = { addr = 0x898E, note = "special kind 18: TAKE_BUBBLE_RANGE, _SPEED and _RATE" }
 TAKE_KILL_ALL_SHAKE = { addr = 0x8997, note = "special kind 19: E720 = 1 starts KILL_ALL_SHAKE_RUN; E601 + 1. Tamper check: byte 0005 must be START's high byte, else it runs on into TAKE_STARS with two words popped" }
 TAKE_STARS = { addr = 0x89AA, note = "special kind 1A: STARS_START with F47B = 0, F47C = 1" }
-TAKE_1B = { addr = 0x89BC, note = "special kind 1B: F676 = 0A; meaning not known" }
+TAKE_FREE_LETTERS = { addr = 0x89BC, note = "special kind 1B (the red necklace): FREE_LETTERS = 0A, so the next 10 bubbles from the gaps are EXTEND letters" }
 TAKE_KILL_ALL_B = { addr = 0x89C2, note = "special kind 1C: F5AC = 1 starts KILL_ALL_B" }
 TAKE_FOOD_RAIN = { addr = 0x89C8, note = "special kind 1D: FOOD_RAIN_START, F4CB = 1. Tamper check: bytes 0000-0002 must sum to 3E, else PUSH IX" }
 TAKE_BIG_ITEM_1E = { addr = 0x89E5, note = "special kind 1E: F46B = 1 starts BIG_ITEM, with F46D = 0A; kinds 1F-28 the same with F46D = 9 .. 0" }
@@ -1010,6 +1066,8 @@ BANK3_ADD_DE_A = { addr = 0xBE3D, note = "DE += A" }
 # a78-05-1.52 page 3 (file 0xC000-0xFFFF), mapped at 8000 when FB40 = 7.
 CREDIT_STRINGS = { addr = 0xBE42, size = 0x10A, note = "four counted strings at BE42, BE7F, BEBB, BF06 (the rest FF) for TAITO_CREDIT" }
 VERSION_STAMP = { addr = 0xBF4C, note = "file 0xFF4C: 'VER 0.1 4.SEP,1986 SUMMER'" }
+COIN_TABLES = { addr = 0xBFDF, size = 0x20, note = "two 16-byte coin tables, the one COIN_REGION picks copied to COIN_TABLE: 0 (this set) coin A and B both 2C3C 2C1C 1C2C 1C1C; 1 coin A 4C1C 3C1C 2C1C 1C1C, coin B 1C6C 1C4C 1C3C 1C2C" }
+COIN_REGION = { addr = 0xBFFF, note = "which of COIN_TABLES COIN_TABLE_LOAD copies: 00 in this set" }
 
 [sub.mem]
 SHARED_RAM = { addr = 0xE000, size = 0x1800 }

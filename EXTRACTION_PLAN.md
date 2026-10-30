@@ -548,8 +548,8 @@ Started (2026-10-17) with the sub CPU, which is now done:
   moves player 1's object onto it, so `SPECIAL_TAKE` runs. A sweep of kinds 01–35 (not 0E) in
   `build/traces/specialKK/` gave: 05 `KILL_ALL_A` and 1C `KILL_ALL_B` (every enemy becomes a
   gem); 09–0B `PICKUP_RUSH_A`, 0D `PICKUP_RUSH_B` and 0C/2F `PICKUP_RUSH_C` (the playfield fills
-  with pickups, with a timer and a P1 vs P2 count); 12 `ROUND_SKIP`. Kinds 13/32, 1A/31/33 and
-  1D/2D/35 reach `EFFECT_C/A/B_START`. Kinds 1E–28 reach only the start of `REC_F46B_RUN`
+  with pickups, with a timer and a P1 vs P2 count); 12 the flood (`TAKE_FLOOD`, once misread
+  as `ROUND_SKIP`). Kinds 13/32, 1A/31/33 and 1D/2D/35 reach `EFFECT_C/A/B_START`. Kinds 1E–28 reach only the start of `REC_F46B_RUN`
   (which needs `ENEMY_TOTAL` = 0). No kind reached `REC_F519`, `REC_F54B`, `REC_F60F` or `REC_F624`.
 - Big items (2026-10-19): `trace.py --special K --clear` also writes `ENEMY_TOTAL` = 0 once the
   item is taken. Kinds 1E–28 are the big items: when the round is cleared, a 32 × 32 copy of the
@@ -699,7 +699,7 @@ Started (2026-10-17) with the sub CPU, which is now done:
   The player boosts are read from the player record: kind 00 doubles a bubble's range
   (`IX+49` 40 to 80), 01 its speed (`IX+47` 3 to 6 pixels a frame), 02 shortens the wait between
   bubbles (`IX+46` 14 to 5), 03 walks faster (`IX+48`, the speed row, 0C to 13); 0F, 10 and 11
-  score for walking, each jump (500) and each bubble (100); 14 blows two bubbles at a time 16
+  score for walking, each jump (500) and each bubble (100); 14 blows fireballs 16
   times; 15, 16 and 18 combine them. 04 freezes the enemies (`TIMER_RUN`), 06-08 skip 3, 5 or 7
   rounds (`E350`) and 34 skips to round 70 at top difficulty; 2A-2C choose the end-of-round
   item. Kind 1B (`F676`) sets a flag not yet understood (kind 19 is `TAKE_KILL_ALL_SHAKE`, below).
@@ -767,6 +767,26 @@ Started (2026-10-17) with the sub CPU, which is now done:
   ROM: its last instruction's operand and the rest of the routine are bank 0's first bytes
   (`07 C8 DD CB 00 66 C8 35 C9`), so it only works with bank 0 in. Every call in the fixed ROM
   and in banks 0 and 2 now goes to a named routine; still byte-exact.
+- The high-score initials codes (2026-10-30), from an arcade-history.com page: the table at
+  `37DF` is `INITIALS_CODES` (SEX TAK STR KTT ... and five staff initials), and each handler
+  adds 1 to a `SPECIAL_RULES` counter (`SEX_COUNT`, `TAK_COUNT` ... `STAFF_COUNT`), giving
+  special kinds 1D, 2A-2D and 35 (`notes/levels.md`). SEX's handler tests a ROM byte whose bit
+  is always set, so the code after the test is never run. Seen in MAME: each code gives its
+  item (fork, octopus, flamingo, beer mug, knife, can) on round 1 of the next game; still byte-exact.
+- The special item counters (2026-10-30), from Chris Moore's 1998 special items list on
+  tjasink.com, whose 54 rules match `SPECIAL_RULES` exactly: every counter is named
+  (`BLOWS_COUNT`, `WATER_POPS`, `LETTER_COUNTS`, `DOOR_20_DUE` ... ) after checking the code
+  that raises it, and `notes/levels.md` has the full table of kinds, items, counters and
+  thresholds. Kind 1B is `TAKE_FREE_LETTERS`: `FREE_LETTERS` (`F676`) makes the bubbles from
+  the gaps EXTEND letters, and the sub CPU's `POP_CHAIN_HIT` adds to it for chained pops.
+  Kinds 12 and 14 were misnamed: seen in MAME, 12 is the flood (`TAKE_FLOOD`, `FLOOD_INIT`) and
+  14 fire breath (`TAKE_FIRE_BREATH`); `PLAYER_SHIELD_START` is `PLAYER_FIRE_RENEW`, the
+  fireball bubble's 5 rounds of fire breath (`FIREBALL_BUBBLE_POP`). Still byte-exact.
+- From Gareth Hall's FAQ (2026-10-30), checked in MAME: the coinage DIP order is MAME's, since
+  the main CPU counts coins itself from `COIN_TABLE` (bank 3 `COIN_TABLES` by `COIN_REGION`)
+  and writes `CREDITS` (the MCU question is closed); layout 101 is the secret room's; and
+  `SECRET_ROOM` (`E723`) survives a game over in the room, so the demo and the next game go
+  into the secret room. Still byte-exact.
 - Next:
   1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
      the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`). Done (2026-10-27):

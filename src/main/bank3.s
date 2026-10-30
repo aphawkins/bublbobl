@@ -55,4 +55,10 @@ CREDIT_STRINGS:         ; BE42
         .incbin "main_bank3.bin", 0x3E42, 0x010A
 ; file 0xFF4C: 'VER 0.1 4.SEP,1986 SUMMER'
 VERSION_STAMP:          ; BF4C
-        .incbin "main_bank3.bin", 0x3F4C, 0x00B4
+        .incbin "main_bank3.bin", 0x3F4C, 0x0093
+; two 16-byte coin tables, the one COIN_REGION picks copied to COIN_TABLE: 0 (this set) coin A and B both 2C3C 2C1C 1C2C 1C1C; 1 coin A 4C1C 3C1C 2C1C 1C1C, coin B 1C6C 1C4C 1C3C 1C2C
+COIN_TABLES:            ; BFDF
+        .incbin "main_bank3.bin", 0x3FDF, 0x0020
+; which of COIN_TABLES COIN_TABLE_LOAD copies: 00 in this set
+COIN_REGION:            ; BFFF
+        .incbin "main_bank3.bin", 0x3FFF, 0x0001
