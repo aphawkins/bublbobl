@@ -1722,7 +1722,7 @@ L_0B48:                 ; 0B48
         pop     bc
         ret
 
-; DC: an LFO (+41-+50), 3 bytes: rate and depth (+42-+45), then the shape (b0-2, OPL_LFO_SHAPES) and b7, restart on each keyed note
+; DC: an LFO (+41-+50), 3 bytes: the phase step, high byte (b0-6, to +43 and +45) then low (+42, +44); then the shape (b0-2 to +48, OPL_LFO_SHAPES) and b7, restart on each keyed note (+41 b6)
 OPL_EV_LFO:             ; 0B53
         and     0x7F
         ld      (ix+43),a
@@ -1744,7 +1744,7 @@ L_0B6D:                 ; 0B6D
         ld      d,0x00
         ret
 
-; DD: 0 stops the LFO; else a mask (+49) and one byte for each bit set, from +51
+; DD: 0 stops the LFO; else a mask (+49: b0 operator 1 TL, b1 operator 2 TL, b2 pitch) and a depth for each bit set (+51-+53)
 OPL_EV_LFO_SET:         ; 0B78
         and     a
         jr      nz,L_0B8D
@@ -1779,7 +1779,7 @@ L_0BA3:                 ; 0BA3
         ld      (hl),a
         jr      L_0B99
 
-; DE: a stepped envelope (+54-+66): entry b0-6 of the 5-byte table at 3A71; b7 and the next byte its mode and start
+; DE: a stepped envelope (+54-+66): entry b0-6 of the 5-byte table at 3A71 (+63); b7 to +54 b5 (the interval is added, not counted down); the next byte the first interval (+55, +64)
 OPL_EV_ENV:             ; 0BA8
         ld      d,0xC1
         bit     7,a
@@ -1799,7 +1799,7 @@ L_0BB0:                 ; 0BB0
         sub     a
 L_0BC6:                 ; 0BC6
         ld      (ix+56),a
-; E = entry: its 5 bytes to +57, +61, +62 and the step pointer +58/+59
+; E = entry: the interval change (+57), loop count (+61), next entry (+62, b7: stop) and the points' pointer (+58/+59); HL = the points
 OPL_ENV_LOAD:           ; 0BC9
         call    OPL_ENV_CLEAR
         ld      d,0x00
@@ -1831,7 +1831,7 @@ OPL_ENV_LOAD:           ; 0BC9
         ld      d,0x00
         ret
 
-; clears +70-+77
+; clears the envelope's sums: +70/+71, +73/+74, +76-+78
 OPL_ENV_CLEAR:          ; 0BFA
         ld      a,e
         ld      hl,(CUR_RECORD)
@@ -1857,7 +1857,7 @@ L_0C07:                 ; 0C07
         ld      b,d
         ret
 
-; DF: 0 stops the envelope; else a mask (+65) and one byte for each of its 3 low bits set (+69, +72, +75)
+; DF: 0 stops the envelope; else a mask (+65, bits as OPL_EV_LFO_SET) and a depth for each of its 3 low bits set (+69, +72, +75)
 OPL_EV_ENV_SET:         ; 0C16
         and     a
         jr      nz,L_0C28
@@ -1901,7 +1901,7 @@ L_0C4A:                 ; 0C4A
 L_0C51:                 ; 0C51
         ret
 
-; EC: +68; 0 also clears +67
+; EC: +68, the envelope's depth on the LFO rate; 0 also clears +67. It has no effect (OPL_ENV_TO_LFO)
 OPL_EV_ENV_DEPTH:       ; 0C52
         and     a
         jr      nz,L_0C58
@@ -2343,7 +2343,7 @@ OPL_WRITE:              ; 0ECB
         nop
         ret
 
-; every tick while playing: restores the total levels after a re-key, then the envelope, its depth, the LFO and 10AF
+; every tick while playing: a keyed note (+0 b4) puts back the total levels (+31, +36) and flags A0 and 40; then OPL_ENV_TICK, OPL_ENV_TO_LFO, OPL_LFO_TICK and OPL_MOD_APPLY
 OPL_MOD_TICK:           ; 0EE8
         bit     4,(ix+0)
         jr      z,L_0F18
@@ -2366,14 +2366,15 @@ OPL_MOD_TICK:           ; 0EE8
         or      0xC0
         ld      (ix+16),a
 L_0F18:                 ; 0F18
-        call    L_0F29
-        call    L_0FDB
-        call    L_0FF7
-        call    L_10AF
+        call    OPL_ENV_TICK
+        call    OPL_ENV_TO_LFO
+        call    OPL_LFO_TICK
+        call    OPL_MOD_APPLY
         res     4,(ix+0)
         ret
 
-L_0F29:                 ; 0F29
+; the envelope (+54 b7 on): none on the tick it starts (b0); a keyed note restarts it (with +54 b6); else +56 counts down from the interval +55 (b5: +55 is added to +56 and a carry steps). A step sets +0 b6, the slope +66 = the next point - this one, and the interval += +57. At the 00 end it loops from the first point; after +61 loops, entry +62 (b7: the envelope stops)
+OPL_ENV_TICK:           ; 0F29
         ld      hl,(CUR_RECORD)
         ld      bc,0x0036
         add     hl,bc
@@ -2483,12 +2484,13 @@ L_0FC1:                 ; 0FC1
         ld      (ix+56),a
         ret
 
-L_0FDB:                 ; 0FDB
+; with +67 b7, which nothing sets: the slope x depth (+68) added to the LFO rate (+44/+45), but the sum is never stored
+OPL_ENV_TO_LFO:         ; 0FDB
         bit     7,(ix+67)
         ret     z
         ld      h,(ix+66)
         ld      a,(ix+68)
-        call    L_11FA
+        call    OPL_SMUL_FAST
         ld      c,(ix+44)
         ld      b,(ix+45)
         add     hl,bc
@@ -2496,7 +2498,8 @@ L_0FDB:                 ; 0FDB
         ld      (ix+45),b
         ret
 
-L_0FF7:                 ; 0FF7
+; the LFO (+41 b7 on): a keyed note with +41 b6 restarts it (+44/+45 = +42/+43, phase +46/+47 = 0); else phase += rate, and the shape (+48) gives the value (+50)
+OPL_LFO_TICK:           ; 0FF7
         ld      hl,(CUR_RECORD)
         ld      bc,0x0029
         add     hl,bc
@@ -2547,7 +2550,7 @@ L_1019:                 ; 1019
         ld      b,0x00
         ld      hl,OPL_LFO_SHAPES
         add     hl,bc
-        ld      bc,0x103F
+        ld      bc,OPL_LFO_VALUE
         push    bc
         ld      a,(hl)
         inc     hl
@@ -2555,21 +2558,23 @@ L_1019:                 ; 1019
         ld      l,a
         jp      (hl)
 
-L_103F:                 ; 103F
+; the shape's A to +50
+OPL_LFO_VALUE:          ; 103F
         ld      (ix+50),a
         ret
 
 ; 8 words: the LFO shapes (OPL_EV_LFO's b0-2)
 OPL_LFO_SHAPES:         ; 1043
-        .word   L_1053
-        .word   L_1068
-        .word   L_107D
-        .word   L_107F
-        .word   L_1083
-        .word   L_108D
-        .word   L_1097
-        .word   L_10A3
-L_1053:                 ; 1053
+        .word   OPL_LFO_TRI
+        .word   OPL_LFO_TRI_INV
+        .word   OPL_LFO_SAW_UP
+        .word   OPL_LFO_SAW_DOWN
+        .word   OPL_LFO_SQUARE
+        .word   OPL_LFO_SQUARE_INV
+        .word   OPL_LFO_SPLIT_UP
+        .word   OPL_LFO_SPLIT_DOWN
+; DE = phase: 0 up to 7F, down to -7F, up to 0
+OPL_LFO_TRI:            ; 1053
         ex      de,hl
         add     hl,hl
         ld      a,h
@@ -2588,7 +2593,8 @@ L_1062:                 ; 1062
         neg
         ret
 
-L_1068:                 ; 1068
+; 0 down to -7F, up to 7F, down to 0
+OPL_LFO_TRI_INV:        ; 1068
         ex      de,hl
         add     hl,hl
         ld      a,h
@@ -2607,16 +2613,19 @@ L_1073:                 ; 1073
         dec     a
         ret
 
-L_107D:                 ; 107D
+; the phase's high byte: 0 up to 7F, then -80 up to -1
+OPL_LFO_SAW_UP:         ; 107D
         ld      a,d
         ret
 
-L_107F:                 ; 107F
+; 0 down to -7F, then 80 (-80) down to 1
+OPL_LFO_SAW_DOWN:       ; 107F
         ld      a,d
         neg
         ret
 
-L_1083:                 ; 1083
+; 7F, then -7F
+OPL_LFO_SQUARE:         ; 1083
         bit     7,d
         jr      nz,L_108A
         ld      a,0x7F
@@ -2626,7 +2635,8 @@ L_108A:                 ; 108A
         ld      a,0x81
         ret
 
-L_108D:                 ; 108D
+; -7F, then 7F
+OPL_LFO_SQUARE_INV:     ; 108D
         bit     7,d
         jr      nz,L_1094
         ld      a,0x81
@@ -2636,7 +2646,8 @@ L_1094:                 ; 1094
         ld      a,0x7F
         ret
 
-L_1097:                 ; 1097
+; 0 up to 7F, then 0 down to -7F
+OPL_LFO_SPLIT_UP:       ; 1097
         bit     7,d
         jr      nz,L_109D
         ld      a,d
@@ -2648,7 +2659,8 @@ L_109D:                 ; 109D
         neg
         ret
 
-L_10A3:                 ; 10A3
+; 0 down to -7F, then 0 up to 7F
+OPL_LFO_SPLIT_DOWN:     ; 10A3
         bit     7,d
         jr      nz,L_10AB
         ld      a,d
@@ -2660,7 +2672,8 @@ L_10AB:                 ; 10AB
         add     a,0x80
         ret
 
-L_10AF:                 ; 10AF
+; after an envelope step (+0 b6) the slope x each depth into its sum (OPL_ENV_ADD); then each operator's TL (+31, +36) + LFO value x depth (+51, +52) / 256 + the sum's high byte (+71, +74) to +32 and +37, flagging register 40 (+16 b6, b7); the pitch by OPL_PITCH_MOD (A0, +15 b5)
+OPL_MOD_APPLY:          ; 10AF
         ld      iy,(CUR_RECORD)
         ld      bc,0x0045
         add     iy,bc
@@ -2671,9 +2684,9 @@ L_10AF:                 ; 10AF
         pop     bc
         ld      l,(ix+65)
         ld      h,(ix+66)
-        call    L_11A6
-        call    L_11A6
-        call    L_11BE
+        call    OPL_ENV_ADD
+        call    OPL_ENV_ADD
+        call    OPL_ENV_ADD24
 L_10D4:                 ; 10D4
         ld      b,0x00
         ld      l,(ix+49)
@@ -2683,7 +2696,7 @@ L_10D4:                 ; 10D4
         jr      nc,L_10EA
         push    hl
         ld      a,(ix+51)
-        call    L_11E2
+        call    OPL_SMUL
         ld      a,h
         pop     hl
 L_10EA:                 ; 10EA
@@ -2706,7 +2719,7 @@ L_1106:                 ; 1106
         jr      nc,L_1114
         push    hl
         ld      a,(ix+52)
-        call    L_11E2
+        call    OPL_SMUL
         ld      a,h
         pop     hl
 L_1114:                 ; 1114
@@ -2728,17 +2741,18 @@ L_1130:                 ; 1130
         or      b
         ld      (ix+16),a
         ld      a,(ix+53)
-        call    L_1147
+        call    OPL_PITCH_MOD
         ld      ix,(CUR_RECORD)
         ret     nc
         set     5,(ix+15)
         ret
 
-L_1147:                 ; 1147
+; A = LFO pitch depth (+53), L b0 its mask bit: the F-number (+26/+28) + the envelope (+77/+78) + LFO x depth / 256. With the LFO only the low byte (+27) moves, held at 00 or FF when the sum leaves +30's block and high bits; without it the sum goes to +27 and +30 (none when the envelope sum is 0). Carry set: +27 changed (A0 only: B0 is not written)
+OPL_PITCH_MOD:          ; 1147
         srl     l
         jr      nc,L_1186
         push    hl
-        call    L_11E2
+        call    OPL_SMUL
         ld      l,h
         sub     a
         bit     7,l
@@ -2794,12 +2808,13 @@ L_1186:                 ; 1186
         scf
         ret
 
-L_11A6:                 ; 11A6
+; BC = a depth and its 16-bit sum, L b0 its mask bit: the sum += slope (H) x depth; BC to the next
+OPL_ENV_ADD:            ; 11A6
         srl     l
         jr      nc,L_11BA
         push    hl
         ld      a,(bc)
-        call    L_11FA
+        call    OPL_SMUL_FAST
         inc     bc
         ld      a,(bc)
         add     a,l
@@ -2818,12 +2833,13 @@ L_11BA:                 ; 11BA
         inc     bc
         ret
 
-L_11BE:                 ; 11BE
+; as OPL_ENV_ADD, for the 24-bit pitch sum
+OPL_ENV_ADD24:          ; 11BE
         srl     l
         jr      nc,L_11E1
         push    hl
         ld      a,(bc)
-        call    L_11FA
+        call    OPL_SMUL_FAST
         inc     bc
         ld      a,(bc)
         add     a,l
@@ -2852,7 +2868,8 @@ L_11DB:                 ; 11DB
 L_11E1:                 ; 11E1
         ret
 
-L_11E2:                 ; 11E2
+; HL = signed H x A
+OPL_SMUL:               ; 11E2
         ld      l,0x00
         and     a
         ret     z
@@ -2860,9 +2877,9 @@ L_11E2:                 ; 11E2
         ld      e,a
         ld      a,h
         bit     7,a
-        jr      z,L_1225
+        jr      z,OPL_MUL7
         neg
-        call    L_1225
+        call    OPL_MUL7
         ld      a,h
         cpl
         ld      h,a
@@ -2872,7 +2889,8 @@ L_11E2:                 ; 11E2
         inc     hl
         ret
 
-L_11FA:                 ; 11FA
+; as OPL_SMUL, with OPL_MUL4 when H is below 16
+OPL_SMUL_FAST:          ; 11FA
         ld      l,0x00
         and     a
         ret     z
@@ -2884,7 +2902,7 @@ L_11FA:                 ; 11FA
         neg
         cp      0x10
         jr      c,L_1216
-        call    L_1225
+        call    OPL_MUL7
         ld      a,h
         cpl
         ld      h,a
@@ -2895,7 +2913,7 @@ L_11FA:                 ; 11FA
         ret
 
 L_1216:                 ; 1216
-        call    L_1249
+        call    OPL_MUL4
         ld      a,h
         cpl
         ld      h,a
@@ -2907,8 +2925,9 @@ L_1216:                 ; 1216
 
 L_1221:                 ; 1221
         cp      0x10
-        jr      c,L_1249
-L_1225:                 ; 1225
+        jr      c,OPL_MUL4
+; HL = A x E, A up to 7F (80 gives E / 2 x 256)
+OPL_MUL7:               ; 1225
         add     a,a
         jr      c,L_1245
         ld      h,a
@@ -2946,7 +2965,8 @@ L_1245:                 ; 1245
         ld      h,e
         ret
 
-L_1249:                 ; 1249
+; HL = A x E, A below 10
+OPL_MUL4:               ; 1249
         add     a,a
         add     a,a
         add     a,a
@@ -4712,7 +4732,7 @@ L_1DDB:                 ; 1DDB
         dec     hl
         ret
 
-; as OPL_MOD_TICK
+; as OPL_MOD_TICK, for the 4 operators' total levels (+31, +44, +57, +70); on channel 3 a keyed note also puts operators 1-3 back on their notes
 OPN_MOD_TICK:           ; 1DE3
         bit     4,(ix+0)
         jr      z,L_1E48
@@ -4753,14 +4773,15 @@ L_1E28:                 ; 1E28
         or      0x0F
         ld      (ix+16),a
 L_1E48:                 ; 1E48
-        call    L_1E59
-        call    L_1F0B
-        call    L_1F27
-        call    L_1FDF
+        call    OPN_ENV_TICK
+        call    OPN_ENV_TO_LFO
+        call    OPN_LFO_TICK
+        call    OPN_MOD_APPLY
         res     4,(ix+0)
         ret
 
-L_1E59:                 ; 1E59
+; as OPL_ENV_TICK (+100-+112)
+OPN_ENV_TICK:           ; 1E59
         ld      hl,(CUR_RECORD)
         ld      bc,0x0064
         add     hl,bc
@@ -4870,12 +4891,13 @@ L_1EF1:                 ; 1EF1
         ld      (ix+102),a
         ret
 
-L_1F0B:                 ; 1F0B
+; as OPL_ENV_TO_LFO (+113, +114, +85/+86): no effect
+OPN_ENV_TO_LFO:         ; 1F0B
         bit     7,(ix+113)
         ret     z
         ld      h,(ix+112)
         ld      a,(ix+114)
-        call    L_21F7
+        call    OPN_SMUL_FAST
         ld      c,(ix+85)
         ld      b,(ix+86)
         add     hl,bc
@@ -4883,7 +4905,8 @@ L_1F0B:                 ; 1F0B
         ld      (ix+86),b
         ret
 
-L_1F27:                 ; 1F27
+; as OPL_LFO_TICK (+82-+91)
+OPN_LFO_TICK:           ; 1F27
         ld      hl,(CUR_RECORD)
         ld      bc,0x0052
         add     hl,bc
@@ -4934,7 +4957,7 @@ L_1F49:                 ; 1F49
         ld      b,0x00
         ld      hl,OPN_LFO_SHAPES
         add     hl,bc
-        ld      bc,0x1F6F
+        ld      bc,OPN_LFO_VALUE
         push    bc
         ld      a,(hl)
         inc     hl
@@ -4942,21 +4965,23 @@ L_1F49:                 ; 1F49
         ld      l,a
         jp      (hl)
 
-L_1F6F:                 ; 1F6F
+; the shape's A to +91
+OPN_LFO_VALUE:          ; 1F6F
         ld      (ix+91),a
         ret
 
 ; 8 words, as OPL_LFO_SHAPES
 OPN_LFO_SHAPES:         ; 1F73
-        .word   L_1F83
-        .word   L_1F98
-        .word   L_1FAD
-        .word   L_1FAF
-        .word   L_1FB3
-        .word   L_1FBD
-        .word   L_1FC7
-        .word   L_1FD3
-L_1F83:                 ; 1F83
+        .word   OPN_LFO_TRI
+        .word   OPN_LFO_TRI_INV
+        .word   OPN_LFO_SAW_UP
+        .word   OPN_LFO_SAW_DOWN
+        .word   OPN_LFO_SQUARE
+        .word   OPN_LFO_SQUARE_INV
+        .word   OPN_LFO_SPLIT_UP
+        .word   OPN_LFO_SPLIT_DOWN
+; as OPL_LFO_TRI
+OPN_LFO_TRI:            ; 1F83
         ex      de,hl
         add     hl,hl
         ld      a,h
@@ -4975,7 +5000,8 @@ L_1F92:                 ; 1F92
         neg
         ret
 
-L_1F98:                 ; 1F98
+; as OPL_LFO_TRI_INV
+OPN_LFO_TRI_INV:        ; 1F98
         ex      de,hl
         add     hl,hl
         ld      a,h
@@ -4994,16 +5020,19 @@ L_1FA3:                 ; 1FA3
         dec     a
         ret
 
-L_1FAD:                 ; 1FAD
+; as OPL_LFO_SAW_UP
+OPN_LFO_SAW_UP:         ; 1FAD
         ld      a,d
         ret
 
-L_1FAF:                 ; 1FAF
+; as OPL_LFO_SAW_DOWN
+OPN_LFO_SAW_DOWN:       ; 1FAF
         ld      a,d
         neg
         ret
 
-L_1FB3:                 ; 1FB3
+; as OPL_LFO_SQUARE
+OPN_LFO_SQUARE:         ; 1FB3
         bit     7,d
         jr      nz,L_1FBA
         ld      a,0x7F
@@ -5013,7 +5042,8 @@ L_1FBA:                 ; 1FBA
         ld      a,0x81
         ret
 
-L_1FBD:                 ; 1FBD
+; as OPL_LFO_SQUARE_INV
+OPN_LFO_SQUARE_INV:     ; 1FBD
         bit     7,d
         jr      nz,L_1FC4
         ld      a,0x81
@@ -5023,7 +5053,8 @@ L_1FC4:                 ; 1FC4
         ld      a,0x7F
         ret
 
-L_1FC7:                 ; 1FC7
+; as OPL_LFO_SPLIT_UP
+OPN_LFO_SPLIT_UP:       ; 1FC7
         bit     7,d
         jr      nz,L_1FCD
         ld      a,d
@@ -5035,7 +5066,8 @@ L_1FCD:                 ; 1FCD
         neg
         ret
 
-L_1FD3:                 ; 1FD3
+; as OPL_LFO_SPLIT_DOWN
+OPN_LFO_SPLIT_DOWN:     ; 1FD3
         bit     7,d
         jr      nz,L_1FDB
         ld      a,d
@@ -5047,7 +5079,8 @@ L_1FDB:                 ; 1FDB
         add     a,0x80
         ret
 
-L_1FDF:                 ; 1FDF
+; as OPL_MOD_APPLY. Mask bits (LFO +90, envelope +111): b0-3 operators 1-4 TL (+16 b0-3), b4-6 operators 1-3 pitch (channel 3 only, +16 b4-6), b7 the channel's pitch (+65, +16 b7). LFO depths +92-+99; envelope depths and sums from +115
+OPN_MOD_APPLY:          ; 1FDF
         ld      iy,(CUR_RECORD)
         ld      bc,0x0073
         add     iy,bc
@@ -5058,17 +5091,17 @@ L_1FDF:                 ; 1FDF
         pop     bc
         ld      l,(ix+111)
         ld      h,(ix+112)
-        call    L_2199
-        call    L_2199
-        call    L_2199
-        call    L_2199
-        call    L_21B1
+        call    OPN_ENV_ADD
+        call    OPN_ENV_ADD
+        call    OPN_ENV_ADD
+        call    OPN_ENV_ADD
+        call    OPN_ENV_ADD_CHAN
         ld      a,(ix+9)
         cp      0x02
         jr      nz,L_201A
-        call    L_21B7
-        call    L_21B7
-        call    L_21B7
+        call    OPN_ENV_ADD24
+        call    OPN_ENV_ADD24
+        call    OPN_ENV_ADD24
 L_201A:                 ; 201A
         ld      b,0x00
         ld      l,(ix+90)
@@ -5078,7 +5111,7 @@ L_201A:                 ; 201A
         jr      nc,L_2030
         push    hl
         ld      a,(ix+92)
-        call    L_21DF
+        call    OPN_SMUL
         ld      a,h
         pop     hl
 L_2030:                 ; 2030
@@ -5094,7 +5127,7 @@ L_2040:                 ; 2040
         jr      nc,L_204E
         push    hl
         ld      a,(ix+93)
-        call    L_21DF
+        call    OPN_SMUL
         ld      a,h
         pop     hl
 L_204E:                 ; 204E
@@ -5110,7 +5143,7 @@ L_205E:                 ; 205E
         jr      nc,L_206C
         push    hl
         ld      a,(ix+94)
-        call    L_21DF
+        call    OPN_SMUL
         ld      a,h
         pop     hl
 L_206C:                 ; 206C
@@ -5126,7 +5159,7 @@ L_207C:                 ; 207C
         jr      nc,L_208A
         push    hl
         ld      a,(ix+95)
-        call    L_21DF
+        call    OPN_SMUL
         ld      a,h
         pop     hl
 L_208A:                 ; 208A
@@ -5143,7 +5176,7 @@ L_209A:                 ; 209A
         ld      a,(ix+99)
         ld      bc,0x0027
         add     ix,bc
-        call    L_20E4
+        call    OPN_PITCH_CHAN
         ld      ix,(CUR_RECORD)
         jr      nc,L_20B6
         set     7,(ix+16)
@@ -5152,38 +5185,41 @@ L_20B6:                 ; 20B6
         cp      0x02
         ret     nz
         ld      a,(ix+96)
-        call    L_20EF
+        call    OPN_PITCH_OP
         jr      nc,L_20C8
         set     4,(ix+16)
 L_20C8:                 ; 20C8
         ld      a,(ix+97)
-        call    L_20EA
+        call    OPN_PITCH_NEXT
         jr      nc,L_20D4
         set     5,(ix+16)
 L_20D4:                 ; 20D4
         ld      a,(ix+85)
-        call    L_20EA
+        call    OPN_PITCH_NEXT
         ld      ix,(CUR_RECORD)
         ret     nc
         set     6,(ix+16)
         ret
 
-L_20E4:                 ; 20E4
+; IX = record + 39 (the channel's note at +65): its pitch by mask b7 (L b3), as OPL_PITCH_MOD but with the block written too. Without the LFO the F-number is kept in 337-66C by moving the block and taking the sum as the new note; carry is always set
+OPN_PITCH_CHAN:         ; 20E4
         bit     3,l
         jr      nz,L_20F8
         jr      L_212C
 
-L_20EA:                 ; 20EA
+; IX + 13: the next operator, then OPN_PITCH_OP
+OPN_PITCH_NEXT:         ; 20EA
         ld      bc,0x000D
         add     ix,bc
-L_20EF:                 ; 20EF
+; IY + 4 and the next mask bit: an operator's pitch, as OPN_PITCH_CHAN
+OPN_PITCH_OP:           ; 20EF
         ld      bc,0x0004
         add     iy,bc
         srl     l
         jr      nc,L_212C
 L_20F8:                 ; 20F8
         push    hl
-        call    L_21DF
+        call    OPN_SMUL
         ld      l,h
         sub     a
         bit     7,l
@@ -5274,12 +5310,13 @@ L_218F:                 ; 218F
         scf
         ret
 
-L_2199:                 ; 2199
+; as OPL_ENV_ADD
+OPN_ENV_ADD:            ; 2199
         srl     l
         jr      nc,L_21AD
         push    hl
         ld      a,(bc)
-        call    L_21F7
+        call    OPN_SMUL_FAST
         inc     bc
         ld      a,(bc)
         add     a,l
@@ -5298,18 +5335,20 @@ L_21AD:                 ; 21AD
         inc     bc
         ret
 
-L_21B1:                 ; 21B1
+; as OPL_ENV_ADD24, for the channel's pitch (mask b7, L b3)
+OPN_ENV_ADD_CHAN:       ; 21B1
         bit     3,l
         jr      nz,L_21BB
         jr      L_21DA
 
-L_21B7:                 ; 21B7
+; as OPL_ENV_ADD24, by the next mask bit
+OPN_ENV_ADD24:          ; 21B7
         srl     l
         jr      nc,L_21DA
 L_21BB:                 ; 21BB
         push    hl
         ld      a,(bc)
-        call    L_21F7
+        call    OPN_SMUL_FAST
         inc     bc
         ld      a,(bc)
         add     a,l
@@ -5342,7 +5381,8 @@ L_21DA:                 ; 21DA
         inc     bc
         ret
 
-L_21DF:                 ; 21DF
+; as OPL_SMUL
+OPN_SMUL:               ; 21DF
         ld      l,0x00
         and     a
         ret     z
@@ -5350,9 +5390,9 @@ L_21DF:                 ; 21DF
         ld      e,a
         ld      a,h
         bit     7,a
-        jr      z,L_2222
+        jr      z,OPN_MUL7
         neg
-        call    L_2222
+        call    OPN_MUL7
         ld      a,h
         cpl
         ld      h,a
@@ -5362,7 +5402,8 @@ L_21DF:                 ; 21DF
         inc     hl
         ret
 
-L_21F7:                 ; 21F7
+; as OPL_SMUL_FAST
+OPN_SMUL_FAST:          ; 21F7
         ld      l,0x00
         and     a
         ret     z
@@ -5374,7 +5415,7 @@ L_21F7:                 ; 21F7
         neg
         cp      0x10
         jr      c,L_2213
-        call    L_2222
+        call    OPN_MUL7
         ld      a,h
         cpl
         ld      h,a
@@ -5385,7 +5426,7 @@ L_21F7:                 ; 21F7
         ret
 
 L_2213:                 ; 2213
-        call    L_2246
+        call    OPN_MUL4
         ld      a,h
         cpl
         ld      h,a
@@ -5397,8 +5438,9 @@ L_2213:                 ; 2213
 
 L_221E:                 ; 221E
         cp      0x10
-        jr      c,L_2246
-L_2222:                 ; 2222
+        jr      c,OPN_MUL4
+; as OPL_MUL7
+OPN_MUL7:               ; 2222
         add     a,a
         jr      c,L_2242
         ld      h,a
@@ -5436,7 +5478,8 @@ L_2242:                 ; 2242
         ld      h,e
         ret
 
-L_2246:                 ; 2246
+; as OPL_MUL4
+OPN_MUL4:               ; 2246
         add     a,a
         add     a,a
         add     a,a

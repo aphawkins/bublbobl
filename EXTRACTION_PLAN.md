@@ -894,9 +894,13 @@ Started (2026-10-27):
   with b7 set (notes, or C-F commands with an argument byte: operator registers, voice, LFO,
   envelope, gate, key off, volume). Every FM and SSG event handler and each player's start,
   phrase, step and register writers are named. Still byte-exact.
-- Next: what the per-tick modulation (`OPL_MOD_TICK` and twins) does with the LFO and
-  envelope fields, then the command catalogue (step 2) and a phrase decoder to JSON, checked
-  against MAME recordings.
+- The FM modulation (2026-10-31), read from the code; written up in `notes/sound.md`. Each FM
+  record has an LFO (8 shapes) and a stepped envelope, and a mask picks their targets: the
+  operators' total levels and the pitch (on the YM2203, channel 3's operator pitches too).
+  The envelope's depth on the LFO rate (EC) has no effect. Every routine in
+  `OPL_MOD_TICK` and `OPN_MOD_TICK` is named. Still byte-exact.
+- Next: the SSG's modulation (`265A`), then the command catalogue (step 2) and a phrase
+  decoder to JSON, checked against MAME recordings.
 
 ---
 

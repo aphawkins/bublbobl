@@ -108,6 +108,75 @@ A handler returns D and E: D is the bits to set in the record's dirty byte +15 +
 the step, `OPL_DIRTY_WRITE` writes only the flagged registers. A new voice (+15 b7) makes
 `OPL_VOICE_WRITE` write all of them.
 
+### Modulation (`OPL_MOD_TICK`, `OPN_MOD_TICK`)
+
+After its step, each FM record runs its modulation every tick: one LFO and one stepped
+envelope. Each moves up to 3 targets on the YM3526 and up to 8 on the YM2203, picked by a
+mask. A keyed note first puts the total levels back to the voice's values.
+
+| Mask bit | YM3526 | YM2203 |
+|---|---|---|
+| b0, b1 | operator 1, 2 total level | operator 1, 2 total level |
+| b2 | the pitch | operator 3 total level |
+| b3 | none | operator 4 total level |
+| b4–6 | none | operator 1–3 pitch (channel 3 only) |
+| b7 | none | the channel's pitch |
+
+Record fields. YM2203 offsets are in brackets.
+
+| Field | Meaning |
+|---|---|
+| +41 [+82] | LFO: b7 on, b6 restart on each keyed note |
+| +42/+43, +44/+45 [+83–+86] | the phase step (DC), and the step in use |
+| +46/+47 [+87/+88] | the phase |
+| +48 [+89] | the shape, 0–7 |
+| +49 [+90] | the LFO's mask (DD) |
+| +50 [+91] | the LFO's value, −7F to 7F |
+| +51–+53 [+92–+99] | a depth for each mask bit |
+| +54 [+100] | envelope: b7 on, b6 restart on each keyed note, b5 add mode, b0 skip the first tick |
+| +55, +56 [+101, +102] | the interval, and the count to the next step |
+| +57 [+103] | added to the interval at each step |
+| +58/+59, +60 [+104–+106] | the points, and the next one |
+| +61, +62 [+107, +108] | loops left (0 = for ever), then the entry to chain to (b7: stop) |
+| +63, +64 [+109, +110] | the entry and first interval, for a restart |
+| +65 [+111] | the envelope's mask (DF) |
+| +66 [+112] | the slope: this point to the next |
+| +67, +68 [+113, +114] | envelope depth on the LFO rate (EC); nothing sets +67 b7, so it does nothing |
+| +69–+78 [+115–+142] | for each mask bit, a depth and its sum (16 bits; 24 for a pitch) |
+
+**The LFO.** The phase is a 16-bit count, and the phase step is added to it each tick. The
+shape turns the phase into a value from −7F to 7F (`OPL_LFO_SHAPES`):
+
+| Shape | Value over one cycle |
+|---|---|
+| 0 | triangle: 0 up to 7F, down to −7F, back to 0 |
+| 1 | the same, falling first |
+| 2 | sawtooth up |
+| 3 | sawtooth down |
+| 4 | square: 7F, then −7F |
+| 5 | the same, low first |
+| 6 | 0 up to 7F, then 0 down to −7F |
+| 7 | 0 down to −7F, then 0 up to 7F |
+
+A target gets LFO value × depth / 256 (signed).
+
+**The stepped envelope.** An entry in the table at `3A71` (YM3526) or `3A79` (YM2203) is 5
+bytes: the interval change, the loop count, the next entry, and a pointer to its points.
+The points are bytes, and 00 ends them. Each step, the slope is the next point minus this
+point, and each target's sum gains slope × depth (signed). A target gets the sum's high
+byte, so it moves by (point − first point) × depth / 256. Steps come when a countdown from
+the interval runs out. In add mode (DE's b7), the interval is added to a count instead, and a
+step comes at each carry. The interval changes by the entry's first byte at each step. At
+the end of the points the envelope starts again from the first point. When the loop count
+runs out, it chains to the next entry, or stops.
+
+**What is written.** A total level is the voice's level + LFO + envelope, and the register
+is flagged only when it changes. On the YM3526 the pitch adds the F-number, the envelope
+sum and the LFO. With the LFO on, only the F-number's low byte moves (register A0). At the
+edge of the block and high bits it holds at 00 or FF. On the YM2203 the block is written
+too. Without the LFO, the F-number is kept in 337–66C by moving the block an octave, and the
+pitch is flagged for a write on every tick.
+
 ### SSG events (`SSG_EVENTS`)
 
 These are picked by the high nibble, through `SSG_EVENT_JUMPS`:
@@ -122,8 +191,8 @@ These are picked by the high nibble, through `SSG_EVENT_JUMPS`:
 
 ## Not yet done
 
-- What `OPL_MOD_TICK` and its YM2203 and SSG twins do with the LFO and envelope values, and
-  which registers they change. This includes `10AF` and the fields +41–+77.
+- The SSG's modulation (`265A`): 7 stepped envelopes, from the table at `3B60`, on the three
+  tone periods and four more targets.
 - The SSG `7x` event, and F0, F7 and FF.
 - The command catalogue (`notes/sound_commands.md` lists the commands the main CPU sends):
   which block each command starts, checked against MAME recordings.

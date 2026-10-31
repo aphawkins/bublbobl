@@ -18,6 +18,9 @@ s = open('disasm/sound.s', encoding='utf-8').read()
 s = s.replace('ld      sp,YM2203', 'ld      sp,0x9000')
 # dirty flags (D = 08, E = 00), not the table at the same address
 s = s.replace('ld      de,OPL_EVENT_JUMPS', 'ld      de,0x0800')
+# the LFO shapes return through these pushed addresses
+s = s.replace('ld      bc,0x103F', 'ld      bc,OPL_LFO_VALUE')
+s = s.replace('ld      bc,0x1F6F', 'ld      bc,OPN_LFO_VALUE')
 s = re.sub(r'(SOUND_START:[^\n]*\n(?:[^\n]*\n){5}\s+ld\s+hl,)SSG_REC_A', r'\1RAM', s)
 head = '''; Sound Z80, 3 MHz
 ; a78-07.46, linked at 0x0000. Built by tools/build.py.

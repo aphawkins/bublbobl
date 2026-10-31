@@ -1190,13 +1190,13 @@ OPL_CC_NONE     = { addr = 0x0A7B, note = "CC F0-FF" }
 OPL_EV_TL_BOTH  = { addr = 0x0A8E, note = "CD: both operators' total levels, two bytes" }
 OPL_EV_LENGTH   = { addr = 0x0AB2, note = "CE: +19, the length of a second note in one step (OPL_STEP)" }
 OPL_EV_VOICE    = { addr = 0x0AB8, note = "CF: voice n from OPL_VOICES (13 bytes: feedback and connection, the two operators' registers 20, 40, 60 and 80, then arguments for OPL_EV_LFO, _LFO_SET, _ENV, _ENV_SET and _ENV_DEPTH)" }
-OPL_EV_LFO      = { addr = 0x0B53, note = "DC: an LFO (+41-+50), 3 bytes: rate and depth (+42-+45), then the shape (b0-2, OPL_LFO_SHAPES) and b7, restart on each keyed note" }
-OPL_EV_LFO_SET  = { addr = 0x0B78, note = "DD: 0 stops the LFO; else a mask (+49) and one byte for each bit set, from +51" }
-OPL_EV_ENV      = { addr = 0x0BA8, note = "DE: a stepped envelope (+54-+66): entry b0-6 of the 5-byte table at 3A71; b7 and the next byte its mode and start" }
-OPL_ENV_LOAD    = { addr = 0x0BC9, note = "E = entry: its 5 bytes to +57, +61, +62 and the step pointer +58/+59" }
-OPL_ENV_CLEAR   = { addr = 0x0BFA, note = "clears +70-+77" }
-OPL_EV_ENV_SET  = { addr = 0x0C16, note = "DF: 0 stops the envelope; else a mask (+65) and one byte for each of its 3 low bits set (+69, +72, +75)" }
-OPL_EV_ENV_DEPTH = { addr = 0x0C52, note = "EC: +68; 0 also clears +67" }
+OPL_EV_LFO      = { addr = 0x0B53, note = "DC: an LFO (+41-+50), 3 bytes: the phase step, high byte (b0-6, to +43 and +45) then low (+42, +44); then the shape (b0-2 to +48, OPL_LFO_SHAPES) and b7, restart on each keyed note (+41 b6)" }
+OPL_EV_LFO_SET  = { addr = 0x0B78, note = "DD: 0 stops the LFO; else a mask (+49: b0 operator 1 TL, b1 operator 2 TL, b2 pitch) and a depth for each bit set (+51-+53)" }
+OPL_EV_ENV      = { addr = 0x0BA8, note = "DE: a stepped envelope (+54-+66): entry b0-6 of the 5-byte table at 3A71 (+63); b7 to +54 b5 (the interval is added, not counted down); the next byte the first interval (+55, +64)" }
+OPL_ENV_LOAD    = { addr = 0x0BC9, note = "E = entry: the interval change (+57), loop count (+61), next entry (+62, b7: stop) and the points' pointer (+58/+59); HL = the points" }
+OPL_ENV_CLEAR   = { addr = 0x0BFA, note = "clears the envelope's sums: +70/+71, +73/+74, +76-+78" }
+OPL_EV_ENV_SET  = { addr = 0x0C16, note = "DF: 0 stops the envelope; else a mask (+65, bits as OPL_EV_LFO_SET) and a depth for each of its 3 low bits set (+69, +72, +75)" }
+OPL_EV_ENV_DEPTH = { addr = 0x0C52, note = "EC: +68, the envelope's depth on the LFO rate; 0 also clears +67. It has no effect (OPL_ENV_TO_LFO)" }
 OPL_EV_GATE     = { addr = 0x0C5E, note = "ED: the gate (+21): a note keys off after duration x gate / 256" }
 OPL_MUL         = { addr = 0x0C72, note = "HL = H x E" }
 OPL_EV_REST     = { addr = 0x0CB1, note = "EE (no argument): key off" }
@@ -1215,7 +1215,27 @@ OPL_TL_SCALE    = { addr = 0x0EA5, note = "C = C x volume (+22) / 256" }
 OPL_60_WRITE    = { addr = 0x0EB7, note = "A = slot: register 60 (IY+3)" }
 OPL_80_WRITE    = { addr = 0x0EC1, note = "A = slot: register 80 (IY+4)" }
 OPL_WRITE       = { addr = 0x0ECB, note = "HL = YM3526, B = register, A = value; fixed delays, no status read" }
-OPL_MOD_TICK    = { addr = 0x0EE8, note = "every tick while playing: restores the total levels after a re-key, then the envelope, its depth, the LFO and 10AF" }
+OPL_MOD_TICK    = { addr = 0x0EE8, note = "every tick while playing: a keyed note (+0 b4) puts back the total levels (+31, +36) and flags A0 and 40; then OPL_ENV_TICK, OPL_ENV_TO_LFO, OPL_LFO_TICK and OPL_MOD_APPLY" }
+OPL_ENV_TICK    = { addr = 0x0F29, note = "the envelope (+54 b7 on): none on the tick it starts (b0); a keyed note restarts it (with +54 b6); else +56 counts down from the interval +55 (b5: +55 is added to +56 and a carry steps). A step sets +0 b6, the slope +66 = the next point - this one, and the interval += +57. At the 00 end it loops from the first point; after +61 loops, entry +62 (b7: the envelope stops)" }
+OPL_ENV_TO_LFO  = { addr = 0x0FDB, note = "with +67 b7, which nothing sets: the slope x depth (+68) added to the LFO rate (+44/+45), but the sum is never stored" }
+OPL_LFO_TICK    = { addr = 0x0FF7, note = "the LFO (+41 b7 on): a keyed note with +41 b6 restarts it (+44/+45 = +42/+43, phase +46/+47 = 0); else phase += rate, and the shape (+48) gives the value (+50)" }
+OPL_LFO_VALUE   = { addr = 0x103F, note = "the shape's A to +50" }
+OPL_LFO_TRI     = { addr = 0x1053, note = "DE = phase: 0 up to 7F, down to -7F, up to 0" }
+OPL_LFO_TRI_INV = { addr = 0x1068, note = "0 down to -7F, up to 7F, down to 0" }
+OPL_LFO_SAW_UP  = { addr = 0x107D, note = "the phase's high byte: 0 up to 7F, then -80 up to -1" }
+OPL_LFO_SAW_DOWN= { addr = 0x107F, note = "0 down to -7F, then 80 (-80) down to 1" }
+OPL_LFO_SQUARE  = { addr = 0x1083, note = "7F, then -7F" }
+OPL_LFO_SQUARE_INV= { addr = 0x108D, note = "-7F, then 7F" }
+OPL_LFO_SPLIT_UP= { addr = 0x1097, note = "0 up to 7F, then 0 down to -7F" }
+OPL_LFO_SPLIT_DOWN= { addr = 0x10A3, note = "0 down to -7F, then 0 up to 7F" }
+OPL_MOD_APPLY   = { addr = 0x10AF, note = "after an envelope step (+0 b6) the slope x each depth into its sum (OPL_ENV_ADD); then each operator's TL (+31, +36) + LFO value x depth (+51, +52) / 256 + the sum's high byte (+71, +74) to +32 and +37, flagging register 40 (+16 b6, b7); the pitch by OPL_PITCH_MOD (A0, +15 b5)" }
+OPL_PITCH_MOD   = { addr = 0x1147, note = "A = LFO pitch depth (+53), L b0 its mask bit: the F-number (+26/+28) + the envelope (+77/+78) + LFO x depth / 256. With the LFO only the low byte (+27) moves, held at 00 or FF when the sum leaves +30's block and high bits; without it the sum goes to +27 and +30 (none when the envelope sum is 0). Carry set: +27 changed (A0 only: B0 is not written)" }
+OPL_ENV_ADD     = { addr = 0x11A6, note = "BC = a depth and its 16-bit sum, L b0 its mask bit: the sum += slope (H) x depth; BC to the next" }
+OPL_ENV_ADD24   = { addr = 0x11BE, note = "as OPL_ENV_ADD, for the 24-bit pitch sum" }
+OPL_SMUL        = { addr = 0x11E2, note = "HL = signed H x A" }
+OPL_SMUL_FAST   = { addr = 0x11FA, note = "as OPL_SMUL, with OPL_MUL4 when H is below 16" }
+OPL_MUL7        = { addr = 0x1225, note = "HL = A x E, A up to 7F (80 gives E / 2 x 256)" }
+OPL_MUL4        = { addr = 0x1249, note = "HL = A x E, A below 10" }
 OPN_FM_TICK     = { addr = 0x125E, note = "timer B: the YM2203's 3 FM channels, the second record of each pair skipped while the first plays" }
 OPN_RECS_STEP   = { addr = 0x1385, note = "as OPL_RECS_STEP, for the 3 FM channels" }
 OPN_REC_START   = { addr = 0x13CC, note = "as OPL_REC_START" }
@@ -1261,7 +1281,30 @@ OPN_EV_NONE     = { addr = 0x1B0D, note = "FD-FF: the argument is skipped" }
 OPN_VOICE_WRITE = { addr = 0x1B10, note = "as OPL_VOICE_WRITE" }
 OPN_DIRTY_WRITE = { addr = 0x1BAE, note = "as OPL_DIRTY_WRITE" }
 OPN_WRITE       = { addr = 0x1DD6, note = "HL = YM2203, B = register, A = value; waits while the busy flag (b7) is set" }
-OPN_MOD_TICK    = { addr = 0x1DE3, note = "as OPL_MOD_TICK" }
+OPN_MOD_TICK    = { addr = 0x1DE3, note = "as OPL_MOD_TICK, for the 4 operators' total levels (+31, +44, +57, +70); on channel 3 a keyed note also puts operators 1-3 back on their notes" }
+OPN_ENV_TICK    = { addr = 0x1E59, note = "as OPL_ENV_TICK (+100-+112)" }
+OPN_ENV_TO_LFO  = { addr = 0x1F0B, note = "as OPL_ENV_TO_LFO (+113, +114, +85/+86): no effect" }
+OPN_LFO_TICK    = { addr = 0x1F27, note = "as OPL_LFO_TICK (+82-+91)" }
+OPN_LFO_VALUE   = { addr = 0x1F6F, note = "the shape's A to +91" }
+OPN_LFO_TRI     = { addr = 0x1F83, note = "as OPL_LFO_TRI" }
+OPN_LFO_TRI_INV = { addr = 0x1F98, note = "as OPL_LFO_TRI_INV" }
+OPN_LFO_SAW_UP  = { addr = 0x1FAD, note = "as OPL_LFO_SAW_UP" }
+OPN_LFO_SAW_DOWN= { addr = 0x1FAF, note = "as OPL_LFO_SAW_DOWN" }
+OPN_LFO_SQUARE  = { addr = 0x1FB3, note = "as OPL_LFO_SQUARE" }
+OPN_LFO_SQUARE_INV= { addr = 0x1FBD, note = "as OPL_LFO_SQUARE_INV" }
+OPN_LFO_SPLIT_UP= { addr = 0x1FC7, note = "as OPL_LFO_SPLIT_UP" }
+OPN_LFO_SPLIT_DOWN= { addr = 0x1FD3, note = "as OPL_LFO_SPLIT_DOWN" }
+OPN_MOD_APPLY   = { addr = 0x1FDF, note = "as OPL_MOD_APPLY. Mask bits (LFO +90, envelope +111): b0-3 operators 1-4 TL (+16 b0-3), b4-6 operators 1-3 pitch (channel 3 only, +16 b4-6), b7 the channel's pitch (+65, +16 b7). LFO depths +92-+99; envelope depths and sums from +115" }
+OPN_PITCH_CHAN  = { addr = 0x20E4, note = "IX = record + 39 (the channel's note at +65): its pitch by mask b7 (L b3), as OPL_PITCH_MOD but with the block written too. Without the LFO the F-number is kept in 337-66C by moving the block and taking the sum as the new note; carry is always set" }
+OPN_PITCH_NEXT  = { addr = 0x20EA, note = "IX + 13: the next operator, then OPN_PITCH_OP" }
+OPN_PITCH_OP    = { addr = 0x20EF, note = "IY + 4 and the next mask bit: an operator's pitch, as OPN_PITCH_CHAN" }
+OPN_ENV_ADD     = { addr = 0x2199, note = "as OPL_ENV_ADD" }
+OPN_ENV_ADD_CHAN= { addr = 0x21B1, note = "as OPL_ENV_ADD24, for the channel's pitch (mask b7, L b3)" }
+OPN_ENV_ADD24   = { addr = 0x21B7, note = "as OPL_ENV_ADD24, by the next mask bit" }
+OPN_SMUL        = { addr = 0x21DF, note = "as OPL_SMUL" }
+OPN_SMUL_FAST   = { addr = 0x21F7, note = "as OPL_SMUL_FAST" }
+OPN_MUL7        = { addr = 0x2222, note = "as OPL_MUL7" }
+OPN_MUL4        = { addr = 0x2246, note = "as OPL_MUL4" }
 OPN_SSG_TICK    = { addr = 0x225B, note = "the SSG records: SSG_REC_B skipped while SSG_REC_A plays" }
 SSG_REC_START   = { addr = 0x234A, note = "as OPL_REC_START" }
 SSG_PHRASE_LOAD = { addr = 0x2378, note = "as OPL_PHRASE_LOAD" }
