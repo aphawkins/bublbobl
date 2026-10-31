@@ -1779,7 +1779,7 @@ L_0BA3:                 ; 0BA3
         ld      (hl),a
         jr      L_0B99
 
-; DE: a stepped envelope (+54-+66): entry b0-6 of the 5-byte table at 3A71 (+63); b7 to +54 b5 (the interval is added, not counted down); the next byte the first interval (+55, +64)
+; DE: a stepped envelope (+54-+66): entry b0-6 of OPL_ENVS (+63); b7 to +54 b5 (the interval is added, not counted down); the next byte the first interval (+55, +64)
 OPL_EV_ENV:             ; 0BA8
         ld      d,0xC1
         bit     7,a
@@ -1808,7 +1808,7 @@ OPL_ENV_LOAD:           ; 0BC9
         add     hl,hl
         add     hl,hl
         add     hl,de
-        ld      de,0x3A71
+        ld      de,OPL_ENVS
         add     hl,de
         ld      a,(hl)
         ld      (ix+57),a
@@ -4046,7 +4046,7 @@ L_1993:                 ; 1993
         ld      (hl),a
         jr      L_1989
 
-; DE: as OPL_EV_ENV (+100-+112), from the table at 3A79
+; DE: as OPL_EV_ENV (+100-+112), from OPN_ENVS
 OPN_EV_ENV:             ; 1998
         ld      d,0xC1
         bit     7,a
@@ -4074,7 +4074,7 @@ L_19B9:                 ; 19B9
         add     hl,hl
         add     hl,hl
         add     hl,de
-        ld      de,0x3A79
+        ld      de,OPN_ENVS
         add     hl,de
         ld      a,(hl)
         ld      (ix+103),a
@@ -5507,9 +5507,9 @@ OPN_SSG_TICK:           ; 225B
         ld      hl,YM2203
         ld      de,0x8014
         ld      ix,SSG_REC_A
-        call    L_22DA
+        call    SSG_TONE_WRITE
         ld      de,0x801F
-        call    L_2309
+        call    SSG_HWENV_WRITE
         bit     1,(ix+0)
         jr      z,L_227B
         ld      a,0x01
@@ -5529,9 +5529,9 @@ L_227B:                 ; 227B
 L_228E:                 ; 228E
         ld      de,0x8084
         ld      ix,SSG_REC_B
-        call    L_22DA
+        call    SSG_TONE_WRITE
         ld      de,0x808F
-        call    L_2309
+        call    SSG_HWENV_WRITE
 L_229E:                 ; 229E
         ld      ix,SSG_REC_A
         ld      hl,SSG_REC_A
@@ -5542,7 +5542,7 @@ L_229E:                 ; 229E
         jr      z,L_22BC
         dec     (ix+19)
         call    z,SSG_STEP
-        call    L_265A
+        call    SSG_MOD_TICK
 L_22BC:                 ; 22BC
         ld      ix,SSG_REC_B
         ld      hl,SSG_REC_B
@@ -5553,19 +5553,20 @@ L_22BC:                 ; 22BC
         ret     z
         dec     (ix+19)
         call    z,SSG_STEP
-        call    L_265A
+        call    SSG_MOD_TICK
         ret
 
-L_22DA:                 ; 22DA
+; HL = YM2203, DE = record +20: the registers flagged in +17 (b0-2 tones A-C, registers 0-5; b3-7 registers 6-A from +26-+30), then clear them
+SSG_TONE_WRITE:         ; 22DA
         sub     a
         cp      (ix+17)
         ret     z
         ld      c,(ix+17)
         ld      (ix+17),a
         ld      b,a
-        call    L_2328
-        call    L_2328
-        call    L_2328
+        call    SSG_WRITE_PAIR
+        call    SSG_WRITE_PAIR
+        call    SSG_WRITE_PAIR
         ld      a,c
         and     a
         ret     z
@@ -5593,14 +5594,15 @@ L_22F6:                 ; 22F6
         jr      nz,L_22F4
         ret
 
-L_2309:                 ; 2309
+; DE = record +31: +18 b0 registers B and C (+31, +32), b1 register D (+33), which restarts the envelope; then clear +18
+SSG_HWENV_WRITE:        ; 2309
         sub     a
         cp      (ix+18)
         ret     z
         ld      c,(ix+18)
         ld      (ix+18),0x00
         ld      b,0x0B
-        call    L_2328
+        call    SSG_WRITE_PAIR
         srl     c
         ret     nc
         ld      (hl),b
@@ -5615,7 +5617,8 @@ L_2309:                 ; 2309
         dec     hl
         ret
 
-L_2328:                 ; 2328
+; C b0 set: registers B and B + 1 from DE; B + 2, DE + 2
+SSG_WRITE_PAIR:         ; 2328
         srl     c
         jr      nc,L_2345
         ld      (hl),b
@@ -5811,7 +5814,7 @@ L_242F:                 ; 242F
         ld      (ix+12),b
         ret
 
-; YM2203 SSG: the byte after BC, by its high nibble (b6-b7 set) through SSG_EVENT_JUMPS
+; YM2203 SSG: the bytes after BC with b6 or b7 set, by the high nibble through SSG_EVENT_JUMPS (a byte below 40 is the next duration)
 SSG_EVENTS:             ; 243C
         inc     bc
         ld      a,(bc)
@@ -5842,7 +5845,7 @@ SSG_EV_TONE_A:          ; 2458
         ld      a,(bc)
         ld      (ix+20),a
         ld      de,0x0001
-        jp      L_24E0
+        jp      SSG_EV_DIRTY
 
 ; 5x: channel B (registers 2, 3)
 SSG_EV_TONE_B:          ; 2466
@@ -5851,7 +5854,7 @@ SSG_EV_TONE_B:          ; 2466
         ld      a,(bc)
         ld      (ix+22),a
         ld      de,0x0002
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
 ; 6x: channel C (registers 4, 5)
 SSG_EV_TONE_C:          ; 2473
@@ -5860,9 +5863,10 @@ SSG_EV_TONE_C:          ; 2473
         ld      a,(bc)
         ld      (ix+24),a
         ld      de,0x0004
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
-L_2480:                 ; 2480
+; 7x: the hardware envelope's period: the low nibble x 10 (register B, +31), the next byte (register C, +32); register D is written too, which restarts it
+SSG_EV_ENV_PERIOD:      ; 2480
         rlca
         rlca
         rlca
@@ -5872,7 +5876,7 @@ L_2480:                 ; 2480
         ld      a,(bc)
         ld      (ix+32),a
         ld      de,0x0300
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
 ; 8x: channel A volume (register 8) from the low nibble
 SSG_EV_VOL_A:           ; 2491
@@ -5882,7 +5886,7 @@ SSG_EV_VOL_A:           ; 2491
         cpl
         and     (ix+16)
         ld      (ix+16),a
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
 ; 9x: channel B (register 9)
 SSG_EV_VOL_B:           ; 24A1
@@ -5892,7 +5896,7 @@ SSG_EV_VOL_B:           ; 24A1
         cpl
         and     (ix+16)
         ld      (ix+16),a
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
 ; Ax: channel C (register A)
 SSG_EV_VOL_C:           ; 24B1
@@ -5902,33 +5906,38 @@ SSG_EV_VOL_C:           ; 24B1
         cpl
         and     (ix+16)
         ld      (ix+16),a
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
-L_24C1:                 ; 24C1
+; Bx (no argument): nothing
+SSG_EV_NONE_B:          ; 24C1
         ld      de,0x0000
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
-L_24C6:                 ; 24C6
+; Cx: nothing
+SSG_EV_NONE_C:          ; 24C6
         ld      de,0x0000
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
-L_24CB:                 ; 24CB
+; Dx: nothing
+SSG_EV_NONE_D:          ; 24CB
         ld      de,0x0000
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
-L_24D0:                 ; 24D0
+; Ex: nothing
+SSG_EV_NONE_E:          ; 24D0
         ld      de,0x0000
-        jr      L_24E0
+        jr      SSG_EV_DIRTY
 
-; Fx: SSG_F_JUMPS by the low nibble, with the next byte; a returned DE with b15 set ends the step
+; Fx: SSG_F_JUMPS by the low nibble, with the next byte; a returned DE with b15 set ends the step, any other is ORed into the dirty bits
 SSG_EV_F:               ; 24D5
-        call    L_2509
+        call    SSG_F_ENTRY
         ld      a,d
         or      e
         jp      z,SSG_EVENTS
         bit     7,d
         ret     nz
-L_24E0:                 ; 24E0
+; E into +17, D into +18 (the registers to write), then the next event
+SSG_EV_DIRTY:           ; 24E0
         ld      a,(ix+17)
         or      e
         ld      (ix+17),a
@@ -5941,16 +5950,17 @@ SSG_EVENT_JUMPS:        ; 24F1
         .word   SSG_EV_TONE_A
         .word   SSG_EV_TONE_B
         .word   SSG_EV_TONE_C
-        .word   L_2480
+        .word   SSG_EV_ENV_PERIOD
         .word   SSG_EV_VOL_A
         .word   SSG_EV_VOL_B
         .word   SSG_EV_VOL_C
-        .word   L_24C1
-        .word   L_24C6
-        .word   L_24CB
-        .word   L_24D0
+        .word   SSG_EV_NONE_B
+        .word   SSG_EV_NONE_C
+        .word   SSG_EV_NONE_D
+        .word   SSG_EV_NONE_E
         .word   SSG_EV_F
-L_2509:                 ; 2509
+; A = low nibble: its SSG_F_JUMPS handler is pushed, DE = the entry's word, A = the next byte
+SSG_F_ENTRY:            ; 2509
         add     a,a
         add     a,a
         ld      e,a
@@ -5969,7 +5979,8 @@ L_2509:                 ; 2509
         ld      a,(bc)
         ret
 
-L_251D:                 ; 251D
+; F0 (no argument): ends the step's events; the step after reads the byte after F0 as its duration, so it can be 40 and up
+SSG_EV_END:             ; 251D
         dec     bc
         ret
 
@@ -5979,15 +5990,16 @@ SSG_EV_NOISE:           ; 251F
         ld      (ix+26),a
         ret
 
-L_2525:                 ; 2525
-        ld      hl,0x3B3D
+; F2: a stepped envelope on the noise period (slot +67, SSG_VOL_ENVS), up to 1F
+SSG_EV_NOISE_ENV:       ; 2525
+        ld      hl,SSG_VOL_ENVS
         call    SSG_ENV_START
         set     1,(iy+0)
         ld      de,0x0000
         ret
 
-; F3: the mixer (+33, +15, +16); a channel turned off has its volume set to 10 (envelope)
-SSG_EV_MIXER:           ; 2533
+; F3: the hardware envelope: b0-2 its shape (register D, +33, with CONT set); b3-5 channels A-C play on it (+16 b5-7: volume 10, and their volume envelopes stop); b6-7 the channel whose new tone restarts it (+15: 0 none, 1 A, 2 B, 3 C)
+SSG_EV_ENV_SHAPE:       ; 2533
         and     0x07
         or      0x08
         ld      (ix+33),a
@@ -6034,31 +6046,35 @@ L_2579:                 ; 2579
 L_2586:                 ; 2586
         ret
 
-L_2587:                 ; 2587
-        ld      hl,0x3B60
+; F4, F5, F6: a stepped envelope on the tone period of channel A, B or C (slots +34, +45, +56, SSG_TONE_ENVS)
+SSG_EV_TONE_ENV:        ; 2587
+        ld      hl,SSG_TONE_ENVS
         call    SSG_ENV_START
         ld      de,0x0000
         ret
 
-L_2591:                 ; 2591
+; F7: the mixer (register 7, +27), b0-5
+SSG_EV_MIXER:           ; 2591
         and     0x3F
         ld      (ix+27),a
         ret
 
-L_2597:                 ; 2597
-        ld      hl,0x3B3D
+; F8, F9, FA: a stepped envelope on the volume of channel A, B or C (slots +78, +89, +100, SSG_VOL_ENVS)
+SSG_EV_VOL_ENV:         ; 2597
+        ld      hl,SSG_VOL_ENVS
         call    SSG_ENV_START
         ld      de,0x0000
         ret
 
-L_25A1:                 ; 25A1
+; FF: an argument 0-F stops the envelope that F0+n started (SSG_ENV_SLOTS); others do nothing
+SSG_EV_ENV_STOP:        ; 25A1
         and     0xF0
         jr      nz,L_25B9
         ld      a,(bc)
         and     0x0F
         ld      e,a
         ld      d,0x00
-        ld      hl,0x25FC
+        ld      hl,SSG_ENV_SLOTS
         add     hl,de
         ld      a,(hl)
         and     a
@@ -6071,13 +6087,17 @@ L_25B9:                 ; 25B9
         ld      e,d
         ret
 
-L_25BB:                 ; 25BB
+; FB-FE: the argument is skipped
+SSG_EV_F_NONE:          ; 25BB
         ret
 
 ; 16 x (handler, DE) for SSG_EV_F
 SSG_F_JUMPS:            ; 25BC
-        .incbin "sound.bin", 0x25BC, 0x0050
-; HL = a 5-byte table, DE = an offset in the record: a stepped envelope, as OPL_EV_ENV
+        .incbin "sound.bin", 0x25BC, 0x0040
+; 16 bytes for SSG_EV_ENV_STOP: the slot of the envelope that F0+n starts (0: none)
+SSG_ENV_SLOTS:          ; 25FC
+        .incbin "sound.bin", 0x25FC, 0x0010
+; HL = SSG_VOL_ENVS or SSG_TONE_ENVS, DE = a slot's offset, A = argument: as OPL_EV_ENV, into the 11-byte slot (IY): +0 flags, +1 interval, +2 count, +3 interval change, +4/+5 points, +6 next point, +7 loops, +8 next entry, +9 entry, +10 first interval
 SSG_ENV_START:          ; 260C
         ld      iy,(CUR_RECORD)
         add     iy,de
@@ -6099,7 +6119,8 @@ L_261A:                 ; 261A
         sub     a
 L_2630:                 ; 2630
         ld      (iy+2),a
-L_2633:                 ; 2633
+; E = entry, HL = table: as OPL_ENV_LOAD, into the slot at IY; DE = the points
+SSG_ENV_LOAD:           ; 2633
         push    hl
         ld      d,0x00
         ld      h,d
@@ -6126,7 +6147,8 @@ L_2633:                 ; 2633
         ld      (iy+6),0x00
         ret
 
-L_265A:                 ; 265A
+; every tick while playing: a new tone on +15's channel flags register D (the hardware envelope restarts); then the 7 envelopes: tones A-C (SSG_TONE_ENV_TICK), the noise period and volumes A-C (SSG_VOL_ENV_TICK)
+SSG_MOD_TICK:           ; 265A
         ld      a,(ix+15)
         and     (ix+17)
         jr      z,L_2666
@@ -6136,38 +6158,39 @@ L_2666:                 ; 2666
         ld      de,0x0022
         add     iy,de
         ld      de,0x0114
-        call    L_26C4
+        call    SSG_TONE_ENV_TICK
         ld      de,0x000B
         add     iy,de
         ld      de,0x0216
-        call    L_26C4
+        call    SSG_TONE_ENV_TICK
         ld      de,0x000B
         add     iy,de
         ld      de,0x0418
-        call    L_26C4
+        call    SSG_TONE_ENV_TICK
         ld      de,0x000B
         add     iy,de
         ld      de,0x0008
         ld      hl,0x001A
-        call    L_27A0
+        call    SSG_VOL_ENV_TICK
         ld      de,0x000B
         add     iy,de
         ld      de,0x0020
         ld      hl,0x001C
-        call    L_27A0
+        call    SSG_VOL_ENV_TICK
         ld      de,0x000B
         add     iy,de
         ld      de,0x0040
         ld      hl,0x001D
-        call    L_27A0
+        call    SSG_VOL_ENV_TICK
         ld      de,0x000B
         add     iy,de
         ld      de,0x0080
         ld      hl,0x001E
-        call    L_27A0
+        call    SSG_VOL_ENV_TICK
         ret
 
-L_26C4:                 ; 26C4
+; IY = slot, D = the tone's bit in +17, E = its offset (+20, +22, +24): as OPL_ENV_TICK, restarted by a new tone; a step adds the next point - this one to the tone period, with no depth
+SSG_TONE_ENV_TICK:      ; 26C4
         push    de
         push    iy
         pop     hl
@@ -6187,8 +6210,8 @@ L_26C4:                 ; 26C4
         sub     a
 L_26E8:                 ; 26E8
         ld      (iy+2),a
-        ld      hl,0x3B60
-        call    L_2633
+        ld      hl,SSG_TONE_ENVS
+        call    SSG_ENV_LOAD
         set     7,(iy+0)
         jp      L_279E
 
@@ -6250,8 +6273,8 @@ L_271B:                 ; 271B
         sub     a
 L_274C:                 ; 274C
         ld      (iy+2),a
-        ld      hl,0x3B60
-        call    L_2633
+        ld      hl,SSG_TONE_ENVS
+        call    SSG_ENV_LOAD
         ld      (iy+6),0x01
         ex      de,hl
         ld      c,(hl)
@@ -6304,7 +6327,8 @@ L_279E:                 ; 279E
         pop     de
         ret
 
-L_27A0:                 ; 27A0
+; IY = slot, E = the target's bit in +17, L = its offset (+26, +28-+30): as SSG_TONE_ENV_TICK, with 4-bit points (SSG_ENV_NIBBLES); the target is held in 0-F (0-1F with slot b1, the noise). On its first tick it stops if the channel plays on the hardware envelope (+16)
+SSG_VOL_ENV_TICK:       ; 27A0
         push    de
         push    hl
         push    iy
@@ -6336,8 +6360,8 @@ L_27C3:                 ; 27C3
         sub     a
 L_27D6:                 ; 27D6
         ld      (iy+2),a
-        ld      hl,0x3B3D
-        call    L_2633
+        ld      hl,SSG_VOL_ENVS
+        call    SSG_ENV_LOAD
         set     7,(iy+0)
         res     3,(iy+0)
         jp      L_28A5
@@ -6378,7 +6402,7 @@ L_280D:                 ; 280D
         ld      l,(hl)
         ld      h,0x00
         add     hl,de
-        call    L_28A8
+        call    SSG_ENV_NIBBLES
         jr      nc,L_2860
         ld      a,(iy+7)
         and     a
@@ -6395,11 +6419,11 @@ L_280D:                 ; 280D
         sub     a
 L_283B:                 ; 283B
         ld      (iy+2),a
-        ld      hl,0x3B3D
-        call    L_2633
+        ld      hl,SSG_VOL_ENVS
+        call    SSG_ENV_LOAD
         res     3,(iy+0)
         ex      de,hl
-        call    L_28A8
+        call    SSG_ENV_NIBBLES
         jr      L_2860
 
 L_284E:                 ; 284E
@@ -6410,7 +6434,7 @@ L_2854:                 ; 2854
         ld      (iy+6),0x00
         res     3,(iy+0)
         ex      de,hl
-        call    L_28A8
+        call    SSG_ENV_NIBBLES
 L_2860:                 ; 2860
         sub     b
         ld      b,a
@@ -6457,7 +6481,8 @@ L_28A5:                 ; 28A5
         pop     de
         ret
 
-L_28A8:                 ; 28A8
+; HL = a points byte: B = this point (high nibble, then low, by slot b3), A = the next; carry set when the next is 0 (the end)
+SSG_ENV_NIBBLES:        ; 28A8
         ld      a,(hl)
         bit     3,(iy+0)
         jr      nz,L_28C0
@@ -6503,4 +6528,28 @@ COMMAND_TABLE:          ; 329C
         .incbin "sound.bin", 0x329C, 0x006A
 ; COMMAND_F_ENTRY reads the words at +0, +4, +8 and +C (F2-F8)
 COMMAND_F_TABLE:        ; 3306
-        .incbin "sound.bin", 0x3306, 0x4CFA
+        .incbin "sound.bin", 0x3306, 0x076B
+; one 5-byte entry for OPL_EV_ENV: interval change, loops (0 = for ever), next entry (b7: stop), a word pointer to the points
+OPL_ENVS:               ; 3A71
+        .incbin "sound.bin", 0x3A71, 0x0005
+; bytes, 00 ends
+OPL_ENV_POINTS:         ; 3A76
+        .incbin "sound.bin", 0x3A76, 0x0003
+; 20 entries for OPN_EV_ENV, as OPL_ENVS
+OPN_ENVS:               ; 3A79
+        .incbin "sound.bin", 0x3A79, 0x0064
+; as OPL_ENV_POINTS
+OPN_ENV_POINTS:         ; 3ADD
+        .incbin "sound.bin", 0x3ADD, 0x0060
+; 5 entries for SSG_EV_NOISE_ENV and SSG_EV_VOL_ENV, as OPL_ENVS
+SSG_VOL_ENVS:           ; 3B3D
+        .incbin "sound.bin", 0x3B3D, 0x0019
+; 4-bit points, two to a byte, 0 ends
+SSG_VOL_ENV_POINTS:     ; 3B56
+        .incbin "sound.bin", 0x3B56, 0x000A
+; 14 entries for SSG_EV_TONE_ENV, as OPL_ENVS
+SSG_TONE_ENVS:          ; 3B60
+        .incbin "sound.bin", 0x3B60, 0x0046
+; as OPL_ENV_POINTS
+SSG_TONE_ENV_POINTS:    ; 3BA6
+        .incbin "sound.bin", 0x3BA6, 0x445A

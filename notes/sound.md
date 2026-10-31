@@ -160,15 +160,17 @@ shape turns the phase into a value from −7F to 7F (`OPL_LFO_SHAPES`):
 
 A target gets LFO value × depth / 256 (signed).
 
-**The stepped envelope.** An entry in the table at `3A71` (YM3526) or `3A79` (YM2203) is 5
+**The stepped envelope.** An entry in `OPL_ENVS` (one entry) or `OPN_ENVS` (20) is 5
 bytes: the interval change, the loop count, the next entry, and a pointer to its points.
 The points are bytes, and 00 ends them. Each step, the slope is the next point minus this
 point, and each target's sum gains slope × depth (signed). A target gets the sum's high
 byte, so it moves by (point − first point) × depth / 256. Steps come when a countdown from
 the interval runs out. In add mode (DE's b7), the interval is added to a count instead, and a
 step comes at each carry. The interval changes by the entry's first byte at each step. At
-the end of the points the envelope starts again from the first point. When the loop count
-runs out, it chains to the next entry, or stops.
+the end of the points the envelope starts again from the first point, but the sums are not
+reset: each pass moves the targets by (last point − first point) × depth more, so a
+two-point entry is a ramp for as long as it runs. When the loop count runs out, it chains
+to the next entry, or stops. Every entry but one in `SSG_TONE_ENVS` loops for ever.
 
 **What is written.** A total level is the voice's level + LFO + envelope, and the register
 is flagged only when it changes. On the YM3526 the pitch adds the F-number, the envelope
@@ -184,16 +186,45 @@ These are picked by the high nibble, through `SSG_EVENT_JUMPS`:
 | Byte | Action |
 |---|---|
 | 4x, 5x, 6x | tone period of channel A, B or C: coarse from the low nibble, fine from the next byte |
-| 7x | low nibble and the next byte into +31, +32 (not yet read) |
-| 8x, 9x, Ax | volume of channel A, B or C |
+| 7x | the hardware envelope's period: the low nibble × 10 (register B), the next byte (register C); it restarts the envelope |
+| 8x, 9x, Ax | volume of channel A, B or C (and that channel leaves the hardware envelope) |
 | Bx–Ex | none (no argument) |
-| Fx | `SSG_F_JUMPS` by the low nibble: F1 noise period, F3 mixer, F2 and F4–FA stepped envelopes (`SSG_ENV_START`, tables `3B3D` and `3B60`) |
+| Fx | `SSG_F_JUMPS` by the low nibble, below |
+
+A byte below 40 is the next duration. F0 lets a duration of 40 and up follow.
+
+| Byte | Action |
+|---|---|
+| F0 | (no argument) ends the step: the byte after is the next duration |
+| F1 | noise period (register 6) |
+| F2 | stepped envelope on the noise period (`SSG_VOL_ENVS`), held in 0–1F |
+| F3 | the hardware envelope: b0–2 its shape (register D), b3–5 channels A–C play on it (volume 10), b6–7 the channel whose new tone restarts it (0 none, 1–3 A–C) |
+| F4, F5, F6 | stepped envelope on channel A, B or C's tone period (`SSG_TONE_ENVS`) |
+| F7 | the mixer (register 7), b0–5 |
+| F8, F9, FA | stepped envelope on channel A, B or C's volume (`SSG_VOL_ENVS`), held in 0–F |
+| FB–FE | none |
+| FF | stops the envelope that F0 + the argument started |
+
+### SSG modulation (`SSG_MOD_TICK`)
+
+The SSG has no LFO. Its record has 7 envelope slots of 11 bytes, one for each target: the
+tone periods (+34, +45, +56), the noise period (+67) and the volumes (+78, +89, +100). They
+step as the FM envelope does, with three differences:
+
+- A step adds the point difference straight to the register value, with no depth.
+- Volume and noise points are 4 bits, two to a byte (high nibble first), and 0 ends them.
+  The value is held in 0–F (0–1F for the noise).
+- A new value from the step's events (a new tone, say) restarts the envelope, as a keyed
+  note does on the FM channels. A volume envelope stops on its first tick if its channel
+  plays on the hardware envelope.
+
+Each tick also restarts the hardware envelope (register D) when F3's channel got a new tone.
+The record's register copies: +20–+25 tones A–C, +26 noise, +27 mixer, +28–+30 volumes,
++31/+32 envelope period, +33 envelope shape. +17 and +18 flag the registers to write at the
+next tick (`SSG_TONE_WRITE`, `SSG_HWENV_WRITE`).
 
 ## Not yet done
 
-- The SSG's modulation (`265A`): 7 stepped envelopes, from the table at `3B60`, on the three
-  tone periods and four more targets.
-- The SSG `7x` event, and F0, F7 and FF.
 - The command catalogue (`notes/sound_commands.md` lists the commands the main CPU sends):
   which block each command starts, checked against MAME recordings.
 - A decoder that writes each command's phrases as JSON (`build/sound/`).

@@ -1192,7 +1192,7 @@ OPL_EV_LENGTH   = { addr = 0x0AB2, note = "CE: +19, the length of a second note 
 OPL_EV_VOICE    = { addr = 0x0AB8, note = "CF: voice n from OPL_VOICES (13 bytes: feedback and connection, the two operators' registers 20, 40, 60 and 80, then arguments for OPL_EV_LFO, _LFO_SET, _ENV, _ENV_SET and _ENV_DEPTH)" }
 OPL_EV_LFO      = { addr = 0x0B53, note = "DC: an LFO (+41-+50), 3 bytes: the phase step, high byte (b0-6, to +43 and +45) then low (+42, +44); then the shape (b0-2 to +48, OPL_LFO_SHAPES) and b7, restart on each keyed note (+41 b6)" }
 OPL_EV_LFO_SET  = { addr = 0x0B78, note = "DD: 0 stops the LFO; else a mask (+49: b0 operator 1 TL, b1 operator 2 TL, b2 pitch) and a depth for each bit set (+51-+53)" }
-OPL_EV_ENV      = { addr = 0x0BA8, note = "DE: a stepped envelope (+54-+66): entry b0-6 of the 5-byte table at 3A71 (+63); b7 to +54 b5 (the interval is added, not counted down); the next byte the first interval (+55, +64)" }
+OPL_EV_ENV      = { addr = 0x0BA8, note = "DE: a stepped envelope (+54-+66): entry b0-6 of OPL_ENVS (+63); b7 to +54 b5 (the interval is added, not counted down); the next byte the first interval (+55, +64)" }
 OPL_ENV_LOAD    = { addr = 0x0BC9, note = "E = entry: the interval change (+57), loop count (+61), next entry (+62, b7: stop) and the points' pointer (+58/+59); HL = the points" }
 OPL_ENV_CLEAR   = { addr = 0x0BFA, note = "clears the envelope's sums: +70/+71, +73/+74, +76-+78" }
 OPL_EV_ENV_SET  = { addr = 0x0C16, note = "DF: 0 stops the envelope; else a mask (+65, bits as OPL_EV_LFO_SET) and a depth for each of its 3 low bits set (+69, +72, +75)" }
@@ -1268,7 +1268,7 @@ OPN_EV_LENGTH   = { addr = 0x1883, note = "CE: as OPL_EV_LENGTH (+20)" }
 OPN_EV_VOICE    = { addr = 0x1889, note = "CF: voice n from OPN_VOICES (33 bytes)" }
 OPN_EV_LFO      = { addr = 0x1943, note = "DC: as OPL_EV_LFO (+82-+91)" }
 OPN_EV_LFO_SET  = { addr = 0x1968, note = "DD: as OPL_EV_LFO_SET" }
-OPN_EV_ENV      = { addr = 0x1998, note = "DE: as OPL_EV_ENV (+100-+112), from the table at 3A79" }
+OPN_EV_ENV      = { addr = 0x1998, note = "DE: as OPL_EV_ENV (+100-+112), from OPN_ENVS" }
 OPN_ENV_CLEAR   = { addr = 0x19EA, note = "as OPL_ENV_CLEAR" }
 OPN_EV_ENV_SET  = { addr = 0x1A15, note = "DF: as OPL_EV_ENV_SET; channel 3 takes up to 3 more bytes" }
 OPN_EV_ENV_DEPTH = { addr = 0x1A71, note = "EC: as OPL_EV_ENV_DEPTH" }
@@ -1306,22 +1306,44 @@ OPN_SMUL_FAST   = { addr = 0x21F7, note = "as OPL_SMUL_FAST" }
 OPN_MUL7        = { addr = 0x2222, note = "as OPL_MUL7" }
 OPN_MUL4        = { addr = 0x2246, note = "as OPL_MUL4" }
 OPN_SSG_TICK    = { addr = 0x225B, note = "the SSG records: SSG_REC_B skipped while SSG_REC_A plays" }
+SSG_TONE_WRITE  = { addr = 0x22DA, note = "HL = YM2203, DE = record +20: the registers flagged in +17 (b0-2 tones A-C, registers 0-5; b3-7 registers 6-A from +26-+30), then clear them" }
+SSG_HWENV_WRITE = { addr = 0x2309, note = "DE = record +31: +18 b0 registers B and C (+31, +32), b1 register D (+33), which restarts the envelope; then clear +18" }
+SSG_WRITE_PAIR  = { addr = 0x2328, note = "C b0 set: registers B and B + 1 from DE; B + 2, DE + 2" }
 SSG_REC_START   = { addr = 0x234A, note = "as OPL_REC_START" }
 SSG_PHRASE_LOAD = { addr = 0x2378, note = "as OPL_PHRASE_LOAD" }
 SSG_REC_CLEAR   = { addr = 0x238F, note = "as OPL_REC_CLEAR" }
 SSG_PHRASE_END  = { addr = 0x23B5, note = "as OPL_PHRASE_END" }
 SSG_STEP        = { addr = 0x241B, note = "as OPL_STEP, with SSG_EVENTS" }
-SSG_EVENTS      = { addr = 0x243C, note = "YM2203 SSG: the byte after BC, by its high nibble (b6-b7 set) through SSG_EVENT_JUMPS" }
+SSG_EVENTS      = { addr = 0x243C, note = "YM2203 SSG: the bytes after BC with b6 or b7 set, by the high nibble through SSG_EVENT_JUMPS (a byte below 40 is the next duration)" }
 SSG_EV_TONE_A   = { addr = 0x2458, note = "4x: channel A tone period, coarse from the low nibble (register 1), fine from the next byte (register 0)" }
 SSG_EV_TONE_B   = { addr = 0x2466, note = "5x: channel B (registers 2, 3)" }
 SSG_EV_TONE_C   = { addr = 0x2473, note = "6x: channel C (registers 4, 5)" }
+SSG_EV_ENV_PERIOD= { addr = 0x2480, note = "7x: the hardware envelope's period: the low nibble x 10 (register B, +31), the next byte (register C, +32); register D is written too, which restarts it" }
 SSG_EV_VOL_A    = { addr = 0x2491, note = "8x: channel A volume (register 8) from the low nibble" }
 SSG_EV_VOL_B    = { addr = 0x24A1, note = "9x: channel B (register 9)" }
 SSG_EV_VOL_C    = { addr = 0x24B1, note = "Ax: channel C (register A)" }
-SSG_EV_F        = { addr = 0x24D5, note = "Fx: SSG_F_JUMPS by the low nibble, with the next byte; a returned DE with b15 set ends the step" }
+SSG_EV_NONE_B   = { addr = 0x24C1, note = "Bx (no argument): nothing" }
+SSG_EV_NONE_C   = { addr = 0x24C6, note = "Cx: nothing" }
+SSG_EV_NONE_D   = { addr = 0x24CB, note = "Dx: nothing" }
+SSG_EV_NONE_E   = { addr = 0x24D0, note = "Ex: nothing" }
+SSG_EV_F        = { addr = 0x24D5, note = "Fx: SSG_F_JUMPS by the low nibble, with the next byte; a returned DE with b15 set ends the step, any other is ORed into the dirty bits" }
+SSG_EV_DIRTY    = { addr = 0x24E0, note = "E into +17, D into +18 (the registers to write), then the next event" }
+SSG_F_ENTRY     = { addr = 0x2509, note = "A = low nibble: its SSG_F_JUMPS handler is pushed, DE = the entry's word, A = the next byte" }
+SSG_EV_END      = { addr = 0x251D, note = "F0 (no argument): ends the step's events; the step after reads the byte after F0 as its duration, so it can be 40 and up" }
 SSG_EV_NOISE    = { addr = 0x251F, note = "F1: noise period (register 6, b0-4)" }
-SSG_EV_MIXER    = { addr = 0x2533, note = "F3: the mixer (+33, +15, +16); a channel turned off has its volume set to 10 (envelope)" }
-SSG_ENV_START   = { addr = 0x260C, note = "HL = a 5-byte table, DE = an offset in the record: a stepped envelope, as OPL_EV_ENV" }
+SSG_EV_NOISE_ENV= { addr = 0x2525, note = "F2: a stepped envelope on the noise period (slot +67, SSG_VOL_ENVS), up to 1F" }
+SSG_EV_ENV_SHAPE= { addr = 0x2533, note = "F3: the hardware envelope: b0-2 its shape (register D, +33, with CONT set); b3-5 channels A-C play on it (+16 b5-7: volume 10, and their volume envelopes stop); b6-7 the channel whose new tone restarts it (+15: 0 none, 1 A, 2 B, 3 C)" }
+SSG_EV_TONE_ENV = { addr = 0x2587, note = "F4, F5, F6: a stepped envelope on the tone period of channel A, B or C (slots +34, +45, +56, SSG_TONE_ENVS)" }
+SSG_EV_MIXER    = { addr = 0x2591, note = "F7: the mixer (register 7, +27), b0-5" }
+SSG_EV_VOL_ENV  = { addr = 0x2597, note = "F8, F9, FA: a stepped envelope on the volume of channel A, B or C (slots +78, +89, +100, SSG_VOL_ENVS)" }
+SSG_EV_ENV_STOP = { addr = 0x25A1, note = "FF: an argument 0-F stops the envelope that F0+n started (SSG_ENV_SLOTS); others do nothing" }
+SSG_EV_F_NONE   = { addr = 0x25BB, note = "FB-FE: the argument is skipped" }
+SSG_ENV_START   = { addr = 0x260C, note = "HL = SSG_VOL_ENVS or SSG_TONE_ENVS, DE = a slot's offset, A = argument: as OPL_EV_ENV, into the 11-byte slot (IY): +0 flags, +1 interval, +2 count, +3 interval change, +4/+5 points, +6 next point, +7 loops, +8 next entry, +9 entry, +10 first interval" }
+SSG_ENV_LOAD    = { addr = 0x2633, note = "E = entry, HL = table: as OPL_ENV_LOAD, into the slot at IY; DE = the points" }
+SSG_MOD_TICK    = { addr = 0x265A, note = "every tick while playing: a new tone on +15's channel flags register D (the hardware envelope restarts); then the 7 envelopes: tones A-C (SSG_TONE_ENV_TICK), the noise period and volumes A-C (SSG_VOL_ENV_TICK)" }
+SSG_TONE_ENV_TICK= { addr = 0x26C4, note = "IY = slot, D = the tone's bit in +17, E = its offset (+20, +22, +24): as OPL_ENV_TICK, restarted by a new tone; a step adds the next point - this one to the tone period, with no depth" }
+SSG_VOL_ENV_TICK= { addr = 0x27A0, note = "IY = slot, E = the target's bit in +17, L = its offset (+26, +28-+30): as SSG_TONE_ENV_TICK, with 4-bit points (SSG_ENV_NIBBLES); the target is held in 0-F (0-1F with slot b1, the noise). On its first tick it stops if the channel plays on the hardware envelope (+16)" }
+SSG_ENV_NIBBLES = { addr = 0x28A8, note = "HL = a points byte: B = this point (high nibble, then low, by slot b3), A = the next; carry set when the next is 0 (the end)" }
 
 [sound.data]
 RECORD_TABLE    = { addr = 0x0378, size = 0x38, note = "words by record id - 84 (ids 84-BA, even): the record; 88 and 8A are 0" }
@@ -1335,10 +1357,19 @@ OPN_NOTES       = { addr = 0x1619, size = 0x18, note = "12 words" }
 OPN_LFO_SHAPES  = { addr = 0x1F73, size = 0x10, note = "8 words, as OPL_LFO_SHAPES" }
 SSG_EVENT_JUMPS = { addr = 0x24F1, size = 0x18 }
 SSG_F_JUMPS     = { addr = 0x25BC, size = 0x40, note = "16 x (handler, DE) for SSG_EV_F" }
+SSG_ENV_SLOTS   = { addr = 0x25FC, size = 0x10, note = "16 bytes for SSG_EV_ENV_STOP: the slot of the envelope that F0+n starts (0: none)" }
 OPL_VOICES      = { addr = 0x28D7, size = 0x3A, note = "29 words: 13-byte voices for OPL_EV_VOICE" }
 OPN_VOICES      = { addr = 0x2A8A, size = 0x76, note = "59 words: 33-byte voices for OPN_EV_VOICE" }
 COMMAND_TABLE   = { addr = 0x329C, size = 0x6A, note = "53 words for commands 00-34" }
 COMMAND_F_TABLE = { addr = 0x3306, size = 0x0E, note = "COMMAND_F_ENTRY reads the words at +0, +4, +8 and +C (F2-F8)" }
+OPL_ENVS        = { addr = 0x3A71, size = 0x05, note = "one 5-byte entry for OPL_EV_ENV: interval change, loops (0 = for ever), next entry (b7: stop), a word pointer to the points" }
+OPL_ENV_POINTS  = { addr = 0x3A76, size = 0x03, note = "bytes, 00 ends" }
+OPN_ENVS        = { addr = 0x3A79, size = 0x64, note = "20 entries for OPN_EV_ENV, as OPL_ENVS" }
+OPN_ENV_POINTS  = { addr = 0x3ADD, size = 0x60, note = "as OPL_ENV_POINTS" }
+SSG_VOL_ENVS    = { addr = 0x3B3D, size = 0x19, note = "5 entries for SSG_EV_NOISE_ENV and SSG_EV_VOL_ENV, as OPL_ENVS" }
+SSG_VOL_ENV_POINTS= { addr = 0x3B56, size = 0x0A, note = "4-bit points, two to a byte, 0 ends" }
+SSG_TONE_ENVS   = { addr = 0x3B60, size = 0x46, note = "14 entries for SSG_EV_TONE_ENV, as OPL_ENVS" }
+SSG_TONE_ENV_POINTS= { addr = 0x3BA6, size = 0x44, note = "as OPL_ENV_POINTS" }
 
 [shared.mcu]
 # Contract in notes/mcu_shared_ram.md. Direction: M = written by the MCU, Z = by the main CPU.

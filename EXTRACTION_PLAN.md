@@ -899,8 +899,11 @@ Started (2026-10-27):
   operators' total levels and the pitch (on the YM2203, channel 3's operator pitches too).
   The envelope's depth on the LFO rate (EC) has no effect. Every routine in
   `OPL_MOD_TICK` and `OPN_MOD_TICK` is named. Still byte-exact.
-- Next: the SSG's modulation (`265A`), then the command catalogue (step 2) and a phrase
-  decoder to JSON, checked against MAME recordings.
+- The SSG's modulation (2026-10-31): no LFO, but 7 stepped envelopes (tone periods, noise,
+  volumes), plus the hardware envelope (F3, 7x). Every SSG event is now known, and the four
+  envelope tables are named. Still byte-exact.
+- Next: the command catalogue (step 2) and a phrase decoder to JSON, checked against MAME
+  recordings.
 
 ---
 
