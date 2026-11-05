@@ -273,5 +273,6 @@ voices are packed with no gaps, so a voice's length is what this parse reads.
 
 - The command catalogue is in `notes/sound_blocks.md` (made by `tools/sounddec.py`, JSON in
   `build/sound/commands.json`). It is not yet checked against MAME recordings.
-- Check more commands against MAME (`tools/soundcmp.py`, `tools/soundcheck.py`): only command 08
-  (YM3526) and 25 (YM2203) have been compared. The YM2203 and SSG phrases still need a checker.
+- Checked against MAME so far: YM3526 commands 08, 13 and 2A, YM2203 commands 2D, 18, 27, 28 and 26
+  (`tools/soundcheck.py`). Not checked: tied notes (command 0B), the second-layer (B) records, the
+  SSG beyond command 05, the voices' and envelopes' register values beyond command 25.

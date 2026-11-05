@@ -926,9 +926,16 @@ Started (2026-10-27):
   and the stepped envelopes with their points resolved. The voices follow one another exactly
   from `OPL_VOICES`' data to `OPN_VOICES`' and on to `COMMAND_TABLE`, which supports the
   layout (one 1-byte gap in the YM2203's, where a channel 3 envelope mask would add a byte).
-- Next: a synthesiser-side check: play a decoded command through a generic FM model and
-  compare with MAME audio (stage 3, `SharpKind.Audio`), and extend `soundcheck.py` to the
-  YM2203 and the SSG.
+- The check on both chips (2026-11-05): `soundcheck.py` now pools each command's records per chip and
+  fits one tick period. YM3526: commands 08 (384 notes), 13 (74) and 2A (20) keep every key-on
+  within 0.71 ticks of the decoded durations, with the right block each time. YM2203: 2D (10
+  notes over 3 channels), 18 (12), 26 and 28 (8) within 0.28 ticks, so the channels' start delays
+  and the 8F notes (the other note encoding) decode correctly. The tick differs by command (16.3 to
+  35.8 ms; commands set the timers), which is why it is fitted. Two limits: command 0B's
+  YM3526 notes that are tied (`CC A1`: pitch only, no new key-on) show no key-on, so it
+  reports 4 wrong blocks; and the SSG check is weak: command 05's 3 tone events each have a
+  tone write within two ticks, and 2E has none.
+- Next: a synthesiser-side check:
 
 ---
 
