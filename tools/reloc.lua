@@ -17,7 +17,7 @@ end
 RELOC_FRAME = emu.add_machine_frame_notifier(function()
   frame = frame + 1
   if frame % CFG.every == 0 then
-    out:write(machine.screens[":screen"]:pixels())
+    out:write((machine.screens[":screen"]:pixels()))  -- it also returns the size
   end
   while CFG.events[ev] and CFG.events[ev].f <= frame do
     local e = CFG.events[ev]

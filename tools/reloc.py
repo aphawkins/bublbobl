@@ -18,12 +18,14 @@ A moved ROM has the wrong CRC, which is the point: MAME's warning is expected.
 
 import argparse
 import random
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import build
+import mainptrs
 import romset
 import trace
 
@@ -31,6 +33,7 @@ ROOT = romset.ROOT
 OUT = ROOT / "build" / "reloc"
 SCREEN = 256 * 224 * 4  # bytes in one sample of the screen's pixels
 EVERY = 15  # frames between samples
+MAME_LIMIT = 600  # seconds; two minutes of play takes about five
 
 # IMAGE -> the source, the label the padding goes before, the .incbin of free space it comes
 # out of (file, offset, length), the ROM file, and the sum over the whole ROM to keep at 0:
@@ -46,6 +49,34 @@ IMAGES = {
     "sound": {"source": "sound/sound.s", "before": "SOUND_START:", "fill": ('"sound.bin"', 0x7D83, 0x27D),
               "rom": "a78-07.46", "sum": None, "check": "sound"},
 }
+
+# The main CPU's five images move together. Each has no free space where the padding is wanted,
+# so it comes out of a block nothing runs or reads ("cut": address, then how many pads' worth),
+# and "pads" are the lines it goes before. A pad at both ends with the cut in the middle moves the
+# first half up and the second half down, so every label changes. None means the end of the file.
+# STEP_TO_8_DOWN runs off the end of the fixed ROM into bank 0 (`and 0x07` is split between 7FFF
+# and 8000, and the routine ends at 8008), so those bytes cannot move.
+MAIN_LAYOUT = {
+    # 475B is 0xB4 bytes of orphaned code: never run or read, and nothing points at it
+    "fixed": {"pads": ["SCHEDULER:", "STEP_TO_8_DOWN:"], "cut": (0x475B, 2)},
+    # ENEMY3_WALK_THINK: never run, and nothing points at it
+    "bank0": {"pads": ["B0_DATA_8009:", None], "cut": (0x97EC, 2)},
+    "bank1": {"pads": ["PALETTES:"], "cut": (0xB85C, 1)},  # 0xFF fill
+    "bank2": {"pads": ["TEST_MODE:"], "cut": (0xBC46, 1)},  # after the last thing anything points at
+    "bank3": {"pads": ["B3_TILES_8000:"], "cut": (0xBF1A, 1)},  # 0xFF fill
+}
+MAIN_ROMS = {"a78-06-1.51": ["main/fixed.s"],
+             "a78-05-1.52": ["main/bank0.s", "main/bank1.s", "main/bank2.s", "main/bank3.s"]}
+# the end of each of the 23 ROM sums: `ld a,(EXPECTED)`, `ld hl,SUM`, `cp (hl)`
+SUM_END = re.compile(r"(ld      a,\()(\w+)(\)\n\s+ld      hl,)(\w+)(\n\s+cp      \(hl\)\n\s+ret     z)")
+ROM_SUMS = 23
+# The game's random numbers are `ld a,r`, and R counts instructions. ADD_HL_A and its like run one
+# more when a table crosses a 256-byte page, so moving a table changes R, and so the game. `ld a,i`
+# is the same size and time and sets the same flags, but I never changes: with it in both sets,
+# whatever still differs is a fault. The reference set is the same build with a pad of 0.
+R_READ = "ld      a,r\n"
+R_READS = 15
+IDLE = 0x01ED  # where tools/soundlog.lua parks the main CPU; the first pad comes before it
 
 # every command the sound CPU has (tools/sounddec.py), and the frames between them. Not 2E: it
 # plays its own table as phrases, through "pointers" made of a count byte and half a pointer,
@@ -74,6 +105,82 @@ def moved_source(cfg: dict, pad: int) -> str:
     return "\n".join(lines)
 
 
+def cut_lines(src: list[str], image: str, addr: int, size: int) -> None:
+    """Take `size` bytes out of `src` from addr on, whole instructions at a time."""
+    lines = mainptrs.listing(image)
+    i = next(n for n, x in enumerate(lines) if x.addr <= addr < x.addr + x.size)
+    left = size
+    extra = 0
+    while left > 0:
+        x = lines[i]
+        n = x.number - 1
+        if m := re.search(r'\.incbin ("[^"]+"), 0x(\w+), 0x(\w+)', x.text):
+            offset, length = int(m[2], 16), int(m[3], 16)
+            skip = addr - x.addr if addr > x.addr else 0
+            take = min(left, length - skip)
+            parts = []
+            if skip:
+                parts.append(f"        .incbin {m[1]}, 0x{offset:04X}, 0x{skip:04X}")
+            if length - skip - take:
+                parts.append(f"        .incbin {m[1]}, 0x{offset + skip + take:04X}, 0x{length - skip - take:04X}")
+            src[n] = "\n".join(parts)
+            left -= take
+        else:
+            src[n] = ""
+            left -= x.size
+            extra = max(0, -left)
+        i += 1
+    if extra:  # the last instruction was longer than what was left to take
+        src[lines[i - 1].number - 1] = f"        .fill   {extra}, 1, 0xFF"
+
+
+def moved_main(image: str, pad: int) -> str:
+    """One main image's source with its pads added, its cut taken and its ROM sums made to pass."""
+    cfg = MAIN_LAYOUT[image]
+    src = (ROOT / "src" / "main" / f"{image}.s").read_text(encoding="utf-8").split("\n")
+    addr, pads = cfg["cut"]
+    cut_lines(src, image, addr, pad * pads)
+    for n, where in enumerate(cfg["pads"]):
+        block = [f"RELOC_PAD_{n}:", f"        .fill   {pad}, 1, 0xFF"]
+        if where is None:
+            src += block
+            continue
+        at = [i for i, line in enumerate(src) if line.strip().startswith(where)]
+        if len(at) != 1:
+            raise SystemExit(f"{image}: {where}: {len(at)} matches")
+        src[at[0]:at[0]] = block
+    return "\n".join(src)
+
+
+def neutral_sums(text: str) -> tuple[str, int]:
+    """Each ROM sum compares with itself: the same size and time as the original, so nothing
+    else moves. The sums cannot be balanced, as they overlap."""
+    return SUM_END.subn(lambda m: m[1] + m[4] + m[3] + m[4] + m[5], text)
+
+
+def build_main(pad: int, roms: Path) -> None:
+    total = 0
+    reads = 0
+    for image in MAIN_LAYOUT:
+        path = OUT / "src" / "main" / f"{image}.s"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        text, n = neutral_sums(moved_main(image, pad))
+        total += n
+        reads += text.count(R_READ)
+        path.write_text(text.replace(R_READ, "ld      a,i\n"), encoding="utf-8", newline="\n")
+    if total != ROM_SUMS:
+        raise SystemExit(f"found {total} ROM sums, expected {ROM_SUMS}")
+    if reads != R_READS:
+        raise SystemExit(f"found {reads} reads of R, expected {R_READS}")
+    built = build.assemble("build/reloc/src", "build/reloc/obj", build.MAIN)
+    for rom, sources in MAIN_ROMS.items():
+        data = b"".join(built[src] for src in sources)
+        if len(data) != romset.ROMS[rom][0]:
+            raise SystemExit(f"{rom}: built {len(data):#x} bytes, expected {romset.ROMS[rom][0]:#x}")
+        (roms / rom).write_bytes(data)
+    print(f"main: moved by {pad}, in both directions")
+
+
 def pad_address(cfg: dict) -> int:
     """Where the padding lands: the address noted on the label it goes before."""
     text = (ROOT / "src" / cfg["source"]).read_text(encoding="utf-8")
@@ -95,13 +202,16 @@ def balance(data: bytearray, at: int, kind: str) -> None:
         data[at:at + 2] = (-total & 0xFFFF).to_bytes(2, "big")
 
 
-def build_moved(names: list[str], pad: int) -> Path:
-    """Write the full set to build/reloc/roms/bublbobl/ with these images moved."""
-    roms = OUT / "roms" / "bublbobl"
+def build_moved(names: list[str], pad: int, folder: str = "roms") -> Path:
+    """Write the full set to build/reloc/<folder>/bublbobl/ with these images moved."""
+    roms = OUT / folder / "bublbobl"
     roms.mkdir(parents=True, exist_ok=True)
     for f in (ROOT / "build" / "roms" / "bublbobl").iterdir():
         shutil.copy(f, roms / f.name)
     for name in names:
+        if name == "main":
+            build_main(pad, roms)
+            continue
         cfg = IMAGES[name]
         path = OUT / "src" / cfg["source"]
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -116,7 +226,7 @@ def build_moved(names: list[str], pad: int) -> Path:
             balance(data, at - build.SOURCES[cfg["source"]][3], cfg["sum"])
         (roms / cfg["rom"]).write_bytes(data)
         print(f"{name}: moved by {pad} from {at:04X}")
-    return OUT / "roms"
+    return OUT / folder
 
 
 def scenario(seconds: int, seed: int) -> tuple[list[dict], int]:
@@ -128,6 +238,15 @@ def scenario(seconds: int, seed: int) -> tuple[list[dict], int]:
     trace.coin_and_start(events, start)
     trace.random_play(events, rng, start + 300, frames)
     return sorted(events, key=lambda e: e["f"]), frames
+
+
+def run_limited(argv: list[str], cwd: Path, folder: Path) -> None:
+    """Run MAME, and stop if it outlasts MAME_LIMIT: a moved set that hangs is a failure."""
+    try:
+        result = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, timeout=MAME_LIMIT)
+    except subprocess.TimeoutExpired:
+        raise SystemExit(f"{folder.name}: MAME still running after {MAME_LIMIT} seconds") from None
+    (folder / "mame.log").write_text(result.stdout + result.stderr)
 
 
 def run_mame(label: str, rompath: Path, events: list[dict], frames: int) -> Path:
@@ -144,21 +263,20 @@ def run_mame(label: str, rompath: Path, events: list[dict], frames: int) -> Path
     argv = [str(exe), "bublbobl", "-rompath", str(rompath), "-skip_gameinfo",
             "-cfg_directory", str(folder / "cfg"), "-nvram_directory", str(folder / "nvram"),
             "-autoboot_script", str(script), "-video", "none", "-sound", "none", "-nothrottle"]
-    result = subprocess.run(argv, cwd=exe.parent, capture_output=True, text=True)
-    (folder / "mame.log").write_text(result.stdout + result.stderr)
+    run_limited(argv, exe.parent, folder)
     if not samples.exists() or samples.stat().st_size < SCREEN:
         raise SystemExit(f"{label}: no pictures from MAME; see {folder / 'mame.log'}")
     return samples
 
 
-def run_sound(label: str, rompath: Path) -> Path:
+def run_sound(label: str, rompath: Path, idle: int = IDLE) -> Path:
     """Every sound command from silence, as tools/soundcmp.py. Returns the register log."""
     folder = OUT / label
     if folder.exists():
         shutil.rmtree(folder)
     folder.mkdir(parents=True)
     log = folder / "regs.csv"
-    cfg = {"cmds": SOUND_COMMANDS, "start": 600, "gap": SOUND_GAP, "out": str(log)}
+    cfg = {"cmds": SOUND_COMMANDS, "start": 600, "gap": SOUND_GAP, "out": str(log), "idle": idle}
     script = folder / "run.lua"
     script.write_text("CFG = " + trace.lua_value(cfg) + chr(10)
                       + (ROOT / "tools" / "soundlog.lua").read_text(), encoding="utf-8")
@@ -166,8 +284,7 @@ def run_sound(label: str, rompath: Path) -> Path:
     argv = [str(exe), "bublbobl", "-rompath", str(rompath), "-skip_gameinfo",
             "-cfg_directory", str(folder / "cfg"), "-nvram_directory", str(folder / "nvram"),
             "-autoboot_script", str(script), "-video", "none", "-sound", "none", "-nothrottle"]
-    result = subprocess.run(argv, cwd=exe.parent, capture_output=True, text=True)
-    (folder / "mame.log").write_text(result.stdout + result.stderr)
+    run_limited(argv, exe.parent, folder)
     if not log.exists():
         raise SystemExit(f"{label}: no register log from MAME; see {folder / 'mame.log'}")
     return log
@@ -219,20 +336,22 @@ def main() -> int:
     ap.add_argument("--no-run", action="store_true", help="build the moved set only")
     args = ap.parse_args()
     if args.list or not args.images:
-        print("\n".join(IMAGES))
+        print("\n".join([*IMAGES, "main"]))
         return 0
     for name in args.images:
-        if name not in IMAGES:
+        if name not in IMAGES and name != "main":
             raise SystemExit(f"no image {name}: try --list")
+    # main is compared with itself unmoved, as its moved set cannot use R: see R_READ
+    reference = build_moved(["main"], 0, "ref_roms") if "main" in args.images else ROOT / "build" / "roms"
     rompath = build_moved(args.images, args.pad)
     if args.no_run:
         return 0
     ok = True
-    if any(IMAGES[n].get("check") == "sound" for n in args.images):
+    if any(n in IMAGES and IMAGES[n].get("check") == "sound" for n in args.images):
         ok = compare_sound(run_sound("sound_base", ROOT / "build" / "roms"),
-                           run_sound("sound_moved", rompath))
+                           run_sound("sound_moved", rompath, IDLE + args.pad if "main" in args.images else IDLE))
     events, frames = scenario(args.seconds, args.seed)
-    base = run_mame("base", ROOT / "build" / "roms", events, frames)
+    base = run_mame("base", reference, events, frames)
     moved = run_mame("moved", rompath, events, frames)
     return 0 if compare(base, moved) and ok else 1
 

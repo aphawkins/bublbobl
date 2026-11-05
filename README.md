@@ -59,7 +59,10 @@ Other tools:
 - `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
 - `tools/reloc.py` — the relocation test: move an image's code, then compare it with the
   byte-exact set in MAME, screen by screen and (for sound) register write by register write.
-  The sub CPU, MCU and sound pass; the main CPU is not done
+  The sub CPU, MCU and sound pass; the main CPU is in progress (`EXTRACTION_PLAN.md` §12.5)
+- `tools/mainptrs.py` — label the main CPU's pointers across the fixed ROM and banks;
+  `tools/redo_main.sh` regenerates all of `src/main/` with it
+- `tools/romreads.py` — replay the traces and log which ROM addresses are read, `build/romreads/`
 - `tools/symbols.py` — export `notes/symbols.toml` as assembler includes, `build/include/`
   (`build.py` runs it)
 - `tools/dasmz80.py` — trace Z80 code from the vectors, the traced ranges and the named

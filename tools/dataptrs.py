@@ -13,10 +13,15 @@ INCBIN = re.compile(r'(\s+)\.incbin\s+("[^"]+"),\s*0x([0-9A-Fa-f]+),\s*0x([0-9A-
 
 
 def apply(text: str, base: int, pointers: dict[int, int], kinds: dict[int, str],
-          big_endian: bool = False) -> str:
+          big_endian: bool = False, names: dict[int, str] | None = None,
+          foreign: dict[int, str] | None = None) -> str:
     """pointers: address of a pointer -> its target. kinds: target -> label prefix.
 
-    A target that has no label yet must lie in an .incbin. It is labelled <prefix>_<addr>."""
+    A target that has no label yet must lie in an .incbin. It is labelled <prefix>_<addr>, or
+    with its entry in names, which also labels addresses no pointer here points at. foreign
+    gives the expression for each pointer (by its address) whose target is in another image."""
+    names = names or {}
+    foreign = foreign or {}
     lines = text.split("\n")
     labels = {int(m.group(2), 16): m.group(1) for line in lines if (m := LABEL.match(line))}
     ranges = []
@@ -27,11 +32,11 @@ def apply(text: str, base: int, pointers: dict[int, int], kinds: dict[int, str],
     def inside(a: int) -> bool:
         return any(start <= a < start + n for start, n in ranges)
 
-    for target in sorted(set(pointers.values())):
+    for target in sorted({t for a, t in pointers.items() if a not in foreign} | set(names)):
         if target not in labels:
             if not inside(target):
                 raise SystemExit(f"target {target:04X} is in code, and has no label")
-            labels[target] = f"{kinds[target]}_{target:04X}"
+            labels[target] = names.get(target) or f"{kinds[target]}_{target:04X}"
     defined = {int(m.group(2), 16) for line in lines if (m := LABEL.match(line))}
 
     out = []
@@ -66,7 +71,7 @@ def apply(text: str, base: int, pointers: dict[int, int], kinds: dict[int, str],
             if cut in pointers:
                 if cut + 2 > end:
                     raise SystemExit(f"the pointer at {cut:04X} runs out of its .incbin")
-                out.append(f"{indent}.word   {labels[pointers[cut]]}")
+                out.append(f"{indent}.word   {foreign.get(cut) or labels[pointers[cut]]}")
                 done.add(cut)
                 at = cut + 2
         emit(end)

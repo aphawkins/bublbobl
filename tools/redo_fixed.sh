@@ -8,7 +8,7 @@ BANK_CALLS="--entry 0B82 --entry 0D7F --entry 1444 --entry 1447 --entry 14E4 --e
   --entry 16C2 --entry 16C5 --entry 16E1 --entry 189D --entry 22DA --entry 340B --entry 35FF
   --entry 4B51 --entry 4B5D --entry 65D0"
 python tools/dasmz80.py main_fixed --probe --table 37FD:10 --table 50F6:3 --table 54BC:3 --table 61F4:7 \
-  --table 6E50:5 --table 7B8C:4 --table 5406:8 --table 0B22:6 --entry 0538 --entry 1D17 \
+  --table 6E50:5 --table 7B8C:4 --table 5406:8 --table 0B22:6 --table 0B2E:1 --entry 0538 --entry 1D17 \
   --entry 2AF8 --entry 3DF0 --entry 5B3C --entry 563F $BANK_CALLS --out disasm/main_fixed.s
 python - <<'P'
 import re
@@ -19,7 +19,9 @@ fx = re.sub(r'(\bld\s+(?:bc|de|hl|sp|ix|iy),)(' + '|'.join(v) + r')\b', lambda m
 # coin B's half of COIN_TABLE; the INITIALS_CODES table; GAME_VARS_CLEAR's block, which only starts at BLOWS_COUNT
 for old, new in (('ld      de,0xE372', 'ld      de,COIN_TABLE+8'),
                  ('ld      de,0x37DF', 'ld      de,INITIALS_CODES'),
-                 ('ld      hl,BLOWS_COUNT\n        ld      bc,0x0035', 'ld      hl,0xE5DF\n        ld      bc,0x0035')):
+                 ('ld      hl,BLOWS_COUNT\n        ld      bc,0x0035', 'ld      hl,0xE5DF\n        ld      bc,0x0035'),
+                 # the data at the start of a page, not the window: tools/mainptrs.py names them
+                 ('ld      hl,BANK_WINDOW', 'ld      hl,0x8000'), ('ld      de,BANK_WINDOW', 'ld      de,0x8000')):
     assert fx.count(old) == 1, old
     fx = fx.replace(old, new)
 open('src/main/fixed.s', 'w', encoding='utf-8', newline='\n').write(fx)

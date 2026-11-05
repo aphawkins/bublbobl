@@ -42,6 +42,9 @@ SOURCES = {
     "mcu/mcu.s": (*M6801, 0xF000),
 }
 
+# the main CPU's images, which refer to each other by label
+MAIN = ["main/fixed.s", "main/bank0.s", "main/bank1.s", "main/bank2.s", "main/bank3.s"]
+
 # ROM file -> sources joined in order
 OUTPUTS = {
     "a78-06-1.51": ["main/fixed.s"],
@@ -69,7 +72,7 @@ def unix_path(p: Path) -> str:
     return str(PurePosixPath("/mnt", drive[0].lower()) / rest.lstrip("/"))
 
 
-def run_unix(commands: list[list[str]]) -> None:
+def run_unix(commands: list[list[str]]) -> str:
     """Run commands in one shell, from the repo root, stopping at the first failure."""
     script = f"set -e; cd {shlex.quote(unix_path(ROOT))}; " + "; ".join(
         " ".join(c if c.startswith("~/") else shlex.quote(c) for c in cmd) for cmd in commands)
@@ -77,25 +80,62 @@ def run_unix(commands: list[list[str]]) -> None:
     result = subprocess.run(argv, capture_output=True, text=True)
     if result.returncode:
         raise SystemExit(f"assembly failed:\n{result.stdout}{result.stderr}")
+    return result.stdout
+
+
+def read_symbols(prefix: str, stem: str, base: int) -> tuple[dict[str, int], list[str]]:
+    """An object's labels (at their link addresses) and the names it leaves undefined."""
+    defined: dict[str, int] = {}
+    undefined: list[str] = []
+    for line in run_unix([[prefix + "nm", f"{stem}.o"]]).splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[0] == "U":
+            undefined.append(parts[1])
+        elif len(parts) == 3 and parts[1] in "tT":
+            defined[parts[2]] = int(parts[0], 16) + base
+    return defined, undefined
+
+
+def cross_links(symbols: dict[str, tuple[dict[str, int], list[str]]]) -> dict[str, list[str]]:
+    """source -> --defsym options giving it the names it takes from the other sources."""
+    options: dict[str, list[str]] = {}
+    for src, (_, undefined) in symbols.items():
+        options[src] = []
+        for name in undefined:
+            found = {other: d[name] for other, (d, _) in symbols.items() if name in d}
+            if len(found) != 1:
+                raise SystemExit(f"{src}: {name} is defined in {sorted(found) or 'no source'}")
+            options[src].append(f"--defsym={name}=0x{next(iter(found.values())):04x}")
+    return options
 
 
 def assemble(src_dir: str = "src", obj_dir: str = "build/obj",
              sources: list[str] | None = None) -> dict[str, bytes]:
-    """Assemble and link sources (default all). Both folders are relative to the repo root."""
+    """Assemble and link sources (default all). Both folders are relative to the repo root.
+
+    The main CPU's images use each other's labels. Nothing in them changes size with a label's
+    value, so each is assembled once, leaving those names undefined, and given them at the link."""
     (ROOT / obj_dir).mkdir(parents=True, exist_ok=True)
     tools = binutils_dir()
-    commands = []
     names = sources or list(SOURCES)
+
+    def stem(src: str) -> str:
+        return f"{obj_dir}/" + src.replace("/", "_")[:-2]
+
+    def prefix(src: str) -> str:
+        return f"{tools}/{SOURCES[src][1]}/bin/{SOURCES[src][0]}-"
+
+    run_unix([[prefix(src) + "as", *SOURCES[src][2], "-I", "build/images", "-I", "build/include",
+               "-o", f"{stem(src)}.o", f"{src_dir}/{src}"] for src in names])
+    main = [src for src in names if src in MAIN]
+    links = cross_links({src: read_symbols(prefix(src), stem(src), SOURCES[src][3]) for src in main})
+    commands = []
     for src in names:
-        target, tool_dir, flags, base = SOURCES[src]
-        stem = f"{obj_dir}/" + src.replace("/", "_")[:-2]
-        prefix = f"{tools}/{tool_dir}/bin/{target}-"
+        base = SOURCES[src][3]
         commands += [
-            [prefix + "as", *flags, "-I", "build/images", "-I", "build/include", "-o", f"{stem}.o",
-             f"{src_dir}/{src}"],
-            [prefix + "ld", f"-Ttext=0x{base:04x}", "-e", f"0x{base:04x}",
-             "-o", f"{stem}.elf", f"{stem}.o"],
-            [prefix + "objcopy", "-O", "binary", f"{stem}.elf", f"{stem}.bin"],
+            [prefix(src) + "ld", f"-Ttext=0x{base:04x}", "-e", f"0x{base:04x}", *links.get(src, []),
+             "-o", f"{stem(src)}.elf", f"{stem(src)}.o"],
+            [prefix(src) + "objcopy", "-O", "binary", f"{stem(src)}.elf", f"{stem(src)}.bin"],
         ]
     run_unix(commands)
     return {src: (ROOT / obj_dir / (src.replace("/", "_")[:-2] + ".bin")).read_bytes() for src in names}

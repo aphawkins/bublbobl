@@ -19,7 +19,7 @@ local next_at = CFG.start
 emu.register_frame_done(function()
   frame = frame + 1
   main:write_u8(0xFA80, 0) -- the watchdog
-  if frame == CFG.start - 30 then local st = m.devices[':maincpu'].state; st['IFF1'].value = 0; st['IFF2'].value = 0; st['PC'].value = 0x01ED end
+  if frame == CFG.start - 30 then local st = m.devices[':maincpu'].state; st['IFF1'].value = 0; st['IFF2'].value = 0; st['PC'].value = CFG.idle or 0x01ED end
   -- Command 00 stops every record, half a second ahead so that its own writes are over. (EE
   -- only refuses new blocks; what is playing carries on.) The latch holds one byte and the
   -- sound CPU does not run inside this callback, so a command needs a frame of its own.

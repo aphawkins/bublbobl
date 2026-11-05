@@ -219,7 +219,7 @@ L_00F7:                 ; 00F7
         ld      (WATCHDOG),a
         ld      hl,LOCKOUT_REQ
         ld      (hl),0x01
-        ld      hl,0x0B2E
+        ld      hl,IRQ_VECTOR_ENTRY
         ld      a,h
         ld      i,a
         ld      a,l
@@ -251,7 +251,7 @@ L_0158:                 ; 0158
         jr      nz,L_0171
         ld      a,0x02
         call    BANK_SELECT
-        jp      0x8000
+        jp      TEST_MODE
 
 L_0171:                 ; 0171
         call    COIN_TABLE_LOAD
@@ -281,7 +281,7 @@ L_0171:                 ; 0171
         ld      a,h
         or      l
         jr      z,L_01C4
-        ld      hl,0x0254
+        ld      hl,TEXT_0254
         ld      de,0xD7A0
         ld      c,0x00
         call    PRINT_TEXT
@@ -291,7 +291,7 @@ L_01C4:                 ; 01C4
         ld      a,(COIN_STUCK)
         and     a
         jr      z,L_01D7
-        ld      hl,0x0262
+        ld      hl,TEXT_0262
         ld      de,0xD820
         ld      c,0x00
         call    PRINT_TEXT
@@ -322,7 +322,7 @@ WORK_RAM_FAIL:          ; 01EF
         ld      hl,PALETTE_RAM
         ld      (hl),0xFE
 L_0201:                 ; 0201
-        ld      hl,0x0234
+        ld      hl,TEXT_0234
         ld      de,0xD760
         ld      c,0x00
         call    PRINT_TEXT
@@ -344,20 +344,27 @@ COMMON_RAM_FAIL:        ; 0218
         ld      hl,PALETTE_RAM
         ld      (hl),0xFD
 L_0227:                 ; 0227
-        ld      hl,0x0243
+        ld      hl,TEXT_0243
         ld      de,0xD720
         ld      c,0x00
         call    PRINT_TEXT
         jr      HALT_FAIL
 
-        .incbin "main_fixed.bin", 0x0234, 0x0038
+TEXT_0234:              ; 0234
+        .incbin "main_fixed.bin", 0x0234, 0x000F
+TEXT_0243:              ; 0243
+        .incbin "main_fixed.bin", 0x0243, 0x0011
+TEXT_0254:              ; 0254
+        .incbin "main_fixed.bin", 0x0254, 0x000E
+TEXT_0262:              ; 0262
+        .incbin "main_fixed.bin", 0x0262, 0x000A
 ; A = page 0-3 of a78-05-1; FB40 value from BANK_PAGES
 BANK_SELECT:            ; 026C
-        ld      de,0x0293
+        ld      de,BANK_PAGES
         ld      hl,DSW1_COPY
         bit     7,(hl)
         jr      nz,L_0279
-        ld      de,0x0297
+        ld      de,DATA_0297
 L_0279:                 ; 0279
         call    ADD_DE_A
         ld      a,(de)
@@ -374,7 +381,9 @@ L_0279:                 ; 0279
 
 ; FB40 bank bits for pages 0-3: 04-07 if DSW-B:8 (ROM type) is off, else 04 05 00 01 (pages 2-3 in IC53)
 BANK_PAGES:             ; 0293
-        .incbin "main_fixed.bin", 0x0293, 0x0008
+        .incbin "main_fixed.bin", 0x0293, 0x0004
+DATA_0297:              ; 0297
+        .incbin "main_fixed.bin", 0x0297, 0x0004
 ; back to the bank saved in BANK_SAVED
 BANK_RESTORE:           ; 029B
         ld      a,(BANK_SAVED)
@@ -514,7 +523,7 @@ SET_E2F5_RECS:          ; 0330
 ; round 100: 16 four-byte records at E2F5, each a zero, a word from the table at 0352 and a zero
 BOSS_RECS_INIT:         ; 0339
         ld      hl,0xE2F5
-        ld      de,0x0352
+        ld      de,DATA_0352
         ld      b,0x10
 L_0341:                 ; 0341
         ld      (hl),0x00
@@ -532,6 +541,7 @@ L_0341:                 ; 0341
         djnz    L_0341
         ret
 
+DATA_0352:              ; 0352
         .incbin "main_fixed.bin", 0x0352, 0x0020
 ; clears E2F5, then 16 records (0, word from 0394 + 2n, 0) at E2D5
 SET_E2D5_RECS:          ; 0372
@@ -539,7 +549,7 @@ SET_E2D5_RECS:          ; 0372
         ld      bc,0x0040
         call    ZERO_BC
         ld      hl,0xE2D5
-        ld      de,0x0394
+        ld      de,DATA_0394
         ld      b,0x10
 L_0383:                 ; 0383
         ld      (hl),0x00
@@ -557,6 +567,7 @@ L_0383:                 ; 0383
         djnz    L_0383
         ret
 
+DATA_0394:              ; 0394
         .incbin "main_fixed.bin", 0x0394, 0x0020
 ; OBJ_TILES = 0 (0x1CFF bytes)
 CLEAR_OBJ_TILES:        ; 03B4
@@ -703,7 +714,7 @@ IRQ_HANDLER:            ; 044D
         jr      c,L_048B
         ld      hl,RUN_KEY
         ld      (hl),0x00
-        ld      hl,0x04A2
+        ld      hl,TIME_ERROR_TEXT
         ld      de,0xD820
         ld      c,0x00
         call    PRINT_TEXT
@@ -879,7 +890,7 @@ L_05A3:                 ; 05A3
         rst     0x20
         ld      a,0x02
         call    BANK_SELECT
-        call    0xB18F
+        call    JOIN_PROMPT
         call    BANK_RESTORE
         call    ROUND_READY_TEXT
         call    COPY_INPUTS
@@ -910,7 +921,7 @@ L_05E8:                 ; 05E8
         call    COPY_INPUTS
         ld      a,0x02
         call    BANK_SELECT
-        call    0xB18F
+        call    JOIN_PROMPT
         call    BANK_RESTORE
         call    TASKS_RESTART
         pop     bc
@@ -1009,7 +1020,7 @@ L_0697:                 ; 0697
 L_06A4:                 ; 06A4
         ld      b,0x10
         ld      a,(ROUND_MAIN)
-        ld      hl,0x0710
+        ld      hl,DATA_0710
 L_06AC:                 ; 06AC
         cp      (hl)
         jr      z,L_06B5
@@ -1041,7 +1052,7 @@ L_06CF:                 ; 06CF
         jr      z,L_06E4
         ld      a,(SCORE_P1)
         ld      b,0x0A
-        ld      hl,0x0706
+        ld      hl,END_PICK_TABLE
 L_06DE:                 ; 06DE
         cp      (hl)
         jr      z,L_06FF
@@ -1053,7 +1064,7 @@ L_06E4:                 ; 06E4
         jr      z,L_06F9
         ld      a,(SCORE_P2)
         ld      b,0x0A
-        ld      hl,0x0706
+        ld      hl,END_PICK_TABLE
 L_06F3:                 ; 06F3
         cp      (hl)
         jr      z,L_06FF
@@ -1073,7 +1084,9 @@ L_0702:                 ; 0702
 
 ; 10 + 10 bytes for ROUND_END_PICK: E641/E646 values (000.. then 1B 04 ..), pairs from 0710
 END_PICK_TABLE:         ; 0706
-        .incbin "main_fixed.bin", 0x0706, 0x002A
+        .incbin "main_fixed.bin", 0x0706, 0x000A
+DATA_0710:              ; 0710
+        .incbin "main_fixed.bin", 0x0710, 0x0020
 ; ENEMY_TOTAL = 1 and HURRY not 1: HURRY = FF
 LAST_ENEMY_HURRY:       ; 0730
         ld      a,(ENEMY_TOTAL)
@@ -1136,7 +1149,7 @@ L_0781:                 ; 0781
         call    ROM_SUM_STEP_E
         ld      a,0x00
         ld      (SOUND_CMD),a
-        ld      hl,0x0847
+        ld      hl,HURRY_RECS
         ld      de,0xE2D5
         ld      bc,0x0010
         ldir
@@ -1152,11 +1165,11 @@ L_07A7:                 ; 07A7
         inc     hl
         inc     (hl)
 L_07B4:                 ; 07B4
-        ld      hl,0x0857
+        ld      hl,HURRY_TILES
         ld      a,(0xE34D)
         bit     1,a
         jr      nz,L_07C1
-        ld      hl,0x085B
+        ld      hl,SPRITES_085B
 L_07C1:                 ; 07C1
         ld      e,0x0B
         ld      bc,0x041C
@@ -1239,7 +1252,9 @@ HURRY_RECS:             ; 0847
         .incbin "main_fixed.bin", 0x0847, 0x0010
 ; tile lists for the two HURRY UP frames (0857, 085B)
 HURRY_TILES:            ; 0857
-        .incbin "main_fixed.bin", 0x0857, 0x0008
+        .incbin "main_fixed.bin", 0x0857, 0x0004
+SPRITES_085B:           ; 085B
+        .incbin "main_fixed.bin", 0x085B, 0x0004
 ; while HURRY = 1: seconds in E348; past record byte 15, GHOST_ON
 GHOST_CLOCK:            ; 085F
         ld      a,(HURRY)
@@ -1413,11 +1428,11 @@ L_0972:                 ; 0972
         inc     a
         ld      iy,0xD99E
         call    DECIMAL3_DRAW
-        ld      hl,0x09D2
+        ld      hl,ROUND_TEXT
         ld      de,0xD81E
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x09D8
+        ld      hl,TEXT_09D8
         ld      de,0xD822
         ld      c,0x00
         jp      PRINT_TEXT
@@ -1428,22 +1443,26 @@ L_09A7:                 ; 09A7
         ret     nz
         ld      hl,0xE33B
         ld      (hl),0x01
-        ld      hl,0x09E0
+        ld      hl,TEXT_09E0
         ld      de,0xD79E
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x09E0
+        ld      hl,TEXT_09E0
         ld      de,0xD7A0
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x09E0
+        ld      hl,TEXT_09E0
         ld      de,0xD7A2
         ld      c,0x00
         jp      PRINT_TEXT
 
 ; length-prefixed ROUND, READY ! and a blank (0B spaces)
 ROUND_TEXT:             ; 09D2
-        .incbin "main_fixed.bin", 0x09D2, 0x001A
+        .incbin "main_fixed.bin", 0x09D2, 0x0006
+TEXT_09D8:              ; 09D8
+        .incbin "main_fixed.bin", 0x09D8, 0x0008
+TEXT_09E0:              ; 09E0
+        .incbin "main_fixed.bin", 0x09E0, 0x000C
 ; E34F nonzero in a game: stops tasks 3-5, clears the screen and starts task 0 again
 TASKS_RESTART:          ; 09EC
         ld      a,(ATTRACT)
@@ -1629,17 +1648,16 @@ TASK_ENTRIES:           ; 0B22
         .word   TITLE_TASK
         .word   ROUND_TASK
         .word   OBJECTS_TASK
-        .word   0x85A9
+        .word   ROUND_ENEMIES
         .word   BUBBLES_TASK
 ; word 044D: the IM 2 table entry (I = 0B, FC00 = 2E); checked at 333F and bank0:950A
 IRQ_VECTOR_ENTRY:       ; 0B2E
-        ld      c,l
-        inc     b
+        .word   IRQ_HANDLER
 ; bank1:PALETTES -> F800, 0x200 bytes
 LOAD_PALETTES:          ; 0B30
         ld      a,0x01
         call    BANK_SELECT
-        ld      hl,BANK_WINDOW
+        ld      hl,PALETTES
         ld      de,PALETTE_RAM
         ld      bc,0x0200
         ldir
@@ -1668,7 +1686,7 @@ L_0B5B:                 ; 0B5B
         sub     0x08
 L_0B66:                 ; 0B66
         call    MUL32_DE
-        ld      hl,0x8200
+        ld      hl,ROUND_PALETTES
         add     hl,de
         ld      de,0xF9E0
         ld      a,(ROUND_MAIN)
@@ -1708,7 +1726,7 @@ L_0BA4:                 ; 0BA4
         sub     0x08
 L_0BAC:                 ; 0BAC
         call    MUL32_DE
-        ld      hl,0x8200
+        ld      hl,ROUND_PALETTES
         add     hl,de
         ld      de,0xF9E0
         ld      a,(ROUND_MAIN)
@@ -1724,9 +1742,9 @@ L_0BC0:                 ; 0BC0
 COIN_TABLE_LOAD:        ; 0BC8
         ld      a,0x03
         call    BANK_SELECT
-        ld      a,(0xBFFF)
+        ld      a,(COIN_REGION)
         call    SHL4
-        ld      hl,0xBFDF
+        ld      hl,COIN_TABLES
         call    ADD_HL_A
         ld      de,COIN_TABLE
         ld      bc,0x0010
@@ -1894,7 +1912,7 @@ L_0CDC:                 ; 0CDC
         djnz    L_0CDC
         ld      hl,0xF7FF
         ld      (hl),0xF8
-        ld      hl,0x0D0F
+        ld      hl,TILT_TEXT
         ld      de,0xD89C
         ld      c,0x00
         call    PRINT_TEXT
@@ -2152,12 +2170,13 @@ L_0E06:                 ; 0E06
         .incbin "main_fixed.bin", 0x0E0C, 0x0016
 ; carry when the 16-bit RAND_STATE is below the word whose high byte is at 0E30 + A (CMP_DOWN, 2 bytes); SPAWN_BUBBLE calls it with A = 25
 RAND_BELOW:             ; 0E22
-        ld      hl,0x0E30
+        ld      hl,DATA_0E30
         call    ADD_HL_A
         ld      de,0xE380
         ld      b,0x02
         jp      CMP_DOWN
 
+DATA_0E30:              ; 0E30
         .incbin "main_fixed.bin", 0x0E30, 0x002E
 ; scrambles the 16-bit RAND_STATE (shift left, feedback from bits 15 and 4)
 RAND_MIX:               ; 0E5E
@@ -2440,7 +2459,7 @@ L_1005:                 ; 1005
 
 ; A divided by the table at 1025 (100, 10): B = quotient and C, A the remainders
 DECIMAL_SPLIT:          ; 1008
-        ld      hl,0x1025
+        ld      hl,DATA_1025
 L_100B:                 ; 100B
         ld      b,0x00
         ld      c,(hl)
@@ -2467,6 +2486,7 @@ L_1014:                 ; 1014
         ld      c,a
         ret
 
+DATA_1025:              ; 1025
         .incbin "main_fixed.bin", 0x1025, 0x0003
 ; A (0-99x) to ASCII digits in B, C, A: hundreds, tens, units, via DECIMAL_SPLIT
 DECIMAL_ASCII:          ; 1028
@@ -2508,13 +2528,231 @@ DECIMAL_DIGITS:         ; 1040
         .incbin "main_fixed.bin", 0x1052, 0x004A
 ; DE = the word at 10A2 + 2 x A: a movement path (bytes 88 end a repeat, 99 stop; see ENEMY_PATH_STEP)
 PATH_PTR:               ; 109C
-        ld      hl,0x10A2
+        ld      hl,DATA_10A2
         jp      TABLE_WORD
 
-        .incbin "main_fixed.bin", 0x10A2, 0x012C
+DATA_10A2:              ; 10A2
+        .word   DATA_10E2
+        .word   DATA_10E4
+        .word   DATA_10EA
+        .word   DATA_10F5
+        .word   DATA_10FB
+        .word   DATA_1106
+        .word   DATA_110C
+        .word   DATA_1117
+        .word   DATA_111D
+        .word   DATA_111F
+        .word   DATA_1125
+        .word   DATA_1130
+        .word   DATA_1136
+        .word   DATA_1141
+        .word   DATA_1147
+        .word   DATA_1152
+        .word   DATA_1158
+        .word   DATA_115A
+        .word   DATA_1160
+        .word   DATA_116B
+        .word   DATA_1171
+        .word   DATA_117C
+        .word   DATA_1182
+        .word   DATA_118D
+        .word   DATA_1193
+        .word   DATA_1195
+        .word   DATA_119B
+        .word   DATA_11A6
+        .word   DATA_11AC
+        .word   DATA_11B7
+        .word   DATA_11BD
+        .word   DATA_11C8
+DATA_10E2:              ; 10E2
+        .incbin "main_fixed.bin", 0x10E2, 0x0002
+DATA_10E4:              ; 10E4
+        .incbin "main_fixed.bin", 0x10E4, 0x0006
+DATA_10EA:              ; 10EA
+        .incbin "main_fixed.bin", 0x10EA, 0x000B
+DATA_10F5:              ; 10F5
+        .incbin "main_fixed.bin", 0x10F5, 0x0006
+DATA_10FB:              ; 10FB
+        .incbin "main_fixed.bin", 0x10FB, 0x000B
+DATA_1106:              ; 1106
+        .incbin "main_fixed.bin", 0x1106, 0x0006
+DATA_110C:              ; 110C
+        .incbin "main_fixed.bin", 0x110C, 0x000B
+DATA_1117:              ; 1117
+        .incbin "main_fixed.bin", 0x1117, 0x0006
+DATA_111D:              ; 111D
+        .incbin "main_fixed.bin", 0x111D, 0x0002
+DATA_111F:              ; 111F
+        .incbin "main_fixed.bin", 0x111F, 0x0006
+DATA_1125:              ; 1125
+        .incbin "main_fixed.bin", 0x1125, 0x000B
+DATA_1130:              ; 1130
+        .incbin "main_fixed.bin", 0x1130, 0x0006
+DATA_1136:              ; 1136
+        .incbin "main_fixed.bin", 0x1136, 0x000B
+DATA_1141:              ; 1141
+        .incbin "main_fixed.bin", 0x1141, 0x0006
+DATA_1147:              ; 1147
+        .incbin "main_fixed.bin", 0x1147, 0x000B
+DATA_1152:              ; 1152
+        .incbin "main_fixed.bin", 0x1152, 0x0006
+DATA_1158:              ; 1158
+        .incbin "main_fixed.bin", 0x1158, 0x0002
+DATA_115A:              ; 115A
+        .incbin "main_fixed.bin", 0x115A, 0x0006
+DATA_1160:              ; 1160
+        .incbin "main_fixed.bin", 0x1160, 0x000B
+DATA_116B:              ; 116B
+        .incbin "main_fixed.bin", 0x116B, 0x0006
+DATA_1171:              ; 1171
+        .incbin "main_fixed.bin", 0x1171, 0x000B
+DATA_117C:              ; 117C
+        .incbin "main_fixed.bin", 0x117C, 0x0006
+DATA_1182:              ; 1182
+        .incbin "main_fixed.bin", 0x1182, 0x000B
+DATA_118D:              ; 118D
+        .incbin "main_fixed.bin", 0x118D, 0x0006
+DATA_1193:              ; 1193
+        .incbin "main_fixed.bin", 0x1193, 0x0002
+DATA_1195:              ; 1195
+        .incbin "main_fixed.bin", 0x1195, 0x0006
+DATA_119B:              ; 119B
+        .incbin "main_fixed.bin", 0x119B, 0x000B
+DATA_11A6:              ; 11A6
+        .incbin "main_fixed.bin", 0x11A6, 0x0006
+DATA_11AC:              ; 11AC
+        .incbin "main_fixed.bin", 0x11AC, 0x000B
+DATA_11B7:              ; 11B7
+        .incbin "main_fixed.bin", 0x11B7, 0x0006
+DATA_11BD:              ; 11BD
+        .incbin "main_fixed.bin", 0x11BD, 0x000B
+DATA_11C8:              ; 11C8
+        .incbin "main_fixed.bin", 0x11C8, 0x0006
 ; word table of step patterns, picked by SPEED2_SEL for bubbles and (IX+0C) for enemies
 SPEED_PATTERNS:         ; 11CE
-        .incbin "main_fixed.bin", 0x11CE, 0x0182
+        .word   DATA_1220
+        .word   DATA_1222
+        .word   DATA_122D
+        .word   DATA_1233
+        .word   DATA_123E
+        .word   DATA_1244
+        .word   DATA_1247
+        .word   DATA_124D
+        .word   DATA_1258
+        .word   DATA_125E
+        .word   DATA_1269
+        .word   DATA_126B
+        .word   DATA_1276
+        .word   DATA_127C
+        .word   DATA_1287
+        .word   DATA_128D
+        .word   DATA_1290
+        .word   DATA_1296
+        .word   DATA_12A1
+        .word   DATA_12A7
+        .word   DATA_12B2
+        .word   DATA_12B4
+        .word   DATA_12BF
+        .word   DATA_12C5
+        .word   DATA_12D0
+        .word   DATA_12D6
+        .word   DATA_12D9
+        .word   DATA_12DF
+        .word   DATA_12EA
+        .word   DATA_12F0
+        .word   DATA_12FB
+        .word   DATA_12FD
+        .word   DATA_1308
+        .word   DATA_130E
+        .word   DATA_1319
+        .word   DATA_131F
+        .word   DATA_1322
+        .word   DATA_1328
+        .word   DATA_1333
+        .word   DATA_1339
+        .word   DATA_1344
+DATA_1220:              ; 1220
+        .incbin "main_fixed.bin", 0x1220, 0x0002
+DATA_1222:              ; 1222
+        .incbin "main_fixed.bin", 0x1222, 0x000B
+DATA_122D:              ; 122D
+        .incbin "main_fixed.bin", 0x122D, 0x0006
+DATA_1233:              ; 1233
+        .incbin "main_fixed.bin", 0x1233, 0x000B
+DATA_123E:              ; 123E
+        .incbin "main_fixed.bin", 0x123E, 0x0006
+DATA_1244:              ; 1244
+        .incbin "main_fixed.bin", 0x1244, 0x0003
+DATA_1247:              ; 1247
+        .incbin "main_fixed.bin", 0x1247, 0x0006
+DATA_124D:              ; 124D
+        .incbin "main_fixed.bin", 0x124D, 0x000B
+DATA_1258:              ; 1258
+        .incbin "main_fixed.bin", 0x1258, 0x0006
+DATA_125E:              ; 125E
+        .incbin "main_fixed.bin", 0x125E, 0x000B
+DATA_1269:              ; 1269
+        .incbin "main_fixed.bin", 0x1269, 0x0002
+DATA_126B:              ; 126B
+        .incbin "main_fixed.bin", 0x126B, 0x000B
+DATA_1276:              ; 1276
+        .incbin "main_fixed.bin", 0x1276, 0x0006
+DATA_127C:              ; 127C
+        .incbin "main_fixed.bin", 0x127C, 0x000B
+DATA_1287:              ; 1287
+        .incbin "main_fixed.bin", 0x1287, 0x0006
+DATA_128D:              ; 128D
+        .incbin "main_fixed.bin", 0x128D, 0x0003
+DATA_1290:              ; 1290
+        .incbin "main_fixed.bin", 0x1290, 0x0006
+DATA_1296:              ; 1296
+        .incbin "main_fixed.bin", 0x1296, 0x000B
+DATA_12A1:              ; 12A1
+        .incbin "main_fixed.bin", 0x12A1, 0x0006
+DATA_12A7:              ; 12A7
+        .incbin "main_fixed.bin", 0x12A7, 0x000B
+DATA_12B2:              ; 12B2
+        .incbin "main_fixed.bin", 0x12B2, 0x0002
+DATA_12B4:              ; 12B4
+        .incbin "main_fixed.bin", 0x12B4, 0x000B
+DATA_12BF:              ; 12BF
+        .incbin "main_fixed.bin", 0x12BF, 0x0006
+DATA_12C5:              ; 12C5
+        .incbin "main_fixed.bin", 0x12C5, 0x000B
+DATA_12D0:              ; 12D0
+        .incbin "main_fixed.bin", 0x12D0, 0x0006
+DATA_12D6:              ; 12D6
+        .incbin "main_fixed.bin", 0x12D6, 0x0003
+DATA_12D9:              ; 12D9
+        .incbin "main_fixed.bin", 0x12D9, 0x0006
+DATA_12DF:              ; 12DF
+        .incbin "main_fixed.bin", 0x12DF, 0x000B
+DATA_12EA:              ; 12EA
+        .incbin "main_fixed.bin", 0x12EA, 0x0006
+DATA_12F0:              ; 12F0
+        .incbin "main_fixed.bin", 0x12F0, 0x000B
+DATA_12FB:              ; 12FB
+        .incbin "main_fixed.bin", 0x12FB, 0x0002
+DATA_12FD:              ; 12FD
+        .incbin "main_fixed.bin", 0x12FD, 0x000B
+DATA_1308:              ; 1308
+        .incbin "main_fixed.bin", 0x1308, 0x0006
+DATA_130E:              ; 130E
+        .incbin "main_fixed.bin", 0x130E, 0x000B
+DATA_1319:              ; 1319
+        .incbin "main_fixed.bin", 0x1319, 0x0006
+DATA_131F:              ; 131F
+        .incbin "main_fixed.bin", 0x131F, 0x0003
+DATA_1322:              ; 1322
+        .incbin "main_fixed.bin", 0x1322, 0x0006
+DATA_1328:              ; 1328
+        .incbin "main_fixed.bin", 0x1328, 0x000B
+DATA_1333:              ; 1333
+        .incbin "main_fixed.bin", 0x1333, 0x0006
+DATA_1339:              ; 1339
+        .incbin "main_fixed.bin", 0x1339, 0x000B
+DATA_1344:              ; 1344
+        .incbin "main_fixed.bin", 0x1344, 0x000C
 ; C = sound command: appended to SOUND_QUEUE (up to 15, else dropped); skipped in the attract loop when DSW0 b3 is clear
 SOUND_PUSH:             ; 1350
         ld      a,(ATTRACT)
@@ -3203,7 +3441,7 @@ L_1705:                 ; 1705
         srl     a
         srl     a
         and     0x1E
-        ld      hl,0x95AA
+        ld      hl,GRID_EDGES
         call    ADD_HL_A
         ld      e,(hl)
         inc     hl
@@ -3214,7 +3452,7 @@ L_1705:                 ; 1705
         ldir
         ld      a,(0xE59B)
         and     0x0F
-        ld      hl,0x95AA
+        ld      hl,GRID_EDGES
         call    TABLE_WORD
         ex      de,hl
         ld      de,0xE568
@@ -3267,7 +3505,7 @@ LOAD_ROUND_REC:         ; 1775
         ld      a,(ROUND_MAIN)
         ld      b,0x2B
         call    MUL8
-        ld      de,0xA73A
+        ld      de,ROUND_RECORDS
         add     hl,de
         ld      de,ROUND_RECORD
         ld      bc,0x002B
@@ -3323,7 +3561,7 @@ L_17AA:                 ; 17AA
         ld      (hl),a
 L_17E0:                 ; 17E0
         ld      a,(DIFFICULTY)
-        ld      hl,0x1851
+        ld      hl,DATA_1851
         call    ADD_HL_A
         ld      a,(0xE59F)
         add     a,(hl)
@@ -3337,7 +3575,7 @@ L_17F4:                 ; 17F4
         cp      0x10
         ret     c
         sub     0x10
-        ld      hl,0x1870
+        ld      hl,DATA_1870
         call    ADD_HL_A
         ld      a,(0xE5A5)
         add     a,(hl)
@@ -3353,7 +3591,7 @@ L_1813:                 ; 1813
         cp      0x10
         ret     c
         sub     0x10
-        ld      hl,0x187F
+        ld      hl,DATA_187F
         call    ADD_HL_A
         ld      a,(0xE5A7)
         add     a,(hl)
@@ -3369,7 +3607,7 @@ L_1832:                 ; 1832
         cp      0x10
         ret     c
         sub     0x10
-        ld      hl,0x188E
+        ld      hl,DATA_188E
         call    ADD_HL_A
         ld      a,(0xE5A0)
         add     a,(hl)
@@ -3380,7 +3618,14 @@ L_184D:                 ; 184D
         ld      (0xE5A0),a
         ret
 
-        .incbin "main_fixed.bin", 0x1851, 0x004C
+DATA_1851:              ; 1851
+        .incbin "main_fixed.bin", 0x1851, 0x001F
+DATA_1870:              ; 1870
+        .incbin "main_fixed.bin", 0x1870, 0x000F
+DATA_187F:              ; 187F
+        .incbin "main_fixed.bin", 0x187F, 0x000F
+DATA_188E:              ; 188E
+        .incbin "main_fixed.bin", 0x188E, 0x000F
 ; A = ROUND_RECORD byte A
 ROUND_REC_BYTE:         ; 189D
         ld      hl,ROUND_RECORD
@@ -3752,7 +3997,7 @@ TITLE_INIT:             ; 1AED
         call    TITLE_CODE_RESET
         call    VIDEO_OFF
         call    ROM_SUM_STEP_D
-        ld      ix,0x0B2E
+        ld      ix,IRQ_VECTOR_ENTRY
         ld      de,IRQ_HANDLER
         ld      a,e
         sub     (ix+0)
@@ -3768,12 +4013,12 @@ L_1B0A:                 ; 1B0A
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xCE48
-        ld      de,0x8300
+        ld      de,B1_TILES_8300
         ld      bc,0x120A
         ld      a,0x05
         call    TILE_RECT
         ld      hl,0xD0C8
-        ld      de,0x83B4
+        ld      de,B1_TILES_83B4
         ld      bc,0x120C
         ld      a,0x06
         call    TILE_RECT
@@ -3781,7 +4026,7 @@ L_1B0A:                 ; 1B0A
         and     a
         jr      z,L_1B45
         ld      hl,0xCE48
-        ld      de,0x848C
+        ld      de,B1_TILES_848C
         ld      bc,0x0306
         ld      a,0x07
         call    TILE_RECT
@@ -3841,7 +4086,7 @@ CYCLE_COLOUR:           ; 1B90
         xor     a
         ld      (hl),a
 L_1BA3:                 ; 1BA3
-        ld      hl,0x1BAE
+        ld      hl,CYCLE_1_14
         call    TABLE_WORD
         ld      (0xF83C),de
         ret
@@ -3888,7 +4133,7 @@ CODE_CHECK:             ; 1BCF
         ret     nz
         ld      b,0x08
         ld      hl,CODE_INPUTS
-        ld      de,0x1CBE
+        ld      de,TITLE_CODES
 L_1BFE:                 ; 1BFE
         ld      a,(de)
         cp      (hl)
@@ -3901,7 +4146,7 @@ L_1BFE:                 ; 1BFE
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xCE48
-        ld      de,0x848C
+        ld      de,B1_TILES_848C
         ld      bc,0x0306
         ld      a,0x07
         call    TILE_RECT
@@ -3915,7 +4160,7 @@ L_1BFE:                 ; 1BFE
 L_1C2D:                 ; 1C2D
         ld      b,0x08
         ld      hl,CODE_INPUTS
-        ld      de,0x1CC6
+        ld      de,DATA_1CC6
 L_1C35:                 ; 1C35
         ld      a,(de)
         cp      (hl)
@@ -3930,7 +4175,7 @@ L_1C35:                 ; 1C35
         cp      0x5E
         jr      nz,L_1C8F
         ld      hl,IRQ_HANDLER
-        ld      de,(0x0B2E)
+        ld      de,(IRQ_VECTOR_ENTRY)
         or      a
         sbc     hl,de
         jr      nz,L_1C8F
@@ -3952,13 +4197,13 @@ L_1C5D:                 ; 1C5D
         ld      h,a
         ld      a,(MCU_RAM)
         ld      l,a
-        ld      de,0x0B2E
+        ld      de,IRQ_VECTOR_ENTRY
         or      a
         sbc     hl,de
         jr      nz,L_1C8F
         ld      hl,ORIGINAL_GAME
         ld      (hl),0x01
-        ld      hl,0x1CD6
+        ld      hl,DATA_1CD6
         ld      de,0xD57A
         ld      c,0x14
         jp      L_1D05
@@ -3966,7 +4211,7 @@ L_1C5D:                 ; 1C5D
 L_1C8F:                 ; 1C8F
         ld      hl,0xE366
         ld      (hl),0x64
-        ld      hl,0x1CE8
+        ld      hl,DATA_1CE8
         ld      de,0xD57A
         ld      c,0x04
         jp      L_1D05
@@ -3974,7 +4219,7 @@ L_1C8F:                 ; 1C8F
 L_1C9F:                 ; 1C9F
         ld      b,0x08
         ld      hl,CODE_INPUTS
-        ld      de,0x1CCE
+        ld      de,DATA_1CCE
 L_1CA7:                 ; 1CA7
         ld      a,(de)
         cp      (hl)
@@ -3984,14 +4229,24 @@ L_1CA7:                 ; 1CA7
         djnz    L_1CA7
         ld      hl,POWER_UP
         ld      (hl),0x01
-        ld      hl,0x1CFB
+        ld      hl,DATA_1CFB
         ld      de,0xD57A
         ld      c,0x04
         jp      L_1D05
 
 ; 3 x 8 inputs (IN1 & 7F, active low): super mode S J B L R J S R, original game B J B J B J R S, power up L J L S L B L S
 TITLE_CODES:            ; 1CBE
-        .incbin "main_fixed.bin", 0x1CBE, 0x0047
+        .incbin "main_fixed.bin", 0x1CBE, 0x0008
+DATA_1CC6:              ; 1CC6
+        .incbin "main_fixed.bin", 0x1CC6, 0x0008
+DATA_1CCE:              ; 1CCE
+        .incbin "main_fixed.bin", 0x1CCE, 0x0008
+DATA_1CD6:              ; 1CD6
+        .incbin "main_fixed.bin", 0x1CD6, 0x0012
+DATA_1CE8:              ; 1CE8
+        .incbin "main_fixed.bin", 0x1CE8, 0x0013
+DATA_1CFB:              ; 1CFB
+        .incbin "main_fixed.bin", 0x1CFB, 0x000A
 L_1D05:                 ; 1D05
         ld      b,(hl)
         inc     hl
@@ -4060,7 +4315,7 @@ ATTRACT_COIN:           ; 1D70
         rst     0x28
         call    ROUND_VARS_CLEAR
         ld      hl,IRQ_HANDLER
-        ld      de,(0x0B2E)
+        ld      de,(IRQ_VECTOR_ENTRY)
         or      a
         sbc     hl,de
         jr      z,L_1D81
@@ -4085,7 +4340,7 @@ START_WAIT:             ; 1DA3
         ld      h,a
         ld      a,(MCU_RAM)
         ld      l,a
-        ld      de,0x0B2E
+        ld      de,IRQ_VECTOR_ENTRY
         or      a
         sbc     hl,de
         jr      z,L_1DB5
@@ -4208,7 +4463,7 @@ L_1EA1:                 ; 1EA1
         djnz    L_1EA1
 L_1EB4:                 ; 1EB4
         call    SCORE_BAR_REDRAW
-        call    0xB34F
+        call    ENDING_START
         call    LOAD_PALETTES
         ld      a,(0xE5D7)
         cp      0x03
@@ -4224,7 +4479,7 @@ L_1EB4:                 ; 1EB4
 L_1ED3:                 ; 1ED3
         ld      a,0x02
         call    BANK_SELECT
-        call    0xB77A
+        call    ENDING_HINT_SCREEN
         call    BANK_RESTORE
         ld      bc,0x0960
 L_1EE1:                 ; 1EE1
@@ -4270,11 +4525,11 @@ ZAP_ROUND:              ; 1F30
         ld      (SOUND_CMD),a
         ld      a,r
         and     0x07
-        ld      hl,0x1F88
+        ld      hl,DATA_1F88
         call    ADD_HL_A
         ld      a,(hl)
         ld      (ROUND_MAIN),a
-        ld      hl,0x1F74
+        ld      hl,TEXT_1F74
         ld      de,0xD6E0
         ld      c,0x04
         call    PRINT_TEXT
@@ -4294,7 +4549,10 @@ ZAP_ROUND:              ; 1F30
         ld      a,(hl)
         bit     5,a
         jp      nz,L_1E53
-        .incbin "main_fixed.bin", 0x1F74, 0x001C
+TEXT_1F74:              ; 1F74
+        .incbin "main_fixed.bin", 0x1F74, 0x0014
+DATA_1F88:              ; 1F88
+        .incbin "main_fixed.bin", 0x1F88, 0x0008
 ; no player in the game (the demo is over): a tamper compare of (0001) with START, then HIGH_SCORE_SCREEN's steps
 DEMO_END:               ; 1F90
         rst     0x20
@@ -4418,7 +4676,7 @@ P1_SCORE_RESET:         ; 205E
         ld      bc,0x0003
         call    ZERO_BC
         call    P1_LABEL_DRAW
-        ld      hl,0x20B5
+        ld      hl,TEXT_20B5
         ld      de,0xCD46
         ld      c,0x00
         jp      PRINT_TEXT
@@ -4434,21 +4692,22 @@ P2_SCORE_RESET:         ; 207B
         bit     1,(hl)
         jr      z,L_209F
         call    P2_LABEL_DRAW
-        ld      hl,0x20B5
+        ld      hl,TEXT_20B5
         ld      de,0xD286
         ld      c,0x00
         jp      PRINT_TEXT
 
 L_209F:                 ; 209F
-        ld      hl,0x2250
+        ld      hl,TEXT_2250
         ld      de,0xD244
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2250
+        ld      hl,TEXT_2250
         ld      de,0xD246
         ld      c,0x00
         jp      PRINT_TEXT
 
+TEXT_20B5:              ; 20B5
         .incbin "main_fixed.bin", 0x20B5, 0x000C
 ; SUPER_MODE = 0, sound 0B, text 'GAME OVER' at D820, waits C8 frames, sound 00
 GAME_OVER_SHOW:         ; 20C1
@@ -4458,7 +4717,7 @@ GAME_OVER_SHOW:         ; 20C1
         ld      (hl),0x00
         ld      a,0x0B
         ld      (SOUND_CMD),a
-        ld      hl,0x210D
+        ld      hl,TEXT_210D
         ld      de,0xD820
         ld      c,0x00
         call    PRINT_TEXT
@@ -4487,39 +4746,46 @@ GAME_OVER_SHOW:         ; 20C1
         ld      (SOUND_CMD),a
         ret
 
+TEXT_210D:              ; 210D
         .incbin "main_fixed.bin", 0x210D, 0x000A
 ; CREDITS as three digits at DC7A and the text at 212C
 CREDITS_DRAW:           ; 2117
         ld      a,(0xE366)
         ld      iy,0xDC7A
         call    DECIMAL3_DRAW
-        ld      hl,0x212C
+        ld      hl,TEXT_212C
         ld      de,0xDABA
         ld      c,0x00
         jp      PRINT_TEXT
 
+TEXT_212C:              ; 212C
         .incbin "main_fixed.bin", 0x212C, 0x0007
 ; texts at 215B and, with fewer than 2 credits, at 2160
 START_PROMPT_DRAW:      ; 2133
-        ld      hl,0x215B
+        ld      hl,TEXT_215B
         ld      de,0xD890
         ld      c,0x00
         call    PRINT_TEXT
         ld      a,(0xE366)
         cp      0x02
         jr      nc,L_2150
-        ld      hl,0x2160
+        ld      hl,TEXT_2160
         ld      de,0xD694
         ld      c,0x00
         jp      PRINT_TEXT
 
 L_2150:                 ; 2150
-        ld      hl,0x2175
+        ld      hl,TEXT_2175
         ld      de,0xD694
         ld      c,0x00
         jp      PRINT_TEXT
 
-        .incbin "main_fixed.bin", 0x215B, 0x002F
+TEXT_215B:              ; 215B
+        .incbin "main_fixed.bin", 0x215B, 0x0005
+TEXT_2160:              ; 2160
+        .incbin "main_fixed.bin", 0x2160, 0x0015
+TEXT_2175:              ; 2175
+        .incbin "main_fixed.bin", 0x2175, 0x0015
 ; ATTRACT_TASK: INSERT COIN (21AB) at D7DE when DSW0 b5 and b7 are both set, else INSERT COINS (21B7)
 INSERT_COIN_DRAW:       ; 218A
         ld      a,(DSW0_COPY)
@@ -4527,23 +4793,26 @@ INSERT_COIN_DRAW:       ; 218A
         jr      z,L_21A0
         bit     7,a
         jr      z,L_21A0
-        ld      hl,0x21AB
+        ld      hl,TEXT_21AB
         ld      de,0xD7DE
         ld      c,0x00
         jp      PRINT_TEXT
 
 L_21A0:                 ; 21A0
-        ld      hl,0x21B7
+        ld      hl,TEXT_21B7
         ld      de,0xD7DE
         ld      c,0x00
         jp      PRINT_TEXT
 
-        .incbin "main_fixed.bin", 0x21AB, 0x0019
+TEXT_21AB:              ; 21AB
+        .incbin "main_fixed.bin", 0x21AB, 0x000C
+TEXT_21B7:              ; 21B7
+        .incbin "main_fixed.bin", 0x21B7, 0x000D
 ; calls bank 3 BE00 and restores the bank
 BANK3_CALL_BE00:        ; 21C4
         ld      a,0x03
         call    BANK_SELECT
-        call    0xBE00
+        call    TAITO_CREDIT
         jp      BANK_RESTORE
 
 ; TILES_RESTORE if E352, the top rows blanked (2250); the round each player reached into E644 (P1) / E649 (P2), then both scores and 1UP/2UP
@@ -4555,19 +4824,19 @@ SCORE_BAR_REDRAW:       ; 21CF
         call    CLEAR_TILE_ROW
         ld      hl,0xD506
         call    CLEAR_TILE_ROW
-        ld      hl,0x2250
+        ld      hl,TEXT_2250
         ld      de,0xCD04
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2250
+        ld      hl,TEXT_2250
         ld      de,0xCD06
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2250
+        ld      hl,TEXT_2250
         ld      de,0xD244
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2250
+        ld      hl,TEXT_2250
         ld      de,0xD246
         ld      c,0x00
         call    PRINT_TEXT
@@ -4602,6 +4871,7 @@ L_224E:                 ; 224E
         rst     0x20
         ret
 
+TEXT_2250:              ; 2250
         .incbin "main_fixed.bin", 0x2250, 0x000C
 ; ROUND_LOOP at each round's end: the word E60B + 1 (at 0x309 it goes back to 0 and E60A + 1), and E5DA + 1
 ROUND_COUNT_UP:         ; 225C
@@ -4672,12 +4942,13 @@ L_22BD:                 ; 22BD
 DIFFICULTY_INIT:        ; 22C6
         ld      a,(DSW1_COPY)
         and     0x03
-        ld      hl,0x22D6
+        ld      hl,DATA_22D6
         call    ADD_HL_A
         ld      a,(hl)
         ld      (DIFFICULTY),a
         ret
 
+DATA_22D6:              ; 22D6
         .incbin "main_fixed.bin", 0x22D6, 0x0004
 ; DIFFICULTY = the DSW1 b0-1 start value (table 22D6) if it is above it. Called by bank 2 when a player joins or continues
 DIFFICULTY_CAP:         ; 22DA
@@ -4685,7 +4956,7 @@ DIFFICULTY_CAP:         ; 22DA
         ld      c,a
         ld      a,(DSW1_COPY)
         and     0x03
-        ld      hl,0x22D6
+        ld      hl,DATA_22D6
         call    ADD_HL_A
         ld      a,(hl)
         cp      c
@@ -4802,7 +5073,7 @@ JAPAN_NOTICE:           ; 2375
         call    CLEAR_TILE_ROW
         rst     0x20
         ld      b,0x0D
-        ld      iy,0x23AF
+        ld      iy,TEXT_23AF
         call    PRINT_TEXTS
         ld      bc,0x02D0
 L_23A6:                 ; 23A6
@@ -4813,7 +5084,60 @@ L_23A6:                 ; 23A6
         jr      nz,L_23A6
         jp      CLEAR_ROWS_A
 
-        .incbin "main_fixed.bin", 0x23AF, 0x0102
+TEXT_23AF:              ; 23AF
+        .incbin "main_fixed.bin", 0x23AF, 0x0002
+        .word   DATA_23F0
+        .incbin "main_fixed.bin", 0x23B3, 0x0003
+        .word   DATA_23F7
+        .incbin "main_fixed.bin", 0x23B8, 0x0003
+        .word   DATA_240C
+        .incbin "main_fixed.bin", 0x23BD, 0x0003
+        .word   DATA_2415
+        .incbin "main_fixed.bin", 0x23C2, 0x0003
+        .word   DATA_241B
+        .incbin "main_fixed.bin", 0x23C7, 0x0003
+        .word   DATA_2435
+        .incbin "main_fixed.bin", 0x23CC, 0x0003
+        .word   DATA_2450
+        .incbin "main_fixed.bin", 0x23D1, 0x0003
+        .word   DATA_2458
+        .incbin "main_fixed.bin", 0x23D6, 0x0003
+        .word   DATA_2470
+        .incbin "main_fixed.bin", 0x23DB, 0x0003
+        .word   DATA_2474
+        .incbin "main_fixed.bin", 0x23E0, 0x0003
+        .word   DATA_2483
+        .incbin "main_fixed.bin", 0x23E5, 0x0003
+        .word   DATA_248B
+        .incbin "main_fixed.bin", 0x23EA, 0x0003
+        .word   DATA_249F
+        .incbin "main_fixed.bin", 0x23EF, 0x0001
+DATA_23F0:              ; 23F0
+        .incbin "main_fixed.bin", 0x23F0, 0x0007
+DATA_23F7:              ; 23F7
+        .incbin "main_fixed.bin", 0x23F7, 0x0015
+DATA_240C:              ; 240C
+        .incbin "main_fixed.bin", 0x240C, 0x0009
+DATA_2415:              ; 2415
+        .incbin "main_fixed.bin", 0x2415, 0x0006
+DATA_241B:              ; 241B
+        .incbin "main_fixed.bin", 0x241B, 0x001A
+DATA_2435:              ; 2435
+        .incbin "main_fixed.bin", 0x2435, 0x001B
+DATA_2450:              ; 2450
+        .incbin "main_fixed.bin", 0x2450, 0x0008
+DATA_2458:              ; 2458
+        .incbin "main_fixed.bin", 0x2458, 0x0018
+DATA_2470:              ; 2470
+        .incbin "main_fixed.bin", 0x2470, 0x0004
+DATA_2474:              ; 2474
+        .incbin "main_fixed.bin", 0x2474, 0x000F
+DATA_2483:              ; 2483
+        .incbin "main_fixed.bin", 0x2483, 0x0008
+DATA_248B:              ; 248B
+        .incbin "main_fixed.bin", 0x248B, 0x0014
+DATA_249F:              ; 249F
+        .incbin "main_fixed.bin", 0x249F, 0x0012
 ; one byte a call of a sum from 0020, in E617 (E614 starts it, E615 is the pointer)
 ROM_SUM_STEP_E:         ; 24B1
         ld      a,(0xE614)
@@ -4849,73 +5173,73 @@ L_24DF:                 ; 24DF
         push    af
 ; copies bytes 9380-9386 of the page-2 data to E35D, E37E, E396, E618, E653, E6F9, E6FE
 TAMPER_CONSTS_LOAD:     ; 24ED
-        ld      a,(0x9380)
+        ld      a,(B3_DATA_9380)
         ld      (0xE35D),a
-        ld      a,(0x9381)
+        ld      a,(B3_DATA_9381)
         ld      (0xE37E),a
-        ld      a,(0x9382)
+        ld      a,(B3_DATA_9382)
         ld      (0xE396),a
-        ld      a,(0x9383)
+        ld      a,(B3_DATA_9383)
         ld      (0xE618),a
-        ld      a,(0x9384)
+        ld      a,(B3_DATA_9384)
         ld      (0xE653),a
-        ld      a,(0x9385)
+        ld      a,(B3_DATA_9385)
         ld      (0xE6F9),a
-        ld      a,(0x9386)
+        ld      a,(B3_DATA_9386)
         ld      (0xE6FE),a
-        ld      a,(0x9387)
+        ld      a,(B3_DATA_9387)
         ld      (0xE71F),a
-        ld      a,(0x9388)
+        ld      a,(B3_DATA_9388)
         ld      (0xEB30),a
-        ld      a,(0x9389)
+        ld      a,(B3_DATA_9389)
         ld      (0xEB35),a
-        ld      a,(0x938A)
+        ld      a,(B3_DATA_938A)
         ld      (BANK2_SUM),a
-        ld      a,(0x938B)
+        ld      a,(B3_DATA_938B)
         ld      (0xF46A),a
-        ld      a,(0x938C)
+        ld      a,(B3_DATA_938C)
         ld      (0xF47A),a
-        ld      a,(0x938D)
+        ld      a,(B3_DATA_938D)
         ld      (0xF4CA),a
-        ld      a,(0x938E)
+        ld      a,(B3_DATA_938E)
         ld      (0xF512),a
-        ld      a,(0x938F)
+        ld      a,(B3_DATA_938F)
         ld      (0xF520),a
-        ld      a,(0x9390)
+        ld      a,(B3_DATA_9390)
         ld      (0xF52A),a
-        ld      a,(0x9391)
+        ld      a,(B3_DATA_9391)
         ld      (0xF58F),a
-        ld      a,(0x9392)
+        ld      a,(B3_DATA_9392)
         ld      (0xF5AB),a
-        ld      a,(0x9393)
+        ld      a,(B3_DATA_9393)
         ld      (0xF623),a
-        ld      a,(0x9394)
+        ld      a,(B3_DATA_9394)
         ld      (0xEEAB),a
-        ld      a,(0x9395)
+        ld      a,(B3_DATA_9395)
         ld      (0xF112),a
-        ld      a,(0x9396)
+        ld      a,(B3_DATA_9396)
         ld      (0xF366),a
         ret
 
 ; after the start: the story text 'NOW,IT IS BEGINNING OF A FANTASTIC STORY ...' with the two players' objects
 INTRO_STORY:            ; 2578
-        call    0xB391
+        call    STARFIELD_RESET
         call    CLEAR_OBJ_TILES
         call    SET_E1D2_SEQ
         call    SET_E2D5_RECS
-        call    0xB3B5
+        call    STARFIELD_DRAW
         ld      hl,0xCD04
-        ld      de,0xB3F2
+        ld      de,STARFIELD_MAP_A
         ld      bc,0x020C
         ld      a,0x2D
         call    TILE_RECT
         ld      hl,0xD004
-        ld      de,0xB52A
+        ld      de,STARFIELD_MAP_B
         ld      bc,0x020C
         ld      a,0x2D
         call    TILE_RECT
         ld      hl,0xD304
-        ld      de,0xB662
+        ld      de,STARFIELD_MAP_C
         ld      bc,0x0208
         ld      a,0x2E
         call    TILE_RECT
@@ -4927,19 +5251,19 @@ INTRO_STORY:            ; 2578
         call    ZERO_BC
         ld      hl,0x0000
         ld      (0xF822),hl
-        ld      hl,0x28B5
+        ld      hl,TEXT_28B5
         ld      de,0xD608
         ld      c,0x04
         call    PRINT_TEXT
-        ld      hl,0x28CE
+        ld      hl,TEXT_28CE
         ld      de,0xD54C
         ld      c,0x04
         call    PRINT_TEXT
-        ld      hl,0x28ED
+        ld      hl,TEXT_28ED
         ld      de,0xD510
         ld      c,0x04
         call    PRINT_TEXT
-        ld      hl,0x290E
+        ld      hl,TEXT_290E
         ld      de,0xD7D4
         ld      c,0x04
         call    PRINT_TEXT
@@ -4951,7 +5275,7 @@ INTRO_STORY:            ; 2578
         call    SOUND_PUSH
 L_2606:                 ; 2606
         rst     0x20
-        call    0xB738
+        call    STARFIELD_TWINKLE
         call    RED_RAMP_STEP
         ld      hl,0xE619
         ld      (hl),0x00
@@ -5182,10 +5506,10 @@ L_27C1:                 ; 27C1
         push    bc
         bit     0,(ix+0)
         jr      nz,L_27EE
-        ld      de,0x2919
+        ld      de,DATA_2919
         bit     0,(ix+8)
         jr      z,L_27D4
-        ld      de,0x2921
+        ld      de,DATA_2921
 L_27D4:                 ; 27D4
         call    OBJ_PTR
         ld      b,0x04
@@ -5210,15 +5534,15 @@ L_27EE:                 ; 27EE
         call    ANIM_STEP
         add     a,a
         add     a,a
-        ld      hl,0x2929
+        ld      hl,DATA_2929
         call    ADD_HL_A
         ld      c,(ix+10)
         ld      b,0x04
         call    SPRITE_LIST
-        ld      de,0x6D1D
+        ld      de,DATA_6D1D
         bit     0,(ix+8)
         jr      z,L_2810
-        ld      de,0x6CAF
+        ld      de,DATA_6CAF
 L_2810:                 ; 2810
         ld      a,(ix+9)
         inc     (ix+9)
@@ -5308,7 +5632,7 @@ RED_RAMP_STEP:          ; 2873
         inc     (hl)
         ld      a,(hl)
         add     a,a
-        ld      hl,0x2895
+        ld      hl,RED_RAMP
         call    ADD_HL_A
         ld      e,(hl)
         inc     hl
@@ -5318,7 +5642,21 @@ RED_RAMP_STEP:          ; 2873
 
 ; 16 colours, black to red
 RED_RAMP:               ; 2895
-        .incbin "main_fixed.bin", 0x2895, 0x009C
+        .incbin "main_fixed.bin", 0x2895, 0x0020
+TEXT_28B5:              ; 28B5
+        .incbin "main_fixed.bin", 0x28B5, 0x0019
+TEXT_28CE:              ; 28CE
+        .incbin "main_fixed.bin", 0x28CE, 0x001F
+TEXT_28ED:              ; 28ED
+        .incbin "main_fixed.bin", 0x28ED, 0x0021
+TEXT_290E:              ; 290E
+        .incbin "main_fixed.bin", 0x290E, 0x000B
+DATA_2919:              ; 2919
+        .incbin "main_fixed.bin", 0x2919, 0x0008
+DATA_2921:              ; 2921
+        .incbin "main_fixed.bin", 0x2921, 0x0008
+DATA_2929:              ; 2929
+        .incbin "main_fixed.bin", 0x2929, 0x0008
 ; at game start, if SUPER_MODE: SELECT GAME MODE, left NOMAL GAME (29CC), right SUPER GAME (29FC), either button starts; after 0x4B0 frames the normal game
 MODE_SELECT:            ; 2931
         ld      a,(SUPER_MODE)
@@ -5336,21 +5674,21 @@ L_293F:                 ; 293F
         call    SET_E2F5_RECS
         call    SCORE_LABELS_DRAW
         call    SET_E1D0_19
-        ld      hl,0x2AE2
+        ld      hl,TEXT_2AE2
         ld      de,0xD712
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2AF3
+        ld      hl,TEXT_2AF3
         ld      de,0xD8AA
         ld      c,0x00
         call    PRINT_TEXT
         ld      hl,0xD05C
-        ld      de,0x2A56
+        ld      de,TILES_2A56
         ld      bc,0x0406
         ld      a,0x1F
         call    TILE_RECT
         ld      hl,0xD0EC
-        ld      de,0x2A6E
+        ld      de,TILES_2A6E
         ld      bc,0x0202
         ld      a,0x1F
         call    TILE_RECT
@@ -5361,14 +5699,14 @@ L_2989:                 ; 2989
         push    bc
         bit     3,c
         jr      nz,L_299C
-        ld      hl,0x2AF3
+        ld      hl,TEXT_2AF3
         ld      de,0xD8AA
         ld      c,0x00
         call    PRINT_TEXT
         jr      L_29A7
 
 L_299C:                 ; 299C
-        ld      hl,0x2AF3
+        ld      hl,TEXT_2AF3
         ld      de,0xD8AA
         ld      c,0x04
         call    PRINT_TEXT
@@ -5396,17 +5734,17 @@ L_29A7:                 ; 29A7
 ; SELECT GAME MODE screen with the NOMAL GAME choice (TILE_RECT blocks)
 MODE_NOMAL_SHOW:        ; 29CC
         ld      hl,0xCE1C
-        ld      de,0x2A8E
+        ld      de,TILES_2A8E
         ld      bc,0x0407
         ld      a,0x1F
         call    TILE_RECT
         ld      hl,0xD25C
-        ld      de,0x2AAA
+        ld      de,TILES_2AAA
         ld      bc,0x0407
         ld      a,0x1F
         call    TILE_RECT
         ld      hl,0xD05C
-        ld      de,0x2A56
+        ld      de,TILES_2A56
         ld      bc,0x0406
         ld      a,0x1F
         call    TILE_RECT
@@ -5417,12 +5755,12 @@ MODE_NOMAL_SHOW:        ; 29CC
 ; as MODE_NOMAL_SHOW with the SUPER GAME choice; sets SUPER_MODE
 MODE_SUPER_SHOW:        ; 29FC
         ld      hl,0xCE1C
-        ld      de,0x2A72
+        ld      de,TILES_2A72
         ld      bc,0x0407
         ld      a,0x1F
         call    TILE_RECT
         ld      hl,0xD25C
-        ld      de,0x2AC6
+        ld      de,TILES_2AC6
         ld      bc,0x0407
         ld      a,0x1F
         call    TILE_RECT
@@ -5462,7 +5800,22 @@ MODE_SUPER_SHOW:        ; 29FC
         ld      (hl),0x5F
         ret
 
-        .incbin "main_fixed.bin", 0x2A56, 0x00A2
+TILES_2A56:             ; 2A56
+        .incbin "main_fixed.bin", 0x2A56, 0x0018
+TILES_2A6E:             ; 2A6E
+        .incbin "main_fixed.bin", 0x2A6E, 0x0004
+TILES_2A72:             ; 2A72
+        .incbin "main_fixed.bin", 0x2A72, 0x001C
+TILES_2A8E:             ; 2A8E
+        .incbin "main_fixed.bin", 0x2A8E, 0x001C
+TILES_2AAA:             ; 2AAA
+        .incbin "main_fixed.bin", 0x2AAA, 0x001C
+TILES_2AC6:             ; 2AC6
+        .incbin "main_fixed.bin", 0x2AC6, 0x001C
+TEXT_2AE2:              ; 2AE2
+        .incbin "main_fixed.bin", 0x2AE2, 0x0011
+TEXT_2AF3:              ; 2AF3
+        .incbin "main_fixed.bin", 0x2AF3, 0x0005
 ; task 1: ROUND_MAIN = 0x64 (the title/attract layout), DIFFICULTY 7; the title screen
 TITLE_TASK:             ; 2AF8
         rst     0x20
@@ -5502,9 +5855,9 @@ DEMO_SELECT:            ; 2B15
         ld      (0xE5D8),a
         ld      hl,0xE5D7
         ld      (hl),0x01
-        ld      hl,0xA5BC
+        ld      hl,B1_DATA_A5BC
         ld      (0xE353),hl
-        ld      hl,0xA6BC
+        ld      hl,B1_DATA_A6BC
         ld      (0xE355),hl
         ld      a,0x02
         rst     0x30
@@ -5517,12 +5870,12 @@ DEMO_SELECT:            ; 2B15
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xD5CE
-        ld      de,0xA6D2
+        ld      de,B1_TILES_A6D2
         ld      bc,0x0309
         ld      a,0x06
         call    TILE_RECT
         ld      hl,0xD618
-        ld      de,0xA60A
+        ld      de,B1_TILES_A60A
         ld      bc,0x0213
         ld      a,0x07
         call    TILE_RECT
@@ -5534,12 +5887,12 @@ DEMO_SELECT:            ; 2B15
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xD618
-        ld      de,0xA708
+        ld      de,B1_TILES_A708
         ld      bc,0x0219
         ld      a,0x07
         call    TILE_RECT
         ld      hl,0xD618
-        ld      de,0xA630
+        ld      de,B1_TILES_A630
         ld      bc,0x0212
         ld      a,0x07
         call    TILE_RECT
@@ -5551,17 +5904,17 @@ DEMO_SELECT:            ; 2B15
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xD5CE
-        ld      de,0xA6ED
+        ld      de,B1_TILES_A6ED
         ld      bc,0x0309
         ld      a,0x06
         call    TILE_RECT
         ld      hl,0xD618
-        ld      de,0xA708
+        ld      de,B1_TILES_A708
         ld      bc,0x0219
         ld      a,0x07
         call    TILE_RECT
         ld      hl,0xD618
-        ld      de,0xA654
+        ld      de,B1_TILES_A654
         ld      bc,0x0210
         ld      a,0x07
         call    TILE_RECT
@@ -5571,7 +5924,7 @@ DEMO_SELECT:            ; 2B15
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xD618
-        ld      de,0xA674
+        ld      de,B1_TILES_A674
         ld      bc,0x0216
         ld      a,0x07
         call    TILE_RECT
@@ -5579,19 +5932,19 @@ DEMO_SELECT:            ; 2B15
         ld      a,0xB4
         rst     0x18
         ld      hl,IRQ_HANDLER
-        ld      bc,(0x0B2E)
+        ld      bc,(IRQ_VECTOR_ENTRY)
         ld      a,c
         sub     l
         jp      nz,L_2C70
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xD5CE
-        ld      de,0xA708
+        ld      de,B1_TILES_A708
         ld      bc,0x0219
         ld      a,0x07
         call    TILE_RECT
         ld      hl,0xD5D0
-        ld      de,0xA708
+        ld      de,B1_TILES_A708
         ld      bc,0x0219
         ld      a,0x07
         call    TILE_RECT
@@ -5605,7 +5958,7 @@ L_2C42:                 ; 2C42
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xD618
-        ld      de,0xA6A0
+        ld      de,B1_TILES_A6A0
         ld      bc,0x0219
         ld      a,0x07
         call    TILE_RECT
@@ -5615,7 +5968,7 @@ L_2C5D:                 ; 2C5D
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xD618
-        ld      de,0xA708
+        ld      de,B1_TILES_A708
         ld      bc,0x0219
         ld      a,0x07
         call    TILE_RECT
@@ -5633,15 +5986,15 @@ L_2C70:                 ; 2C70
         rst     0x18
 ; how-to-play text 'BASIC SKILL ... TRAP ENEMIES INSIDE BUBBLES'
 HOWTO_BASIC:            ; 2C83
-        ld      hl,0x2D73
+        ld      hl,TEXT_2D73
         ld      de,0xD650
         ld      c,0x04
         call    PRINT_TEXT
-        ld      hl,0x2D86
+        ld      hl,TEXT_2D86
         ld      de,0xD5D6
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2DA1
+        ld      hl,TEXT_2DA1
         ld      de,0xD5DA
         ld      c,0x00
         call    PRINT_TEXT
@@ -5655,11 +6008,11 @@ HOWTO_BASIC:            ; 2C83
 HOWTO_ADVANCED:         ; 2CAF
         ld      a,0x5A
         rst     0x18
-        ld      hl,0x2DBC
+        ld      hl,TEXT_2DBC
         ld      de,0xD5D6
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2DD7
+        ld      hl,TEXT_2DD7
         ld      de,0xD5DA
         ld      c,0x00
         call    PRINT_TEXT
@@ -5667,39 +6020,39 @@ HOWTO_ADVANCED:         ; 2CAF
         rst     0x18
         ld      a,0xF0
         rst     0x18
-        ld      hl,0x2DF2
+        ld      hl,TEXT_2DF2
         ld      de,0xD650
         ld      c,0x10
         call    PRINT_TEXT
-        ld      hl,0x2E0D
+        ld      hl,TEXT_2E0D
         ld      de,0xD5D6
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2E28
+        ld      hl,TEXT_2E28
         ld      de,0xD5DA
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2E43
+        ld      hl,TEXT_2E43
         ld      de,0xD5DE
         ld      c,0x00
         call    PRINT_TEXT
         ld      a,0x78
         rst     0x18
-        ld      hl,0x2E5E
+        ld      hl,TEXT_2E5E
         ld      de,0xD5D6
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2E79
+        ld      hl,TEXT_2E79
         ld      de,0xD5DA
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2E79
+        ld      hl,TEXT_2E79
         ld      de,0xD5DE
         ld      c,0x00
         call    PRINT_TEXT
         ld      a,0xB4
         rst     0x18
-        ld      hl,0x2E79
+        ld      hl,TEXT_2E79
         ld      de,0xD650
         ld      c,0x00
         call    PRINT_TEXT
@@ -5710,22 +6063,22 @@ HOWTO_GOAL:             ; 2D2F
         push    bc
         bit     4,c
         jr      nz,L_2D4D
-        ld      hl,0x2E94
+        ld      hl,TEXT_2E94
         ld      de,0xD5D6
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2EAF
+        ld      hl,TEXT_2EAF
         ld      de,0xD5DA
         ld      c,0x00
         call    PRINT_TEXT
         jr      L_2D63
 
 L_2D4D:                 ; 2D4D
-        ld      hl,0x2E79
+        ld      hl,TEXT_2E79
         ld      de,0xD5D6
         ld      c,0x00
         call    PRINT_TEXT
-        ld      hl,0x2E79
+        ld      hl,TEXT_2E79
         ld      de,0xD5DA
         ld      c,0x00
         call    PRINT_TEXT
@@ -5740,11 +6093,36 @@ L_2D63:                 ; 2D63
         ld      (hl),0x00
         xor     a
         rst     0x18
-        .incbin "main_fixed.bin", 0x2D73, 0x0157
+TEXT_2D73:              ; 2D73
+        .incbin "main_fixed.bin", 0x2D73, 0x0013
+TEXT_2D86:              ; 2D86
+        .incbin "main_fixed.bin", 0x2D86, 0x001B
+TEXT_2DA1:              ; 2DA1
+        .incbin "main_fixed.bin", 0x2DA1, 0x001B
+TEXT_2DBC:              ; 2DBC
+        .incbin "main_fixed.bin", 0x2DBC, 0x001B
+TEXT_2DD7:              ; 2DD7
+        .incbin "main_fixed.bin", 0x2DD7, 0x001B
+TEXT_2DF2:              ; 2DF2
+        .incbin "main_fixed.bin", 0x2DF2, 0x001B
+TEXT_2E0D:              ; 2E0D
+        .incbin "main_fixed.bin", 0x2E0D, 0x001B
+TEXT_2E28:              ; 2E28
+        .incbin "main_fixed.bin", 0x2E28, 0x001B
+TEXT_2E43:              ; 2E43
+        .incbin "main_fixed.bin", 0x2E43, 0x001B
+TEXT_2E5E:              ; 2E5E
+        .incbin "main_fixed.bin", 0x2E5E, 0x001B
+TEXT_2E79:              ; 2E79
+        .incbin "main_fixed.bin", 0x2E79, 0x001B
+TEXT_2E94:              ; 2E94
+        .incbin "main_fixed.bin", 0x2E94, 0x001B
+TEXT_2EAF:              ; 2EAF
+        .incbin "main_fixed.bin", 0x2EAF, 0x001B
 ; attract demo game: ROUND_MAIN from the table at 2FAC by E634, both players (E5D7 = 3, 5 lives); ends with 'GAME OVER' (2FA2)
 DEMO_GAME:              ; 2ECA
         ld      a,(0xE634)
-        ld      hl,0x2FAC
+        ld      hl,DATA_2FAC
         call    ADD_HL_A
         ld      a,(hl)
         ld      (ROUND_MAIN),a
@@ -5768,7 +6146,7 @@ DEMO_GAME:              ; 2ECA
         ld      a,(0xE634)
         add     a,a
         add     a,a
-        ld      hl,0x9A6A
+        ld      hl,B1_DATA_9A6A
         call    ADD_HL_A
         ld      e,(hl)
         inc     hl
@@ -5786,7 +6164,7 @@ DEMO_GAME:              ; 2ECA
         rst     0x18
         call    CLEAR_ROWS_B
         call    CREDITS_DRAW
-        ld      hl,0x2FA2
+        ld      hl,TEXT_2FA2
         ld      de,0xD820
         ld      c,0x04
         call    PRINT_TEXT
@@ -5845,7 +6223,10 @@ L_2F96:                 ; 2F96
         call    SET_E2F5_RECS
         jp      HIGH_ENTRY_SETUP
 
-        .incbin "main_fixed.bin", 0x2FA2, 0x0011
+TEXT_2FA2:              ; 2FA2
+        .incbin "main_fixed.bin", 0x2FA2, 0x000A
+DATA_2FAC:              ; 2FAC
+        .incbin "main_fixed.bin", 0x2FAC, 0x0007
 ; not in the attract loop: SCORE_ADD (30A5), then 2FC9 HIGH_SCORE_CHECK (2FC9), SCORE_SHOW (2FF0) and EXTRA_LIFE_CHECK (3262)
 SCORE_UPDATE:           ; 2FB3
         ld      a,(ATTRACT)
@@ -6125,10 +6506,11 @@ BONUS_TABLE_PTR:        ; 3170
         and     0x03
         ld      b,0x18
         call    MUL8
-        ld      de,0x3181
+        ld      de,DATA_3181
         add     hl,de
         ret
 
+DATA_3181:              ; 3181
         .incbin "main_fixed.bin", 0x3181, 0x0060
 ; HIGH_SCORE from BONUS_TABLE_PTR entry 0. Seen in MAME: with DSW1 = FF (bonus setting 3) every game snapshot starts at 003000 (30000 shown)
 HIGH_SCORE_INIT:        ; 31E1
@@ -6141,7 +6523,7 @@ HIGH_SCORE_INIT:        ; 31E1
 ; the three bonus life values of BONUS_TABLE_PTR, as texts at 320D and scores
 BONUS_INFO_DRAW:        ; 31ED
         ld      b,0x03
-        ld      iy,0x320D
+        ld      iy,TEXT_320D
         call    PRINT_TEXTS
         call    BONUS_TABLE_PTR
         inc     hl
@@ -6157,7 +6539,20 @@ BONUS_INFO_DRAW:        ; 31ED
         ld      hl,0xD960
         jp      SCORE_DRAW
 
-        .incbin "main_fixed.bin", 0x320D, 0x0055
+TEXT_320D:              ; 320D
+        .incbin "main_fixed.bin", 0x320D, 0x0002
+        .word   DATA_321C
+        .incbin "main_fixed.bin", 0x3211, 0x0003
+        .word   DATA_3236
+        .incbin "main_fixed.bin", 0x3216, 0x0003
+        .word   DATA_3250
+        .incbin "main_fixed.bin", 0x321B, 0x0001
+DATA_321C:              ; 321C
+        .incbin "main_fixed.bin", 0x321C, 0x001A
+DATA_3236:              ; 3236
+        .incbin "main_fixed.bin", 0x3236, 0x001A
+DATA_3250:              ; 3250
+        .incbin "main_fixed.bin", 0x3250, 0x0012
 ; when the score reaches the player's BONUS_NEXT value: take the next BONUS_TABLE_PTR entry (E63F or E640 up to 8), then one more life (32E0 / 32F4: sound 0x2D, cap 0x64, redraw the life icons)
 EXTRA_LIFE_CHECK:       ; 3262
         ld      a,(PLAYER_NOW)
@@ -6221,11 +6616,12 @@ LIVES_START:            ; 32CC
         ld      a,(DSW1_COPY)
         call    SHR4
         and     0x03
-        ld      hl,0x32DC
+        ld      hl,DATA_32DC
         call    ADD_HL_A
         ld      a,(hl)
         ret
 
+DATA_32DC:              ; 32DC
         .incbin "main_fixed.bin", 0x32DC, 0x0004
 ; LIVES_P1 + 1 (not above 0x64): EXTEND sound 2D, DIFFICULTY_UP 1, redraws via P1_LIVES_DRAW
 P1_LIFE_ADD:            ; 32E0
@@ -6290,7 +6686,7 @@ L_3335:                 ; 3335
 ; low byte of the IM 2 vector entry at 0B2E must be 4D; else runs 'dead copy' at 334A
 TAMPER_CHECK:           ; 333F
         djnz    L_3335
-        ld      hl,(0x0B2E)
+        ld      hl,(IRQ_VECTOR_ENTRY)
         ld      de,IRQ_HANDLER
         ld      a,l
         sub     e
@@ -6341,11 +6737,11 @@ L_3381:                 ; 3381
         exx
 ; the score line texts and both scores
 SCORE_LABELS_DRAW:      ; 3395
-        ld      hl,0x33D3
+        ld      hl,TEXT_33D3
         ld      de,0xCFC4
         ld      c,0x04
         call    PRINT_TEXT
-        ld      hl,0x33EA
+        ld      hl,TEXT_33EA
         ld      de,0xCD06
         ld      c,0x00
         call    PRINT_TEXT
@@ -6353,19 +6749,26 @@ SCORE_LABELS_DRAW:      ; 3395
         call    P1_LABEL_DRAW
 ; text at 33DE to D244
 P2_LABEL_DRAW:          ; 33B1
-        ld      hl,0x33DE
+        ld      hl,TEXT_33DE
         ld      de,0xD244
         ld      c,0x14
         jp      PRINT_TEXT
 
 ; text at 33C7 to CD04
 P1_LABEL_DRAW:          ; 33BC
-        ld      hl,0x33C7
+        ld      hl,TEXT_33C7
         ld      de,0xCD04
         ld      c,0x08
         jp      PRINT_TEXT
 
-        .incbin "main_fixed.bin", 0x33C7, 0x0044
+TEXT_33C7:              ; 33C7
+        .incbin "main_fixed.bin", 0x33C7, 0x000C
+TEXT_33D3:              ; 33D3
+        .incbin "main_fixed.bin", 0x33D3, 0x000B
+TEXT_33DE:              ; 33DE
+        .incbin "main_fixed.bin", 0x33DE, 0x000C
+TEXT_33EA:              ; 33EA
+        .incbin "main_fixed.bin", 0x33EA, 0x0021
 ; one byte a call of a sum of every 3rd byte from 028E to 757A, in E652 (E64F starts it, E650 is the pointer); the end compares with E653 and on a mismatch runs into HIGH_TABLE_INIT with DE pushed
 ROM_SUM_STEP_Q:         ; 340B
         ld      a,(0xE64F)
@@ -6403,7 +6806,7 @@ L_343B:                 ; 343B
         push    de
 ; E654: 0x23 bytes from 347C, then BONUS_TABLE_PTR entries into its five score slots
 HIGH_TABLE_INIT:        ; 3449
-        ld      hl,0x347C
+        ld      hl,DATA_347C
         ld      de,0xE654
         ld      bc,0x0023
         ldir
@@ -6428,6 +6831,7 @@ L_3459:                 ; 3459
         ld      (hl),0x13
         ret
 
+DATA_347C:              ; 347C
         .incbin "main_fixed.bin", 0x347C, 0x0023
 ; the 'BEST 5' table: texts at 3574, and the five scores
 BEST5_DRAW:             ; 349F
@@ -6435,9 +6839,9 @@ BEST5_DRAW:             ; 349F
         and     a
         jr      z,ENTRY_SCREEN_DRAW
         ld      b,0x06
-        ld      iy,0x3574
+        ld      iy,TEXT_3574
         call    PRINT_TEXTS
-        ld      hl,0x3597
+        ld      hl,TEXT_3597
         ld      de,0xD854
         ld      c,0x04
         call    PRINT_TEXT
@@ -6446,18 +6850,18 @@ BEST5_DRAW:             ; 349F
 ; 'SCORE ROUND  NAME' and 'ENTER 1UP/2UP INITIALS !'
 ENTRY_SCREEN_DRAW:      ; 34BB
         ld      b,0x07
-        ld      iy,0x3574
+        ld      iy,TEXT_3574
         call    PRINT_TEXTS
-        ld      hl,0x35ED
+        ld      hl,TEXT_35ED
         ld      de,0xD6D4
         ld      c,0x10
         call    PRINT_TEXT
-        ld      hl,0x35C3
+        ld      hl,DATA_35C3
         ld      c,0x08
         ld      a,(PLAYER_NOW)
         and     a
         jr      z,L_34DF
-        ld      hl,0x35D8
+        ld      hl,TEXT_35D8
         ld      c,0x14
 L_34DF:                 ; 34DF
         ld      de,0xD68E
@@ -6548,7 +6952,42 @@ L_3558:                 ; 3558
         djnz    L_3553
         ret
 
-        .incbin "main_fixed.bin", 0x3574, 0x008B
+TEXT_3574:              ; 3574
+        .incbin "main_fixed.bin", 0x3574, 0x0002
+        .word   DATA_359E
+        .incbin "main_fixed.bin", 0x3578, 0x0003
+        .word   DATA_35AF
+        .incbin "main_fixed.bin", 0x357D, 0x0003
+        .word   DATA_35B3
+        .incbin "main_fixed.bin", 0x3582, 0x0003
+        .word   DATA_35B7
+        .incbin "main_fixed.bin", 0x3587, 0x0003
+        .word   DATA_35BB
+        .incbin "main_fixed.bin", 0x358C, 0x0003
+        .word   DATA_35BF
+        .incbin "main_fixed.bin", 0x3591, 0x0003
+        .word   TEXT_3597
+        .incbin "main_fixed.bin", 0x3596, 0x0001
+TEXT_3597:              ; 3597
+        .incbin "main_fixed.bin", 0x3597, 0x0007
+DATA_359E:              ; 359E
+        .incbin "main_fixed.bin", 0x359E, 0x0011
+DATA_35AF:              ; 35AF
+        .incbin "main_fixed.bin", 0x35AF, 0x0004
+DATA_35B3:              ; 35B3
+        .incbin "main_fixed.bin", 0x35B3, 0x0004
+DATA_35B7:              ; 35B7
+        .incbin "main_fixed.bin", 0x35B7, 0x0004
+DATA_35BB:              ; 35BB
+        .incbin "main_fixed.bin", 0x35BB, 0x0004
+DATA_35BF:              ; 35BF
+        .incbin "main_fixed.bin", 0x35BF, 0x0004
+DATA_35C3:              ; 35C3
+        .incbin "main_fixed.bin", 0x35C3, 0x0015
+TEXT_35D8:              ; 35D8
+        .incbin "main_fixed.bin", 0x35D8, 0x0015
+TEXT_35ED:              ; 35ED
+        .incbin "main_fixed.bin", 0x35ED, 0x0012
 ; a player continues: HIGH_BEST_OF, HIGH_ENTRY_INSERT, and if the score made the table its row's name is 'CNT'. Called by bank 2 before the player's score is reset
 HIGH_ENTRY_CONTINUE:    ; 35FF
         call    HIGH_BEST_OF
@@ -6952,7 +7391,7 @@ INITIALS_STORE:         ; 3876
         ld      a,(0xE678)
         call    ADD_HL_A
         ld      a,(0xE679)
-        ld      de,0x38D4
+        ld      de,ENTRY_ALPHABET
         call    ADD_DE_A
         ld      a,(de)
         ld      (hl),a
@@ -6969,7 +7408,7 @@ ENTRY_LETTER_DRAW:      ; 38A4
         ld      hl,0xDA58
         add     hl,de
         ld      a,(0xE679)
-        ld      de,0x38D4
+        ld      de,ENTRY_ALPHABET
         call    ADD_DE_A
         ld      a,(de)
         ld      (hl),a
@@ -7023,7 +7462,7 @@ L_3930:                 ; 3930
         ld      de,0x0000
         ld      b,0x28
         call    GFX_GRID_FILL
-        ld      de,0x3D02
+        ld      de,DATA_3D02
         ld      hl,0xE20D
         ld      b,0x28
 L_3943:                 ; 3943
@@ -7045,12 +7484,14 @@ L_3943:                 ; 3943
         set     6,(hl)
         ld      hl,0xE234
         set     6,(hl)
-        ld      hl,0x3D88
+CODE_395C:              ; 395C
+        ld      hl,SPRITES_3D88
 L_395F:                 ; 395F
         ld      bc,0x041F
         ld      e,0x00
         call    SPRITE_GRID
-        ld      hl,0x3D7A
+CODE_3967:              ; 3967
+        ld      hl,SPRITES_3D7A
         ld      bc,0x071E
         ld      e,0x01
         call    SPRITE_GRID
@@ -7058,6 +7499,7 @@ L_3972:                 ; 3972
         ld      a,0x03
         ld      bc,CREDITS
         call    SPRITE
+CODE_397A:              ; 397A
         ld      a,0x23
 L_397C:                 ; 397C
         ld      bc,0xF81E
@@ -7081,11 +7523,11 @@ L_398C:                 ; 398C
         jp      RECORD_SHOW
 
 L_39A6:                 ; 39A6
-        ld      hl,0x3D88
+        ld      hl,SPRITES_3D88
         ld      bc,0x0423
         ld      e,0x05
         call    SPRITE_GRID
-        ld      hl,0x3D81
+        ld      hl,SPRITES_3D81
         ld      bc,0x0722
         ld      e,0x06
         call    SPRITE_GRID
@@ -7109,7 +7551,7 @@ RECORD_SHOW:            ; 39DB
         ld      a,(0xE67E)
         cp      0x03
         jp      nz,L_3A79
-        ld      hl,0x3DC4
+        ld      hl,TEXT_3DC4
         ld      de,0xD54A
         ld      c,0x00
         call    PRINT_TEXT
@@ -7128,7 +7570,7 @@ RECORD_SHOW:            ; 39DB
         call    SPRITE
 ; text '"ROUND    "' and the round number (or 'AL' at 101) at DBCA
 RECORD_ROUND_SHOW:      ; 3A0C
-        ld      hl,0x3DD6
+        ld      hl,TEXT_3DD6
         ld      de,0xD9CA
         ld      c,0x04
         call    PRINT_TEXT
@@ -7152,7 +7594,7 @@ L_3A34:                 ; 3A34
         jr      L_3A5C
 
 L_3A41:                 ; 3A41
-        ld      hl,0x3DE3
+        ld      hl,TEXT_3DE3
         ld      de,0xD9CA
         ld      c,0x04
         call    PRINT_TEXT
@@ -7188,7 +7630,7 @@ L_3A7F:                 ; 3A7F
         push    af
         add     a,a
         add     a,a
-        ld      hl,0x3D8C
+        ld      hl,DATA_3D8C
         call    ADD_HL_A
         ld      bc,0x041F
         ld      e,0x04
@@ -7253,7 +7695,7 @@ L_3AD4:                 ; 3AD4
         ld      a,b
         push    bc
         add     a,a
-        ld      hl,0x3D94
+        ld      hl,DATA_3D94
         call    ADD_HL_A
         ld      bc,0x021F
         ld      e,0x00
@@ -7261,7 +7703,7 @@ L_3AD4:                 ; 3AD4
         pop     bc
         ld      a,c
         add     a,a
-        ld      hl,0x3DA8
+        ld      hl,DATA_3DA8
         call    ADD_HL_A
         ld      bc,0x021F
         ld      de,0x0200
@@ -7269,14 +7711,14 @@ L_3AD4:                 ; 3AD4
         jp      L_3C4A
 
 L_3B47:                 ; 3B47
-        ld      hl,0x3DBC
+        ld      hl,SPRITES_3DBC
         ld      bc,0x041F
         ld      e,0x00
         call    SPRITE_GRID
         jp      L_3C4A
 
 L_3B55:                 ; 3B55
-        ld      hl,0x3DC0
+        ld      hl,SPRITES_3DC0
         ld      bc,0x041F
         ld      e,0x00
         call    SPRITE_GRID
@@ -7293,7 +7735,7 @@ L_3B63:                 ; 3B63
         ld      a,c
         add     a,a
         add     a,a
-        ld      hl,0x3D8C
+        ld      hl,DATA_3D8C
         call    ADD_HL_A
         ld      bc,0x0423
         ld      e,0x09
@@ -7362,7 +7804,7 @@ L_3BC0:                 ; 3BC0
         ld      a,b
         push    bc
         add     a,a
-        ld      hl,0x3D94
+        ld      hl,DATA_3D94
         call    ADD_HL_A
         ld      bc,0x0223
         ld      e,0x05
@@ -7370,7 +7812,7 @@ L_3BC0:                 ; 3BC0
         pop     bc
         ld      a,c
         add     a,a
-        ld      hl,0x3DA8
+        ld      hl,DATA_3DA8
         call    ADD_HL_A
         ld      bc,0x0223
         ld      de,0x0205
@@ -7378,14 +7820,14 @@ L_3BC0:                 ; 3BC0
         jr      L_3C4A
 
 L_3C32:                 ; 3C32
-        ld      hl,0x3DBC
+        ld      hl,SPRITES_3DBC
         ld      bc,0x0423
         ld      e,0x05
         call    SPRITE_GRID
         jr      L_3C4A
 
 L_3C3F:                 ; 3C3F
-        ld      hl,0x3DC0
+        ld      hl,SPRITES_3DC0
         ld      bc,0x0423
         ld      e,0x05
         call    SPRITE_GRID
@@ -7408,7 +7850,7 @@ ROUND_x19A:             ; 3C57
 LOAD_PAL_7_8:           ; 3C60
         call    SET_E1D0_10
         call    SET_E2F8_10
-        ld      hl,0x3CC2
+        ld      hl,PALETTES_7_8
         ld      de,0xF8E0
         ld      bc,0x0040
         ldir
@@ -7423,12 +7865,12 @@ LOAD_PAL_7_8:           ; 3C60
         ld      a,0x03
         call    BANK_SELECT
         ld      hl,0xCD0C
-        ld      de,0x9397
+        ld      de,B3_TILES_9397
         ld      bc,0x0120
         ld      a,0x1D
         call    TILE_RECT
         ld      hl,0xCE8E
-        ld      de,0x93B7
+        ld      de,B3_TILES_93B7
         ld      bc,0x1714
         ld      a,0x1D
         call    TILE_RECT
@@ -7455,30 +7897,54 @@ L_3CB0:                 ; 3CB0
         ret
 
 PALETTES_7_8:           ; 3CC2
-        .incbin "main_fixed.bin", 0x3CC2, 0x012E
+        .incbin "main_fixed.bin", 0x3CC2, 0x0040
+DATA_3D02:              ; 3D02
+        .incbin "main_fixed.bin", 0x3D02, 0x0078
+SPRITES_3D7A:           ; 3D7A
+        .incbin "main_fixed.bin", 0x3D7A, 0x0007
+SPRITES_3D81:           ; 3D81
+        .incbin "main_fixed.bin", 0x3D81, 0x0007
+SPRITES_3D88:           ; 3D88
+        .incbin "main_fixed.bin", 0x3D88, 0x0004
+DATA_3D8C:              ; 3D8C
+        .incbin "main_fixed.bin", 0x3D8C, 0x0008
+DATA_3D94:              ; 3D94
+        .incbin "main_fixed.bin", 0x3D94, 0x0014
+DATA_3DA8:              ; 3DA8
+        .incbin "main_fixed.bin", 0x3DA8, 0x0014
+SPRITES_3DBC:           ; 3DBC
+        .incbin "main_fixed.bin", 0x3DBC, 0x0004
+SPRITES_3DC0:           ; 3DC0
+        .incbin "main_fixed.bin", 0x3DC0, 0x0004
+TEXT_3DC4:              ; 3DC4
+        .incbin "main_fixed.bin", 0x3DC4, 0x0012
+TEXT_3DD6:              ; 3DD6
+        .incbin "main_fixed.bin", 0x3DD6, 0x000D
+TEXT_3DE3:              ; 3DE3
+        .incbin "main_fixed.bin", 0x3DE3, 0x000D
 ; task 3: each frame calls the bank-2 per-object updates (A59B, A2FC, 936A ...), then starts task 4
 OBJECTS_TASK:           ; 3DF0
         rst     0x20
         call    ROUND_ENTRY_INIT
         ld      a,0x02
         call    BANK_SELECT
-        call    0xA59B
-        call    0xA2FC
-        call    0x936A
-        call    0x99E2
-        call    0x96E6
-        call    0x90DD
-        call    0x83E8
-        call    0x85EB
-        call    0x92B6
-        call    0xA820
+        call    KILL_ALL_A_INIT
+        call    FLOOD_INIT
+        call    PICKUP_RUSH_A_INIT
+        call    PICKUP_RUSH_C_INIT
+        call    PICKUP_RUSH_B_INIT
+        call    INVINCIBLE_ITEM_INIT
+        call    POINTS_PICK
+        call    SPECIAL_PICK
+        call    ITEM_HINT_INIT
+        call    KILL_ALL_B_INIT
         call    P1_REC_INIT
         call    P2_REC_INIT
         call    RUSH_COUNT_INIT
-        call    0x9F76
-        call    0xB9C4
-        call    0x8BA7
-        call    0xAC80
+        call    WATER_INIT
+        call    FIRE_INIT
+        call    BIG_ITEM_INIT
+        call    POTIONS_INIT
         call    BANK_RESTORE
         call    KILL_ALL_SHAKE_INIT
         ld      hl,0xF448
@@ -7509,28 +7975,28 @@ OBJECTS_FRAME:          ; 3E5B
         call    ROUND_ENTRY_RUN
         ld      a,0x02
         call    BANK_SELECT
-        call    0x8499
-        call    0x8686
-        call    0xA5A4
-        call    0xA480
-        call    0xA310
-        call    0x9373
-        call    0x99EB
-        call    0x96EF
-        call    0xAAC5
-        call    0x90ED
-        call    0x8DFF
-        call    0x8FA6
-        call    0xA829
+        call    POINTS_RUN
+        call    SPECIAL_RUN
+        call    KILL_ALL_A_RUN
+        call    LIGHTNING_RUN
+        call    B2_CODE_A310
+        call    B2_CODE_9373
+        call    PICKUP_RUSH_C_RUN
+        call    PICKUP_RUSH_B_RUN
+        call    BOMB_RUN
+        call    INVINCIBLE_ITEM_RUN
+        call    STARS_RUN
+        call    FOOD_RAIN_RUN
+        call    B2_CODE_A829
         call    RUSH_COUNT_RUN
-        call    0x9F7F
-        call    0xB9CD
-        call    0x92CF
-        call    0x8BB0
-        call    0xACBA
+        call    WATER_RUN
+        call    FIRE_RUN
+        call    ITEM_HINT_RUN
+        call    BIG_ITEM_RUN
+        call    POTIONS_RUN
         call    BANK_RESTORE
         call    KILL_ALL_SHAKE_RUN
-        call    0xBF48
+        call    HURRY_HAND_RUN
         call    PLAYERS_STEP
         jp      OBJECTS_FRAME
 
@@ -7738,14 +8204,14 @@ L_405B:                 ; 405B
 L_4062:                 ; 4062
         ld      a,0x02
         call    BANK_SELECT
-        call    0xAFD8
+        call    B2_CODE_AFD8
         call    BANK_RESTORE
         jp      L_41D7
 
 L_4070:                 ; 4070
         ld      a,0x02
         call    BANK_SELECT
-        call    0xAD98
+        call    IDLE_PLAYER_RUN
         call    BANK_RESTORE
         jp      L_41D7
 
@@ -7905,11 +8371,11 @@ PLAYER_PLAY_STEP:       ; 419F
         call    PLAYER_SPRITE
         ld      a,0x02
         call    BANK_SELECT
-        call    0x854E
-        call    0x873E
-        call    0x91A3
-        call    0x8CC7
-        call    0x9233
+        call    POINTS_TAKE
+        call    SPECIAL_TAKE
+        call    INVINCIBLE_ITEM_TAKE
+        call    BIG_ITEM_TAKE
+        call    PLAYER_INVINCIBLE_TICK
         call    PLAYER_POP_CHAIN
         call    BANK_RESTORE
 L_41D7:                 ; 41D7
@@ -8218,10 +8684,10 @@ L_43E3:                 ; 43E3
         ld      c,a
         add     a,a
         add     a,c
-        ld      hl,0x4450
+        ld      hl,DATA_4450
         bit     0,(ix+25)
         jr      z,L_43F5
-        ld      hl,0x44CB
+        ld      hl,DATA_44CB
 L_43F5:                 ; 43F5
         call    ADD_HL_A
         ld      a,(hl)
@@ -8277,7 +8743,10 @@ L_4442:                 ; 4442
         xor     a
         ret
 
-        .incbin "main_fixed.bin", 0x4450, 0x00AE
+DATA_4450:              ; 4450
+        .incbin "main_fixed.bin", 0x4450, 0x007B
+DATA_44CB:              ; 44CB
+        .incbin "main_fixed.bin", 0x44CB, 0x0033
 ; unless (IX+10) b2: (IX+18) = A when different, then IX_SPEED_CLEAR
 PLAYER_SPEED_SET:       ; 44FE
         bit     2,(ix+10)
@@ -8292,7 +8761,7 @@ PLAYER_SPRITE:          ; 450D
         ld      a,(ix+18)
         cp      0xFF
         ret     z
-        ld      hl,0x4584
+        ld      hl,PLAYER_ANIMS
         call    ADD_HL_A
         ld      e,(hl)
         inc     hl
@@ -8363,10 +8832,56 @@ L_4577:                 ; 4577
 
 ; 12 x 8 bytes: frame count, delay for each of 4 speeds (IX+2C), frame list pointer, flags (b0 one-shot, b1 list holds every frame; else first tile + 4 x frame)
 PLAYER_ANIMS:           ; 4584
-        .incbin "main_fixed.bin", 0x4584, 0x0060
+        .incbin "main_fixed.bin", 0x4584, 0x0005
+        .word   PLAYER_FRAMES
+        .incbin "main_fixed.bin", 0x458B, 0x0006
+        .word   DATA_45E6
+        .incbin "main_fixed.bin", 0x4593, 0x0006
+        .word   DATA_45EB
+        .incbin "main_fixed.bin", 0x459B, 0x0006
+        .word   DATA_45E7
+        .incbin "main_fixed.bin", 0x45A3, 0x0006
+        .word   DATA_45E8
+        .incbin "main_fixed.bin", 0x45AB, 0x0006
+        .word   DATA_45E9
+        .incbin "main_fixed.bin", 0x45B3, 0x0006
+        .word   DATA_45EA
+        .incbin "main_fixed.bin", 0x45BB, 0x0006
+        .word   DATA_45EC
+        .incbin "main_fixed.bin", 0x45C3, 0x0006
+        .word   DATA_45ED
+        .incbin "main_fixed.bin", 0x45CB, 0x0006
+        .word   DATA_45EE
+        .incbin "main_fixed.bin", 0x45D3, 0x0006
+        .word   DATA_45EF
+        .incbin "main_fixed.bin", 0x45DB, 0x0006
+        .word   DATA_45F0
+        .incbin "main_fixed.bin", 0x45E3, 0x0001
 ; first tiles for PLAYER_ANIMS
 PLAYER_FRAMES:          ; 45E4
-        .incbin "main_fixed.bin", 0x45E4, 0x000D
+        .incbin "main_fixed.bin", 0x45E4, 0x0002
+DATA_45E6:              ; 45E6
+        .incbin "main_fixed.bin", 0x45E6, 0x0001
+DATA_45E7:              ; 45E7
+        .incbin "main_fixed.bin", 0x45E7, 0x0001
+DATA_45E8:              ; 45E8
+        .incbin "main_fixed.bin", 0x45E8, 0x0001
+DATA_45E9:              ; 45E9
+        .incbin "main_fixed.bin", 0x45E9, 0x0001
+DATA_45EA:              ; 45EA
+        .incbin "main_fixed.bin", 0x45EA, 0x0001
+DATA_45EB:              ; 45EB
+        .incbin "main_fixed.bin", 0x45EB, 0x0001
+DATA_45EC:              ; 45EC
+        .incbin "main_fixed.bin", 0x45EC, 0x0001
+DATA_45ED:              ; 45ED
+        .incbin "main_fixed.bin", 0x45ED, 0x0001
+DATA_45EE:              ; 45EE
+        .incbin "main_fixed.bin", 0x45EE, 0x0001
+DATA_45EF:              ; 45EF
+        .incbin "main_fixed.bin", 0x45EF, 0x0001
+DATA_45F0:              ; 45F0
+        .incbin "main_fixed.bin", 0x45F0, 0x0001
 ; PLAYER_PLAY_STEP, bank 2 in: when the sub CPU's flag in POP_ENEMIES is 1 for this player, the count of enemies popped at once (2 or more): +39 = 1, a score from 46AA (2 = 2000, 3 = 4000, 4 = 8000, 5 = 16000, 6 = 32000, 7 = 64000; the 8th word is 0001), sound 26 or 27 (46B8), and a 3-sprite score over the player from 46BF (colour 1E or 22)
 PLAYER_POP_CHAIN:       ; 45F1
         ld      hl,0xF678
@@ -8392,11 +8907,11 @@ L_45FD:                 ; 45FD
 L_4617:                 ; 4617
         push    af
         push    af
-        ld      hl,0x46AA
+        ld      hl,DATA_46AA
         call    TABLE_WORD
         call    PLAYER_SCORE_UPDATE
         pop     af
-        ld      hl,0x46B8
+        ld      hl,DATA_46B8
         call    ADD_HL_A
         ld      c,(hl)
         call    SOUND_PUSH
@@ -8429,7 +8944,7 @@ L_464A:                 ; 464A
         ld      l,a
         add     a,a
         add     a,l
-        ld      hl,0x46BF
+        ld      hl,DATA_46BF
         call    ADD_HL_A
         ld      b,0x03
         ld      e,(ix+7)
@@ -8476,7 +8991,12 @@ L_4695:                 ; 4695
         call    ROM_SUM_STEP_E
         ret
 
-        .incbin "main_fixed.bin", 0x46AA, 0x002A
+DATA_46AA:              ; 46AA
+        .incbin "main_fixed.bin", 0x46AA, 0x000E
+DATA_46B8:              ; 46B8
+        .incbin "main_fixed.bin", 0x46B8, 0x0007
+DATA_46BF:              ; 46BF
+        .incbin "main_fixed.bin", 0x46BF, 0x0015
 ; reads SPEED_PATTERNS[(IX+48), or 16 if (IX+19) b0] at offset (IX+31)
 PLAYER_SPEED_STEP:      ; 46D4
         ld      a,0x16
@@ -8484,7 +9004,7 @@ PLAYER_SPEED_STEP:      ; 46D4
         jr      nz,L_46DF
         ld      a,(ix+48)
 L_46DF:                 ; 46DF
-        ld      hl,0x11CE
+        ld      hl,SPEED_PATTERNS
         call    TABLE_WORD
         ld      a,(ix+31)
         call    ADD_DE_A
@@ -8675,7 +9195,7 @@ L_48DE:                 ; 48DE
 L_48E4:                 ; 48E4
         set     3,(ix+12)
 L_48E8:                 ; 48E8
-        ld      hl,0x4AED
+        ld      hl,DATA_4AED
         ld      (ix+13),l
         ld      (ix+14),h
         ld      a,(hl)
@@ -8877,7 +9397,7 @@ L_4A7E:                 ; 4A7E
         inc     hl
         inc     hl
         ld      a,(ix+17)
-        ld      de,0x4B10
+        ld      de,DATA_4B10
         call    ADD_DE_A
         ld      a,(de)
         or      a
@@ -8926,7 +9446,10 @@ L_4AE0:                 ; 4AE0
         ld      (ix+12),a
         ret
 
-        .incbin "main_fixed.bin", 0x4AED, 0x0064
+DATA_4AED:              ; 4AED
+        .incbin "main_fixed.bin", 0x4AED, 0x0023
+DATA_4B10:              ; 4B10
+        .incbin "main_fixed.bin", 0x4B10, 0x0041
 ; P1_REC +27 b0 set and +28 = 1E, unless it is already set: PLAYER_BURN_STEP then holds PLAYER_SPEED_SET 38 for 30 frames. From FIRE_RUN when a flame is within 8 of player 1 and +2D b5, +25 and +19 (invincible) are clear. Read from the code, not seen
 P1_BURN:                ; 4B51
         ld      hl,0xE6AC
@@ -9006,7 +9529,7 @@ L_4BB4:                 ; 4BB4
         ld      a,(ix+47)
         ld      (hl),a
         ld      b,0x0D
-        ld      hl,0x4C1B
+        ld      hl,DATA_4C1B
         ld      a,(ix+18)
 L_4BD6:                 ; 4BD6
         cp      (hl)
@@ -9042,6 +9565,7 @@ L_4C0E:                 ; 4C0E
         res     2,(ix+10)
         ret
 
+DATA_4C1B:              ; 4C1B
         .incbin "main_fixed.bin", 0x4C1B, 0x001A
 ; OBJECTS_TASK at a round's start: E6FF-E71A cleared, bank 2 9C7D; E71A = E5D7 (who plays). Each playing player's bubble (records of 0x0C at E700 and E70C, 4 sprites at E2C5 / E2B5, gfx 18 / 19) starts where the player was (P1_REC or P2_REC +1, +2; Y 50 and X 48 or B0 in round 1 and the attract loop), with (IX+10) b0 for Y 20 and over, b1 for X under 28
 ROUND_ENTRY_INIT:       ; 4C35
@@ -9050,7 +9574,7 @@ ROUND_ENTRY_INIT:       ; 4C35
         call    ZERO_BC
         ld      a,0x02
         call    BANK_SELECT
-        call    0x9C7D
+        call    HELP_SCENE_INIT
         call    BANK_RESTORE
         ld      a,(0xE5D7)
         ld      (0xE71A),a
@@ -9148,7 +9672,7 @@ ROUND_ENTRY_RUN:        ; 4D13
         ret     m
         ld      a,0x02
         call    BANK_SELECT
-        call    0x9D35
+        call    HELP_SCENE_RUN
         call    BANK_RESTORE
         ld      ix,0xE700
         ld      b,0x02
@@ -9169,7 +9693,7 @@ L_4D3D:                 ; 4D3D
         jr      z,L_4D62
         add     a,a
         add     a,a
-        ld      hl,0x4EE3
+        ld      hl,DATA_4EE3
         call    ADD_HL_A
         ld      c,0x1F
         bit     0,(ix+8)
@@ -9191,7 +9715,7 @@ L_4D6D:                 ; 4D6D
         call    ANIM_STEP
         add     a,a
         add     a,a
-        ld      hl,0x4EF7
+        ld      hl,DATA_4EF7
         call    ADD_HL_A
         ld      c,0x1F
         bit     0,(ix+8)
@@ -9233,7 +9757,7 @@ L_4DC2:                 ; 4DC2
         jr      z,L_4DE3
         add     a,a
         add     a,a
-        ld      hl,0x4F03
+        ld      hl,DATA_4F03
         call    ADD_HL_A
         ld      c,0x1F
         bit     0,(ix+8)
@@ -9383,7 +9907,7 @@ L_4EB8:                 ; 4EB8
 ; the 4 sprites at HL at the bubble's Y, X plus the offsets at 4EDB, attribute 14
 ROUND_ENTRY_SPRITES:    ; 4EC1
         ld      b,0x04
-        ld      de,0x4EDB
+        ld      de,DATA_4EDB
 L_4EC6:                 ; 4EC6
         ld      a,(de)
         add     a,(ix+1)
@@ -9401,7 +9925,14 @@ L_4EC6:                 ; 4EC6
         djnz    L_4EC6
         ret
 
-        .incbin "main_fixed.bin", 0x4EDB, 0x0034
+DATA_4EDB:              ; 4EDB
+        .incbin "main_fixed.bin", 0x4EDB, 0x0008
+DATA_4EE3:              ; 4EE3
+        .incbin "main_fixed.bin", 0x4EE3, 0x0014
+DATA_4EF7:              ; 4EF7
+        .incbin "main_fixed.bin", 0x4EF7, 0x000C
+DATA_4F03:              ; 4F03
+        .incbin "main_fixed.bin", 0x4F03, 0x000C
 ; one byte a call of a sum of every 8th byte from 598A to 7FFA, in E71E (E71B starts it, E71C is the pointer); the end compares with E71F and on a mismatch runs into 4F52 with HL pushed. From BEST5_SCREEN and 4FA3
 ROM_SUM_STEP_V:         ; 4F0F
         ld      a,(0xE71B)
@@ -9470,7 +10001,7 @@ KILL_ALL_SHAKE_RUN:     ; 4F5B
         ld      a,0x02
         rst     0x08
         ld      hl,IRQ_HANDLER
-        ld      de,(0x0B2E)
+        ld      de,(IRQ_VECTOR_ENTRY)
         or      a
         sbc     hl,de
         jr      z,L_4F8B
@@ -9674,13 +10205,13 @@ L_50F6:                 ; 50F6
 L_50FC:                 ; 50FC
         ld      hl,0xF47B
         ld      (hl),0x00
-        call    0x8DA3
+        call    STARS_START
         ld      hl,0xF47C
         ld      (hl),0x01
         jr      L_5124
 
 L_510B:                 ; 510B
-        call    0xA433
+        call    LIGHTNING_START
         ld      hl,0xF595
         ld      (hl),0x01
         jr      L_5124
@@ -9688,7 +10219,7 @@ L_510B:                 ; 510B
 L_5115:                 ; 5115
         ld      hl,0xF47B
         ld      (hl),0x01
-        call    0x8DA3
+        call    STARS_START
         ld      hl,0xF47C
         ld      (hl),0x01
         jr      L_5124
@@ -9703,7 +10234,7 @@ SECRET_ROUND_FRAME:     ; 5127
         call    SECRET_EXIT_GAP
         call    SECRET_EXIT_CHECK
         call    GHOST_COUNTDOWN
-        call    0xA150
+        call    GHOST_UPDATE
         call    SECRET_TILES_FLICKER
         ld      ix,BUBBLE_SLOTS
         ld      b,0x24
@@ -9720,7 +10251,7 @@ L_5143:                 ; 5143
         ld      a,(ix+8)
         add     a,a
         add     a,a
-        ld      de,0x51D7
+        ld      de,DATA_51D7
         call    ADD_DE_A
         ld      a,(de)
         ld      (hl),a
@@ -9786,6 +10317,7 @@ L_51CA:                 ; 51CA
         jp      nz,L_5143
         jp      SECRET_ROUND_FRAME
 
+DATA_51D7:              ; 51D7
         .incbin "main_fixed.bin", 0x51D7, 0x0090
 ; SECRET_ROUND_INIT: the 0x24 gem records in BUBBLE_SLOTS (0x0A each): +8 the number, +3/+4 a sprite record from E20D, gfx 0C + 0x20 x (n mod 4) + n / 4, attribute 13
 SECRET_GEMS_INIT:       ; 5267
@@ -9865,7 +10397,7 @@ L_52CD:                 ; 52CD
         add     a,a
         add     a,a
         add     a,a
-        ld      hl,0x533B
+        ld      hl,DATA_533B
         call    ADD_HL_A
         ld      de,0xD0E6
         ld      bc,0x0004
@@ -9920,6 +10452,7 @@ L_5320:                 ; 5320
         ld      (hl),0x18
         ret
 
+DATA_533B:              ; 533B
         .incbin "main_fixed.bin", 0x533B, 0x0018
 ; once all 0x24 gems are taken: every 30 frames one of 2 steps of tiles from 5406 (to D0F6 and D136), then E731 b1; after that a player at Y 18, X 77-79 runs SECRET_ROUND_EXIT
 SECRET_EXIT_GAP:        ; 5353
@@ -10020,13 +10553,13 @@ SECRET_ROUND_EXIT:      ; 53CF
         xor     a
         rst     0x18
 L_5406:                 ; 5406
-        .word   0x395E
-        .word   0x3968
+        .word   CODE_395C+2
+        .word   CODE_3967+1
         .word   L_395F
-        .word   0x3969
+        .word   CODE_3967+2
         .word   L_3972
-        .word   0x397B
-        .word   0x3973
+        .word   CODE_397A+1
+        .word   L_3972+1
         .word   L_397C
 ; SECRET_ROUND_FRAME: SECRET_ROUND_EXIT once SECRET_DEATH b7 is set
 SECRET_EXIT_CHECK:      ; 5416
@@ -10047,44 +10580,51 @@ SECRET_TILES_FLICKER:   ; 541E
         inc     (hl)
         bit     0,(hl)
         jr      nz,L_545B
-        ld      hl,0x5488
+        ld      hl,DATA_5488
         ld      de,0xCD8A
         ld      bc,0x0004
         ldir
-        ld      hl,0x548C
+        ld      hl,DATA_548C
         ld      de,0xCDCA
         ld      bc,0x0004
         ldir
-        ld      hl,0x5488
+        ld      hl,DATA_5488
         ld      de,0xD40A
         ld      bc,0x0004
         ldir
-        ld      hl,0x548C
+        ld      hl,DATA_548C
         ld      de,0xD44A
         ld      bc,0x0004
         ldir
         ret
 
 L_545B:                 ; 545B
-        ld      hl,0x5490
+        ld      hl,DATA_5490
         ld      de,0xCD8A
         ld      bc,0x0004
         ldir
-        ld      hl,0x5494
+        ld      hl,DATA_5494
         ld      de,0xCDCA
         ld      bc,0x0004
         ldir
-        ld      hl,0x5490
+        ld      hl,DATA_5490
         ld      de,0xD40A
         ld      bc,0x0004
         ldir
-        ld      hl,0x5494
+        ld      hl,DATA_5494
         ld      de,0xD44A
         ld      bc,0x0004
         ldir
         ret
 
-        .incbin "main_fixed.bin", 0x5488, 0x0010
+DATA_5488:              ; 5488
+        .incbin "main_fixed.bin", 0x5488, 0x0004
+DATA_548C:              ; 548C
+        .incbin "main_fixed.bin", 0x548C, 0x0004
+DATA_5490:              ; 5490
+        .incbin "main_fixed.bin", 0x5490, 0x0004
+DATA_5494:              ; 5494
+        .incbin "main_fixed.bin", 0x5494, 0x0004
 ; SECRET_ROUND_INIT: SET_E1D0_19, colours 55BB to F9C0; by E724 (table 54BC) a palette (555B, 557B or 559B) to F9E0 and a picture from bank 3 (8000 and 8340, 8680 and 89C0, or 8D00 and 9040), 0x1A columns of 0x10 tiles each at CD08 and D108 (TILE_COLS_COPY). Tamper check: FC85 must be 37, else it jumps to HL
 SECRET_ROOM_DRAW:       ; 5498
         ld      iy,0xFC44
@@ -10092,7 +10632,7 @@ SECRET_ROOM_DRAW:       ; 5498
         sub     0x37
         jr      nz,L_54BB
         call    SET_E1D0_19
-        ld      hl,0x55BB
+        ld      hl,DATA_55BB
         ld      de,0xF9C0
         ld      bc,0x0020
         ldir
@@ -10110,16 +10650,16 @@ L_54BC:                 ; 54BC
 L_54C2:                 ; 54C2
         ld      a,0x03
         call    BANK_SELECT
-        ld      hl,0x555B
+        ld      hl,DATA_555B
         ld      de,0xF9E0
         ld      bc,0x0020
         ldir
         ld      hl,0xCD08
-        ld      de,BANK_WINDOW
+        ld      de,B3_TILES_8000
         ld      bc,0x1A10
         call    TILE_COLS_COPY
         ld      hl,0xD108
-        ld      de,0x8340
+        ld      de,B3_TILES_8340
         ld      bc,0x1A10
         call    TILE_COLS_COPY
         jp      BANK_RESTORE
@@ -10127,16 +10667,16 @@ L_54C2:                 ; 54C2
 L_54ED:                 ; 54ED
         ld      a,0x03
         call    BANK_SELECT
-        ld      hl,0x557B
+        ld      hl,DATA_557B
         ld      de,0xF9E0
         ld      bc,0x0020
         ldir
         ld      hl,0xCD08
-        ld      de,0x8680
+        ld      de,B3_TILES_8680
         ld      bc,0x1A10
         call    TILE_COLS_COPY
         ld      hl,0xD108
-        ld      de,0x89C0
+        ld      de,B3_TILES_89C0
         ld      bc,0x1A10
         call    TILE_COLS_COPY
         jp      BANK_RESTORE
@@ -10144,16 +10684,16 @@ L_54ED:                 ; 54ED
 L_5518:                 ; 5518
         ld      a,0x03
         call    BANK_SELECT
-        ld      hl,0x559B
+        ld      hl,DATA_559B
         ld      de,0xF9E0
         ld      bc,0x0020
         ldir
         ld      hl,0xCD08
-        ld      de,0x8D00
+        ld      de,B3_TILES_8D00
         ld      bc,0x1A10
         call    TILE_COLS_COPY
         ld      hl,0xD108
-        ld      de,0x9040
+        ld      de,B3_TILES_9040
         ld      bc,0x1A10
         call    TILE_COLS_COPY
         jp      BANK_RESTORE
@@ -10181,7 +10721,14 @@ L_5546:                 ; 5546
         djnz    TILE_COLS_COPY
         ret
 
-        .incbin "main_fixed.bin", 0x555B, 0x0080
+DATA_555B:              ; 555B
+        .incbin "main_fixed.bin", 0x555B, 0x0020
+DATA_557B:              ; 557B
+        .incbin "main_fixed.bin", 0x557B, 0x0020
+DATA_559B:              ; 559B
+        .incbin "main_fixed.bin", 0x559B, 0x0020
+DATA_55BB:              ; 55BB
+        .incbin "main_fixed.bin", 0x55BB, 0x0020
 ; E729 0: SECRET_WELCOME_SHOW; negative: SECRET_WELCOME_STEP; else nothing
 SECRET_WELCOME_RUN:     ; 55DB
         ld      a,(0xE729)
@@ -10196,7 +10743,7 @@ SECRET_WELCOME_SHOW:    ; 55E5
         ld      (hl),0xFF
         ld      hl,0xE72A
         ld      (hl),0x78
-        ld      hl,0x560F
+        ld      hl,TEXT_560F
         ld      de,0xD65E
         ld      c,0x00
         jp      PRINT_TEXT
@@ -10208,25 +10755,28 @@ SECRET_WELCOME_STEP:    ; 55FA
         ret     nz
         ld      hl,0xE729
         ld      (hl),0x01
-        ld      hl,0x5627
+        ld      hl,TEXT_5627
         ld      de,0xD65E
         ld      c,0x00
         jp      PRINT_TEXT
 
-        .incbin "main_fixed.bin", 0x560F, 0x0030
+TEXT_560F:              ; 560F
+        .incbin "main_fixed.bin", 0x560F, 0x0018
+TEXT_5627:              ; 5627
+        .incbin "main_fixed.bin", 0x5627, 0x0018
 ; Seen in MAME (--boss-pop, two players): the ending (bank0:ENDING_START jumps here): every 4 frames ENDING_SCROLL_STEP; every 8 pixels a row is cleared and the next drawn, 0x1A rows with one player, else 0x8B; text pointer E734 from bank1 ENDING_TEXT_1P, _2P or _SUPER
 ENDING_SCROLL:          ; 563F
         ld      hl,GRID_DRAW_ROW
         ld      (hl),0x00
-        ld      hl,0x90EA
+        ld      hl,ENDING_TEXT_1P
         ld      a,(0xE5D7)
         cp      0x03
         jr      nz,L_565A
-        ld      hl,0x8D42
+        ld      hl,ENDING_TEXT_2P
         ld      a,(SUPER_MODE)
         and     a
         jr      z,L_565A
-        ld      hl,0x91BF
+        ld      hl,ENDING_TEXT_SUPER
 L_565A:                 ; 565A
         ld      (0xE734),hl
 L_565D:                 ; 565D
@@ -10454,11 +11004,12 @@ RUSH_COUNT_RUN:         ; 577F
         ld      (hl),0x01
         ld      hl,0xE741
         ld      (hl),0x1E
-        ld      hl,0x57DF
+        ld      hl,TEXT_57DF
         ld      de,0xD80E
         ld      c,0x04
         jp      PRINT_TEXT
 
+TEXT_57DF:              ; 57DF
         .incbin "main_fixed.bin", 0x57DF, 0x0005
 L_57E4:                 ; 57E4
         call    BONUS_COUNT_DRAW
@@ -10496,7 +11047,7 @@ L_580D:                 ; 580D
         ld      de,0x0000
         ld      b,0x1E
         call    GFX_GRID_FILL
-        ld      de,0x5AEE
+        ld      de,DATA_5AEE
         ld      hl,0xE20D
         ld      b,0x1E
 L_583A:                 ; 583A
@@ -10515,7 +11066,7 @@ L_583A:                 ; 583A
         ld      hl,0xE5D7
         bit     0,(hl)
         jr      z,L_5882
-        ld      hl,0x5B2A
+        ld      hl,SPRITES_5B2A
         ld      bc,0x031D
         ld      e,0x00
         call    SPRITE_GRID
@@ -10547,7 +11098,7 @@ L_5882:                 ; 5882
         ld      hl,0xE5D7
         bit     1,(hl)
         jr      z,L_58BE
-        ld      hl,0x5B2A
+        ld      hl,SPRITES_5B2A
         ld      bc,0x0321
         ld      e,0x01
         ld      d,0x01
@@ -10620,7 +11171,7 @@ L_58F0:                 ; 58F0
         jr      c,L_5923
         ld      de,0x5000
         call    SCORE_UPDATE
-        ld      hl,0x5B2D
+        ld      hl,SPRITES_5B2D
         ld      bc,0x0A1D
         ld      e,0x02
         ld      d,0x02
@@ -10628,17 +11179,17 @@ L_58F0:                 ; 58F0
         jr      L_594A
 
 L_5923:                 ; 5923
-        ld      hl,0x5B2D
+        ld      hl,SPRITES_5B2D
         ld      bc,0x0A1D
         ld      e,0x02
         ld      d,0x02
         call    SPRITE_GRID_D
-        ld      hl,0x5B37
+        ld      hl,SPRITES_5B37
         ld      bc,0x021E
         ld      d,0x03
         ld      e,0x03
         call    SPRITE_GRID_D
-        ld      hl,0x5B39
+        ld      hl,SPRITES_5B39
         ld      bc,0x031F
         ld      d,0x01
         ld      e,0x04
@@ -10663,22 +11214,22 @@ L_5959:                 ; 5959
         jr      c,L_597E
         ld      de,0x5000
         call    SCORE_UPDATE
-        ld      hl,0x5B2D
+        ld      hl,SPRITES_5B2D
         ld      bc,0x0A21
         ld      e,0x05
         jp      SPRITE_GRID
 
 L_597E:                 ; 597E
-        ld      hl,0x5B2D
+        ld      hl,SPRITES_5B2D
         ld      bc,0x0A21
         ld      e,0x05
         call    SPRITE_GRID
-        ld      hl,0x5B37
+        ld      hl,SPRITES_5B37
         ld      bc,0x0222
         ld      d,0x01
         ld      e,0x06
         call    SPRITE_GRID_D
-        ld      hl,0x5B39
+        ld      hl,SPRITES_5B39
         ld      bc,0x0323
         ld      d,0x03
         ld      e,0x06
@@ -10888,7 +11439,16 @@ L_5AE4:                 ; 5AE4
         ld      iy,0xD98E
         jp      DECIMAL3_DRAW
 
-        .incbin "main_fixed.bin", 0x5AEE, 0x004E
+DATA_5AEE:              ; 5AEE
+        .incbin "main_fixed.bin", 0x5AEE, 0x003C
+SPRITES_5B2A:           ; 5B2A
+        .incbin "main_fixed.bin", 0x5B2A, 0x0003
+SPRITES_5B2D:           ; 5B2D
+        .incbin "main_fixed.bin", 0x5B2D, 0x000A
+SPRITES_5B37:           ; 5B37
+        .incbin "main_fixed.bin", 0x5B37, 0x0002
+SPRITES_5B39:           ; 5B39
+        .incbin "main_fixed.bin", 0x5B39, 0x0003
 ; task 5: clears E744.., then each frame SECRET_ROUND_START, BUBBLES_STEP and EXTEND_CHECK (round 100: CAPTIVES_STEP); the pop-flag state is POP_FLAG
 BUBBLES_TASK:           ; 5B3C
         rst     0x20
@@ -11131,7 +11691,7 @@ L_5CE8:                 ; 5CE8
 L_5D12:                 ; 5D12
         ld      de,0x0202
         call    ANIM_STEP
-        ld      hl,0x5D55
+        ld      hl,DATA_5D55
         call    ADD_HL_A
         ld      b,(hl)
         ld      c,0x1E
@@ -11164,6 +11724,7 @@ L_5D49:                 ; 5D49
         jp      c,L_5FE4
         jp      L_602A
 
+DATA_5D55:              ; 5D55
         .incbin "main_fixed.bin", 0x5D55, 0x0002
 L_5D57:                 ; 5D57
         bit     0,(ix+26)
@@ -11353,7 +11914,7 @@ L_5ED3:                 ; 5ED3
         inc     hl
 L_5EDD:                 ; 5EDD
         ld      a,(ix+23)
-        ld      de,0x5F05
+        ld      de,DATA_5F05
         call    ADD_DE_A
         ld      a,(de)
         or      (hl)
@@ -11371,6 +11932,7 @@ L_5EDD:                 ; 5EDD
         jp      nz,L_5F7B
         jp      L_602A
 
+DATA_5F05:              ; 5F05
         .incbin "main_fixed.bin", 0x5F05, 0x0006
 L_5F0B:                 ; 5F0B
         bit     4,(ix+26)
@@ -11386,7 +11948,7 @@ L_5F0B:                 ; 5F0B
         jp      m,L_5F7B
         ld      de,0x0A04
         call    ANIM_STEP
-        ld      hl,0x5F71
+        ld      hl,DATA_5F71
         call    ADD_HL_A
         ld      a,(ix+24)
         dec     a
@@ -11416,13 +11978,16 @@ L_5F5C:                 ; 5F5C
         call    BUBBLE_SCORE_UPDATE
         ld      a,(ix+24)
         dec     a
-        ld      hl,0x5F75
+        ld      hl,DATA_5F75
         call    TABLE_WORD
         ex      de,hl
         inc     (hl)
         jp      L_5F7B
 
-        .incbin "main_fixed.bin", 0x5F71, 0x000A
+DATA_5F71:              ; 5F71
+        .incbin "main_fixed.bin", 0x5F71, 0x0004
+DATA_5F75:              ; 5F75
+        .incbin "main_fixed.bin", 0x5F75, 0x0006
 L_5F7B:                 ; 5F7B
         ld      hl,0xE75B
         dec     (hl)
@@ -11439,7 +12004,7 @@ L_5F96:                 ; 5F96
         jr      z,L_5FBC
         ld      c,a
         add     a,a
-        ld      hl,0x6055
+        ld      hl,DATA_6055
         call    ADD_HL_A
         ld      b,(hl)
         ld      a,c
@@ -11522,6 +12087,7 @@ BUBBLE_SCORE_UPDATE:    ; 604C
         ld      (PLAYER_NOW),a
         jp      SCORE_UPDATE
 
+DATA_6055:              ; 6055
         .incbin "main_fixed.bin", 0x6055, 0x0010
 ; as ROM_SUM_STEP_A, one byte of every 2nd from 2642 to 731B into EB2F, then compared with EB30
 ROM_SUM_STEP_B:         ; 6065
@@ -11592,7 +12158,7 @@ L_60CE:                 ; 60CE
         ret     nc
         or      a
         jr      z,L_60E2
-        ld      hl,0x60EF
+        ld      hl,DATA_60EF
         call    ADD_HL_A
         ld      a,(hl)
         ld      (ix+14),a
@@ -11607,6 +12173,7 @@ L_60EB:                 ; 60EB
         ld      (ix+14),a
         ret
 
+DATA_60EF:              ; 60EF
         .incbin "main_fixed.bin", 0x60EF, 0x0004
 ; BUBBLES_STEP: with 0x14 or more bubbles floating (E75B) and E755 = 0, E755 = 2
 BUBBLE_CROWD_CHECK:     ; 60F3
@@ -11649,7 +12216,7 @@ BUBBLE_FLOAT_SPRITE:    ; 6115
 L_6127:                 ; 6127
         call    BUBBLE_TIMER
         ld      a,(ix+14)
-        ld      hl,0x6140
+        ld      hl,DATA_6140
         call    ADD_HL_A
         ld      a,(ix+27)
         add     a,(hl)
@@ -11660,11 +12227,12 @@ BUBBLE_SPRITE_1C:       ; 6138
         ld      a,(ix+7)
         jp      SPRITE
 
+DATA_6140:              ; 6140
         .incbin "main_fixed.bin", 0x6140, 0x0004
 ; steps from the SPEED_PATTERNS row SPEED2_SEL (record byte 9), then BUBBLE_DRIFT for each
 BUBBLE_SPEED:           ; 6144
         ld      a,(SPEED2_SEL)
-        ld      hl,0x11CE
+        ld      hl,SPEED_PATTERNS
         call    TABLE_WORD
         ld      a,(ix+36)
         call    ADD_DE_A
@@ -11775,7 +12343,7 @@ L_61F4:                 ; 61F4
 ; (IX+13) = the byte at 622A + SPEED2_SEL, plus R & 7; (IX+12) = 1
 RAND_TIMER_SET:         ; 6214
         ld      a,(SPEED2_SEL)
-        ld      hl,0x622A
+        ld      hl,DATA_622A
         call    ADD_HL_A
         ld      a,r
         and     0x07
@@ -11784,6 +12352,7 @@ RAND_TIMER_SET:         ; 6214
         ld      (ix+12),0x01
         ret
 
+DATA_622A:              ; 622A
         .incbin "main_fixed.bin", 0x622A, 0x001F
 ; carry = a bubble at X < 08 or >= F8 is stopped by the edge bits in E59B (round record byte 3)
 BUBBLE_EDGE_CHECK:      ; 6249
@@ -12106,7 +12675,7 @@ TRAPPED_BUBBLE_SPRITE:  ; 645C
         ret     z
         ld      de,0x050A
         call    ANIM_STEP
-        ld      hl,0x649B
+        ld      hl,DATA_649B
         call    ADD_HL_A
         ld      a,(hl)
         add     a,a
@@ -12114,7 +12683,7 @@ TRAPPED_BUBBLE_SPRITE:  ; 645C
         ex      af,af'
         ld      a,(ix+14)
         add     a,(ix+25)
-        ld      hl,0x64A5
+        ld      hl,DATA_64A5
         call    ADD_HL_A
         ex      af,af'
         add     a,(hl)
@@ -12131,7 +12700,10 @@ L_6495:                 ; 6495
         ld      a,(ix+7)
         jp      SPRITE
 
-        .incbin "main_fixed.bin", 0x649B, 0x002A
+DATA_649B:              ; 649B
+        .incbin "main_fixed.bin", 0x649B, 0x000A
+DATA_64A5:              ; 64A5
+        .incbin "main_fixed.bin", 0x64A5, 0x0020
 ; XOR A, RET: never carry, so its callers' JP C to 602A never runs (64C7 after it is reached only by other jumps)
 BUBBLE_NO_CHECK:        ; 64C5
         xor     a
@@ -12143,7 +12715,7 @@ L_64C7:                 ; 64C7
         call    OBJ_STATE_13
         ld      a,(0xE744)
         add     a,a
-        ld      hl,0x64F3
+        ld      hl,DATA_64F3
         call    ADD_HL_A
         ld      b,(hl)
         inc     hl
@@ -12155,6 +12727,7 @@ L_64C7:                 ; 64C7
         set     2,(ix+39)
         jp      L_602A
 
+DATA_64F3:              ; 64F3
         .incbin "main_fixed.bin", 0x64F3, 0x0066
 L_6559:                 ; 6559
         bit     0,(ix+39)
@@ -12280,7 +12853,7 @@ BUBBLE_FIRE_DROP:       ; 6633
 L_663D:                 ; 663D
         ld      de,0x0504
         call    ANIM_STEP
-        ld      hl,0x669D
+        ld      hl,DATA_669D
         call    ADD_HL_A
         ld      b,(hl)
         ld      c,0x1C
@@ -12319,6 +12892,7 @@ L_663D:                 ; 663D
         ld      (hl),a
         jp      L_5FE4
 
+DATA_669D:              ; 669D
         .incbin "main_fixed.bin", 0x669D, 0x0004
 ; a popped lightning bubble (list type 1, IX+24 = 3; also the potion bubbles of round 100, 5DD7). Not seen in MAME
 BUBBLE_LIGHTNING_POP:   ; 66A1
@@ -12352,7 +12926,7 @@ L_66CA:                 ; 66CA
         call    OBJ_POS_LOAD
         ld      de,0x0504
         call    ANIM_STEP
-        ld      hl,0x6751
+        ld      hl,DATA_6751
         call    ADD_HL_A
         ld      b,(hl)
         ld      c,0x1C
@@ -12409,6 +12983,7 @@ L_6738:                 ; 6738
         call    OBJ_STATE_15
         jp      L_602A
 
+DATA_6751:              ; 6751
         .incbin "main_fixed.bin", 0x6751, 0x0004
 ; clears the two captive records (EB36, EB46); on round 100 (not the attract loop) sets them up, objects E255 and E265, F446 = 0
 CAPTIVES_INIT:          ; 6755
@@ -12456,7 +13031,7 @@ CAPTIVES_STEP:          ; 67B3
         bit     5,(hl)
         jr      z,L_67CA
 L_67C7:                 ; 67C7
-        call    0xB8D3
+        call    HEART_CYCLE
 L_67CA:                 ; 67CA
         ld      a,(0xE5D7)
         cp      0x03
@@ -12467,11 +13042,11 @@ L_67CA:                 ; 67CA
         ld      hl,0xEB43
         bit     0,(hl)
         jr      nz,L_67E7
-        call    0xB3AF
+        call    STARFIELD_DRAW_2P
         ld      hl,0xEB43
         set     0,(hl)
 L_67E7:                 ; 67E7
-        call    0xB732
+        call    STARFIELD_TWINKLE_2P
 L_67EA:                 ; 67EA
         ld      ix,0xEB36
         ld      b,0x02
@@ -12481,16 +13056,16 @@ L_67F0:                 ; 67F0
         bit     0,a
         jr      nz,L_682C
         ld      hl,IRQ_HANDLER
-        ld      de,(0x0B2E)
+        ld      de,(IRQ_VECTOR_ENTRY)
         or      a
         sbc     hl,de
         jr      z,L_6806
         push    ix
 L_6806:                 ; 6806
-        ld      de,0x6BF7
+        ld      de,DATA_6BF7
         bit     0,(ix+8)
         jr      z,L_6812
-        ld      de,0x6BFF
+        ld      de,DATA_6BFF
 L_6812:                 ; 6812
         call    OBJ_PTR
         ld      b,0x04
@@ -12524,10 +13099,10 @@ L_6848:                 ; 6848
         call    ANIM_STEP
         add     a,a
         add     a,a
-        ld      hl,0x6C13
+        ld      hl,DATA_6C13
         bit     0,(ix+8)
         jr      z,L_685C
-        ld      hl,0x6C1B
+        ld      hl,DATA_6C1B
 L_685C:                 ; 685C
         call    ADD_HL_A
         ld      c,(ix+9)
@@ -12560,7 +13135,7 @@ L_6890:                 ; 6890
 L_689A:                 ; 689A
         call    OBJ_PTR
         ld      b,0x04
-        ld      de,0x6C07
+        ld      de,DATA_6C07
 L_68A2:                 ; 68A2
         ld      a,(de)
         cp      (hl)
@@ -12580,10 +13155,10 @@ L_68AD:                 ; 68AD
         jp      L_6BEC
 
 L_68B7:                 ; 68B7
-        ld      de,0x6D1D
+        ld      de,DATA_6D1D
         bit     0,(ix+8)
         jr      z,L_68C3
-        ld      de,0x6CAF
+        ld      de,DATA_6CAF
 L_68C3:                 ; 68C3
         ld      a,(ix+11)
         inc     (ix+11)
@@ -12669,10 +13244,10 @@ L_6933:                 ; 6933
         jr      z,L_6957
         add     a,a
         add     a,a
-        ld      hl,0x6C23
+        ld      hl,DATA_6C23
         bit     0,(ix+8)
         jr      z,L_6949
-        ld      hl,0x6C37
+        ld      hl,DATA_6C37
 L_6949:                 ; 6949
         call    ADD_HL_A
         ld      c,(ix+9)
@@ -12909,17 +13484,17 @@ L_6AE3:                 ; 6AE3
         call    IX_SPEED_CLEAR
         bit     0,(ix+8)
         jp      nz,L_6BEC
-        call    0xB878
-        call    0xB884
+        call    HEART_PALETTE
+        call    HEART_DRAW
         ld      c,0x1C
         call    SOUND_PUSH
         jp      L_6BEC
 
 L_6B0D:                 ; 6B0D
-        ld      de,0x6C0B
+        ld      de,DATA_6C0B
         bit     0,(ix+8)
         jr      z,L_6B19
-        ld      de,0x6C0F
+        ld      de,DATA_6C0F
 L_6B19:                 ; 6B19
         call    OBJ_PTR
         ld      b,0x02
@@ -12939,12 +13514,12 @@ L_6B1E:                 ; 6B1E
         ld      c,(ix+9)
         bit     0,(ix+8)
         jr      z,L_6B3E
-        ld      hl,0x6C4B
+        ld      hl,SPRITES_6C4B
         call    SPRITE_LIST
         jp      L_6BEC
 
 L_6B3E:                 ; 6B3E
-        ld      hl,0x6C55
+        ld      hl,SPRITES_6C55
         call    SPRITE_LIST_FX
         jp      L_6BEC
 
@@ -12961,14 +13536,14 @@ L_6B56:                 ; 6B56
         bit     0,(ix+8)
         jr      z,L_6B6D
         add     a,a
-        ld      hl,0x6C4D
+        ld      hl,DATA_6C4D
         call    ADD_HL_A
         call    SPRITE_LIST
         jr      L_6B77
 
 L_6B6D:                 ; 6B6D
         add     a,a
-        ld      hl,0x6C57
+        ld      hl,DATA_6C57
         call    ADD_HL_A
         call    SPRITE_LIST_FX
 L_6B77:                 ; 6B77
@@ -13001,12 +13576,12 @@ CAPTIVES_SIDE_TILES:    ; 6B9F
         cp      0x03
         ret     nz
         ld      hl,0xD560
-        ld      de,0x6C5F
+        ld      de,TILES_6C5F
         ld      bc,0x040A
         ld      a,0x1C
         call    TILE_RECT
         ld      hl,0xDA20
-        ld      de,0x6C5F
+        ld      de,TILES_6C5F
         ld      bc,0x040A
         ld      a,0x1C
         call    TILE_RECT
@@ -13021,7 +13596,7 @@ CAPTIVES_MID_TILES:     ; 6BC2
         and     a
         jr      nz,L_6BDD
         ld      hl,0xD690
-        ld      de,0x6C87
+        ld      de,TILES_6C87
         ld      bc,0x0214
         ld      a,0x1C
         call    TILE_RECT
@@ -13029,7 +13604,7 @@ CAPTIVES_MID_TILES:     ; 6BC2
 
 L_6BDD:                 ; 6BDD
         ld      hl,0xD690
-        ld      de,0x6C87
+        ld      de,TILES_6C87
         ld      bc,0x0214
         ld      a,0x20
         call    TILE_RECT
@@ -13043,7 +13618,40 @@ L_6BEC:                 ; 6BEC
         jp      nz,L_67F0
         ret
 
-        .incbin "main_fixed.bin", 0x6BF7, 0x0194
+DATA_6BF7:              ; 6BF7
+        .incbin "main_fixed.bin", 0x6BF7, 0x0008
+DATA_6BFF:              ; 6BFF
+        .incbin "main_fixed.bin", 0x6BFF, 0x0008
+DATA_6C07:              ; 6C07
+        .incbin "main_fixed.bin", 0x6C07, 0x0004
+DATA_6C0B:              ; 6C0B
+        .incbin "main_fixed.bin", 0x6C0B, 0x0004
+DATA_6C0F:              ; 6C0F
+        .incbin "main_fixed.bin", 0x6C0F, 0x0004
+DATA_6C13:              ; 6C13
+        .incbin "main_fixed.bin", 0x6C13, 0x0008
+DATA_6C1B:              ; 6C1B
+        .incbin "main_fixed.bin", 0x6C1B, 0x0008
+DATA_6C23:              ; 6C23
+        .incbin "main_fixed.bin", 0x6C23, 0x0014
+DATA_6C37:              ; 6C37
+        .incbin "main_fixed.bin", 0x6C37, 0x0014
+SPRITES_6C4B:           ; 6C4B
+        .incbin "main_fixed.bin", 0x6C4B, 0x0002
+DATA_6C4D:              ; 6C4D
+        .incbin "main_fixed.bin", 0x6C4D, 0x0008
+SPRITES_6C55:           ; 6C55
+        .incbin "main_fixed.bin", 0x6C55, 0x0002
+DATA_6C57:              ; 6C57
+        .incbin "main_fixed.bin", 0x6C57, 0x0008
+TILES_6C5F:             ; 6C5F
+        .incbin "main_fixed.bin", 0x6C5F, 0x0028
+TILES_6C87:             ; 6C87
+        .incbin "main_fixed.bin", 0x6C87, 0x0028
+DATA_6CAF:              ; 6CAF
+        .incbin "main_fixed.bin", 0x6CAF, 0x006E
+DATA_6D1D:              ; 6D1D
+        .incbin "main_fixed.bin", 0x6D1D, 0x006E
 L_6D8B:                 ; 6D8B
         call    BLOW_REQUEST_TAKE
         jp      c,SPAWN_BUBBLE
@@ -13204,7 +13812,7 @@ L_6EBB:                 ; 6EBB
         ld      d,a
         ld      a,(MCU_RAM)
         ld      e,a
-        ld      hl,0x0B2E
+        ld      hl,IRQ_VECTOR_ENTRY
         or      a
         sbc     hl,de
         jr      z,L_6ECD
@@ -13299,7 +13907,7 @@ L_6F82:                 ; 6F82
         ld      e,a
         add     a,a
         add     a,e
-        ld      de,0x6FE3
+        ld      de,DATA_6FE3
         call    ADD_DE_A
         jp      L_6F98
 
@@ -13351,11 +13959,12 @@ L_6FCB:                 ; 6FCB
         djnz    L_6FCB
         ret
 
+DATA_6FE3:              ; 6FE3
         .incbin "main_fixed.bin", 0x6FE3, 0x0024
 ; Seen in MAME: the EXTEND screen, the big letter bubbles over a picture from bank 1 (849E, 85D6, 870E, 8A54), then NICE 1UP! and the next round. Tamper check: the word at 0B2E must be IRQ_HANDLER, else PUSH IY
 EXTEND_SCENE:           ; 7007
         ld      hl,IRQ_HANDLER
-        ld      de,(0x0B2E)
+        ld      de,(IRQ_VECTOR_ENTRY)
         or      a
         sbc     hl,de
         jr      z,L_7015
@@ -13394,22 +14003,22 @@ L_704A:                 ; 704A
         ld      a,0x01
         call    BANK_SELECT
         ld      hl,0xCD08
-        ld      de,0x849E
+        ld      de,B1_TILES_849E
         ld      bc,0x1A0C
         ld      a,0x03
         call    TILE_RECT
         ld      hl,0xD008
-        ld      de,0x85D6
+        ld      de,B1_TILES_85D6
         ld      bc,0x1A0C
         ld      a,0x03
         call    TILE_RECT
         ld      hl,0xD308
-        ld      de,0x870E
+        ld      de,B1_TILES_870E
         ld      bc,0x1A08
         ld      a,0x03
         call    TILE_RECT
         ld      hl,0xD55A
-        ld      de,0x8A54
+        ld      de,B1_TILES_8A54
         ld      bc,0x071E
         ld      a,0x36
         call    TILE_RECT
@@ -13518,7 +14127,7 @@ L_7158:                 ; 7158
         jr      nc,L_716D
         ld      hl,0xEB70
         inc     (hl)
-        ld      de,0x79C6
+        ld      de,DATA_79C6
         call    EXTEND_JUMP_START
         jp      L_7196
 
@@ -13646,7 +14255,7 @@ L_7227:                 ; 7227
         jr      nc,L_723C
         ld      hl,0xEB70
         dec     (hl)
-        ld      de,0x79C6
+        ld      de,DATA_79C6
         call    EXTEND_JUMP_START
         jp      L_7265
 
@@ -13729,7 +14338,7 @@ L_72A7:                 ; 72A7
         jr      z,L_72E4
 L_72C6:                 ; 72C6
         ld      hl,0xD55A
-        ld      de,0x88B0
+        ld      de,B1_TILES_88B0
         ld      bc,0x0705
         ld      a,0x35
         call    TILE_RECT
@@ -13737,7 +14346,7 @@ L_72C6:                 ; 72C6
 
 L_72D5:                 ; 72D5
         ld      hl,0xD55A
-        ld      de,0x87DE
+        ld      de,B1_TILES_87DE
         ld      bc,0x0705
         ld      a,0x34
         call    TILE_RECT
@@ -13745,7 +14354,7 @@ L_72D5:                 ; 72D5
 
 L_72E4:                 ; 72E4
         ld      hl,0xD55A
-        ld      de,0x8982
+        ld      de,B1_TILES_8982
         ld      bc,0x0705
         ld      a,0x36
         call    TILE_RECT
@@ -13759,7 +14368,7 @@ L_72F3:                 ; 72F3
         cp      0x01
         jr      z,L_7312
         ld      hl,0xD55A
-        ld      de,0x8B26
+        ld      de,B1_TILES_8B26
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -13767,7 +14376,7 @@ L_72F3:                 ; 72F3
 
 L_7312:                 ; 7312
         ld      hl,0xD55A
-        ld      de,0x8BF8
+        ld      de,B1_TILES_8BF8
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -13797,7 +14406,7 @@ L_7335:                 ; 7335
         jr      z,L_7369
 L_734B:                 ; 734B
         ld      hl,0xD69A
-        ld      de,0x88D3
+        ld      de,B1_TILES_88D3
         ld      bc,0x0705
         ld      a,0x35
         call    TILE_RECT
@@ -13805,7 +14414,7 @@ L_734B:                 ; 734B
 
 L_735A:                 ; 735A
         ld      hl,0xD69A
-        ld      de,0x8801
+        ld      de,B1_TILES_8801
         ld      bc,0x0705
         ld      a,0x34
         call    TILE_RECT
@@ -13813,7 +14422,7 @@ L_735A:                 ; 735A
 
 L_7369:                 ; 7369
         ld      hl,0xD69A
-        ld      de,0x89A5
+        ld      de,B1_TILES_89A5
         ld      bc,0x0705
         ld      a,0x36
         call    TILE_RECT
@@ -13824,7 +14433,7 @@ L_7378:                 ; 7378
         cp      0x01
         jr      z,L_738E
         ld      hl,0xD69A
-        ld      de,0x8B49
+        ld      de,B1_TILES_8B49
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -13832,7 +14441,7 @@ L_7378:                 ; 7378
 
 L_738E:                 ; 738E
         ld      hl,0xD69A
-        ld      de,0x8C1B
+        ld      de,B1_TILES_8C1B
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -13862,7 +14471,7 @@ L_73B1:                 ; 73B1
         jr      z,L_73E5
 L_73C7:                 ; 73C7
         ld      hl,0xD7DA
-        ld      de,0x88F6
+        ld      de,B1_TILES_88F6
         ld      bc,0x0705
         ld      a,0x35
         call    TILE_RECT
@@ -13870,7 +14479,7 @@ L_73C7:                 ; 73C7
 
 L_73D6:                 ; 73D6
         ld      hl,0xD7DA
-        ld      de,0x8824
+        ld      de,B1_TILES_8824
         ld      bc,0x0705
         ld      a,0x34
         call    TILE_RECT
@@ -13878,7 +14487,7 @@ L_73D6:                 ; 73D6
 
 L_73E5:                 ; 73E5
         ld      hl,0xD7DA
-        ld      de,0x89C8
+        ld      de,B1_TILES_89C8
         ld      bc,0x0705
         ld      a,0x36
         call    TILE_RECT
@@ -13889,7 +14498,7 @@ L_73F4:                 ; 73F4
         cp      0x01
         jr      z,L_740A
         ld      hl,0xD7DA
-        ld      de,0x8B6C
+        ld      de,B1_TILES_8B6C
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -13897,7 +14506,7 @@ L_73F4:                 ; 73F4
 
 L_740A:                 ; 740A
         ld      hl,0xD7DA
-        ld      de,0x8C3E
+        ld      de,B1_TILES_8C3E
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -13927,7 +14536,7 @@ L_742D:                 ; 742D
         jr      z,L_7461
 L_7443:                 ; 7443
         ld      hl,0xD91A
-        ld      de,0x8919
+        ld      de,B1_TILES_8919
         ld      bc,0x0705
         ld      a,0x35
         call    TILE_RECT
@@ -13935,7 +14544,7 @@ L_7443:                 ; 7443
 
 L_7452:                 ; 7452
         ld      hl,0xD91A
-        ld      de,0x8847
+        ld      de,B1_TILES_8847
         ld      bc,0x0705
         ld      a,0x34
         call    TILE_RECT
@@ -13943,7 +14552,7 @@ L_7452:                 ; 7452
 
 L_7461:                 ; 7461
         ld      hl,0xD91A
-        ld      de,0x89EB
+        ld      de,B1_TILES_89EB
         ld      bc,0x0705
         ld      a,0x36
         call    TILE_RECT
@@ -13954,7 +14563,7 @@ L_7470:                 ; 7470
         cp      0x01
         jr      z,L_7486
         ld      hl,0xD91A
-        ld      de,0x8B8F
+        ld      de,B1_TILES_8B8F
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -13962,7 +14571,7 @@ L_7470:                 ; 7470
 
 L_7486:                 ; 7486
         ld      hl,0xD91A
-        ld      de,0x8C61
+        ld      de,B1_TILES_8C61
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -13992,7 +14601,7 @@ L_74A9:                 ; 74A9
         jr      z,L_74DD
 L_74BF:                 ; 74BF
         ld      hl,0xDA5A
-        ld      de,0x893C
+        ld      de,B1_TILES_893C
         ld      bc,0x0705
         ld      a,0x35
         call    TILE_RECT
@@ -14000,7 +14609,7 @@ L_74BF:                 ; 74BF
 
 L_74CE:                 ; 74CE
         ld      hl,0xDA5A
-        ld      de,0x886A
+        ld      de,B1_TILES_886A
         ld      bc,0x0705
         ld      a,0x34
         call    TILE_RECT
@@ -14008,7 +14617,7 @@ L_74CE:                 ; 74CE
 
 L_74DD:                 ; 74DD
         ld      hl,0xDA5A
-        ld      de,0x8A0E
+        ld      de,B1_TILES_8A0E
         ld      bc,0x0705
         ld      a,0x36
         call    TILE_RECT
@@ -14019,7 +14628,7 @@ L_74EC:                 ; 74EC
         cp      0x01
         jr      z,L_7502
         ld      hl,0xDA5A
-        ld      de,0x8BB2
+        ld      de,B1_TILES_8BB2
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -14027,7 +14636,7 @@ L_74EC:                 ; 74EC
 
 L_7502:                 ; 7502
         ld      hl,0xDA5A
-        ld      de,0x8C84
+        ld      de,B1_TILES_8C84
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -14060,7 +14669,7 @@ L_7525:                 ; 7525
         jr      z,L_7562
 L_7544:                 ; 7544
         ld      hl,0xDB9A
-        ld      de,0x895F
+        ld      de,B1_TILES_895F
         ld      bc,0x0705
         ld      a,0x35
         call    TILE_RECT
@@ -14068,7 +14677,7 @@ L_7544:                 ; 7544
 
 L_7553:                 ; 7553
         ld      hl,0xDB9A
-        ld      de,0x888D
+        ld      de,B1_TILES_888D
         ld      bc,0x0705
         ld      a,0x34
         call    TILE_RECT
@@ -14076,7 +14685,7 @@ L_7553:                 ; 7553
 
 L_7562:                 ; 7562
         ld      hl,0xDB9A
-        ld      de,0x8A31
+        ld      de,B1_TILES_8A31
         ld      bc,0x0705
         ld      a,0x36
         call    TILE_RECT
@@ -14090,7 +14699,7 @@ L_7571:                 ; 7571
         cp      0x01
         jr      z,L_7590
         ld      hl,0xDB9A
-        ld      de,0x8BD5
+        ld      de,B1_TILES_8BD5
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -14098,7 +14707,7 @@ L_7571:                 ; 7571
 
 L_7590:                 ; 7590
         ld      hl,0xDB9A
-        ld      de,0x8CA7
+        ld      de,B1_TILES_8CA7
         ld      bc,0x0705
         ld      a,0x37
         call    TILE_RECT
@@ -14113,7 +14722,7 @@ EXTEND_BUBBLES_RUN:     ; 759F
         ld      hl,0xEB97
         dec     (hl)
         ld      ix,0xEB73
-        ld      de,0x7860
+        ld      de,DATA_7860
         xor     a
 L_75B3:                 ; 75B3
         push    af
@@ -14160,7 +14769,7 @@ L_7601:                 ; 7601
         jp      L_775A
 
 L_760D:                 ; 760D
-        ld      de,0x7776
+        ld      de,DATA_7776
         ld      a,(ix+4)
         add     a,a
         call    ADD_DE_A
@@ -14365,7 +14974,7 @@ L_7748:                 ; 7748
 L_775A:                 ; 775A
         ld      e,(ix+5)
         ld      b,0x04
-        ld      hl,0x7866
+        ld      hl,SPRITES_7866
         ld      c,0x25
         call    SPRITE_GRID
 L_7767:                 ; 7767
@@ -14379,6 +14988,7 @@ L_7767:                 ; 7767
         jp      nz,L_75B3
         ret
 
+DATA_7776:              ; 7776
         .incbin "main_fixed.bin", 0x7776, 0x000C
 ; every 5 frames (IX+3) swaps the colours F920, F940 (F0FF or 00FF) and F936, F956 (00FF or 00F8) by (IX+2) b0; IX is EB97 here, after the bubble loop, so the counters are EB9A and EB99
 EXTEND_PAL_FLASH:       ; 7782
@@ -14416,12 +15026,12 @@ EXTEND_NICE_1UP_DRAW:   ; 77C6
         and     a
         jr      nz,L_77EE
         ld      hl,0xD61A
-        ld      de,0x8CCA
+        ld      de,B1_TILES_8CCA
         ld      bc,0x040E
         ld      a,0x27
         call    TILE_RECT
         ld      hl,0xD9DA
-        ld      de,0x8D02
+        ld      de,B1_TILES_8D02
         ld      bc,0x0408
         ld      a,0x26
         call    TILE_RECT
@@ -14429,12 +15039,12 @@ EXTEND_NICE_1UP_DRAW:   ; 77C6
 
 L_77EE:                 ; 77EE
         ld      hl,0xD61A
-        ld      de,0x8CCA
+        ld      de,B1_TILES_8CCA
         ld      bc,0x040E
         ld      a,0x2B
         call    TILE_RECT
         ld      hl,0xD9DA
-        ld      de,0x8D22
+        ld      de,B1_TILES_8D22
         ld      bc,0x0408
         ld      a,0x2A
         call    TILE_RECT
@@ -14443,38 +15053,43 @@ L_77EE:                 ; 77EE
 ; the six big letters (D55A .. DB9A, 7 x 5) blanked from 786B
 EXTEND_BIG_LETTERS_CLEAR:; 780B
         ld      hl,0xD55A
-        ld      de,0x786B
+        ld      de,TILES_786B
         ld      bc,0x0705
         ld      a,0x00
         call    TILE_RECT
         ld      hl,0xD69A
-        ld      de,0x786B
+        ld      de,TILES_786B
         ld      bc,0x0705
         ld      a,0x00
         call    TILE_RECT
         ld      hl,0xD7DA
-        ld      de,0x786B
+        ld      de,TILES_786B
         ld      bc,0x0705
         ld      a,0x00
         call    TILE_RECT
         ld      hl,0xD91A
-        ld      de,0x786B
+        ld      de,TILES_786B
         ld      bc,0x0705
         ld      a,0x00
         call    TILE_RECT
         ld      hl,0xDA5A
-        ld      de,0x786B
+        ld      de,TILES_786B
         ld      bc,0x0705
         ld      a,0x00
         call    TILE_RECT
         ld      hl,0xDB9A
-        ld      de,0x786B
+        ld      de,TILES_786B
         ld      bc,0x0705
         ld      a,0x00
         call    TILE_RECT
         ret
 
-        .incbin "main_fixed.bin", 0x7860, 0x002E
+DATA_7860:              ; 7860
+        .incbin "main_fixed.bin", 0x7860, 0x0006
+SPRITES_7866:           ; 7866
+        .incbin "main_fixed.bin", 0x7866, 0x0005
+TILES_786B:             ; 786B
+        .incbin "main_fixed.bin", 0x786B, 0x0023
 ; one step of the dragon's jump (EXTEND_DRAGON_*, twice a frame): the PATH_PTR path EB65 at step EB67 moves the sprite at EB69 (b0 Y, b3 down; b4 X, b7 left); the path is mirrored (20 - n) for player 1. 88 ends a path (EB68 more, then the next pair), 99 ends the list; Z when the jump is done
 EXTEND_JUMP_STEP:       ; 788E
         ld      hl,(0xEB65)
@@ -14672,6 +15287,7 @@ L_79B8:                 ; 79B8
         djnz    L_79B8
         ret
 
+DATA_79C6:              ; 79C6
         .incbin "main_fixed.bin", 0x79C6, 0x0023
 ; clears ENEMY3_SHOTS (8 x 0x12), then sets them up if ENEMY_COUNTS group 3 is nonzero; called from bank0:ROUND_ENEMIES
 ENEMY3_SHOTS_INIT:      ; 79E9
@@ -14714,7 +15330,7 @@ L_79FC:                 ; 79FC
 ; steps ENEMY3_SHOTS when group 3 is present
 ENEMY3_SHOTS_UPDATE:    ; 7A27
         ld      hl,IRQ_HANDLER
-        ld      de,(0x0B2E)
+        ld      de,(IRQ_VECTOR_ENTRY)
         or      a
         sbc     hl,de
         jr      z,L_7A35
@@ -14733,7 +15349,7 @@ ENEMY3_SHOT_LOOP:       ; 7A42
         ld      a,(0xF44E)
         and     a
         jp      nz,ENEMY3_SHOT_END
-        call    0x8879
+        call    ENEMY_ANGER
         bit     0,(ix+0)
         jp      nz,ENEMY3_SHOT_FLY
         ld      a,0x18
@@ -14750,7 +15366,7 @@ ENEMY3_SHOT_LOOP:       ; 7A42
         ld      (ix+8),a
         dec     hl
         push    hl
-        call    0x918F
+        call    ENEMY_PROX_B
         pop     hl
         jr      z,L_7A7D
         ld      (hl),0x01
@@ -14798,7 +15414,7 @@ L_7AAC:                 ; 7AAC
 ; Seen in MAME (r42, round 42): each frame of a thrown shot: ENEMY_SPEED_NEXT, then ENEMY3_SHOT_MODES by (IX+7); +0 b6 (it hit a wall) ends it
 ENEMY3_SHOT_FLY:        ; 7ABA
         call    OBJ_POS_LOAD
-        call    0x8838
+        call    ENEMY_SPEED_NEXT
         ld      a,(TIMER_RUN)
         and     a
         jp      nz,ENEMY3_SHOT_NEXT
@@ -14819,7 +15435,7 @@ ENEMY3_SHOT_L:          ; 7AD9
 L_7AE1:                 ; 7AE1
         push    bc
         call    OBJ_POS_LOAD
-        call    0x879A
+        call    ENEMY_WALL_L
         jr      z,ENEMY3_SHOT_HIT_WALL
         call    OBJ_PTR
         inc     hl
@@ -14845,7 +15461,7 @@ ENEMY3_SHOT_R:          ; 7B01
 L_7B09:                 ; 7B09
         push    bc
         call    OBJ_POS_LOAD
-        call    0x87AC
+        call    ENEMY_WALL_R
         jr      z,ENEMY3_SHOT_HIT_WALL
         call    OBJ_PTR
         inc     hl
@@ -14930,7 +15546,7 @@ ENEMY3_SHOT_MODES:      ; 7B8C
 ENEMY_ATTACK_CHECK:     ; 7B94
         bit     1,(ix+14)
         ret     z
-        call    0x91B9
+        call    ENEMY_TARGET_ALIVE
         ret     z
         ld      hl,0xFC2B
         ld      a,(ix+9)
@@ -14939,7 +15555,7 @@ ENEMY_ATTACK_CHECK:     ; 7B94
         add     a,a
         call    ADD_HL_A
         push    hl
-        call    0x91A6
+        call    ENEMY_TARGET_OFFSET
         ld      a,(hl)
         cp      0x08
         pop     hl
@@ -14951,7 +15567,7 @@ ENEMY_ATTACK_CHECK:     ; 7B94
 L_7BB6:                 ; 7BB6
         inc     hl
         inc     hl
-        call    0x91A6
+        call    ENEMY_TARGET_OFFSET
         ld      a,(hl)
         cp      0x40
         jr      nc,L_7BC3
@@ -14992,7 +15608,7 @@ L_7BE3:                 ; 7BE3
 ; tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along a path from the table at 80C9
 ENEMY_DEFEATED:         ; 7BFD
         ld      hl,IRQ_HANDLER
-        ld      de,(0x0B2E)
+        ld      de,(IRQ_VECTOR_ENTRY)
         or      a
         sbc     hl,de
         jr      z,L_7C0B
@@ -15002,7 +15618,7 @@ L_7C0B:                 ; 7C0B
         jp      nz,L_7CEE
         bit     2,(ix+14)
         jr      z,L_7C72
-        call    0x86BD
+        call    ENEMY_HIT_PTR
         inc     hl
         ld      a,(hl)
         ld      b,a
@@ -15035,7 +15651,7 @@ L_7C4E:                 ; 7C4E
         add     a,0x80
         ld      (hl),a
 L_7C51:                 ; 7C51
-        call    0x86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x08
         inc     hl
         inc     hl
@@ -15077,24 +15693,24 @@ L_7C8E:                 ; 7C8E
         inc     hl
         ld      (hl),0x13
         ld      a,(ix+9)
-        ld      hl,0x80C9
+        ld      hl,B0_DATA_80C9
         call    TABLE_WORD
         bit     4,(ix+0)
         jr      z,L_7CA5
-        ld      de,0x808D
+        ld      de,B0_DATA_808D
         jr      L_7CB0
 
 L_7CA5:                 ; 7CA5
         bit     6,(ix+0)
         jr      z,L_7CB0
-        ld      de,0x80B6
+        ld      de,B0_DATA_80B6
         jr      L_7CB0
 
 L_7CB0:                 ; 7CB0
         ld      a,(0xF518)
         and     a
         jr      z,L_7CB9
-        ld      de,0x8064
+        ld      de,B0_DATA_8064
 L_7CB9:                 ; 7CB9
         ld      (ix+16),e
         ld      (ix+17),d
@@ -15111,7 +15727,7 @@ L_7CB9:                 ; 7CB9
         ld      (ix+11),a
         ld      (ix+20),a
         set     0,(ix+14)
-        call    0x86BD
+        call    ENEMY_HIT_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -15122,7 +15738,7 @@ L_7CB9:                 ; 7CB9
 
 L_7CEE:                 ; 7CEE
         call    OBJ_POS_LOAD
-        call    0x86A8
+        call    ENEMY_HIT_REPORT
         bit     1,(ix+14)
         jp      nz,L_7F4B
         bit     5,(ix+14)
@@ -15161,7 +15777,7 @@ L_7D3D:                 ; 7D3D
         jr      nc,L_7D71
         ld      (ix+8),0x01
         ld      a,(ix+9)
-        ld      hl,0x8160
+        ld      hl,B0_DATA_8160
         call    TABLE_WORD
         ld      (ix+16),e
         ld      (ix+17),d
@@ -15201,7 +15817,7 @@ L_7DAA:                 ; 7DAA
         jp      L_7E8C
 
 L_7DB1:                 ; 7DB1
-        call    0x86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x08
         set     3,(ix+14)
         call    IX_SPEED_CLEAR
@@ -15220,7 +15836,7 @@ L_7DD1:                 ; 7DD1
         jr      c,L_7DF7
         ld      (ix+8),0x03
         ld      a,(ix+9)
-        ld      hl,0x8160
+        ld      hl,B0_DATA_8160
         call    TABLE_WORD
         ld      (ix+16),e
         ld      (ix+17),d
@@ -15294,7 +15910,7 @@ L_7E7A:                 ; 7E7A
         jr      L_7EAB
 
 L_7E80:                 ; 7E80
-        call    0x86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x08
         set     3,(ix+14)
         call    IX_SPEED_CLEAR
@@ -15307,7 +15923,7 @@ L_7E8C:                 ; 7E8C
         add     a,a
         ld      b,a
         ld      a,(ix+23)
-        ld      hl,0x801F
+        ld      hl,B0_DATA_801F
         call    ADD_HL_A
         ld      a,(hl)
         add     a,b
@@ -15317,7 +15933,7 @@ L_7E8C:                 ; 7E8C
 
 L_7EAB:                 ; 7EAB
         ld      a,(ix+21)
-        ld      hl,0x8009
+        ld      hl,B0_DATA_8009
         call    TABLE_WORD
         ld      b,e
         ld      c,d
@@ -15333,7 +15949,7 @@ L_7EC4:                 ; 7EC4
 L_7EC7:                 ; 7EC7
         bit     0,(ix+14)
         ret     z
-        call    0x86BD
+        call    ENEMY_HIT_PTR
         inc     hl
         inc     hl
         inc     hl
@@ -15357,7 +15973,7 @@ L_7EE4:                 ; 7EE4
         ld      a,b
         ld      (PLAYER_NOW),a
         ld      a,(ix+21)
-        ld      hl,0x8032
+        ld      hl,B0_DATA_8032
         call    TABLE_WORD
         call    SCORE_UPDATE
         ld      c,0x11
@@ -15385,7 +16001,7 @@ L_7F28:                 ; 7F28
         inc     (hl)
 L_7F30:                 ; 7F30
         ld      a,(ix+21)
-        ld      hl,0x8027
+        ld      hl,B0_DATA_8027
         call    ADD_HL_A
         ld      b,(hl)
         ld      c,0x1E
@@ -15402,7 +16018,7 @@ L_7F4B:                 ; 7F4B
         call    ANIM_STEP
         jr      nz,L_7F68
 L_7F53:                 ; 7F53
-        call    0x86BD
+        call    ENEMY_HIT_PTR
         ld      (hl),0x00
         ld      (ix+14),0x00
         ld      (ix+0),0x00

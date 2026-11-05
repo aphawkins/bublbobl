@@ -22,9 +22,6 @@ SYMBOLS = ROOT / "notes" / "symbols.toml"
 INCLUDES = {
     "main": [("main.io", None), ("main.mem", None), ("shared.mcu", None)],
     # the sub CPU sees only the shared work RAM, at the main CPU's addresses
-    # the fixed ROM's names, for the bank sources that call into it
-    "fixed": [("main.code", lambda a: a if a < 0x8000 else None),
-              ("main.data", lambda a: a if a < 0x8000 else None)],
     "sub": [("main.mem", lambda a: a if 0xE000 <= a < 0xF800 else None)],
     "sound": [("sound.io", None), ("sound.mem", None)],
     "mcu": [("mcu.io", None), ("mcu.bus", None), ("mcu.ram", None),

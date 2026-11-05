@@ -49,8 +49,8 @@ OWN_DATA_VALUES = ("sound",)
 # cpu -> the include file tools/symbols.py writes for it
 INCLUDE = {"sub": "sub.inc", "sound": "sound.inc", "main_fixed": "main.inc",
            **{f"main_bank{n}": "main.inc" for n in range(4)}}
-# banks also see the fixed ROM's names (build/include/fixed.inc)
-EXTRA_INCLUDE = {f"main_bank{n}": "fixed.inc" for n in range(4)}
+# banks also use the fixed ROM's names, which tools/build.py gives them at the link
+FIXED_NAMES = {f"main_bank{n}" for n in range(4)}
 
 R = ["b", "c", "d", "e", "h", "l", "(hl)", "a"]
 RP = ["bc", "de", "hl", "sp"]
@@ -268,7 +268,7 @@ class Names:
                     self.code[v["addr"]] = (k, v.get("note"))
         self.ext: dict[int, str] = {}  # names in another image's code (the fixed ROM, for a bank)
         self.ext_value: dict[int, str] = {}  # those a 16-bit constant may print as: data, not routines
-        if cpu in EXTRA_INCLUDE:
+        if cpu in FIXED_NAMES:
             for path in ("main.code", "main.data"):
                 for k, v in table(path).items():
                     if v["addr"] < 0x8000:
@@ -416,7 +416,6 @@ class Dasm:
             f"; No ROM bytes: every range not disassembled is .incbin of build/images/{img}.",
             "",
             *([f'        .include "{INCLUDE[cpu]}"'] if cpu in INCLUDE else []),
-            *([f'        .include "{EXTRA_INCLUDE[cpu]}"'] if cpu in EXTRA_INCLUDE else []),
             "        .section .text",
             "",
         ]

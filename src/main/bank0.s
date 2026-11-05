@@ -2,7 +2,6 @@
 ; No ROM bytes: every range not disassembled is .incbin of build/images/main_bank0.bin.
 
         .include "main.inc"
-        .include "fixed.inc"
         .section .text
 
         .incbin "main_bank0.bin", 0x0000, 0x0001
@@ -12,7 +11,64 @@
         dec     (hl)
         ret
 
-        .incbin "main_bank0.bin", 0x0009, 0x01AA
+B0_DATA_8009:           ; 8009
+        .incbin "main_bank0.bin", 0x0009, 0x0016
+B0_DATA_801F:           ; 801F
+        .incbin "main_bank0.bin", 0x001F, 0x0008
+B0_DATA_8027:           ; 8027
+        .incbin "main_bank0.bin", 0x0027, 0x000B
+B0_DATA_8032:           ; 8032
+        .incbin "main_bank0.bin", 0x0032, 0x0032
+B0_DATA_8064:           ; 8064
+        .incbin "main_bank0.bin", 0x0064, 0x0029
+B0_DATA_808D:           ; 808D
+        .incbin "main_bank0.bin", 0x008D, 0x0029
+B0_DATA_80B6:           ; 80B6
+        .incbin "main_bank0.bin", 0x00B6, 0x0013
+B0_DATA_80C9:           ; 80C9
+        .word   B0_DATA_80D7
+        .word   B0_DATA_80EA
+        .word   B0_DATA_80FD
+        .word   B0_DATA_8110
+        .word   B0_DATA_8127
+        .word   B0_DATA_813A
+        .word   B0_DATA_814D
+B0_DATA_80D7:           ; 80D7
+        .incbin "main_bank0.bin", 0x00D7, 0x0013
+B0_DATA_80EA:           ; 80EA
+        .incbin "main_bank0.bin", 0x00EA, 0x0013
+B0_DATA_80FD:           ; 80FD
+        .incbin "main_bank0.bin", 0x00FD, 0x0013
+B0_DATA_8110:           ; 8110
+        .incbin "main_bank0.bin", 0x0110, 0x0017
+B0_DATA_8127:           ; 8127
+        .incbin "main_bank0.bin", 0x0127, 0x0013
+B0_DATA_813A:           ; 813A
+        .incbin "main_bank0.bin", 0x013A, 0x0013
+B0_DATA_814D:           ; 814D
+        .incbin "main_bank0.bin", 0x014D, 0x0013
+B0_DATA_8160:           ; 8160
+        .word   B0_DATA_816E
+        .word   B0_DATA_8171
+        .word   B0_DATA_8178
+        .word   B0_DATA_8183
+        .word   B0_DATA_818E
+        .word   B0_DATA_819B
+        .word   B0_DATA_81A8
+B0_DATA_816E:           ; 816E
+        .incbin "main_bank0.bin", 0x016E, 0x0003
+B0_DATA_8171:           ; 8171
+        .incbin "main_bank0.bin", 0x0171, 0x0007
+B0_DATA_8178:           ; 8178
+        .incbin "main_bank0.bin", 0x0178, 0x000B
+B0_DATA_8183:           ; 8183
+        .incbin "main_bank0.bin", 0x0183, 0x000B
+B0_DATA_818E:           ; 818E
+        .incbin "main_bank0.bin", 0x018E, 0x000D
+B0_DATA_819B:           ; 819B
+        .incbin "main_bank0.bin", 0x019B, 0x000D
+B0_DATA_81A8:           ; 81A8
+        .incbin "main_bank0.bin", 0x01A8, 0x000B
 ; clears ENEMY2_SHOTS, 0x81 bytes
 ENEMY2_SHOTS_INIT:      ; 81B3
         ld      hl,ENEMY2_SHOTS
@@ -1275,7 +1331,7 @@ L_8A7A:                 ; 8A7A
 L_8AA4:                 ; 8AA4
         bit     0,(ix+24)
         jr      z,L_8AC6
-        ld      hl,0x8E6B
+        ld      hl,B0_DATA_8E6B
         bit     7,(ix+0)
         jr      nz,L_8ABB
         ld      a,(HURRY)
@@ -1284,7 +1340,7 @@ L_8AA4:                 ; 8AA4
         jr      L_8ABE
 
 L_8ABB:                 ; 8ABB
-        ld      hl,0x8E6C
+        ld      hl,B0_SPRITES_8E6C
 L_8ABE:                 ; 8ABE
         ld      c,0x1D
         call    ENEMY_ANIM_FLIP
@@ -1357,7 +1413,7 @@ L_8B2C:                 ; 8B2C
         jr      nz,L_8B49
         call    ENEMY_ABOVE_PROBE
         jr      nz,L_8B49
-        ld      de,0x9625
+        ld      de,B0_DATA_9625
         set     7,(ix+24)
         call    OBJ_PTR
         inc     hl
@@ -1368,7 +1424,7 @@ L_8B2C:                 ; 8B2C
         jr      L_8B4C
 
 L_8B49:                 ; 8B49
-        ld      de,0x8E74
+        ld      de,B0_DATA_8E74
 L_8B4C:                 ; 8B4C
         call    ENEMY_PATH_SET
         ld      (ix+7),0x05
@@ -1452,7 +1508,7 @@ L_8BCF:                 ; 8BCF
         jr      nz,L_8BEC
         call    ENEMY_ABOVE_PROBE
         jr      nz,L_8BEC
-        ld      de,0x9625
+        ld      de,B0_DATA_9625
         set     7,(ix+24)
         call    OBJ_PTR
         inc     hl
@@ -1463,7 +1519,7 @@ L_8BCF:                 ; 8BCF
         jr      L_8BEF
 
 L_8BEC:                 ; 8BEC
-        ld      de,0x8E74
+        ld      de,B0_DATA_8E74
 L_8BEF:                 ; 8BEF
         call    ENEMY_PATH_SET
         ld      (ix+7),0x04
@@ -1486,7 +1542,7 @@ ENEMY_WALK_LIMIT:       ; 8C0E
         ld      a,(ix+20)
         cp      0x3C
         ret     c
-        ld      de,0x9625
+        ld      de,B0_DATA_9625
         call    ENEMY_PATH_SET
         set     7,(ix+24)
         set     0,(ix+24)
@@ -1729,23 +1785,23 @@ ENEMY0_ANIM:            ; 8DEA
         jr      L_8E25
 
 L_8E04:                 ; 8E04
-        ld      hl,0x8E6C
-        ld      de,(0x8E72)
+        ld      hl,B0_SPRITES_8E6C
+        ld      de,(B0_DATA_8E72)
         ld      c,0x1D
         call    ENEMY_ANIM_SPRITE
         call    ROM_SUM_STEP_F
         jp      L_8E31
 
 L_8E16:                 ; 8E16
-        ld      hl,0x8E6D
-        ld      de,(0x8E70)
+        ld      hl,B0_SPRITES_8E6D
+        ld      de,(B0_DATA_8E70)
         ld      c,0x1D
         call    ENEMY_ANIM_SPRITE
         jp      L_8E31
 
 L_8E25:                 ; 8E25
-        ld      hl,0x8E6B
-        ld      de,(0x8E6E)
+        ld      hl,B0_DATA_8E6B
+        ld      de,(B0_DATA_8E6E)
         ld      c,0x1D
         call    ENEMY_ANIM_SPRITE
 L_8E31:                 ; 8E31
@@ -1783,7 +1839,20 @@ L_8E5F:                 ; 8E5F
         .word   ENEMY0_WALK_L
         .word   ENEMY0_JUMP_R
         .word   ENEMY0_JUMP_L
-        .incbin "main_bank0.bin", 0x0E6B, 0x001E
+B0_DATA_8E6B:           ; 8E6B
+        .incbin "main_bank0.bin", 0x0E6B, 0x0001
+B0_SPRITES_8E6C:        ; 8E6C
+        .incbin "main_bank0.bin", 0x0E6C, 0x0001
+B0_SPRITES_8E6D:        ; 8E6D
+        .incbin "main_bank0.bin", 0x0E6D, 0x0001
+B0_DATA_8E6E:           ; 8E6E
+        .incbin "main_bank0.bin", 0x0E6E, 0x0002
+B0_DATA_8E70:           ; 8E70
+        .incbin "main_bank0.bin", 0x0E70, 0x0002
+B0_DATA_8E72:           ; 8E72
+        .incbin "main_bank0.bin", 0x0E72, 0x0002
+B0_DATA_8E74:           ; 8E74
+        .incbin "main_bank0.bin", 0x0E74, 0x0015
 ; Z when the cells at Y - 4 under X - 4 and X + 4 are solid (only on a cell row unless (IX+14) b5)
 ENEMY_FLOOR_PROBE:      ; 8E89
         bit     5,(ix+14)
@@ -1965,7 +2034,7 @@ L_8FBC:                 ; 8FBC
 L_8FEE:                 ; 8FEE
         bit     0,(ix+24)
         jr      z,L_9010
-        ld      hl,0x922D
+        ld      hl,B0_DATA_922D
         bit     7,(ix+0)
         jr      nz,L_9005
         ld      a,(HURRY)
@@ -1974,7 +2043,7 @@ L_8FEE:                 ; 8FEE
         jr      L_9008
 
 L_9005:                 ; 9005
-        ld      hl,0x9231
+        ld      hl,B0_SPRITES_9231
 L_9008:                 ; 9008
         ld      c,0x1F
         call    ENEMY_ANIM_FLIP
@@ -2011,7 +2080,7 @@ L_903F:                 ; 903F
         jr      nz,L_9064
         call    ENEMY_ABOVE_PROBE
         jr      nz,L_9064
-        ld      de,0x9625
+        ld      de,B0_DATA_9625
         ld      a,(ix+1)
         ld      (ix+15),a
         set     0,(ix+24)
@@ -2021,11 +2090,11 @@ L_903F:                 ; 903F
 L_9064:                 ; 9064
         bit     7,(hl)
         jr      nz,L_9094
-        ld      de,0x8E74
+        ld      de,B0_DATA_8E74
         bit     1,(ix+20)
         jr      z,L_9078
         ld      (ix+20),0x00
-        ld      de,0x9224
+        ld      de,B0_DATA_9224
 L_9078:                 ; 9078
         call    ENEMY_PATH_SET
         ld      a,(ix+2)
@@ -2039,7 +2108,7 @@ L_9078:                 ; 9078
         jp      ENEMY1_ANIM
 
 L_9094:                 ; 9094
-        ld      de,0x8E74
+        ld      de,B0_DATA_8E74
         call    ENEMY_PATH_SET
         call    ENEMY_PROX_B
         jp      nz,L_90AB
@@ -2088,30 +2157,30 @@ L_90DC:                 ; 90DC
         jr      z,L_90ED
         push    iy
 L_90ED:                 ; 90ED
-        ld      hl,0x9233
-        ld      de,(0x9239)
+        ld      hl,B0_SPRITES_9233
+        ld      de,(B0_DATA_9239)
         bit     0,(ix+14)
         jr      z,L_90FD
-        ld      hl,0x9231
+        ld      hl,B0_SPRITES_9231
 L_90FD:                 ; 90FD
         ld      c,0x1F
         call    ENEMY_ANIM_SPRITE
         jp      L_912D
 
 L_9105:                 ; 9105
-        ld      hl,0x9235
-        ld      de,(0x923D)
+        ld      hl,B0_SPRITES_9235
+        ld      de,(B0_DATA_923D)
         ld      c,0x1F
         call    ENEMY_ANIM_SPRITE
         jp      L_912D
 
 L_9114:                 ; 9114
-        ld      hl,0x922F
-        ld      de,(0x923B)
+        ld      hl,B0_DATA_922F
+        ld      de,(B0_DATA_923B)
         bit     0,(ix+14)
         jr      z,L_9128
-        ld      hl,0x922D
-        ld      de,(0x923F)
+        ld      hl,B0_DATA_922D
+        ld      de,(B0_DATA_923F)
 L_9128:                 ; 9128
         ld      c,0x1F
         call    ENEMY_ANIM_SPRITE
@@ -2275,7 +2344,26 @@ L_9218:                 ; 9218
         .word   ENEMY1_JUMP_L
         .word   ENEMY1_JUMP_R
         .word   ENEMY1_JUMP_L
-        .incbin "main_bank0.bin", 0x1224, 0x001D
+B0_DATA_9224:           ; 9224
+        .incbin "main_bank0.bin", 0x1224, 0x0009
+B0_DATA_922D:           ; 922D
+        .incbin "main_bank0.bin", 0x122D, 0x0002
+B0_DATA_922F:           ; 922F
+        .incbin "main_bank0.bin", 0x122F, 0x0002
+B0_SPRITES_9231:        ; 9231
+        .incbin "main_bank0.bin", 0x1231, 0x0002
+B0_SPRITES_9233:        ; 9233
+        .incbin "main_bank0.bin", 0x1233, 0x0002
+B0_SPRITES_9235:        ; 9235
+        .incbin "main_bank0.bin", 0x1235, 0x0004
+B0_DATA_9239:           ; 9239
+        .incbin "main_bank0.bin", 0x1239, 0x0002
+B0_DATA_923B:           ; 923B
+        .incbin "main_bank0.bin", 0x123B, 0x0002
+B0_DATA_923D:           ; 923D
+        .incbin "main_bank0.bin", 0x123D, 0x0002
+B0_DATA_923F:           ; 923F
+        .incbin "main_bank0.bin", 0x123F, 0x0002
 ; one byte a call of a sum of all of bank 0 (8000-BFFF), in EEAA (EEA7 starts it, EEA8 is the pointer); the end compares with EEAB and on a mismatch runs into ENEMY2_INIT with DE pushed
 ROM_SUM_STEP_T:         ; 9241
         ld      a,(0xEEA7)
@@ -2471,7 +2559,7 @@ L_93B1:                 ; 93B1
 L_93BD:                 ; 93BD
         bit     0,(ix+24)
         jr      z,L_93DF
-        ld      hl,0x9636
+        ld      hl,B0_DATA_9636
         bit     7,(ix+0)
         jr      nz,L_93D4
         ld      a,(HURRY)
@@ -2480,7 +2568,7 @@ L_93BD:                 ; 93BD
         jr      L_93D7
 
 L_93D4:                 ; 93D4
-        ld      hl,0x9637
+        ld      hl,B0_SPRITES_9637
 L_93D7:                 ; 93D7
         ld      c,0x1C
         call    ENEMY_ANIM_FLIP
@@ -2748,14 +2836,14 @@ L_958A:                 ; 958A
         ld      (ix+21),0x02
         call    ENEMY_ABOVE_PROBE
         ret     nz
-        ld      de,0x9625
+        ld      de,B0_DATA_9625
         set     7,(ix+24)
         ld      a,(ix+15)
         cp      (ix+1)
         ld      a,(ix+1)
         ld      (ix+15),a
         jr      nz,L_95AE
-        ld      de,0x9628
+        ld      de,B0_DATA_9628
         ld      (ix+15),0x00
 L_95AE:                 ; 95AE
         bit     1,(ix+8)
@@ -2804,7 +2892,15 @@ L_95F9:                 ; 95F9
         .word   ENEMY2_WALK_L
         .word   ENEMY2_JUMP_R
         .word   ENEMY2_JUMP_L
-        .incbin "main_bank0.bin", 0x1605, 0x0034
+        .incbin "main_bank0.bin", 0x1605, 0x0020
+B0_DATA_9625:           ; 9625
+        .incbin "main_bank0.bin", 0x1625, 0x0003
+B0_DATA_9628:           ; 9628
+        .incbin "main_bank0.bin", 0x1628, 0x000E
+B0_DATA_9636:           ; 9636
+        .incbin "main_bank0.bin", 0x1636, 0x0001
+B0_SPRITES_9637:        ; 9637
+        .incbin "main_bank0.bin", 0x1637, 0x0002
 ENEMY3_INIT:            ; 9639
         ld      hl,ENEMY3_SLOTS
         ld      bc,0x00BE
@@ -2932,7 +3028,7 @@ L_971D:                 ; 971D
 L_9739:                 ; 9739
         bit     0,(ix+24)
         jr      z,L_975B
-        ld      hl,0x9889
+        ld      hl,B0_DATA_9889
         bit     7,(ix+0)
         jr      nz,L_9750
         ld      a,(HURRY)
@@ -2941,7 +3037,7 @@ L_9739:                 ; 9739
         jr      L_9753
 
 L_9750:                 ; 9750
-        ld      hl,0x988A
+        ld      hl,B0_SPRITES_988A
 L_9753:                 ; 9753
         ld      c,0x1E
         call    ENEMY_ANIM_FLIP
@@ -2998,24 +3094,24 @@ ENEMY3_ANIM:            ; 9793
         jr      L_97CE
 
 L_97AD:                 ; 97AD
-        ld      hl,0x988A
+        ld      hl,B0_SPRITES_988A
         call    ENEMY3_ATTACK_STEP
-        ld      de,(0x9891)
+        ld      de,(B0_DATA_9891)
         ld      c,0x1E
         call    ENEMY_ANIM_SPRITE
         jp      ENEMY3_NEXT
 
 L_97BF:                 ; 97BF
-        ld      hl,0x988B
-        ld      de,(0x988F)
+        ld      hl,B0_SPRITES_988B
+        ld      de,(B0_DATA_988F)
         ld      c,0x1E
         call    ENEMY_ANIM_SPRITE
         jp      ENEMY3_NEXT
 
 L_97CE:                 ; 97CE
-        ld      hl,0x9889
+        ld      hl,B0_DATA_9889
         call    ENEMY3_ATTACK_STEP
-        ld      de,(0x988D)
+        ld      de,(B0_DATA_988D)
         ld      c,0x1E
         call    ENEMY_ANIM_SPRITE
 ; next ENEMY3_SLOTS record (0x1B bytes), ED41 in all
@@ -3091,7 +3187,7 @@ ENEMY3_ATTACK_STEP:     ; 984D
         ret     nz
         ld      a,(ix+5)
         cp      0x02
-        ld      hl,0x988C
+        ld      hl,B0_DATA_988C
         ret     nz
         res     4,(ix+24)
         set     3,(ix+24)
@@ -3109,7 +3205,20 @@ L_987D:                 ; 987D
         .word   ENEMY3_WALK_L
         .word   ENEMY3_JUMP_R
         .word   ENEMY3_JUMP_L
-        .incbin "main_bank0.bin", 0x1889, 0x000A
+B0_DATA_9889:           ; 9889
+        .incbin "main_bank0.bin", 0x1889, 0x0001
+B0_SPRITES_988A:        ; 988A
+        .incbin "main_bank0.bin", 0x188A, 0x0001
+B0_SPRITES_988B:        ; 988B
+        .incbin "main_bank0.bin", 0x188B, 0x0001
+B0_DATA_988C:           ; 988C
+        .incbin "main_bank0.bin", 0x188C, 0x0001
+B0_DATA_988D:           ; 988D
+        .incbin "main_bank0.bin", 0x188D, 0x0002
+B0_DATA_988F:           ; 988F
+        .incbin "main_bank0.bin", 0x188F, 0x0002
+B0_DATA_9891:           ; 9891
+        .incbin "main_bank0.bin", 0x1891, 0x0002
 ENEMY4_INIT:            ; 9893
         ld      hl,ENEMY4_SLOTS
         ld      bc,0x00AF
@@ -3297,7 +3406,7 @@ ENEMY4_LU_CEILING:      ; 99FA
         set     1,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x02
-        ld      de,0x9D3F
+        ld      de,B0_DATA_9D3F
         jp      ENEMY4_TURN_SET
 
 ; ENEMY4_FLY_LU meets a wall on the left (ENEMY4_CELL_L_UP): (IX+24) b4 b2, then mode 0 (RU) after turn script 9D54
@@ -3306,7 +3415,7 @@ ENEMY4_LU_WALL:         ; 9A11
         set     4,(ix+24)
         set     2,(ix+24)
         ld      (ix+8),0x00
-        ld      de,0x9D54
+        ld      de,B0_DATA_9D54
         jp      ENEMY4_TURN_SET
 
 ; flies left and down (Y - 1 every third step, X - 1)
@@ -3344,7 +3453,7 @@ ENEMY4_LD_FLOOR:        ; 9A52
         set     1,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x03
-        ld      de,0x9D69
+        ld      de,B0_DATA_9D69
         jp      ENEMY4_TURN_SET
 
 ; ENEMY4_FLY_LD meets a wall on the left (ENEMY4_CELL_L_DOWN): (IX+24) b4 b3, then mode 1 (RD) after turn script 9D7E
@@ -3354,7 +3463,7 @@ ENEMY4_LD_WALL:         ; 9A6C
         set     3,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x01
-        ld      de,0x9D7E
+        ld      de,B0_DATA_9D7E
         jp      ENEMY4_TURN_SET
 
 ; flies right and up (Y + 1 every third step, X + 1)
@@ -3391,7 +3500,7 @@ ENEMY4_RU_CEILING:      ; 9AB1
         set     0,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x01
-        ld      de,0x9CEB
+        ld      de,ENEMY4_TURNS
         jp      ENEMY4_TURN_SET
 
 ; ENEMY4_FLY_RU meets a wall on the right (ENEMY4_CELL_R_UP): (IX+24) b4 b2, then mode 3 (LU) after turn script 9D00
@@ -3401,7 +3510,7 @@ ENEMY4_RU_WALL:         ; 9AC8
         set     2,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x03
-        ld      de,0x9D00
+        ld      de,B0_DATA_9D00
         jp      ENEMY4_TURN_SET
 
 ; flies right and down (Y - 1 every third step, X + 1)
@@ -3438,7 +3547,7 @@ ENEMY4_RD_FLOOR:        ; 9B0C
         set     0,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x00
-        ld      de,0x9D15
+        ld      de,B0_DATA_9D15
 ; (IX+16) = DE, the turn script, then ENEMY4_SPRITE
 ENEMY4_TURN_SET:        ; 9B20
         ld      (ix+16),e
@@ -3452,7 +3561,7 @@ ENEMY4_RD_WALL:         ; 9B29
         set     3,(ix+24)
         ld      (ix+18),0x00
         ld      (ix+8),0x02
-        ld      de,0x9D2A
+        ld      de,B0_DATA_9D2A
         jp      ENEMY4_TURN_SET
 
 ; Seen in MAME (bub22): one turn step: ENEMY4_TURN_WALL, ENEMY4_TURN_STEP, OBJ_POS_LOAD. Tamper check: the IM 2 entry (I, FC00) must be IRQ_VECTOR_ENTRY, else PUSH IY
@@ -3779,7 +3888,21 @@ ENEMY4_STEP_TABLE:      ; 9CD7
         .word   ENEMY4_STEP_END
 ; 8 turn scripts of 0x15 step bytes, each ended by 9 (ENEMY4_STEP_END): steps 0 up, 1 up right, 2 right, 3 down right, 4 down, 5 down left, 6 left, 7 up left, 8 none. A wall hit picks one through (IX+16)
 ENEMY4_TURNS:           ; 9CEB
-        .incbin "main_bank0.bin", 0x1CEB, 0x00AB
+        .incbin "main_bank0.bin", 0x1CEB, 0x0015
+B0_DATA_9D00:           ; 9D00
+        .incbin "main_bank0.bin", 0x1D00, 0x0015
+B0_DATA_9D15:           ; 9D15
+        .incbin "main_bank0.bin", 0x1D15, 0x0015
+B0_DATA_9D2A:           ; 9D2A
+        .incbin "main_bank0.bin", 0x1D2A, 0x0015
+B0_DATA_9D3F:           ; 9D3F
+        .incbin "main_bank0.bin", 0x1D3F, 0x0015
+B0_DATA_9D54:           ; 9D54
+        .incbin "main_bank0.bin", 0x1D54, 0x0015
+B0_DATA_9D69:           ; 9D69
+        .incbin "main_bank0.bin", 0x1D69, 0x0015
+B0_DATA_9D7E:           ; 9D7E
+        .incbin "main_bank0.bin", 0x1D7E, 0x0018
 ; one byte a call of a sum from bank 0 8150 to 94FD, in F111 (F10E starts it, F10F is the pointer); the end compares with F112 and on a mismatch runs into ENEMY5_INIT with DE pushed
 ROM_SUM_STEP_S:         ; 9D96
         ld      a,(0xF10E)
@@ -4480,7 +4603,7 @@ L_A29A:                 ; A29A
 L_A2B7:                 ; A2B7
         ld      a,(ix+17)
         call    OBJ_PTR
-        ld      bc,0xA2FE
+        ld      bc,GHOST_CORNERS
         call    ADD_BC_A
         ld      a,(bc)
         ld      (hl),a
@@ -5051,11 +5174,11 @@ ENEMY2B_FALL:           ; A6D1
         call    nz,ENEMY2B_ATTACK_START
 ; mode 0 of the ENEMY2B table at A80C
 ENEMY2B_ANIM:           ; A6E4
-        ld      hl,0xA82E
+        ld      hl,B0_DATA_A82E
         ld      a,(0xF44E)
         and     a
         jr      z,L_A6F6
-        ld      hl,0xA846
+        ld      hl,B0_DATA_A846
         res     5,(ix+24)
         jr      L_A705
 
@@ -5066,7 +5189,7 @@ L_A6F6:                 ; A6F6
         and     a
         jr      z,L_A705
 L_A702:                 ; A702
-        ld      hl,0xA83A
+        ld      hl,B0_DATA_A83A
 L_A705:                 ; A705
         bit     5,(ix+24)
         jr      z,L_A724
@@ -5092,7 +5215,7 @@ L_A724:                 ; A724
         call    ANIM_STEP
         jr      nz,L_A74D
         res     6,(ix+24)
-        ld      de,0x9625
+        ld      de,B0_DATA_9625
         call    ENEMY_PATH_SET
         bit     1,(ix+8)
         ld      (ix+7),0x04
@@ -5215,7 +5338,13 @@ L_A80C:                 ; A80C
         .word   ENEMY2B_WALK_L
         .word   ENEMY2B_JUMP_R
         .word   ENEMY2B_JUMP_L
-        .incbin "main_bank0.bin", 0x2818, 0x002F
+        .incbin "main_bank0.bin", 0x2818, 0x0016
+B0_DATA_A82E:           ; A82E
+        .incbin "main_bank0.bin", 0x282E, 0x000C
+B0_DATA_A83A:           ; A83A
+        .incbin "main_bank0.bin", 0x283A, 0x000C
+B0_DATA_A846:           ; A846
+        .incbin "main_bank0.bin", 0x2846, 0x0001
 ; clears BOSS_SLOT; returns unless ROUND_MAIN = 0x63 (round 100)
 BOSS_INIT:              ; A847
         ld      hl,BOSS_SLOT
@@ -5229,7 +5358,7 @@ BOSS_INIT:              ; A847
         ld      de,0x000C
         ld      b,0x10
         call    GFX_GRID_FILL
-        ld      de,0xAF0C
+        ld      de,BOSS_PIECE_XY
         ld      hl,0xE275
         ld      b,0x10
         ld      c,0x18
@@ -5237,12 +5366,13 @@ BOSS_INIT:              ; A847
         ld      hl,0xE28D
         ld      (ix+3),l
         ld      (ix+4),h
-        ld      hl,0xA887
+        ld      hl,B0_DATA_A887
         ld      de,0xF920
         ld      bc,0x0040
         ldir
         ret
 
+B0_DATA_A887:           ; A887
         .incbin "main_bank0.bin", 0x2887, 0x0040
 ; draws at A99A-A9FD: ANIM_STEP picks pose 0-1 (or 2-3 if (IX+8) b0) from BOSS_POSES, 16 pieces into gfx blocks 0C-0F
 BOSS_UPDATE:            ; A8C7
@@ -5357,13 +5487,13 @@ L_A99A:                 ; A99A
         call    ANIM_STEP
         call    SHL4
         ld      b,a
-        ld      hl,0xAF4C
+        ld      hl,BOSS_POSES
         call    ADD_HL_A
         ld      c,0x30
         bit     0,(ix+8)
         jr      z,L_A9B9
         ld      a,b
-        ld      hl,0xAF8C
+        ld      hl,B0_DATA_AF8C
         call    ADD_HL_A
 L_A9B9:                 ; A9B9
         ld      e,0x0C
@@ -5372,18 +5502,18 @@ L_A9B9:                 ; A9B9
         jr      nz,L_A9F0
         ld      a,(ix+5)
         call    SHL4
-        ld      hl,0xAF6C
+        ld      hl,B0_DATA_AF6C
         call    ADD_HL_A
         bit     0,(ix+8)
         jr      z,L_A9E1
         ld      a,(ix+5)
         call    SHL4
-        ld      hl,0xAFAC
+        ld      hl,B0_DATA_AFAC
         call    ADD_HL_A
 L_A9E1:                 ; A9E1
         call    BOSS_FLASH_CHECK
         jr      nc,L_A9EB
-        ld      hl,0xAF6C
+        ld      hl,B0_DATA_AF6C
         ld      c,0x29
 L_A9EB:                 ; A9EB
         call    SPRITE_GRID_FX
@@ -5392,7 +5522,7 @@ L_A9EB:                 ; A9EB
 L_A9F0:                 ; A9F0
         call    BOSS_FLASH_CHECK
         jr      nc,L_A9FA
-        ld      hl,0xAF4C
+        ld      hl,BOSS_POSES
         ld      c,0x29
 L_A9FA:                 ; A9FA
         call    SPRITE_GRID
@@ -5533,7 +5663,7 @@ BOSS_TRAPPED:           ; AAB0
         ld      de,0x0A02
         call    ANIM_STEP
         call    SHL4
-        ld      hl,0xAF8C
+        ld      hl,B0_DATA_AF8C
         call    ADD_HL_A
         ld      c,0x32
         ld      b,0x10
@@ -5542,7 +5672,7 @@ BOSS_TRAPPED:           ; AAB0
         jr      nz,L_AADF
         ld      a,(ix+5)
         call    SHL4
-        ld      hl,0xAFAC
+        ld      hl,B0_DATA_AFAC
         call    ADD_HL_A
         call    SPRITE_GRID_FX
         jr      L_AAE2
@@ -5584,7 +5714,7 @@ L_AB00:                 ; AB00
 BOSS_BUBBLE_FLASH:      ; AB27
         ld      de,0x0505
         call    IX_COUNT_DE
-        ld      hl,0xAB38
+        ld      hl,BOSS_BUBBLE_COLOURS
         call    TABLE_WORD
         ld      (0xF998),de
         ret
@@ -5616,7 +5746,7 @@ BOSS_SPRITE_ANGRY:      ; AB62
         ld      de,0x0A02
         call    ANIM_STEP
         call    SHL4
-        ld      hl,0xAF4C
+        ld      hl,BOSS_POSES
         call    ADD_HL_A
         ld      c,0x26
         ld      b,0x10
@@ -5625,11 +5755,11 @@ BOSS_SPRITE_ANGRY:      ; AB62
         jr      nz,L_AB97
         ld      a,(ix+5)
         call    SHL4
-        ld      hl,0xAF6C
+        ld      hl,B0_DATA_AF6C
         call    ADD_HL_A
         call    BOSS_FLASH_CHECK
         jr      nc,L_AB93
-        ld      hl,0xAF6C
+        ld      hl,B0_DATA_AF6C
         ld      c,0x29
 L_AB93:                 ; AB93
         call    SPRITE_GRID_FX
@@ -5638,7 +5768,7 @@ L_AB93:                 ; AB93
 L_AB97:                 ; AB97
         call    BOSS_FLASH_CHECK
         jr      nc,L_ABA1
-        ld      hl,0xAF4C
+        ld      hl,BOSS_POSES
         ld      c,0x29
 L_ABA1:                 ; ABA1
         call    SPRITE_GRID
@@ -5672,11 +5802,11 @@ L_ABD0:                 ; ABD0
 L_ABD2:                 ; ABD2
         call    SHL4
         ld      b,a
-        ld      hl,0xAF4C
+        ld      hl,BOSS_POSES
         ld      a,(ix+5)
         sub     0x02
         jr      c,L_ABE3
-        ld      hl,0xAF8C
+        ld      hl,B0_DATA_AF8C
 L_ABE3:                 ; ABE3
         ld      a,b
         call    ADD_HL_A
@@ -5744,10 +5874,10 @@ L_AC58:                 ; AC58
         ld      e,0x0C
         ld      b,0x10
         ld      c,0x33
-        ld      hl,0xAFCC
+        ld      hl,B0_SPRITES_AFCC
         bit     1,(ix+7)
         jr      nz,L_AC7E
-        ld      hl,0xAFDC
+        ld      hl,B0_SPRITES_AFDC
         call    SPRITE_GRID_FX
         ret
 
@@ -5776,10 +5906,10 @@ L_AC92:                 ; AC92
 
 L_ACA1:                 ; ACA1
         call    BOSS_POS_LOAD
-        ld      de,0xAF3C
+        ld      de,B0_DATA_AF3C
         bit     1,(ix+7)
         jr      nz,L_ACB0
-        ld      de,0xAF44
+        ld      de,B0_DATA_AF44
 L_ACB0:                 ; ACB0
         ld      hl,0xE2D5
         ld      b,0x04
@@ -5831,20 +5961,20 @@ L_ACF2:                 ; ACF2
         ld      c,0x33
         bit     1,(ix+7)
         jr      nz,L_AD18
-        ld      hl,0xB000
+        ld      hl,B0_DATA_B000
         bit     1,(ix+18)
         jr      z,L_AD11
-        ld      hl,0xB020
+        ld      hl,B0_DATA_B020
 L_AD11:                 ; AD11
         call    ADD_HL_A
         call    SPRITE_GRID_FX
         ret
 
 L_AD18:                 ; AD18
-        ld      hl,0xAFEC
+        ld      hl,B0_DATA_AFEC
         bit     1,(ix+18)
         jr      z,L_AD24
-        ld      hl,0xB018
+        ld      hl,B0_DATA_B018
 L_AD24:                 ; AD24
         call    ADD_HL_A
         call    SPRITE_GRID
@@ -5860,28 +5990,28 @@ L_AD2B:                 ; AD2B
         ld      b,0x04
         call    GFX_GRID_FILL
         ld      hl,0xE295
-        ld      de,0xAF34
+        ld      de,B0_DATA_AF34
         ld      b,0x04
         ld      c,0x18
         call    OBJ_POS_LIST
         ld      e,0x0C
         ld      b,0x04
         ld      c,0x0F
-        ld      hl,0xB02C
+        ld      hl,B0_SPRITES_B02C
         call    SPRITE_GRID
         ld      hl,0xE2A5
         ld      de,0x000D
         ld      b,0x04
         call    GFX_GRID_FILL
         ld      hl,0xE2A5
-        ld      de,0xAF2C
+        ld      de,B0_DATA_AF2C
         ld      b,0x04
         ld      c,0x18
         call    OBJ_POS_LIST
         ld      e,0x0D
         ld      b,0x04
         ld      c,0x0F
-        ld      hl,0xB028
+        ld      hl,B0_SPRITES_B028
         call    SPRITE_GRID
         set     3,(ix+18)
         xor     a
@@ -5959,7 +6089,7 @@ L_ADF7:                 ; ADF7
         bit     6,(ix+18)
         jr      nz,L_AE0A
         ld      hl,0xE275
-        ld      de,0xB0D0
+        ld      de,B0_DATA_B0D0
         ld      b,0x10
         ld      c,0x13
         call    OBJ_POS_LIST
@@ -5968,7 +6098,7 @@ L_AE0A:                 ; AE0A
         call    ANIM_STEP
         jr      z,L_AE25
         call    SHL4
-        ld      hl,0xB030
+        ld      hl,B0_DATA_B030
         call    ADD_HL_A
         ld      e,0x0C
         ld      b,0x10
@@ -6015,7 +6145,7 @@ L_AE66:                 ; AE66
         ld      e,0x12
         ld      b,0x04
         ld      c,0x1F
-        ld      hl,0xB014
+        ld      hl,B0_SPRITES_B014
         call    SPRITE_GRID
         ret
 
@@ -6123,10 +6253,46 @@ BOSS_EDGE_BOTTOM:       ; AEF7
 
 ; 16 position pairs on a 0x10 grid: the boss's 4 x 4 pieces
 BOSS_PIECE_XY:          ; AF0C
-        .incbin "main_bank0.bin", 0x2F0C, 0x0040
+        .incbin "main_bank0.bin", 0x2F0C, 0x0020
+B0_DATA_AF2C:           ; AF2C
+        .incbin "main_bank0.bin", 0x2F2C, 0x0008
+B0_DATA_AF34:           ; AF34
+        .incbin "main_bank0.bin", 0x2F34, 0x0008
+B0_DATA_AF3C:           ; AF3C
+        .incbin "main_bank0.bin", 0x2F3C, 0x0008
+B0_DATA_AF44:           ; AF44
+        .incbin "main_bank0.bin", 0x2F44, 0x0008
 ; 8 x 16 first tiles (bank 8): poses 0-1, mirrored 0-1, poses 2-3, mirrored 2-3; piece i at column i % 4, row i / 4
 BOSS_POSES:             ; AF4C
-        .incbin "main_bank0.bin", 0x2F4C, 0x01A4
+        .incbin "main_bank0.bin", 0x2F4C, 0x0020
+B0_DATA_AF6C:           ; AF6C
+        .incbin "main_bank0.bin", 0x2F6C, 0x0020
+B0_DATA_AF8C:           ; AF8C
+        .incbin "main_bank0.bin", 0x2F8C, 0x0020
+B0_DATA_AFAC:           ; AFAC
+        .incbin "main_bank0.bin", 0x2FAC, 0x0020
+B0_SPRITES_AFCC:        ; AFCC
+        .incbin "main_bank0.bin", 0x2FCC, 0x0010
+B0_SPRITES_AFDC:        ; AFDC
+        .incbin "main_bank0.bin", 0x2FDC, 0x0010
+B0_DATA_AFEC:           ; AFEC
+        .incbin "main_bank0.bin", 0x2FEC, 0x0014
+B0_DATA_B000:           ; B000
+        .incbin "main_bank0.bin", 0x3000, 0x0014
+B0_SPRITES_B014:        ; B014
+        .incbin "main_bank0.bin", 0x3014, 0x0004
+B0_DATA_B018:           ; B018
+        .incbin "main_bank0.bin", 0x3018, 0x0008
+B0_DATA_B020:           ; B020
+        .incbin "main_bank0.bin", 0x3020, 0x0008
+B0_SPRITES_B028:        ; B028
+        .incbin "main_bank0.bin", 0x3028, 0x0004
+B0_SPRITES_B02C:        ; B02C
+        .incbin "main_bank0.bin", 0x302C, 0x0004
+B0_DATA_B030:           ; B030
+        .incbin "main_bank0.bin", 0x3030, 0x00A0
+B0_DATA_B0D0:           ; B0D0
+        .incbin "main_bank0.bin", 0x30D0, 0x0020
 ; returns unless ENEMY_SWAP b0
 ENEMY0B_INIT:           ; B0F0
         ld      hl,ENEMY0B_SLOTS
@@ -6396,22 +6562,22 @@ ENEMY0B_ANIM:           ; B2EB
         jr      L_B323
 
 L_B305:                 ; B305
-        ld      hl,0xB347
-        ld      de,(0xB349)
+        ld      hl,B0_SPRITES_B347
+        ld      de,(B0_DATA_B349)
         ld      c,0x1D
         call    ENEMY_ANIM_SPRITE
         jp      L_B32F
 
 L_B314:                 ; B314
-        ld      hl,0xB348
-        ld      de,(0xB34D)
+        ld      hl,B0_SPRITES_B348
+        ld      de,(B0_DATA_B34D)
         ld      c,0x1D
         call    ENEMY_ANIM_SPRITE
         jp      L_B32F
 
 L_B323:                 ; B323
-        ld      hl,0xB346
-        ld      de,(0xB34B)
+        ld      hl,B0_SPRITES_B346
+        ld      de,(B0_DATA_B34B)
         ld      c,0x1D
         call    ENEMY_ANIM_SPRITE
 L_B32F:                 ; B32F
@@ -6429,7 +6595,18 @@ L_B33E:                 ; B33E
         .word   ENEMY0B_WALK_R
         .word   ENEMY0B_FALL
         .word   ENEMY0B_WALK_L
-        .incbin "main_bank0.bin", 0x3346, 0x0009
+B0_SPRITES_B346:        ; B346
+        .incbin "main_bank0.bin", 0x3346, 0x0001
+B0_SPRITES_B347:        ; B347
+        .incbin "main_bank0.bin", 0x3347, 0x0001
+B0_SPRITES_B348:        ; B348
+        .incbin "main_bank0.bin", 0x3348, 0x0001
+B0_DATA_B349:           ; B349
+        .incbin "main_bank0.bin", 0x3349, 0x0002
+B0_DATA_B34B:           ; B34B
+        .incbin "main_bank0.bin", 0x334B, 0x0002
+B0_DATA_B34D:           ; B34D
+        .incbin "main_bank0.bin", 0x334D, 0x0002
 ; Seen in MAME (--boss-pop): from ROUND_100_DONE: STARFIELD_RESET, F448 = 0, F458 + 1, ROUND_WIPE, with two players 600 frames of BF61, sound 14 (two) or 2B, then ENDING_SCROLL. Tamper check: bit 3 of byte 0002 set pushes DE and BC
 ENDING_START:           ; B34F
         call    STARFIELD_RESET
@@ -6501,17 +6678,17 @@ STARFIELD_DRAW:         ; B3B5
         call    SET_E1D0_1A
         rst     0x20
         ld      hl,0xCD08
-        ld      de,0xB3F2
+        ld      de,STARFIELD_MAP_A
         ld      bc,0x1A0C
         ld      a,0x2D
         call    TILE_RECT
         ld      hl,0xD008
-        ld      de,0xB52A
+        ld      de,STARFIELD_MAP_B
         ld      bc,0x1A0C
         ld      a,0x2D
         call    TILE_RECT
         ld      hl,0xD308
-        ld      de,0xB662
+        ld      de,STARFIELD_MAP_C
         ld      bc,0x1A08
         ld      a,0x2E
         call    TILE_RECT
@@ -6553,7 +6730,7 @@ STARFIELD_TWINKLE:      ; B738
         ld      l,a
         add     a,a
         add     a,l
-        ld      hl,0xB83C
+        ld      hl,STAR_FADE_IN
 ; STARFIELD_TWINKLE: the three colour words at HL + A to F960, F96E and F968
 STAR_COLOURS_SET:       ; B75D
         call    ADD_HL_A
@@ -6602,7 +6779,7 @@ L_B79C:                 ; B79C
         ld      l,a
         add     a,a
         add     a,l
-        ld      hl,0xB800
+        ld      hl,STAR_CYCLE
         call    STAR_COLOURS_SET
         ld      e,0xA2
         ld      a,(0xE5D8)
@@ -6676,7 +6853,7 @@ HEART_PALETTE:          ; B878
 ; Seen in MAME: the big heart between the two HAPPY END!! at the end of round 100, the 8 x 8 tiles of HEART_TILES at D818, tile bank 26
 HEART_DRAW:             ; B884
         ld      hl,0xD818
-        ld      de,0xB893
+        ld      de,HEART_TILES
         ld      bc,0x0808
         ld      a,0x26
         call    TILE_RECT
@@ -6701,7 +6878,7 @@ HEART_CYCLE:            ; B8D3
         xor     a
         ld      (hl),a
 L_B8E6:                 ; B8E6
-        ld      hl,0xB8F1
+        ld      hl,HEART_COLOURS
         call    TABLE_WORD
         ld      (0xF93A),de
         ret
@@ -6865,7 +7042,7 @@ BOSS_SHOT_MODE0:        ; BA1A
         call    BOSS_SHOT_OFF_BOTTOM
         jp      c,BOSS_SHOT_NEXT
         ld      a,(ix+9)
-        ld      hl,0xBBAF
+        ld      hl,BOSS_SHOT_PATHS
         call    ADD_HL_A
         call    BOSS_SHOT_STEP
         jr      BOSS_SHOT_NEXT
@@ -6879,7 +7056,7 @@ BOSS_SHOT_MODE1:        ; BA3A
         call    BOSS_SHOT_OFF_BOTTOM
         jp      c,BOSS_SHOT_NEXT
         ld      a,(ix+9)
-        ld      hl,0xBBB7
+        ld      hl,B0_DATA_BBB7
         call    ADD_HL_A
         call    BOSS_SHOT_STEP
         jr      BOSS_SHOT_NEXT
@@ -6893,7 +7070,7 @@ BOSS_SHOT_MODE2:        ; BA5A
         call    BOSS_SHOT_OFF_BOTTOM
         jp      c,BOSS_SHOT_NEXT
         ld      a,(ix+9)
-        ld      hl,0xBBBF
+        ld      hl,B0_DATA_BBBF
         call    ADD_HL_A
         call    BOSS_SHOT_STEP
         jr      BOSS_SHOT_NEXT
@@ -6907,7 +7084,7 @@ BOSS_SHOT_MODE3:        ; BA7A
         call    BOSS_SHOT_OFF_TOP
         jp      c,BOSS_SHOT_NEXT
         ld      a,(ix+9)
-        ld      hl,0xBBC7
+        ld      hl,B0_DATA_BBC7
         call    ADD_HL_A
         call    BOSS_SHOT_STEP
 ; next BOSS_SHOTS record (0x0C bytes), 8 in all; when BOSS_SHOTS_LEFT is 0 every record is cleared, BOSS_SHOTS_LEFT = 8 and BOSS_VOLLEY = 0
@@ -7082,7 +7259,13 @@ L_BBA7:                 ; BBA7
         .word   BOSS_SHOT_MODE3
 ; 4 x 8 path numbers, one per bottle, for BOSS_SHOT_MODE0-3 (BBAF, BBB7, BBBF, BBC7)
 BOSS_SHOT_PATHS:        ; BBAF
-        .incbin "main_bank0.bin", 0x3BAF, 0x0020
+        .incbin "main_bank0.bin", 0x3BAF, 0x0008
+B0_DATA_BBB7:           ; BBB7
+        .incbin "main_bank0.bin", 0x3BB7, 0x0008
+B0_DATA_BBBF:           ; BBBF
+        .incbin "main_bank0.bin", 0x3BBF, 0x0008
+B0_DATA_BBC7:           ; BBC7
+        .incbin "main_bank0.bin", 0x3BC7, 0x0008
 ; clears ENEMY2B_SHOTS; sets them up only if group 2 is nonzero and ENEMY_SWAP b4
 ENEMY2B_SHOTS_INIT:     ; BBCF
         ld      hl,ENEMY2B_SHOTS
@@ -7370,14 +7553,14 @@ L_BDC6:                 ; BDC6
 
 ; animation and launch of the shot
 ENEMY2B_SHOT_ANIM:      ; BDEC
-        ld      hl,0xBE97
+        ld      hl,B0_DATA_BE97
         bit     7,(ix+0)
         jr      nz,L_BDFB
         ld      a,(HURRY)
         and     a
         jr      z,L_BDFE
 L_BDFB:                 ; BDFB
-        ld      hl,0xBEA0
+        ld      hl,B0_DATA_BEA0
 L_BDFE:                 ; BDFE
         bit     3,(ix+0)
         jr      z,L_BE11
@@ -7462,7 +7645,10 @@ L_BE8F:                 ; BE8F
         .word   ENEMY2B_SHOT_FLY_R
         .word   ENEMY2B_SHOT_ANIM
         .word   ENEMY2B_SHOT_FLY_L
-        .incbin "main_bank0.bin", 0x3E97, 0x0012
+B0_DATA_BE97:           ; BE97
+        .incbin "main_bank0.bin", 0x3E97, 0x0009
+B0_DATA_BEA0:           ; BEA0
+        .incbin "main_bank0.bin", 0x3EA0, 0x0009
 ; Seen in MAME: clears the round's walls from the playfield, column F446 from 4 to 1F, 8 steps of the tiles at BF38 a column, 2 frames a step. Tamper check: the word at 0004 must be START, else EX (SP),IX
 ROUND_WIPE:             ; BEA9
         ld      hl,0xF446
@@ -7506,7 +7692,7 @@ L_BEC9:                 ; BEC9
         jr      nz,L_BF03
         ld      a,(0xF447)
         add     a,a
-        ld      de,0xBF38
+        ld      de,B0_DATA_BF38
         call    ADD_DE_A
         ld      a,(de)
         ld      (hl),a
@@ -7544,6 +7730,7 @@ L_BF03:                 ; BF03
         jp      nz,L_BEB8
         ret
 
+B0_DATA_BF38:           ; BF38
         .incbin "main_bank0.bin", 0x3F38, 0x0010
 ; Seen in MAME (--special 30): each frame while F448 (kind 30 sets 81): a hand holding a star sweeps down across the screen (b0, 7 sprites from BFE3), then HURRY UP!! rises from the bottom (b1) and the enemies turn angry; b2 done. Not in the attract loop or with NO_SPECIAL
 HURRY_HAND_RUN:         ; BF48
@@ -7579,7 +7766,7 @@ L_BF75:                 ; BF75
         ld      de,0x0004
         ld      b,0x07
         call    GFX_GRID_FILL
-        ld      de,0xBFE3
+        ld      de,B0_DATA_BFE3
         ld      hl,0xE2D5
         ld      b,0x07
 L_BF88:                 ; BF88
@@ -7595,11 +7782,11 @@ L_BF88:                 ; BF88
         inc     de
         inc     hl
         djnz    L_BF88
-        ld      hl,0xBFF8
+        ld      hl,B0_DATA_BFF8
         ld      a,(0xF448)
         bit     0,a
         jr      nz,L_BFA3
-        ld      hl,0xBFF1
+        ld      hl,B0_SPRITES_BFEF+2
 L_BFA3:                 ; BFA3
         ld      bc,0x071D
         ld      e,0x04
@@ -7640,17 +7827,20 @@ L_BFC2:                 ; BFC2
         or      a
         sbc     hl,de
         ret     z
+B0_DATA_BFE3:           ; BFE3
         call    m,0xFCC0
         ret     nc
         call    pe,0xECC0
         ret     nc
         call    c,0xDCB0
         ret     nz
+B0_SPRITES_BFEF:        ; BFEF
         call    z,0xC4B0
         call    z,0xC8C0
         cp      b
         cp      h
         or      h
+B0_DATA_BFF8:           ; BFF8
         ret     po
         ret     pe
         call    c,0xD4E4
