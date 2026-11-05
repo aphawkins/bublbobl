@@ -223,8 +223,35 @@ The record's register copies: +20–+25 tones A–C, +26 noise, +27 mixer, +28�
 +31/+32 envelope period, +33 envelope shape. +17 and +18 flag the registers to write at the
 next tick (`SSG_TONE_WRITE`, `SSG_HWENV_WRITE`).
 
+## Event lengths
+
+An event is its byte and its arguments. `tools/sounddec.py` uses these lengths (from the
+handlers) to find where a phrase ends.
+
+FM (YM3526 and YM2203), the length including the event byte:
+
+| Event | Length |
+|---|---|
+| a note (low nibble 0–B) | 1 |
+| 8F (and 8C–8E on the YM2203) | 2, or 3 if the note byte after has b7 set (an F-number offset follows) |
+| 9C–9F, AC–AF, CE, CF, EC, ED, FC, FD–FF; YM3526 BC–BF | 2 |
+| YM2203 BC–BF | 6 |
+| CC | 2; 3 on the YM3526 for B0–B6, on the YM2203 for A2–B6 |
+| CD | 3 on the YM3526, 5 on the YM2203 |
+| DC | 4 |
+| DD | 2 + the number of bits set in the mask |
+| DE | 3 |
+| DF | 2 + the bits set in b0–2 (YM3526); 2 + the bits set in b0–3 and b7, and b4–6 too on channel 3 (YM2203) |
+| EE, EF | 1 |
+
+A phrase's steps end at a duration of 00. A second note (or EE or EF) in a step ends it: the
+player starts another step there, with the length set by CE as its duration.
+
+SSG: 4x–7x are 2 bytes, 8x–Ex are 1. F0 is 1 byte and ends the step (the next duration
+follows it, and can be 40 or more). F1, F3, F7, FB–FF are 2, F2, F4–F6 and F8–FA are 3.
+
 ## Not yet done
 
-- The command catalogue (`notes/sound_commands.md` lists the commands the main CPU sends):
-  which block each command starts, checked against MAME recordings.
-- A decoder that writes each command's phrases as JSON (`build/sound/`).
+- The command catalogue is in `notes/sound_blocks.md` (made by `tools/sounddec.py`, JSON in
+  `build/sound/commands.json`). It is not yet checked against MAME recordings.
+- Check the decoded phrases against MAME recordings of the chips' registers.

@@ -902,8 +902,19 @@ Started (2026-10-27):
 - The SSG's modulation (2026-10-31): no LFO, but 7 stepped envelopes (tone periods, noise,
   volumes), plus the hardware envelope (F3, 7x). Every SSG event is now known, and the four
   envelope tables are named. Still byte-exact.
-- Next: the command catalogue (step 2) and a phrase decoder to JSON, checked against MAME
-  recordings.
+- The command catalogue (2026-11-05): `tools/sounddec.py` reads `COMMAND_TABLE` and
+  `COMMAND_F_TABLE` from the sound image and writes `notes/sound_blocks.md` and
+  `build/sound/commands.json`: for each of the 57 commands the blocks it starts (record,
+  priority, passes, next command, phrase addresses). It agrees with the record counts above.
+- The phrases (2026-11-05): `sounddec.py` also decodes every phrase into steps (a duration and
+  its events) in `build/sound/commands.json`. The argument length of each event was read from
+  its handler (`notes/sound.md`, "Event lengths"). All 146 phrases end on their 00 byte, and
+  almost all of them follow one another with no byte between, which supports the lengths. The
+  gaps are four stray bytes before the phrases at `6EAE` and `6F52` and two at `4265`.
+  Command 2E's block says 255 phrases but holds one.
+- Next: compare the decoded notes with MAME recordings (register logs), then turn the
+  voices and envelope tables (`OPL_VOICES`, `OPN_VOICES`, `OPL_ENVS`, `OPN_ENVS`, the SSG
+  tables) into JSON for the synthesiser.
 
 ---
 
