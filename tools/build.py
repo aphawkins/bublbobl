@@ -79,21 +79,26 @@ def run_unix(commands: list[list[str]]) -> None:
         raise SystemExit(f"assembly failed:\n{result.stdout}{result.stderr}")
 
 
-def assemble() -> dict[str, bytes]:
-    OBJ.mkdir(parents=True, exist_ok=True)
+def assemble(src_dir: str = "src", obj_dir: str = "build/obj",
+             sources: list[str] | None = None) -> dict[str, bytes]:
+    """Assemble and link sources (default all). Both folders are relative to the repo root."""
+    (ROOT / obj_dir).mkdir(parents=True, exist_ok=True)
     tools = binutils_dir()
     commands = []
-    for src, (target, tool_dir, flags, base) in SOURCES.items():
-        stem = "obj/" + src.replace("/", "_")[:-2]
+    names = sources or list(SOURCES)
+    for src in names:
+        target, tool_dir, flags, base = SOURCES[src]
+        stem = f"{obj_dir}/" + src.replace("/", "_")[:-2]
         prefix = f"{tools}/{tool_dir}/bin/{target}-"
         commands += [
-            [prefix + "as", *flags, "-I", "build/images", "-I", "build/include", "-o", f"build/{stem}.o", f"src/{src}"],
+            [prefix + "as", *flags, "-I", "build/images", "-I", "build/include", "-o", f"{stem}.o",
+             f"{src_dir}/{src}"],
             [prefix + "ld", f"-Ttext=0x{base:04x}", "-e", f"0x{base:04x}",
-             "-o", f"build/{stem}.elf", f"build/{stem}.o"],
-            [prefix + "objcopy", "-O", "binary", f"build/{stem}.elf", f"build/{stem}.bin"],
+             "-o", f"{stem}.elf", f"{stem}.o"],
+            [prefix + "objcopy", "-O", "binary", f"{stem}.elf", f"{stem}.bin"],
         ]
     run_unix(commands)
-    return {src: (OBJ / (src.replace("/", "_")[:-2] + ".bin")).read_bytes() for src in SOURCES}
+    return {src: (ROOT / obj_dir / (src.replace("/", "_")[:-2] + ".bin")).read_bytes() for src in names}
 
 
 def first_diff(a: bytes, b: bytes) -> str:

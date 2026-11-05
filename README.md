@@ -57,6 +57,9 @@ Other tools:
   plus `rounds.png`, the same in the super mode's palettes (`_super.png`), and the item
   tables (`items.json`); `--check <snap folder>` compares them with RAM snapshots
 - `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
+- `tools/reloc.py` — the relocation test: move an image's code, then compare it with the
+  byte-exact set in MAME, screen by screen and (for sound) register write by register write.
+  The sub CPU, MCU and sound pass; the main CPU is not done
 - `tools/symbols.py` — export `notes/symbols.toml` as assembler includes, `build/include/`
   (`build.py` runs it)
 - `tools/dasmz80.py` — trace Z80 code from the vectors, the traced ranges and the named

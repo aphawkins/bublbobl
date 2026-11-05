@@ -961,7 +961,7 @@ Started (2026-10-27):
   and anything after the first 14.5 s of a command.
 - Left for stage 3: a synthesiser-side check, which plays a decoded command through a generic FM
   model and compares it with MAME audio (`SharpKind.Audio`).
-- Next: the Phase 8 relocation test.
+- Next: the Phase 8 relocation test (§12.5).
 
 ---
 
@@ -1046,6 +1046,46 @@ A byte-exact set gives no checksum warning. Play attract mode, one round and tes
 
 Stage 3 needs level 1. Level 2 is required only for changes to the arcade code itself.
 
+`python toolseloc.py IMAGE...` runs the test. It adds N bytes after the image's fixed vectors,
+takes N out of its free space, and balances the ROM's own sum with the padding, so no code is
+patched. MAME then plays the same inputs on the byte-exact set and the moved set: moving code does
+not change its timing, so every sampled screen must match (attract mode and random play), and for
+sound every YM register write must match in value and time. Two broken sub ROMs and a broken sound
+ROM were tried, and each was caught.
+
+Done (2026-11-05), each at several pad sizes, odd ones included, and all three moved at once:
+
+| Image | Found | Result |
+|---|---|---|
+| Sub | Nothing: `ROUND_LAYOUTS` was the only ROM pointer | Same screens |
+| MCU | `SPEED_PATTERNS` and `FETCH_BLOCKS` start with pointers, which were `.incbin` bytes. Moved, the speed lookups read the wrong lists, and an enemy moved differently | Same screens |
+| Sound | 660 pointers in the data, 15 pushed or passed code addresses, and `TAMPER_CHECK`'s 6 fixed reads | Same screens; same writes for 55 of the 57 commands |
+
+Sound command 2E is left out, because what it plays depends on the layout (`notes/sound.md`). 00 is
+not tested on its own: it is the stop sent before each of the others.
+`tools\soundptrs.py` writes the data pointers through `tools\dataptrs.py`, which any data format
+can use.
+
+The test only proves what the run reaches: one round of random play, not all 100 rounds, and not
+test mode. For the sub CPU and the MCU the reading of the code covers the rest, as they hold few
+pointers.
+
+Not done: the main CPU (`fixed`, banks 0-3). What it needs:
+- **Labels across images.** The fixed ROM and the banks are linked apart, and refer to each other
+  by number: 76 `call`/`jp` in `fixed.s`, plus `fixed.inc`, whose addresses come from
+  `symbols.toml` and not from the link. `build.py` needs a second pass that feeds each image's
+  link map to the others.
+- **Sorting the operands.** 975 16-bit operands fall in the ROM's range (632 fixed, 165 bank 0, 174
+  bank 2, 4 bank 3), and only 78 land on a label. The rest are counts, screen sizes, pairs of bytes
+  or pointers, and each needs a decision.
+- **Data pointers.** Bank 1 is one `.incbin`, and the text, sprite and level tables in the other
+  images hold pointers too.
+- **Room.** The fixed ROM has no free space and bank 0 has 1 byte, so the padding has to come out of
+  code that never runs. The IM 2 entry must stay at `0B2E`, or `I` and the MCU's vector must change.
+- **The ROM sums.** There are 30 `ROM_SUM_STEP_*` routines, over ranges that overlap, and they
+  cannot all be balanced with one byte. As planned, these and `0x333F` are made to pass for the test.
+- `tools/soundlog.lua` sets the main CPU's PC to `01ED`, which must be a label's address once main moves.
+
 Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing relocation test.
 
 ---
@@ -1090,7 +1130,7 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 7. Phase 5 main/sub disassembly (sub done). Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.
 8. Phase 7 sound.
-9. Phase 8 relocation test.
+9. Phase 8 relocation test (sub, MCU and sound done; the main CPU is left, §12.5).
 10. Phase 9 consolidation.
 
 Before starting each phase, check for existing community documentation or disassemblies of

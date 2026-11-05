@@ -21,6 +21,12 @@ s = s.replace('ld      de,OPL_EVENT_JUMPS', 'ld      de,0x0800')
 # the LFO shapes return through these pushed addresses
 s = s.replace('ld      bc,0x103F', 'ld      bc,OPL_LFO_VALUE')
 s = s.replace('ld      bc,0x1F6F', 'ld      bc,OPN_LFO_VALUE')
+# addresses the code pushes, passes in BC or reads back: they move with the code, so they are labels
+for a in (0x0144, 0x017A, 0x0191, 0x019D, 0x021F, 0x022B, 0x07E8, 0x0E2F, 0x0E45, 0x0E6D, 0x0E77,
+          0x0EB7, 0x0EC1, 0x15C1, 0x1C54, 0x1C6A, 0x1C80, 0x1C96, 0x1D00, 0x1D0C, 0x1D67):
+    name = re.search(r'^(\w+):\s*; %04X$' % a, s, re.M).group(1)
+    s, n = re.subn(r'(ld      (?:bc,|hl,|a,\())0x%04X\b' % a, lambda m: m.group(1) + name, s)
+    assert n, hex(a)
 s = re.sub(r'(SOUND_START:[^\n]*\n(?:[^\n]*\n){5}\s+ld\s+hl,)SSG_REC_A', r'\1RAM', s)
 head = '''; Sound Z80, 3 MHz
 ; a78-07.46, linked at 0x0000. Built by tools/build.py.
@@ -40,3 +46,5 @@ head = '''; Sound Z80, 3 MHz
 s = s.replace('; sound - first pass by tools/dasmz80.py\n; No ROM bytes: every range not disassembled is .incbin of build/images/sound.bin.\n', head)
 open('src/sound/sound.s', 'w', encoding='utf-8', newline='\n').write(s)
 P
+
+python tools/soundptrs.py

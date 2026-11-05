@@ -56,6 +56,14 @@ next byte to the record that byte names, at once.
 A record plays each phrase for its repeats, then the next phrase. After the last phrase it
 starts the next pass. After the last pass it stops (`OPL_PHRASE_END`).
 
+Command 2E (entry `3314`) is a block for SSG A that says FF phrases. Its first phrase points at
+`331B`, the bytes just after it, and the player then reads the start of the next entry as more
+3-byte phrases. Those give "pointers" such as `1A00` (a count byte beside a 00) and `8633` (the
+halves of two pointers), into code and RAM. What it plays therefore depends on where everything
+is, and no label can keep it the same, so `tools/reloc.py` leaves it out. Nothing in play sends 2E:
+no constant does, and the table at `46B8` holds only 26 and 27. The test screen's sound picker
+(`F449`) sends whatever number is chosen; its range has not been checked.
+
 ## Steps and events
 
 The YM2203's timers drive the players. Timer A runs `OPL_TICK_A` and `_B`, and timer B runs

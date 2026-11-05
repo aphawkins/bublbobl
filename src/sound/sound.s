@@ -157,6 +157,8 @@ L_011D:                 ; 011D
         call    OPN_WRITE
         and     0x0F
         ld      (REG27_BASE),a
+; an opcode TAMPER_CHECK reads: CD
+TAMPER_OP_0144:         ; 0144
         call    SSG_OFF_CHECK
         ld      hl,YM3526
         ld      b,0x02
@@ -205,6 +207,8 @@ SSG_OFF_CHECK:          ; 017A
         nop
         inc     hl
         ld      a,(hl)
+; an opcode TAMPER_CHECK reads: FE
+TAMPER_OP_0191:         ; 0191
         cp      0x3F
         ret     z
         rst     0x00
@@ -216,6 +220,8 @@ IRQ_HANDLER:            ; 0195
         push    hl
         push    ix
         push    iy
+; an opcode TAMPER_CHECK reads: CD
+TAMPER_OP_019D:         ; 019D
         call    OPL_TIMER_STOP
 L_01A0:                 ; 01A0
         ld      a,(YM2203)
@@ -341,22 +347,22 @@ DIAG_ROM_CHECK:         ; 0268
         rst     0x00
 ; six opcode bytes in 0144-022B must be as built, else reset
 TAMPER_CHECK:           ; 0279
-        ld      a,(0x0144)
+        ld      a,(TAMPER_OP_0144)
         cp      0xCD
         jr      nz,L_02A2
-        ld      a,(0x017A)
+        ld      a,(SSG_OFF_CHECK)
         cp      0x3E
         jr      nz,L_02A2
-        ld      a,(0x0191)
+        ld      a,(TAMPER_OP_0191)
         cp      0xFE
         jr      nz,L_02A2
-        ld      a,(0x019D)
+        ld      a,(TAMPER_OP_019D)
         cp      0xCD
         jr      nz,L_02A2
-        ld      a,(0x021F)
+        ld      a,(L_021F)
         cp      0xCD
         jr      nz,L_02A2
-        ld      a,(0x022B)
+        ld      a,(OPL_TIMER_STOP)
         cp      0x3A
         ret     z
 L_02A2:                 ; 02A2
@@ -1128,7 +1134,7 @@ L_07CC:                 ; 07CC
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
-        ld      hl,0x07E8
+        ld      hl,L_07E8
         push    hl
         inc     bc
         ld      a,(bc)
@@ -2130,9 +2136,9 @@ L_0D9D:                 ; 0D9D
         ld      a,d
         and     0x03
         jr      z,L_0DB2
-        ld      bc,0x0E77
+        ld      bc,OPL_TL_WRITE
         call    OPL_OP_PAIR
-        ld      bc,0x0E6D
+        ld      bc,OPL_20_WRITE
         call    OPL_OP_PAIR
         jr      L_0DC9
 
@@ -2140,21 +2146,21 @@ L_0DB2:                 ; 0DB2
         ld      d,(ix+16)
         rlc     d
         rlc     d
-        ld      bc,0x0E77
+        ld      bc,OPL_TL_WRITE
         call    OPL_OP_PAIR
         rlc     d
         rlc     d
-        ld      bc,0x0E6D
+        ld      bc,OPL_20_WRITE
         call    OPL_OP_PAIR
 L_0DC9:                 ; 0DC9
         ld      d,(ix+17)
         rrc     d
         rrc     d
-        ld      bc,0x0EB7
+        ld      bc,OPL_60_WRITE
         call    OPL_OP_PAIR
         rlc     d
         rlc     d
-        ld      bc,0x0EC1
+        ld      bc,OPL_80_WRITE
         call    OPL_OP_PAIR
         pop     de
         bit     3,(ix+15)
@@ -2191,7 +2197,7 @@ OPL_OP_PAIR:            ; 0E18
         ld      (OP_PAIR_WRITER),bc
         bit     0,d
         jr      z,L_0E2F
-        ld      bc,0x0E2F
+        ld      bc,L_0E2F
         push    bc
         ld      a,e
         ld      bc,(OP_PAIR_WRITER)
@@ -2203,7 +2209,7 @@ L_0E2F:                 ; 0E2F
         add     iy,bc
         bit     1,d
         jr      z,L_0E45
-        ld      bc,0x0E45
+        ld      bc,L_0E45
         push    bc
         ld      a,e
         add     a,0x03
@@ -3414,7 +3420,7 @@ L_15A5:                 ; 15A5
         ld      e,(hl)
         inc     hl
         ld      d,(hl)
-        ld      hl,0x15C1
+        ld      hl,L_15C1
         push    hl
         inc     bc
         ld      a,(bc)
@@ -4447,16 +4453,16 @@ L_1BF6:                 ; 1BF6
         bit     7,d
         ld      a,e
         call    nz,L_1C9B
-        ld      bc,0x1D0C
+        ld      bc,L_1D0C
         call    L_1C3D
         ld      d,(ix+17)
         ld      (ix+17),0x00
-        ld      bc,0x1D00
+        ld      bc,L_1D00
         call    L_1C3D
         call    L_1D96
         ld      d,(ix+18)
         ld      (ix+18),0x00
-        ld      bc,0x1D67
+        ld      bc,L_1D67
         call    L_1C3D
         bit     4,d
         ld      a,e
@@ -4482,7 +4488,7 @@ L_1C3D:                 ; 1C3D
         ld      (OP_PAIR_WRITER),bc
         bit     0,d
         jr      z,L_1C54
-        ld      bc,0x1C54
+        ld      bc,L_1C54
         push    bc
         ld      a,e
         ld      bc,(OP_PAIR_WRITER)
@@ -4494,7 +4500,7 @@ L_1C54:                 ; 1C54
         add     iy,bc
         bit     1,d
         jr      z,L_1C6A
-        ld      bc,0x1C6A
+        ld      bc,L_1C6A
         push    bc
         ld      a,e
         add     a,0x08
@@ -4507,7 +4513,7 @@ L_1C6A:                 ; 1C6A
         add     iy,bc
         bit     2,d
         jr      z,L_1C80
-        ld      bc,0x1C80
+        ld      bc,L_1C80
         push    bc
         ld      a,e
         add     a,0x04
@@ -4520,7 +4526,7 @@ L_1C80:                 ; 1C80
         add     iy,bc
         bit     3,d
         jr      z,L_1C96
-        ld      bc,0x1C96
+        ld      bc,L_1C96
         push    bc
         ld      a,e
         add     a,0x0C
@@ -6093,7 +6099,38 @@ SSG_EV_F_NONE:          ; 25BB
 
 ; 16 x (handler, DE) for SSG_EV_F
 SSG_F_JUMPS:            ; 25BC
-        .incbin "sound.bin", 0x25BC, 0x0040
+        .word   SSG_EV_END
+        .incbin "sound.bin", 0x25BE, 0x0002
+        .word   SSG_EV_NOISE
+        .incbin "sound.bin", 0x25C2, 0x0002
+        .word   SSG_EV_NOISE_ENV
+        .incbin "sound.bin", 0x25C6, 0x0002
+        .word   SSG_EV_ENV_SHAPE
+        .incbin "sound.bin", 0x25CA, 0x0002
+        .word   SSG_EV_TONE_ENV
+        .incbin "sound.bin", 0x25CE, 0x0002
+        .word   SSG_EV_TONE_ENV
+        .incbin "sound.bin", 0x25D2, 0x0002
+        .word   SSG_EV_TONE_ENV
+        .incbin "sound.bin", 0x25D6, 0x0002
+        .word   SSG_EV_MIXER
+        .incbin "sound.bin", 0x25DA, 0x0002
+        .word   SSG_EV_VOL_ENV
+        .incbin "sound.bin", 0x25DE, 0x0002
+        .word   SSG_EV_VOL_ENV
+        .incbin "sound.bin", 0x25E2, 0x0002
+        .word   SSG_EV_VOL_ENV
+        .incbin "sound.bin", 0x25E6, 0x0002
+        .word   SSG_EV_F_NONE
+        .incbin "sound.bin", 0x25EA, 0x0002
+        .word   SSG_EV_F_NONE
+        .incbin "sound.bin", 0x25EE, 0x0002
+        .word   SSG_EV_F_NONE
+        .incbin "sound.bin", 0x25F2, 0x0002
+        .word   SSG_EV_F_NONE
+        .incbin "sound.bin", 0x25F6, 0x0002
+        .word   SSG_EV_ENV_STOP
+        .incbin "sound.bin", 0x25FA, 0x0002
 ; 16 bytes for SSG_EV_ENV_STOP: the slot of the envelope that F0+n starts (0: none)
 SSG_ENV_SLOTS:          ; 25FC
         .incbin "sound.bin", 0x25FC, 0x0010
@@ -6519,37 +6556,1698 @@ L_28D5:                 ; 28D5
 
 ; 29 words: 13-byte voices for OPL_EV_VOICE
 OPL_VOICES:             ; 28D7
-        .incbin "sound.bin", 0x28D7, 0x01B3
+        .word   VOICE_2911
+        .word   VOICE_291E
+        .word   VOICE_292B
+        .word   VOICE_2938
+        .word   VOICE_2945
+        .word   VOICE_2952
+        .word   VOICE_295F
+        .word   VOICE_296C
+        .word   VOICE_2979
+        .word   VOICE_2986
+        .word   VOICE_2993
+        .word   VOICE_29A0
+        .word   VOICE_29AD
+        .word   VOICE_29BA
+        .word   VOICE_29C7
+        .word   VOICE_29D4
+        .word   VOICE_29E1
+        .word   VOICE_29EE
+        .word   VOICE_29FB
+        .word   VOICE_2A08
+        .word   VOICE_2A15
+        .word   VOICE_2A22
+        .word   VOICE_2A2F
+        .word   VOICE_2A3C
+        .word   VOICE_2A49
+        .word   VOICE_2A56
+        .word   VOICE_2A63
+        .word   VOICE_2A70
+        .word   VOICE_2A7D
+VOICE_2911:             ; 2911
+        .incbin "sound.bin", 0x2911, 0x000D
+VOICE_291E:             ; 291E
+        .incbin "sound.bin", 0x291E, 0x000D
+VOICE_292B:             ; 292B
+        .incbin "sound.bin", 0x292B, 0x000D
+VOICE_2938:             ; 2938
+        .incbin "sound.bin", 0x2938, 0x000D
+VOICE_2945:             ; 2945
+        .incbin "sound.bin", 0x2945, 0x000D
+VOICE_2952:             ; 2952
+        .incbin "sound.bin", 0x2952, 0x000D
+VOICE_295F:             ; 295F
+        .incbin "sound.bin", 0x295F, 0x000D
+VOICE_296C:             ; 296C
+        .incbin "sound.bin", 0x296C, 0x000D
+VOICE_2979:             ; 2979
+        .incbin "sound.bin", 0x2979, 0x000D
+VOICE_2986:             ; 2986
+        .incbin "sound.bin", 0x2986, 0x000D
+VOICE_2993:             ; 2993
+        .incbin "sound.bin", 0x2993, 0x000D
+VOICE_29A0:             ; 29A0
+        .incbin "sound.bin", 0x29A0, 0x000D
+VOICE_29AD:             ; 29AD
+        .incbin "sound.bin", 0x29AD, 0x000D
+VOICE_29BA:             ; 29BA
+        .incbin "sound.bin", 0x29BA, 0x000D
+VOICE_29C7:             ; 29C7
+        .incbin "sound.bin", 0x29C7, 0x000D
+VOICE_29D4:             ; 29D4
+        .incbin "sound.bin", 0x29D4, 0x000D
+VOICE_29E1:             ; 29E1
+        .incbin "sound.bin", 0x29E1, 0x000D
+VOICE_29EE:             ; 29EE
+        .incbin "sound.bin", 0x29EE, 0x000D
+VOICE_29FB:             ; 29FB
+        .incbin "sound.bin", 0x29FB, 0x000D
+VOICE_2A08:             ; 2A08
+        .incbin "sound.bin", 0x2A08, 0x000D
+VOICE_2A15:             ; 2A15
+        .incbin "sound.bin", 0x2A15, 0x000D
+VOICE_2A22:             ; 2A22
+        .incbin "sound.bin", 0x2A22, 0x000D
+VOICE_2A2F:             ; 2A2F
+        .incbin "sound.bin", 0x2A2F, 0x000D
+VOICE_2A3C:             ; 2A3C
+        .incbin "sound.bin", 0x2A3C, 0x000D
+VOICE_2A49:             ; 2A49
+        .incbin "sound.bin", 0x2A49, 0x000D
+VOICE_2A56:             ; 2A56
+        .incbin "sound.bin", 0x2A56, 0x000D
+VOICE_2A63:             ; 2A63
+        .incbin "sound.bin", 0x2A63, 0x000D
+VOICE_2A70:             ; 2A70
+        .incbin "sound.bin", 0x2A70, 0x000D
+VOICE_2A7D:             ; 2A7D
+        .incbin "sound.bin", 0x2A7D, 0x000D
 ; 59 words: 33-byte voices for OPN_EV_VOICE
 OPN_VOICES:             ; 2A8A
-        .incbin "sound.bin", 0x2A8A, 0x0812
+        .word   VOICE_2B00
+        .word   VOICE_2B21
+        .word   VOICE_2B42
+        .word   VOICE_2B63
+        .word   VOICE_2B84
+        .word   VOICE_2BA5
+        .word   VOICE_2BC6
+        .word   VOICE_2BE7
+        .word   VOICE_2C08
+        .word   VOICE_2C29
+        .word   VOICE_2C4A
+        .word   VOICE_2C6B
+        .word   VOICE_2C8C
+        .word   VOICE_2CAD
+        .word   VOICE_2CCE
+        .word   VOICE_2CEF
+        .word   VOICE_2D10
+        .word   VOICE_2D31
+        .word   VOICE_2D52
+        .word   VOICE_2D73
+        .word   VOICE_2D94
+        .word   VOICE_2DB5
+        .word   VOICE_2DD6
+        .word   VOICE_2DF7
+        .word   VOICE_2E18
+        .word   VOICE_2E39
+        .word   VOICE_2E5A
+        .word   VOICE_2E7B
+        .word   VOICE_2E9C
+        .word   VOICE_2EBD
+        .word   VOICE_2EDE
+        .word   VOICE_2EFF
+        .word   VOICE_2F20
+        .word   VOICE_2F41
+        .word   VOICE_2F62
+        .word   VOICE_2F83
+        .word   VOICE_2FA4
+        .word   VOICE_2FC5
+        .word   VOICE_2FE6
+        .word   VOICE_3007
+        .word   VOICE_3028
+        .word   VOICE_3049
+        .word   VOICE_306A
+        .word   VOICE_308B
+        .word   VOICE_30AC
+        .word   VOICE_30CD
+        .word   VOICE_30EE
+        .word   VOICE_310F
+        .word   VOICE_3130
+        .word   VOICE_3151
+        .word   VOICE_3172
+        .word   VOICE_3193
+        .word   VOICE_31B4
+        .word   VOICE_31D5
+        .word   VOICE_31F6
+        .word   VOICE_3217
+        .word   VOICE_3238
+        .word   VOICE_3259
+        .word   VOICE_327B
+VOICE_2B00:             ; 2B00
+        .incbin "sound.bin", 0x2B00, 0x0021
+VOICE_2B21:             ; 2B21
+        .incbin "sound.bin", 0x2B21, 0x0021
+VOICE_2B42:             ; 2B42
+        .incbin "sound.bin", 0x2B42, 0x0021
+VOICE_2B63:             ; 2B63
+        .incbin "sound.bin", 0x2B63, 0x0021
+VOICE_2B84:             ; 2B84
+        .incbin "sound.bin", 0x2B84, 0x0021
+VOICE_2BA5:             ; 2BA5
+        .incbin "sound.bin", 0x2BA5, 0x0021
+VOICE_2BC6:             ; 2BC6
+        .incbin "sound.bin", 0x2BC6, 0x0021
+VOICE_2BE7:             ; 2BE7
+        .incbin "sound.bin", 0x2BE7, 0x0021
+VOICE_2C08:             ; 2C08
+        .incbin "sound.bin", 0x2C08, 0x0021
+VOICE_2C29:             ; 2C29
+        .incbin "sound.bin", 0x2C29, 0x0021
+VOICE_2C4A:             ; 2C4A
+        .incbin "sound.bin", 0x2C4A, 0x0021
+VOICE_2C6B:             ; 2C6B
+        .incbin "sound.bin", 0x2C6B, 0x0021
+VOICE_2C8C:             ; 2C8C
+        .incbin "sound.bin", 0x2C8C, 0x0021
+VOICE_2CAD:             ; 2CAD
+        .incbin "sound.bin", 0x2CAD, 0x0021
+VOICE_2CCE:             ; 2CCE
+        .incbin "sound.bin", 0x2CCE, 0x0021
+VOICE_2CEF:             ; 2CEF
+        .incbin "sound.bin", 0x2CEF, 0x0021
+VOICE_2D10:             ; 2D10
+        .incbin "sound.bin", 0x2D10, 0x0021
+VOICE_2D31:             ; 2D31
+        .incbin "sound.bin", 0x2D31, 0x0021
+VOICE_2D52:             ; 2D52
+        .incbin "sound.bin", 0x2D52, 0x0021
+VOICE_2D73:             ; 2D73
+        .incbin "sound.bin", 0x2D73, 0x0021
+VOICE_2D94:             ; 2D94
+        .incbin "sound.bin", 0x2D94, 0x0021
+VOICE_2DB5:             ; 2DB5
+        .incbin "sound.bin", 0x2DB5, 0x0021
+VOICE_2DD6:             ; 2DD6
+        .incbin "sound.bin", 0x2DD6, 0x0021
+VOICE_2DF7:             ; 2DF7
+        .incbin "sound.bin", 0x2DF7, 0x0021
+VOICE_2E18:             ; 2E18
+        .incbin "sound.bin", 0x2E18, 0x0021
+VOICE_2E39:             ; 2E39
+        .incbin "sound.bin", 0x2E39, 0x0021
+VOICE_2E5A:             ; 2E5A
+        .incbin "sound.bin", 0x2E5A, 0x0021
+VOICE_2E7B:             ; 2E7B
+        .incbin "sound.bin", 0x2E7B, 0x0021
+VOICE_2E9C:             ; 2E9C
+        .incbin "sound.bin", 0x2E9C, 0x0021
+VOICE_2EBD:             ; 2EBD
+        .incbin "sound.bin", 0x2EBD, 0x0021
+VOICE_2EDE:             ; 2EDE
+        .incbin "sound.bin", 0x2EDE, 0x0021
+VOICE_2EFF:             ; 2EFF
+        .incbin "sound.bin", 0x2EFF, 0x0021
+VOICE_2F20:             ; 2F20
+        .incbin "sound.bin", 0x2F20, 0x0021
+VOICE_2F41:             ; 2F41
+        .incbin "sound.bin", 0x2F41, 0x0021
+VOICE_2F62:             ; 2F62
+        .incbin "sound.bin", 0x2F62, 0x0021
+VOICE_2F83:             ; 2F83
+        .incbin "sound.bin", 0x2F83, 0x0021
+VOICE_2FA4:             ; 2FA4
+        .incbin "sound.bin", 0x2FA4, 0x0021
+VOICE_2FC5:             ; 2FC5
+        .incbin "sound.bin", 0x2FC5, 0x0021
+VOICE_2FE6:             ; 2FE6
+        .incbin "sound.bin", 0x2FE6, 0x0021
+VOICE_3007:             ; 3007
+        .incbin "sound.bin", 0x3007, 0x0021
+VOICE_3028:             ; 3028
+        .incbin "sound.bin", 0x3028, 0x0021
+VOICE_3049:             ; 3049
+        .incbin "sound.bin", 0x3049, 0x0021
+VOICE_306A:             ; 306A
+        .incbin "sound.bin", 0x306A, 0x0021
+VOICE_308B:             ; 308B
+        .incbin "sound.bin", 0x308B, 0x0021
+VOICE_30AC:             ; 30AC
+        .incbin "sound.bin", 0x30AC, 0x0021
+VOICE_30CD:             ; 30CD
+        .incbin "sound.bin", 0x30CD, 0x0021
+VOICE_30EE:             ; 30EE
+        .incbin "sound.bin", 0x30EE, 0x0021
+VOICE_310F:             ; 310F
+        .incbin "sound.bin", 0x310F, 0x0021
+VOICE_3130:             ; 3130
+        .incbin "sound.bin", 0x3130, 0x0021
+VOICE_3151:             ; 3151
+        .incbin "sound.bin", 0x3151, 0x0021
+VOICE_3172:             ; 3172
+        .incbin "sound.bin", 0x3172, 0x0021
+VOICE_3193:             ; 3193
+        .incbin "sound.bin", 0x3193, 0x0021
+VOICE_31B4:             ; 31B4
+        .incbin "sound.bin", 0x31B4, 0x0021
+VOICE_31D5:             ; 31D5
+        .incbin "sound.bin", 0x31D5, 0x0021
+VOICE_31F6:             ; 31F6
+        .incbin "sound.bin", 0x31F6, 0x0021
+VOICE_3217:             ; 3217
+        .incbin "sound.bin", 0x3217, 0x0021
+VOICE_3238:             ; 3238
+        .incbin "sound.bin", 0x3238, 0x0021
+VOICE_3259:             ; 3259
+        .incbin "sound.bin", 0x3259, 0x0022
+VOICE_327B:             ; 327B
+        .incbin "sound.bin", 0x327B, 0x0021
 ; 53 words for commands 00-34
 COMMAND_TABLE:          ; 329C
-        .incbin "sound.bin", 0x329C, 0x006A
+        .word   ENTRY_331D
+        .word   ENTRY_3352
+        .word   ENTRY_3365
+        .word   ENTRY_33F6
+        .word   ENTRY_33FD
+        .word   BLOCK_342E
+        .word   BLOCK_3435
+        .word   ENTRY_3705
+        .word   ENTRY_35BD
+        .word   ENTRY_343C
+        .word   ENTRY_36B3
+        .word   ENTRY_3977
+        .word   ENTRY_3458
+        .word   ENTRY_345F
+        .word   ENTRY_3466
+        .word   ENTRY_37A9
+        .word   ENTRY_3661
+        .word   ENTRY_346D
+        .word   ENTRY_3474
+        .word   ENTRY_360F
+        .word   ENTRY_37C3
+        .word   ENTRY_34C8
+        .word   ENTRY_34CF
+        .word   ENTRY_34D6
+        .word   ENTRY_34AC
+        .word   ENTRY_38B9
+        .word   ENTRY_34F0
+        .word   ENTRY_358E
+        .word   ENTRY_3490
+        .word   ENTRY_34F7
+        .word   ENTRY_34FE
+        .word   ENTRY_3505
+        .word   ENTRY_350C
+        .word   ENTRY_3513
+        .word   ENTRY_351A
+        .word   ENTRY_3521
+        .word   ENTRY_3534
+        .word   ENTRY_356A
+        .word   ENTRY_356D
+        .word   ENTRY_3572
+        .word   ENTRY_34DD
+        .word   ENTRY_3815
+        .word   ENTRY_38D3
+        .word   ENTRY_3925
+        .word   ENTRY_3547
+        .word   ENTRY_354E
+        .word   ENTRY_3314
+        .word   ENTRY_35A1
+        .word   ENTRY_3757
+        .word   ENTRY_35A8
+        .word   ENTRY_3867
+        .word   ENTRY_35AF
+        .word   ENTRY_35B6
 ; COMMAND_F_ENTRY reads the words at +0, +4, +8 and +C (F2-F8)
 COMMAND_F_TABLE:        ; 3306
-        .incbin "sound.bin", 0x3306, 0x076B
+        .word   ENTRY_39C9
+        .incbin "sound.bin", 0x3308, 0x0002
+        .word   ENTRY_39F3
+        .incbin "sound.bin", 0x330C, 0x0002
+        .word   ENTRY_3A1D
+        .incbin "sound.bin", 0x3310, 0x0002
+        .word   ENTRY_3A47
+ENTRY_3314:             ; 3314
+        .incbin "sound.bin", 0x3314, 0x0005
+        .word   PHRASE_331B
+PHRASE_331B:            ; 331B
+        .incbin "sound.bin", 0x331B, 0x0002
+ENTRY_331D:             ; 331D
+        .incbin "sound.bin", 0x331D, 0x0001
+        .word   BLOCK_3378
+        .word   BLOCK_3386
+        .word   BLOCK_3394
+        .word   BLOCK_33A2
+        .word   BLOCK_33B0
+        .word   BLOCK_33BE
+        .word   BLOCK_33CC
+        .word   BLOCK_33DA
+        .word   BLOCK_33E8
+        .word   BLOCK_337F
+        .word   BLOCK_338D
+        .word   BLOCK_339B
+        .word   BLOCK_33A9
+        .word   BLOCK_33B7
+        .word   BLOCK_33C5
+        .word   BLOCK_33D3
+        .word   BLOCK_33E1
+        .word   BLOCK_33EF
+        .word   BLOCK_3404
+        .word   BLOCK_3412
+        .word   BLOCK_3420
+        .word   BLOCK_340B
+        .word   BLOCK_3419
+        .word   BLOCK_3427
+        .word   BLOCK_342E
+        .word   BLOCK_3435
+ENTRY_3352:             ; 3352
+        .incbin "sound.bin", 0x3352, 0x0001
+        .word   BLOCK_3378
+        .word   BLOCK_3386
+        .word   BLOCK_3394
+        .word   BLOCK_33A2
+        .word   BLOCK_33B0
+        .word   BLOCK_33BE
+        .word   BLOCK_33CC
+        .word   BLOCK_33DA
+        .word   BLOCK_33E8
+ENTRY_3365:             ; 3365
+        .incbin "sound.bin", 0x3365, 0x0001
+        .word   BLOCK_337F
+        .word   BLOCK_338D
+        .word   BLOCK_339B
+        .word   BLOCK_33A9
+        .word   BLOCK_33B7
+        .word   BLOCK_33C5
+        .word   BLOCK_33D3
+        .word   BLOCK_33E1
+        .word   BLOCK_33EF
+BLOCK_3378:             ; 3378
+        .incbin "sound.bin", 0x3378, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_337F:             ; 337F
+        .incbin "sound.bin", 0x337F, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_3386:             ; 3386
+        .incbin "sound.bin", 0x3386, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_338D:             ; 338D
+        .incbin "sound.bin", 0x338D, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_3394:             ; 3394
+        .incbin "sound.bin", 0x3394, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_339B:             ; 339B
+        .incbin "sound.bin", 0x339B, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33A2:             ; 33A2
+        .incbin "sound.bin", 0x33A2, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33A9:             ; 33A9
+        .incbin "sound.bin", 0x33A9, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33B0:             ; 33B0
+        .incbin "sound.bin", 0x33B0, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33B7:             ; 33B7
+        .incbin "sound.bin", 0x33B7, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33BE:             ; 33BE
+        .incbin "sound.bin", 0x33BE, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33C5:             ; 33C5
+        .incbin "sound.bin", 0x33C5, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33CC:             ; 33CC
+        .incbin "sound.bin", 0x33CC, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33D3:             ; 33D3
+        .incbin "sound.bin", 0x33D3, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33DA:             ; 33DA
+        .incbin "sound.bin", 0x33DA, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33E1:             ; 33E1
+        .incbin "sound.bin", 0x33E1, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33E8:             ; 33E8
+        .incbin "sound.bin", 0x33E8, 0x0005
+        .word   PHRASE_3C6A
+BLOCK_33EF:             ; 33EF
+        .incbin "sound.bin", 0x33EF, 0x0005
+        .word   PHRASE_3C6A
+ENTRY_33F6:             ; 33F6
+        .incbin "sound.bin", 0x33F6, 0x0001
+        .word   BLOCK_3404
+        .word   BLOCK_3412
+        .word   BLOCK_3420
+ENTRY_33FD:             ; 33FD
+        .incbin "sound.bin", 0x33FD, 0x0001
+        .word   BLOCK_340B
+        .word   BLOCK_3419
+        .word   BLOCK_3427
+BLOCK_3404:             ; 3404
+        .incbin "sound.bin", 0x3404, 0x0005
+        .word   PHRASE_3C70
+BLOCK_340B:             ; 340B
+        .incbin "sound.bin", 0x340B, 0x0005
+        .word   PHRASE_3C70
+BLOCK_3412:             ; 3412
+        .incbin "sound.bin", 0x3412, 0x0005
+        .word   PHRASE_3C70
+BLOCK_3419:             ; 3419
+        .incbin "sound.bin", 0x3419, 0x0005
+        .word   PHRASE_3C70
+BLOCK_3420:             ; 3420
+        .incbin "sound.bin", 0x3420, 0x0005
+        .word   PHRASE_3C70
+BLOCK_3427:             ; 3427
+        .incbin "sound.bin", 0x3427, 0x0005
+        .word   PHRASE_3C70
+BLOCK_342E:             ; 342E
+        .incbin "sound.bin", 0x342E, 0x0005
+        .word   PHRASE_3C78
+BLOCK_3435:             ; 3435
+        .incbin "sound.bin", 0x3435, 0x0005
+        .word   PHRASE_3C78
+ENTRY_343C:             ; 343C
+        .incbin "sound.bin", 0x343C, 0x0001
+        .word   BLOCK_3443
+        .word   BLOCK_344A
+        .word   BLOCK_3451
+BLOCK_3443:             ; 3443
+        .incbin "sound.bin", 0x3443, 0x0005
+        .word   PHRASE_3C85
+BLOCK_344A:             ; 344A
+        .incbin "sound.bin", 0x344A, 0x0005
+        .word   PHRASE_3DC1
+BLOCK_3451:             ; 3451
+        .incbin "sound.bin", 0x3451, 0x0005
+        .word   PHRASE_3E67
+ENTRY_3458:             ; 3458
+        .incbin "sound.bin", 0x3458, 0x0005
+        .word   PHRASE_4140
+ENTRY_345F:             ; 345F
+        .incbin "sound.bin", 0x345F, 0x0005
+        .word   PHRASE_4152
+ENTRY_3466:             ; 3466
+        .incbin "sound.bin", 0x3466, 0x0005
+        .word   PHRASE_416A
+ENTRY_346D:             ; 346D
+        .incbin "sound.bin", 0x346D, 0x0005
+        .word   PHRASE_4172
+ENTRY_3474:             ; 3474
+        .incbin "sound.bin", 0x3474, 0x0001
+        .word   BLOCK_347B
+        .word   BLOCK_3482
+        .word   BLOCK_3489
+BLOCK_347B:             ; 347B
+        .incbin "sound.bin", 0x347B, 0x0005
+        .word   PHRASE_418A
+BLOCK_3482:             ; 3482
+        .incbin "sound.bin", 0x3482, 0x0005
+        .word   PHRASE_418F
+BLOCK_3489:             ; 3489
+        .incbin "sound.bin", 0x3489, 0x0005
+        .word   PHRASE_4194
+ENTRY_3490:             ; 3490
+        .incbin "sound.bin", 0x3490, 0x0001
+        .word   BLOCK_3497
+        .word   BLOCK_349E
+        .word   BLOCK_34A5
+BLOCK_3497:             ; 3497
+        .incbin "sound.bin", 0x3497, 0x0005
+        .word   PHRASE_41D7
+BLOCK_349E:             ; 349E
+        .incbin "sound.bin", 0x349E, 0x0005
+        .word   PHRASE_41E7
+BLOCK_34A5:             ; 34A5
+        .incbin "sound.bin", 0x34A5, 0x0005
+        .word   PHRASE_41F7
+ENTRY_34AC:             ; 34AC
+        .incbin "sound.bin", 0x34AC, 0x0001
+        .word   BLOCK_34B3
+        .word   BLOCK_34BA
+        .word   BLOCK_34C1
+BLOCK_34B3:             ; 34B3
+        .incbin "sound.bin", 0x34B3, 0x0005
+        .word   PHRASE_43CC
+BLOCK_34BA:             ; 34BA
+        .incbin "sound.bin", 0x34BA, 0x0005
+        .word   PHRASE_43E5
+BLOCK_34C1:             ; 34C1
+        .incbin "sound.bin", 0x34C1, 0x0005
+        .word   PHRASE_4400
+ENTRY_34C8:             ; 34C8
+        .incbin "sound.bin", 0x34C8, 0x0005
+        .word   PHRASE_4199
+ENTRY_34CF:             ; 34CF
+        .incbin "sound.bin", 0x34CF, 0x0005
+        .word   PHRASE_41B8
+ENTRY_34D6:             ; 34D6
+        .incbin "sound.bin", 0x34D6, 0x0005
+        .word   PHRASE_41CC
+ENTRY_34DD:             ; 34DD
+        .incbin "sound.bin", 0x34DD, 0x0001
+        .word   BLOCK_34E2
+        .word   BLOCK_34E9
+BLOCK_34E2:             ; 34E2
+        .incbin "sound.bin", 0x34E2, 0x0005
+        .word   PHRASE_4202
+BLOCK_34E9:             ; 34E9
+        .incbin "sound.bin", 0x34E9, 0x0005
+        .word   PHRASE_4214
+ENTRY_34F0:             ; 34F0
+        .incbin "sound.bin", 0x34F0, 0x0005
+        .word   PHRASE_4226
+ENTRY_34F7:             ; 34F7
+        .incbin "sound.bin", 0x34F7, 0x0005
+        .word   PHRASE_4235
+ENTRY_34FE:             ; 34FE
+        .incbin "sound.bin", 0x34FE, 0x0005
+        .word   PHRASE_4247
+ENTRY_3505:             ; 3505
+        .incbin "sound.bin", 0x3505, 0x0005
+        .word   PHRASE_4258
+ENTRY_350C:             ; 350C
+        .incbin "sound.bin", 0x350C, 0x0005
+        .word   PHRASE_4265
+ENTRY_3513:             ; 3513
+        .incbin "sound.bin", 0x3513, 0x0005
+        .word   PHRASE_4276
+ENTRY_351A:             ; 351A
+        .incbin "sound.bin", 0x351A, 0x0005
+        .word   PHRASE_4288
+ENTRY_3521:             ; 3521
+        .incbin "sound.bin", 0x3521, 0x0001
+        .word   BLOCK_3526
+        .word   BLOCK_352D
+BLOCK_3526:             ; 3526
+        .incbin "sound.bin", 0x3526, 0x0005
+        .word   PHRASE_4297
+BLOCK_352D:             ; 352D
+        .incbin "sound.bin", 0x352D, 0x0005
+        .word   PHRASE_429C
+ENTRY_3534:             ; 3534
+        .incbin "sound.bin", 0x3534, 0x0001
+        .word   BLOCK_3539
+        .word   BLOCK_3540
+BLOCK_3539:             ; 3539
+        .incbin "sound.bin", 0x3539, 0x0005
+        .word   PHRASE_42A1
+BLOCK_3540:             ; 3540
+        .incbin "sound.bin", 0x3540, 0x0005
+        .word   PHRASE_42AE
+ENTRY_3547:             ; 3547
+        .incbin "sound.bin", 0x3547, 0x0005
+        .word   PHRASE_42BB
+ENTRY_354E:             ; 354E
+        .incbin "sound.bin", 0x354E, 0x0001
+        .word   BLOCK_3555
+        .word   BLOCK_355C
+        .word   BLOCK_3563
+BLOCK_3555:             ; 3555
+        .incbin "sound.bin", 0x3555, 0x0005
+        .word   PHRASE_42D7
+BLOCK_355C:             ; 355C
+        .incbin "sound.bin", 0x355C, 0x0005
+        .word   PHRASE_42F3
+BLOCK_3563:             ; 3563
+        .incbin "sound.bin", 0x3563, 0x0005
+        .word   PHRASE_430E
+ENTRY_356A:             ; 356A
+        .incbin "sound.bin", 0x356A, 0x0001
+        .word   BLOCK_3579
+ENTRY_356D:             ; 356D
+        .incbin "sound.bin", 0x356D, 0x0001
+        .word   BLOCK_3579
+        .word   BLOCK_3580
+ENTRY_3572:             ; 3572
+        .incbin "sound.bin", 0x3572, 0x0001
+        .word   BLOCK_3579
+        .word   BLOCK_3580
+        .word   BLOCK_3587
+BLOCK_3579:             ; 3579
+        .incbin "sound.bin", 0x3579, 0x0005
+        .word   PHRASE_4329
+BLOCK_3580:             ; 3580
+        .incbin "sound.bin", 0x3580, 0x0005
+        .word   PHRASE_433A
+BLOCK_3587:             ; 3587
+        .incbin "sound.bin", 0x3587, 0x0005
+        .word   PHRASE_434C
+ENTRY_358E:             ; 358E
+        .incbin "sound.bin", 0x358E, 0x0001
+        .word   BLOCK_3593
+        .word   BLOCK_359A
+BLOCK_3593:             ; 3593
+        .incbin "sound.bin", 0x3593, 0x0005
+        .word   PHRASE_435E
+BLOCK_359A:             ; 359A
+        .incbin "sound.bin", 0x359A, 0x0005
+        .word   PHRASE_436F
+ENTRY_35A1:             ; 35A1
+        .incbin "sound.bin", 0x35A1, 0x0005
+        .word   PHRASE_4381
+ENTRY_35A8:             ; 35A8
+        .incbin "sound.bin", 0x35A8, 0x0005
+        .word   PHRASE_439B
+ENTRY_35AF:             ; 35AF
+        .incbin "sound.bin", 0x35AF, 0x0005
+        .word   PHRASE_43B0
+ENTRY_35B6:             ; 35B6
+        .incbin "sound.bin", 0x35B6, 0x0005
+        .word   PHRASE_43BB
+ENTRY_35BD:             ; 35BD
+        .incbin "sound.bin", 0x35BD, 0x0001
+        .word   BLOCK_35D0
+        .word   BLOCK_35D7
+        .word   BLOCK_35DE
+        .word   BLOCK_35E5
+        .word   BLOCK_35EC
+        .word   BLOCK_35F3
+        .word   BLOCK_35FA
+        .word   BLOCK_3601
+        .word   BLOCK_3608
+BLOCK_35D0:             ; 35D0
+        .incbin "sound.bin", 0x35D0, 0x0005
+        .word   PHRASE_6CF3
+BLOCK_35D7:             ; 35D7
+        .incbin "sound.bin", 0x35D7, 0x0005
+        .word   PHRASE_6D80
+BLOCK_35DE:             ; 35DE
+        .incbin "sound.bin", 0x35DE, 0x0005
+        .word   PHRASE_6E0A
+BLOCK_35E5:             ; 35E5
+        .incbin "sound.bin", 0x35E5, 0x0005
+        .word   PHRASE_6EAE
+BLOCK_35EC:             ; 35EC
+        .incbin "sound.bin", 0x35EC, 0x0005
+        .word   PHRASE_6F52
+BLOCK_35F3:             ; 35F3
+        .incbin "sound.bin", 0x35F3, 0x0005
+        .word   PHRASE_6FA5
+BLOCK_35FA:             ; 35FA
+        .incbin "sound.bin", 0x35FA, 0x0005
+        .word   PHRASE_6FFF
+BLOCK_3601:             ; 3601
+        .incbin "sound.bin", 0x3601, 0x0005
+        .word   PHRASE_7059
+BLOCK_3608:             ; 3608
+        .incbin "sound.bin", 0x3608, 0x0005
+        .word   PHRASE_331B
+ENTRY_360F:             ; 360F
+        .incbin "sound.bin", 0x360F, 0x0001
+        .word   BLOCK_3622
+        .word   BLOCK_3629
+        .word   BLOCK_3630
+        .word   BLOCK_3637
+        .word   BLOCK_363E
+        .word   BLOCK_3645
+        .word   BLOCK_364C
+        .word   BLOCK_3653
+        .word   BLOCK_365A
+BLOCK_3622:             ; 3622
+        .incbin "sound.bin", 0x3622, 0x0005
+        .word   PHRASE_59EF
+BLOCK_3629:             ; 3629
+        .incbin "sound.bin", 0x3629, 0x0005
+        .word   PHRASE_5A19
+BLOCK_3630:             ; 3630
+        .incbin "sound.bin", 0x3630, 0x0005
+        .word   PHRASE_5A40
+BLOCK_3637:             ; 3637
+        .incbin "sound.bin", 0x3637, 0x0005
+        .word   PHRASE_5A65
+BLOCK_363E:             ; 363E
+        .incbin "sound.bin", 0x363E, 0x0005
+        .word   PHRASE_5A8A
+BLOCK_3645:             ; 3645
+        .incbin "sound.bin", 0x3645, 0x0005
+        .word   PHRASE_5AB0
+BLOCK_364C:             ; 364C
+        .incbin "sound.bin", 0x364C, 0x0005
+        .word   PHRASE_5AD6
+BLOCK_3653:             ; 3653
+        .incbin "sound.bin", 0x3653, 0x0005
+        .word   PHRASE_5AFD
+BLOCK_365A:             ; 365A
+        .incbin "sound.bin", 0x365A, 0x0005
+        .word   PHRASE_5B24
+ENTRY_3661:             ; 3661
+        .incbin "sound.bin", 0x3661, 0x0001
+        .word   BLOCK_3674
+        .word   BLOCK_367B
+        .word   BLOCK_3682
+        .word   BLOCK_3689
+        .word   BLOCK_3690
+        .word   BLOCK_3697
+        .word   BLOCK_369E
+        .word   BLOCK_36A5
+        .word   BLOCK_36AC
+BLOCK_3674:             ; 3674
+        .incbin "sound.bin", 0x3674, 0x0005
+        .word   PHRASE_441B
+BLOCK_367B:             ; 367B
+        .incbin "sound.bin", 0x367B, 0x0005
+        .word   PHRASE_442D
+BLOCK_3682:             ; 3682
+        .incbin "sound.bin", 0x3682, 0x0005
+        .word   PHRASE_443C
+BLOCK_3689:             ; 3689
+        .incbin "sound.bin", 0x3689, 0x0005
+        .word   PHRASE_444B
+BLOCK_3690:             ; 3690
+        .incbin "sound.bin", 0x3690, 0x0005
+        .word   PHRASE_445A
+BLOCK_3697:             ; 3697
+        .incbin "sound.bin", 0x3697, 0x0005
+        .word   PHRASE_4469
+BLOCK_369E:             ; 369E
+        .incbin "sound.bin", 0x369E, 0x0005
+        .word   PHRASE_4478
+BLOCK_36A5:             ; 36A5
+        .incbin "sound.bin", 0x36A5, 0x0005
+        .word   PHRASE_4487
+BLOCK_36AC:             ; 36AC
+        .incbin "sound.bin", 0x36AC, 0x0005
+        .word   PHRASE_5B24
+ENTRY_36B3:             ; 36B3
+        .incbin "sound.bin", 0x36B3, 0x0001
+        .word   BLOCK_36C6
+        .word   BLOCK_36CD
+        .word   BLOCK_36D4
+        .word   BLOCK_36DB
+        .word   BLOCK_36E2
+        .word   BLOCK_36E9
+        .word   BLOCK_36F0
+        .word   BLOCK_36F7
+        .word   BLOCK_36FE
+BLOCK_36C6:             ; 36C6
+        .incbin "sound.bin", 0x36C6, 0x0005
+        .word   PHRASE_70B3
+BLOCK_36CD:             ; 36CD
+        .incbin "sound.bin", 0x36CD, 0x0005
+        .word   PHRASE_7140
+BLOCK_36D4:             ; 36D4
+        .incbin "sound.bin", 0x36D4, 0x0005
+        .word   PHRASE_71CA
+BLOCK_36DB:             ; 36DB
+        .incbin "sound.bin", 0x36DB, 0x0005
+        .word   PHRASE_7214
+BLOCK_36E2:             ; 36E2
+        .incbin "sound.bin", 0x36E2, 0x0005
+        .word   PHRASE_725E
+BLOCK_36E9:             ; 36E9
+        .incbin "sound.bin", 0x36E9, 0x0005
+        .word   PHRASE_331B
+BLOCK_36F0:             ; 36F0
+        .incbin "sound.bin", 0x36F0, 0x0005
+        .word   PHRASE_331B
+BLOCK_36F7:             ; 36F7
+        .incbin "sound.bin", 0x36F7, 0x0005
+        .word   PHRASE_331B
+BLOCK_36FE:             ; 36FE
+        .incbin "sound.bin", 0x36FE, 0x0005
+        .word   PHRASE_331B
+ENTRY_3705:             ; 3705
+        .incbin "sound.bin", 0x3705, 0x0001
+        .word   BLOCK_3718
+        .word   BLOCK_371F
+        .word   BLOCK_3726
+        .word   BLOCK_372D
+        .word   BLOCK_3734
+        .word   BLOCK_373B
+        .word   BLOCK_3742
+        .word   BLOCK_3749
+        .word   BLOCK_3750
+BLOCK_3718:             ; 3718
+        .incbin "sound.bin", 0x3718, 0x0005
+        .word   PHRASE_7A68
+BLOCK_371F:             ; 371F
+        .incbin "sound.bin", 0x371F, 0x0005
+        .word   PHRASE_7AA0
+BLOCK_3726:             ; 3726
+        .incbin "sound.bin", 0x3726, 0x0005
+        .word   PHRASE_7AE7
+BLOCK_372D:             ; 372D
+        .incbin "sound.bin", 0x372D, 0x0005
+        .word   PHRASE_7AF8
+BLOCK_3734:             ; 3734
+        .incbin "sound.bin", 0x3734, 0x0005
+        .word   PHRASE_7B1E
+BLOCK_373B:             ; 373B
+        .incbin "sound.bin", 0x373B, 0x0005
+        .word   PHRASE_7BD6
+BLOCK_3742:             ; 3742
+        .incbin "sound.bin", 0x3742, 0x0005
+        .word   PHRASE_7CD6
+BLOCK_3749:             ; 3749
+        .incbin "sound.bin", 0x3749, 0x0005
+        .word   PHRASE_7D5B
+BLOCK_3750:             ; 3750
+        .incbin "sound.bin", 0x3750, 0x0005
+        .word   PHRASE_7D83
+ENTRY_3757:             ; 3757
+        .incbin "sound.bin", 0x3757, 0x0001
+        .word   BLOCK_376A
+        .word   BLOCK_3771
+        .word   BLOCK_3778
+        .word   BLOCK_377F
+        .word   BLOCK_3786
+        .word   BLOCK_378D
+        .word   BLOCK_3794
+        .word   BLOCK_379B
+        .word   BLOCK_37A2
+BLOCK_376A:             ; 376A
+        .incbin "sound.bin", 0x376A, 0x0005
+        .word   PHRASE_5B29
+BLOCK_3771:             ; 3771
+        .incbin "sound.bin", 0x3771, 0x0005
+        .word   PHRASE_5D25
+BLOCK_3778:             ; 3778
+        .incbin "sound.bin", 0x3778, 0x0005
+        .word   PHRASE_5E25
+BLOCK_377F:             ; 377F
+        .incbin "sound.bin", 0x377F, 0x0005
+        .word   PHRASE_604F
+BLOCK_3786:             ; 3786
+        .incbin "sound.bin", 0x3786, 0x0005
+        .word   PHRASE_6279
+BLOCK_378D:             ; 378D
+        .incbin "sound.bin", 0x378D, 0x0005
+        .word   PHRASE_66AA
+BLOCK_3794:             ; 3794
+        .incbin "sound.bin", 0x3794, 0x0005
+        .word   PHRASE_6ADB
+BLOCK_379B:             ; 379B
+        .incbin "sound.bin", 0x379B, 0x0005
+        .word   PHRASE_6BE7
+BLOCK_37A2:             ; 37A2
+        .incbin "sound.bin", 0x37A2, 0x0005
+        .word   PHRASE_5B24
+ENTRY_37A9:             ; 37A9
+        .incbin "sound.bin", 0x37A9, 0x0001
+        .word   BLOCK_37BC
+        .word   BLOCK_3771
+        .word   BLOCK_3778
+        .word   BLOCK_377F
+        .word   BLOCK_3786
+        .word   BLOCK_378D
+        .word   BLOCK_3794
+        .word   BLOCK_379B
+        .word   BLOCK_37A2
+BLOCK_37BC:             ; 37BC
+        .incbin "sound.bin", 0x37BC, 0x0005
+        .word   PHRASE_5C27
+ENTRY_37C3:             ; 37C3
+        .incbin "sound.bin", 0x37C3, 0x0001
+        .word   BLOCK_37D6
+        .word   BLOCK_37DD
+        .word   BLOCK_37E4
+        .word   BLOCK_37EB
+        .word   BLOCK_37F2
+        .word   BLOCK_37F9
+        .word   BLOCK_3800
+        .word   BLOCK_3807
+        .word   BLOCK_380E
+BLOCK_37D6:             ; 37D6
+        .incbin "sound.bin", 0x37D6, 0x0005
+        .word   PHRASE_4496
+BLOCK_37DD:             ; 37DD
+        .incbin "sound.bin", 0x37DD, 0x0005
+        .word   PHRASE_4A85
+BLOCK_37E4:             ; 37E4
+        .incbin "sound.bin", 0x37E4, 0x0005
+        .word   PHRASE_535A
+BLOCK_37EB:             ; 37EB
+        .incbin "sound.bin", 0x37EB, 0x0005
+        .word   PHRASE_5476
+BLOCK_37F2:             ; 37F2
+        .incbin "sound.bin", 0x37F2, 0x0005
+        .word   PHRASE_558B
+BLOCK_37F9:             ; 37F9
+        .incbin "sound.bin", 0x37F9, 0x0005
+        .word   PHRASE_56A8
+BLOCK_3800:             ; 3800
+        .incbin "sound.bin", 0x3800, 0x0005
+        .word   PHRASE_57BE
+BLOCK_3807:             ; 3807
+        .incbin "sound.bin", 0x3807, 0x0005
+        .word   PHRASE_58DA
+BLOCK_380E:             ; 380E
+        .incbin "sound.bin", 0x380E, 0x0005
+        .word   PHRASE_5B24
+ENTRY_3815:             ; 3815
+        .incbin "sound.bin", 0x3815, 0x0001
+        .word   BLOCK_3828
+        .word   BLOCK_382F
+        .word   BLOCK_3836
+        .word   BLOCK_383D
+        .word   BLOCK_3844
+        .word   BLOCK_384B
+        .word   BLOCK_3852
+        .word   BLOCK_3859
+        .word   BLOCK_3860
+BLOCK_3828:             ; 3828
+        .incbin "sound.bin", 0x3828, 0x0005
+        .word   PHRASE_7611
+BLOCK_382F:             ; 382F
+        .incbin "sound.bin", 0x382F, 0x0005
+        .word   PHRASE_7626
+BLOCK_3836:             ; 3836
+        .incbin "sound.bin", 0x3836, 0x0005
+        .word   PHRASE_7638
+BLOCK_383D:             ; 383D
+        .incbin "sound.bin", 0x383D, 0x0005
+        .word   PHRASE_764A
+BLOCK_3844:             ; 3844
+        .incbin "sound.bin", 0x3844, 0x0005
+        .word   PHRASE_765C
+BLOCK_384B:             ; 384B
+        .incbin "sound.bin", 0x384B, 0x0005
+        .word   PHRASE_76C6
+BLOCK_3852:             ; 3852
+        .incbin "sound.bin", 0x3852, 0x0005
+        .word   PHRASE_7730
+BLOCK_3859:             ; 3859
+        .incbin "sound.bin", 0x3859, 0x0005
+        .word   PHRASE_5B24
+BLOCK_3860:             ; 3860
+        .incbin "sound.bin", 0x3860, 0x0005
+        .word   PHRASE_5B24
+ENTRY_3867:             ; 3867
+        .incbin "sound.bin", 0x3867, 0x0001
+        .word   BLOCK_387A
+        .word   BLOCK_3881
+        .word   BLOCK_3888
+        .word   BLOCK_388F
+        .word   BLOCK_3896
+        .word   BLOCK_389D
+        .word   BLOCK_38A4
+        .word   BLOCK_38AB
+        .word   BLOCK_38B2
+BLOCK_387A:             ; 387A
+        .incbin "sound.bin", 0x387A, 0x0005
+        .word   PHRASE_7472
+BLOCK_3881:             ; 3881
+        .incbin "sound.bin", 0x3881, 0x0005
+        .word   PHRASE_7487
+BLOCK_3888:             ; 3888
+        .incbin "sound.bin", 0x3888, 0x0005
+        .word   PHRASE_749A
+BLOCK_388F:             ; 388F
+        .incbin "sound.bin", 0x388F, 0x0005
+        .word   PHRASE_74AD
+BLOCK_3896:             ; 3896
+        .incbin "sound.bin", 0x3896, 0x0005
+        .word   PHRASE_74C0
+BLOCK_389D:             ; 389D
+        .incbin "sound.bin", 0x389D, 0x0005
+        .word   PHRASE_74D3
+BLOCK_38A4:             ; 38A4
+        .incbin "sound.bin", 0x38A4, 0x0005
+        .word   PHRASE_74E6
+BLOCK_38AB:             ; 38AB
+        .incbin "sound.bin", 0x38AB, 0x0005
+        .word   PHRASE_74F9
+BLOCK_38B2:             ; 38B2
+        .incbin "sound.bin", 0x38B2, 0x0005
+        .word   PHRASE_750C
+ENTRY_38B9:             ; 38B9
+        .incbin "sound.bin", 0x38B9, 0x0001
+        .word   BLOCK_38CC
+        .word   BLOCK_38ED
+        .word   BLOCK_38F4
+        .word   BLOCK_38FB
+        .word   BLOCK_3902
+        .word   BLOCK_3909
+        .word   BLOCK_3910
+        .word   BLOCK_3917
+        .word   BLOCK_391E
+BLOCK_38CC:             ; 38CC
+        .incbin "sound.bin", 0x38CC, 0x0005
+        .word   PHRASE_77B4
+ENTRY_38D3:             ; 38D3
+        .incbin "sound.bin", 0x38D3, 0x0001
+        .word   BLOCK_38E6
+        .word   BLOCK_38ED
+        .word   BLOCK_38F4
+        .word   BLOCK_38FB
+        .word   BLOCK_3902
+        .word   BLOCK_3909
+        .word   BLOCK_3910
+        .word   BLOCK_3917
+        .word   BLOCK_391E
+BLOCK_38E6:             ; 38E6
+        .incbin "sound.bin", 0x38E6, 0x0005
+        .word   PHRASE_779B
+BLOCK_38ED:             ; 38ED
+        .incbin "sound.bin", 0x38ED, 0x0005
+        .word   PHRASE_77D1
+BLOCK_38F4:             ; 38F4
+        .incbin "sound.bin", 0x38F4, 0x0005
+        .word   PHRASE_77E7
+BLOCK_38FB:             ; 38FB
+        .incbin "sound.bin", 0x38FB, 0x0005
+        .word   PHRASE_77FD
+BLOCK_3902:             ; 3902
+        .incbin "sound.bin", 0x3902, 0x0005
+        .word   PHRASE_7813
+BLOCK_3909:             ; 3909
+        .incbin "sound.bin", 0x3909, 0x0005
+        .word   PHRASE_7813
+BLOCK_3910:             ; 3910
+        .incbin "sound.bin", 0x3910, 0x0005
+        .word   PHRASE_7813
+BLOCK_3917:             ; 3917
+        .incbin "sound.bin", 0x3917, 0x0005
+        .word   PHRASE_7813
+BLOCK_391E:             ; 391E
+        .incbin "sound.bin", 0x391E, 0x0005
+        .word   PHRASE_7813
+ENTRY_3925:             ; 3925
+        .incbin "sound.bin", 0x3925, 0x0001
+        .word   BLOCK_3938
+        .word   BLOCK_393F
+        .word   BLOCK_3946
+        .word   BLOCK_394D
+        .word   BLOCK_3954
+        .word   BLOCK_395B
+        .word   BLOCK_3962
+        .word   BLOCK_3969
+        .word   BLOCK_3970
+BLOCK_3938:             ; 3938
+        .incbin "sound.bin", 0x3938, 0x0005
+        .word   PHRASE_781F
+BLOCK_393F:             ; 393F
+        .incbin "sound.bin", 0x393F, 0x0005
+        .word   PHRASE_784A
+BLOCK_3946:             ; 3946
+        .incbin "sound.bin", 0x3946, 0x0005
+        .word   PHRASE_7872
+BLOCK_394D:             ; 394D
+        .incbin "sound.bin", 0x394D, 0x0005
+        .word   PHRASE_789A
+BLOCK_3954:             ; 3954
+        .incbin "sound.bin", 0x3954, 0x0005
+        .word   PHRASE_78C2
+BLOCK_395B:             ; 395B
+        .incbin "sound.bin", 0x395B, 0x0005
+        .word   PHRASE_78EA
+BLOCK_3962:             ; 3962
+        .incbin "sound.bin", 0x3962, 0x0005
+        .word   PHRASE_7912
+BLOCK_3969:             ; 3969
+        .incbin "sound.bin", 0x3969, 0x0005
+        .word   PHRASE_7984
+BLOCK_3970:             ; 3970
+        .incbin "sound.bin", 0x3970, 0x0005
+        .word   PHRASE_79F6
+ENTRY_3977:             ; 3977
+        .incbin "sound.bin", 0x3977, 0x0001
+        .word   BLOCK_398A
+        .word   BLOCK_3991
+        .word   BLOCK_3998
+        .word   BLOCK_399F
+        .word   BLOCK_39A6
+        .word   BLOCK_39AD
+        .word   BLOCK_39B4
+        .word   BLOCK_39BB
+        .word   BLOCK_39C2
+BLOCK_398A:             ; 398A
+        .incbin "sound.bin", 0x398A, 0x0005
+        .word   PHRASE_751E
+BLOCK_3991:             ; 3991
+        .incbin "sound.bin", 0x3991, 0x0005
+        .word   PHRASE_753B
+BLOCK_3998:             ; 3998
+        .incbin "sound.bin", 0x3998, 0x0005
+        .word   PHRASE_7555
+BLOCK_399F:             ; 399F
+        .incbin "sound.bin", 0x399F, 0x0005
+        .word   PHRASE_7584
+BLOCK_39A6:             ; 39A6
+        .incbin "sound.bin", 0x39A6, 0x0005
+        .word   PHRASE_75B3
+BLOCK_39AD:             ; 39AD
+        .incbin "sound.bin", 0x39AD, 0x0005
+        .word   PHRASE_75E2
+BLOCK_39B4:             ; 39B4
+        .incbin "sound.bin", 0x39B4, 0x0005
+        .word   PHRASE_5B24
+BLOCK_39BB:             ; 39BB
+        .incbin "sound.bin", 0x39BB, 0x0005
+        .word   PHRASE_5B24
+BLOCK_39C2:             ; 39C2
+        .incbin "sound.bin", 0x39C2, 0x0005
+        .word   PHRASE_5B24
+ENTRY_39C9:             ; 39C9
+        .incbin "sound.bin", 0x39C9, 0x0001
+        .word   BLOCK_39EC
+        .word   BLOCK_3435
+        .word   BLOCK_3378
+        .word   BLOCK_3386
+        .word   BLOCK_3394
+        .word   BLOCK_33A2
+        .word   BLOCK_33B0
+        .word   BLOCK_33BE
+        .word   BLOCK_33CC
+        .word   BLOCK_33DA
+        .word   BLOCK_33E8
+        .word   BLOCK_3404
+        .word   BLOCK_3412
+        .word   BLOCK_3420
+        .word   BLOCK_340B
+        .word   BLOCK_3419
+        .word   BLOCK_3427
+BLOCK_39EC:             ; 39EC
+        .incbin "sound.bin", 0x39EC, 0x0005
+        .word   PHRASE_3BEA
+ENTRY_39F3:             ; 39F3
+        .incbin "sound.bin", 0x39F3, 0x0001
+        .word   BLOCK_3A16
+        .word   BLOCK_342E
+        .word   BLOCK_3435
+        .word   BLOCK_3378
+        .word   BLOCK_3386
+        .word   BLOCK_3394
+        .word   BLOCK_33A2
+        .word   BLOCK_33B0
+        .word   BLOCK_33BE
+        .word   BLOCK_33CC
+        .word   BLOCK_33DA
+        .word   BLOCK_33E8
+        .word   BLOCK_3412
+        .word   BLOCK_3420
+        .word   BLOCK_340B
+        .word   BLOCK_3419
+        .word   BLOCK_3427
+BLOCK_3A16:             ; 3A16
+        .incbin "sound.bin", 0x3A16, 0x0005
+        .word   PHRASE_3C00
+ENTRY_3A1D:             ; 3A1D
+        .incbin "sound.bin", 0x3A1D, 0x0001
+        .word   BLOCK_3A40
+        .word   BLOCK_342E
+        .word   BLOCK_3435
+        .word   BLOCK_3378
+        .word   BLOCK_3386
+        .word   BLOCK_3394
+        .word   BLOCK_33A2
+        .word   BLOCK_33B0
+        .word   BLOCK_33BE
+        .word   BLOCK_33CC
+        .word   BLOCK_33DA
+        .word   BLOCK_33E8
+        .word   BLOCK_3412
+        .word   BLOCK_3420
+        .word   BLOCK_340B
+        .word   BLOCK_3419
+        .word   BLOCK_3427
+BLOCK_3A40:             ; 3A40
+        .incbin "sound.bin", 0x3A40, 0x0005
+        .word   PHRASE_3C32
+ENTRY_3A47:             ; 3A47
+        .incbin "sound.bin", 0x3A47, 0x0001
+        .word   BLOCK_3A6A
+        .word   BLOCK_342E
+        .word   BLOCK_3435
+        .word   BLOCK_3386
+        .word   BLOCK_3394
+        .word   BLOCK_33A2
+        .word   BLOCK_33B0
+        .word   BLOCK_33BE
+        .word   BLOCK_33CC
+        .word   BLOCK_33DA
+        .word   BLOCK_33E8
+        .word   BLOCK_3404
+        .word   BLOCK_3412
+        .word   BLOCK_3420
+        .word   BLOCK_340B
+        .word   BLOCK_3419
+        .word   BLOCK_3427
+BLOCK_3A6A:             ; 3A6A
+        .incbin "sound.bin", 0x3A6A, 0x0005
+        .word   PHRASE_3C64
 ; one 5-byte entry for OPL_EV_ENV: interval change, loops (0 = for ever), next entry (b7: stop), a word pointer to the points
 OPL_ENVS:               ; 3A71
-        .incbin "sound.bin", 0x3A71, 0x0005
+        .incbin "sound.bin", 0x3A71, 0x0003
+        .word   OPL_ENV_POINTS
 ; bytes, 00 ends
 OPL_ENV_POINTS:         ; 3A76
         .incbin "sound.bin", 0x3A76, 0x0003
 ; 20 entries for OPN_EV_ENV, as OPL_ENVS
 OPN_ENVS:               ; 3A79
-        .incbin "sound.bin", 0x3A79, 0x0064
+        .incbin "sound.bin", 0x3A79, 0x0003
+        .word   OPN_ENV_POINTS
+        .incbin "sound.bin", 0x3A7E, 0x0003
+        .word   POINTS_3AE0
+        .incbin "sound.bin", 0x3A83, 0x0003
+        .word   POINTS_3AE3
+        .incbin "sound.bin", 0x3A88, 0x0003
+        .word   POINTS_3AE6
+        .incbin "sound.bin", 0x3A8D, 0x0003
+        .word   POINTS_3AE9
+        .incbin "sound.bin", 0x3A92, 0x0003
+        .word   POINTS_3AF6
+        .incbin "sound.bin", 0x3A97, 0x0003
+        .word   POINTS_3B0B
+        .incbin "sound.bin", 0x3A9C, 0x0003
+        .word   POINTS_3B0E
+        .incbin "sound.bin", 0x3AA1, 0x0003
+        .word   POINTS_3B13
+        .incbin "sound.bin", 0x3AA6, 0x0003
+        .word   POINTS_3B16
+        .incbin "sound.bin", 0x3AAB, 0x0003
+        .word   POINTS_3B19
+        .incbin "sound.bin", 0x3AB0, 0x0003
+        .word   POINTS_3B1E
+        .incbin "sound.bin", 0x3AB5, 0x0003
+        .word   POINTS_3B21
+        .incbin "sound.bin", 0x3ABA, 0x0003
+        .word   POINTS_3B24
+        .incbin "sound.bin", 0x3ABF, 0x0003
+        .word   POINTS_3B27
+        .incbin "sound.bin", 0x3AC4, 0x0003
+        .word   POINTS_3B2C
+        .incbin "sound.bin", 0x3AC9, 0x0003
+        .word   POINTS_3B2F
+        .incbin "sound.bin", 0x3ACE, 0x0003
+        .word   POINTS_3B33
+        .incbin "sound.bin", 0x3AD3, 0x0003
+        .word   POINTS_3B36
+        .incbin "sound.bin", 0x3AD8, 0x0003
+        .word   POINTS_3B39
 ; as OPL_ENV_POINTS
 OPN_ENV_POINTS:         ; 3ADD
-        .incbin "sound.bin", 0x3ADD, 0x0060
+        .incbin "sound.bin", 0x3ADD, 0x0003
+POINTS_3AE0:            ; 3AE0
+        .incbin "sound.bin", 0x3AE0, 0x0003
+POINTS_3AE3:            ; 3AE3
+        .incbin "sound.bin", 0x3AE3, 0x0003
+POINTS_3AE6:            ; 3AE6
+        .incbin "sound.bin", 0x3AE6, 0x0003
+POINTS_3AE9:            ; 3AE9
+        .incbin "sound.bin", 0x3AE9, 0x000D
+POINTS_3AF6:            ; 3AF6
+        .incbin "sound.bin", 0x3AF6, 0x0015
+POINTS_3B0B:            ; 3B0B
+        .incbin "sound.bin", 0x3B0B, 0x0003
+POINTS_3B0E:            ; 3B0E
+        .incbin "sound.bin", 0x3B0E, 0x0005
+POINTS_3B13:            ; 3B13
+        .incbin "sound.bin", 0x3B13, 0x0003
+POINTS_3B16:            ; 3B16
+        .incbin "sound.bin", 0x3B16, 0x0003
+POINTS_3B19:            ; 3B19
+        .incbin "sound.bin", 0x3B19, 0x0005
+POINTS_3B1E:            ; 3B1E
+        .incbin "sound.bin", 0x3B1E, 0x0003
+POINTS_3B21:            ; 3B21
+        .incbin "sound.bin", 0x3B21, 0x0003
+POINTS_3B24:            ; 3B24
+        .incbin "sound.bin", 0x3B24, 0x0003
+POINTS_3B27:            ; 3B27
+        .incbin "sound.bin", 0x3B27, 0x0005
+POINTS_3B2C:            ; 3B2C
+        .incbin "sound.bin", 0x3B2C, 0x0003
+POINTS_3B2F:            ; 3B2F
+        .incbin "sound.bin", 0x3B2F, 0x0004
+POINTS_3B33:            ; 3B33
+        .incbin "sound.bin", 0x3B33, 0x0003
+POINTS_3B36:            ; 3B36
+        .incbin "sound.bin", 0x3B36, 0x0003
+POINTS_3B39:            ; 3B39
+        .incbin "sound.bin", 0x3B39, 0x0004
 ; 5 entries for SSG_EV_NOISE_ENV and SSG_EV_VOL_ENV, as OPL_ENVS
 SSG_VOL_ENVS:           ; 3B3D
-        .incbin "sound.bin", 0x3B3D, 0x0019
+        .incbin "sound.bin", 0x3B3D, 0x0003
+        .word   SSG_VOL_ENV_POINTS
+        .incbin "sound.bin", 0x3B42, 0x0003
+        .word   POINTS_3B58
+        .incbin "sound.bin", 0x3B47, 0x0003
+        .word   POINTS_3B5A
+        .incbin "sound.bin", 0x3B4C, 0x0003
+        .word   POINTS_3B5C
+        .incbin "sound.bin", 0x3B51, 0x0003
+        .word   POINTS_3B5E
 ; 4-bit points, two to a byte, 0 ends
 SSG_VOL_ENV_POINTS:     ; 3B56
-        .incbin "sound.bin", 0x3B56, 0x000A
+        .incbin "sound.bin", 0x3B56, 0x0002
+POINTS_3B58:            ; 3B58
+        .incbin "sound.bin", 0x3B58, 0x0002
+POINTS_3B5A:            ; 3B5A
+        .incbin "sound.bin", 0x3B5A, 0x0002
+POINTS_3B5C:            ; 3B5C
+        .incbin "sound.bin", 0x3B5C, 0x0002
+POINTS_3B5E:            ; 3B5E
+        .incbin "sound.bin", 0x3B5E, 0x0002
 ; 14 entries for SSG_EV_TONE_ENV, as OPL_ENVS
 SSG_TONE_ENVS:          ; 3B60
-        .incbin "sound.bin", 0x3B60, 0x0046
+        .incbin "sound.bin", 0x3B60, 0x0003
+        .word   SSG_TONE_ENV_POINTS
+        .incbin "sound.bin", 0x3B65, 0x0003
+        .word   POINTS_3BAA
+        .incbin "sound.bin", 0x3B6A, 0x0003
+        .word   POINTS_3BB5
+        .incbin "sound.bin", 0x3B6F, 0x0003
+        .word   POINTS_3BB8
+        .incbin "sound.bin", 0x3B74, 0x0003
+        .word   POINTS_3BBF
+        .incbin "sound.bin", 0x3B79, 0x0003
+        .word   POINTS_3BC2
+        .incbin "sound.bin", 0x3B7E, 0x0003
+        .word   POINTS_3BCD
+        .incbin "sound.bin", 0x3B83, 0x0003
+        .word   POINTS_3BD0
+        .incbin "sound.bin", 0x3B88, 0x0003
+        .word   POINTS_3BD3
+        .incbin "sound.bin", 0x3B8D, 0x0003
+        .word   POINTS_3BD7
+        .incbin "sound.bin", 0x3B92, 0x0003
+        .word   POINTS_3BDE
+        .incbin "sound.bin", 0x3B97, 0x0003
+        .word   POINTS_3BE1
+        .incbin "sound.bin", 0x3B9C, 0x0003
+        .word   POINTS_3BE4
+        .incbin "sound.bin", 0x3BA1, 0x0003
+        .word   POINTS_3BE7
 ; as OPL_ENV_POINTS
 SSG_TONE_ENV_POINTS:    ; 3BA6
-        .incbin "sound.bin", 0x3BA6, 0x445A
+        .incbin "sound.bin", 0x3BA6, 0x0004
+POINTS_3BAA:            ; 3BAA
+        .incbin "sound.bin", 0x3BAA, 0x000B
+POINTS_3BB5:            ; 3BB5
+        .incbin "sound.bin", 0x3BB5, 0x0003
+POINTS_3BB8:            ; 3BB8
+        .incbin "sound.bin", 0x3BB8, 0x0007
+POINTS_3BBF:            ; 3BBF
+        .incbin "sound.bin", 0x3BBF, 0x0003
+POINTS_3BC2:            ; 3BC2
+        .incbin "sound.bin", 0x3BC2, 0x000B
+POINTS_3BCD:            ; 3BCD
+        .incbin "sound.bin", 0x3BCD, 0x0003
+POINTS_3BD0:            ; 3BD0
+        .incbin "sound.bin", 0x3BD0, 0x0003
+POINTS_3BD3:            ; 3BD3
+        .incbin "sound.bin", 0x3BD3, 0x0004
+POINTS_3BD7:            ; 3BD7
+        .incbin "sound.bin", 0x3BD7, 0x0007
+POINTS_3BDE:            ; 3BDE
+        .incbin "sound.bin", 0x3BDE, 0x0003
+POINTS_3BE1:            ; 3BE1
+        .incbin "sound.bin", 0x3BE1, 0x0003
+POINTS_3BE4:            ; 3BE4
+        .incbin "sound.bin", 0x3BE4, 0x0003
+POINTS_3BE7:            ; 3BE7
+        .incbin "sound.bin", 0x3BE7, 0x0003
+PHRASE_3BEA:            ; 3BEA
+        .incbin "sound.bin", 0x3BEA, 0x0016
+PHRASE_3C00:            ; 3C00
+        .incbin "sound.bin", 0x3C00, 0x0032
+PHRASE_3C32:            ; 3C32
+        .incbin "sound.bin", 0x3C32, 0x0032
+PHRASE_3C64:            ; 3C64
+        .incbin "sound.bin", 0x3C64, 0x0006
+PHRASE_3C6A:            ; 3C6A
+        .incbin "sound.bin", 0x3C6A, 0x0006
+PHRASE_3C70:            ; 3C70
+        .incbin "sound.bin", 0x3C70, 0x0008
+PHRASE_3C78:            ; 3C78
+        .incbin "sound.bin", 0x3C78, 0x000D
+PHRASE_3C85:            ; 3C85
+        .incbin "sound.bin", 0x3C85, 0x013C
+PHRASE_3DC1:            ; 3DC1
+        .incbin "sound.bin", 0x3DC1, 0x00A6
+PHRASE_3E67:            ; 3E67
+        .incbin "sound.bin", 0x3E67, 0x02D9
+PHRASE_4140:            ; 4140
+        .incbin "sound.bin", 0x4140, 0x0012
+PHRASE_4152:            ; 4152
+        .incbin "sound.bin", 0x4152, 0x0018
+PHRASE_416A:            ; 416A
+        .incbin "sound.bin", 0x416A, 0x0008
+PHRASE_4172:            ; 4172
+        .incbin "sound.bin", 0x4172, 0x0018
+PHRASE_418A:            ; 418A
+        .incbin "sound.bin", 0x418A, 0x0005
+PHRASE_418F:            ; 418F
+        .incbin "sound.bin", 0x418F, 0x0005
+PHRASE_4194:            ; 4194
+        .incbin "sound.bin", 0x4194, 0x0005
+PHRASE_4199:            ; 4199
+        .incbin "sound.bin", 0x4199, 0x001F
+PHRASE_41B8:            ; 41B8
+        .incbin "sound.bin", 0x41B8, 0x0014
+PHRASE_41CC:            ; 41CC
+        .incbin "sound.bin", 0x41CC, 0x000B
+PHRASE_41D7:            ; 41D7
+        .incbin "sound.bin", 0x41D7, 0x0010
+PHRASE_41E7:            ; 41E7
+        .incbin "sound.bin", 0x41E7, 0x0010
+PHRASE_41F7:            ; 41F7
+        .incbin "sound.bin", 0x41F7, 0x000B
+PHRASE_4202:            ; 4202
+        .incbin "sound.bin", 0x4202, 0x0012
+PHRASE_4214:            ; 4214
+        .incbin "sound.bin", 0x4214, 0x0012
+PHRASE_4226:            ; 4226
+        .incbin "sound.bin", 0x4226, 0x000F
+PHRASE_4235:            ; 4235
+        .incbin "sound.bin", 0x4235, 0x0012
+PHRASE_4247:            ; 4247
+        .incbin "sound.bin", 0x4247, 0x0011
+PHRASE_4258:            ; 4258
+        .incbin "sound.bin", 0x4258, 0x000D
+PHRASE_4265:            ; 4265
+        .incbin "sound.bin", 0x4265, 0x0011
+PHRASE_4276:            ; 4276
+        .incbin "sound.bin", 0x4276, 0x0012
+PHRASE_4288:            ; 4288
+        .incbin "sound.bin", 0x4288, 0x000F
+PHRASE_4297:            ; 4297
+        .incbin "sound.bin", 0x4297, 0x0005
+PHRASE_429C:            ; 429C
+        .incbin "sound.bin", 0x429C, 0x0005
+PHRASE_42A1:            ; 42A1
+        .incbin "sound.bin", 0x42A1, 0x000D
+PHRASE_42AE:            ; 42AE
+        .incbin "sound.bin", 0x42AE, 0x000D
+PHRASE_42BB:            ; 42BB
+        .incbin "sound.bin", 0x42BB, 0x001C
+PHRASE_42D7:            ; 42D7
+        .incbin "sound.bin", 0x42D7, 0x001C
+PHRASE_42F3:            ; 42F3
+        .incbin "sound.bin", 0x42F3, 0x001B
+PHRASE_430E:            ; 430E
+        .incbin "sound.bin", 0x430E, 0x001B
+PHRASE_4329:            ; 4329
+        .incbin "sound.bin", 0x4329, 0x0011
+PHRASE_433A:            ; 433A
+        .incbin "sound.bin", 0x433A, 0x0012
+PHRASE_434C:            ; 434C
+        .incbin "sound.bin", 0x434C, 0x0012
+PHRASE_435E:            ; 435E
+        .incbin "sound.bin", 0x435E, 0x0011
+PHRASE_436F:            ; 436F
+        .incbin "sound.bin", 0x436F, 0x0012
+PHRASE_4381:            ; 4381
+        .incbin "sound.bin", 0x4381, 0x001A
+PHRASE_439B:            ; 439B
+        .incbin "sound.bin", 0x439B, 0x0015
+PHRASE_43B0:            ; 43B0
+        .incbin "sound.bin", 0x43B0, 0x000B
+PHRASE_43BB:            ; 43BB
+        .incbin "sound.bin", 0x43BB, 0x0011
+PHRASE_43CC:            ; 43CC
+        .incbin "sound.bin", 0x43CC, 0x0019
+PHRASE_43E5:            ; 43E5
+        .incbin "sound.bin", 0x43E5, 0x001B
+PHRASE_4400:            ; 4400
+        .incbin "sound.bin", 0x4400, 0x001B
+PHRASE_441B:            ; 441B
+        .incbin "sound.bin", 0x441B, 0x0012
+PHRASE_442D:            ; 442D
+        .incbin "sound.bin", 0x442D, 0x000F
+PHRASE_443C:            ; 443C
+        .incbin "sound.bin", 0x443C, 0x000F
+PHRASE_444B:            ; 444B
+        .incbin "sound.bin", 0x444B, 0x000F
+PHRASE_445A:            ; 445A
+        .incbin "sound.bin", 0x445A, 0x000F
+PHRASE_4469:            ; 4469
+        .incbin "sound.bin", 0x4469, 0x000F
+PHRASE_4478:            ; 4478
+        .incbin "sound.bin", 0x4478, 0x000F
+PHRASE_4487:            ; 4487
+        .incbin "sound.bin", 0x4487, 0x000F
+PHRASE_4496:            ; 4496
+        .incbin "sound.bin", 0x4496, 0x05EF
+PHRASE_4A85:            ; 4A85
+        .incbin "sound.bin", 0x4A85, 0x08D5
+PHRASE_535A:            ; 535A
+        .incbin "sound.bin", 0x535A, 0x011C
+PHRASE_5476:            ; 5476
+        .incbin "sound.bin", 0x5476, 0x0115
+PHRASE_558B:            ; 558B
+        .incbin "sound.bin", 0x558B, 0x011D
+PHRASE_56A8:            ; 56A8
+        .incbin "sound.bin", 0x56A8, 0x0116
+PHRASE_57BE:            ; 57BE
+        .incbin "sound.bin", 0x57BE, 0x011C
+PHRASE_58DA:            ; 58DA
+        .incbin "sound.bin", 0x58DA, 0x0115
+PHRASE_59EF:            ; 59EF
+        .incbin "sound.bin", 0x59EF, 0x002A
+PHRASE_5A19:            ; 5A19
+        .incbin "sound.bin", 0x5A19, 0x0027
+PHRASE_5A40:            ; 5A40
+        .incbin "sound.bin", 0x5A40, 0x0025
+PHRASE_5A65:            ; 5A65
+        .incbin "sound.bin", 0x5A65, 0x0025
+PHRASE_5A8A:            ; 5A8A
+        .incbin "sound.bin", 0x5A8A, 0x0026
+PHRASE_5AB0:            ; 5AB0
+        .incbin "sound.bin", 0x5AB0, 0x0026
+PHRASE_5AD6:            ; 5AD6
+        .incbin "sound.bin", 0x5AD6, 0x0027
+PHRASE_5AFD:            ; 5AFD
+        .incbin "sound.bin", 0x5AFD, 0x0027
+PHRASE_5B24:            ; 5B24
+        .incbin "sound.bin", 0x5B24, 0x0005
+PHRASE_5B29:            ; 5B29
+        .incbin "sound.bin", 0x5B29, 0x00FE
+PHRASE_5C27:            ; 5C27
+        .incbin "sound.bin", 0x5C27, 0x00FE
+PHRASE_5D25:            ; 5D25
+        .incbin "sound.bin", 0x5D25, 0x0100
+PHRASE_5E25:            ; 5E25
+        .incbin "sound.bin", 0x5E25, 0x022A
+PHRASE_604F:            ; 604F
+        .incbin "sound.bin", 0x604F, 0x022A
+PHRASE_6279:            ; 6279
+        .incbin "sound.bin", 0x6279, 0x0431
+PHRASE_66AA:            ; 66AA
+        .incbin "sound.bin", 0x66AA, 0x0431
+PHRASE_6ADB:            ; 6ADB
+        .incbin "sound.bin", 0x6ADB, 0x010C
+PHRASE_6BE7:            ; 6BE7
+        .incbin "sound.bin", 0x6BE7, 0x010C
+PHRASE_6CF3:            ; 6CF3
+        .incbin "sound.bin", 0x6CF3, 0x008D
+PHRASE_6D80:            ; 6D80
+        .incbin "sound.bin", 0x6D80, 0x008A
+PHRASE_6E0A:            ; 6E0A
+        .incbin "sound.bin", 0x6E0A, 0x00A4
+PHRASE_6EAE:            ; 6EAE
+        .incbin "sound.bin", 0x6EAE, 0x00A4
+PHRASE_6F52:            ; 6F52
+        .incbin "sound.bin", 0x6F52, 0x0053
+PHRASE_6FA5:            ; 6FA5
+        .incbin "sound.bin", 0x6FA5, 0x005A
+PHRASE_6FFF:            ; 6FFF
+        .incbin "sound.bin", 0x6FFF, 0x005A
+PHRASE_7059:            ; 7059
+        .incbin "sound.bin", 0x7059, 0x005A
+PHRASE_70B3:            ; 70B3
+        .incbin "sound.bin", 0x70B3, 0x008D
+PHRASE_7140:            ; 7140
+        .incbin "sound.bin", 0x7140, 0x008A
+PHRASE_71CA:            ; 71CA
+        .incbin "sound.bin", 0x71CA, 0x004A
+PHRASE_7214:            ; 7214
+        .incbin "sound.bin", 0x7214, 0x004A
+PHRASE_725E:            ; 725E
+        .incbin "sound.bin", 0x725E, 0x0214
+PHRASE_7472:            ; 7472
+        .incbin "sound.bin", 0x7472, 0x0015
+PHRASE_7487:            ; 7487
+        .incbin "sound.bin", 0x7487, 0x0013
+PHRASE_749A:            ; 749A
+        .incbin "sound.bin", 0x749A, 0x0013
+PHRASE_74AD:            ; 74AD
+        .incbin "sound.bin", 0x74AD, 0x0013
+PHRASE_74C0:            ; 74C0
+        .incbin "sound.bin", 0x74C0, 0x0013
+PHRASE_74D3:            ; 74D3
+        .incbin "sound.bin", 0x74D3, 0x0013
+PHRASE_74E6:            ; 74E6
+        .incbin "sound.bin", 0x74E6, 0x0013
+PHRASE_74F9:            ; 74F9
+        .incbin "sound.bin", 0x74F9, 0x0013
+PHRASE_750C:            ; 750C
+        .incbin "sound.bin", 0x750C, 0x0012
+PHRASE_751E:            ; 751E
+        .incbin "sound.bin", 0x751E, 0x001D
+PHRASE_753B:            ; 753B
+        .incbin "sound.bin", 0x753B, 0x001A
+PHRASE_7555:            ; 7555
+        .incbin "sound.bin", 0x7555, 0x002F
+PHRASE_7584:            ; 7584
+        .incbin "sound.bin", 0x7584, 0x002F
+PHRASE_75B3:            ; 75B3
+        .incbin "sound.bin", 0x75B3, 0x002F
+PHRASE_75E2:            ; 75E2
+        .incbin "sound.bin", 0x75E2, 0x002F
+PHRASE_7611:            ; 7611
+        .incbin "sound.bin", 0x7611, 0x0015
+PHRASE_7626:            ; 7626
+        .incbin "sound.bin", 0x7626, 0x0012
+PHRASE_7638:            ; 7638
+        .incbin "sound.bin", 0x7638, 0x0012
+PHRASE_764A:            ; 764A
+        .incbin "sound.bin", 0x764A, 0x0012
+PHRASE_765C:            ; 765C
+        .incbin "sound.bin", 0x765C, 0x006A
+PHRASE_76C6:            ; 76C6
+        .incbin "sound.bin", 0x76C6, 0x006A
+PHRASE_7730:            ; 7730
+        .incbin "sound.bin", 0x7730, 0x006B
+PHRASE_779B:            ; 779B
+        .incbin "sound.bin", 0x779B, 0x0019
+PHRASE_77B4:            ; 77B4
+        .incbin "sound.bin", 0x77B4, 0x001D
+PHRASE_77D1:            ; 77D1
+        .incbin "sound.bin", 0x77D1, 0x0016
+PHRASE_77E7:            ; 77E7
+        .incbin "sound.bin", 0x77E7, 0x0016
+PHRASE_77FD:            ; 77FD
+        .incbin "sound.bin", 0x77FD, 0x0016
+PHRASE_7813:            ; 7813
+        .incbin "sound.bin", 0x7813, 0x000C
+PHRASE_781F:            ; 781F
+        .incbin "sound.bin", 0x781F, 0x002B
+PHRASE_784A:            ; 784A
+        .incbin "sound.bin", 0x784A, 0x0028
+PHRASE_7872:            ; 7872
+        .incbin "sound.bin", 0x7872, 0x0028
+PHRASE_789A:            ; 789A
+        .incbin "sound.bin", 0x789A, 0x0028
+PHRASE_78C2:            ; 78C2
+        .incbin "sound.bin", 0x78C2, 0x0028
+PHRASE_78EA:            ; 78EA
+        .incbin "sound.bin", 0x78EA, 0x0028
+PHRASE_7912:            ; 7912
+        .incbin "sound.bin", 0x7912, 0x0072
+PHRASE_7984:            ; 7984
+        .incbin "sound.bin", 0x7984, 0x0072
+PHRASE_79F6:            ; 79F6
+        .incbin "sound.bin", 0x79F6, 0x0072
+PHRASE_7A68:            ; 7A68
+        .incbin "sound.bin", 0x7A68, 0x0038
+PHRASE_7AA0:            ; 7AA0
+        .incbin "sound.bin", 0x7AA0, 0x0047
+PHRASE_7AE7:            ; 7AE7
+        .incbin "sound.bin", 0x7AE7, 0x0011
+PHRASE_7AF8:            ; 7AF8
+        .incbin "sound.bin", 0x7AF8, 0x0026
+PHRASE_7B1E:            ; 7B1E
+        .incbin "sound.bin", 0x7B1E, 0x00B8
+PHRASE_7BD6:            ; 7BD6
+        .incbin "sound.bin", 0x7BD6, 0x0100
+PHRASE_7CD6:            ; 7CD6
+        .incbin "sound.bin", 0x7CD6, 0x0085
+PHRASE_7D5B:            ; 7D5B
+        .incbin "sound.bin", 0x7D5B, 0x0028
+PHRASE_7D83:            ; 7D83
+        .incbin "sound.bin", 0x7D83, 0x027D

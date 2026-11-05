@@ -1138,9 +1138,12 @@ IRQ   = { addr = 0x0038, note = "IM 1, from the YM chips' timers" }
 NMI   = { addr = 0x0066, note = "from the command latch: every command but FF goes into CMD_QUEUE (and to DIAG_ROM, if fitted)" }
 QUEUE_PUSH      = { addr = 0x00B3, note = "A = command below F0: added to CMD_QUEUE, carry clear; F0 and up: carry set, not added" }
 SOUND_START     = { addr = 0x00DC, note = "clears RAM; YM2203 timers A = 150 and B = D5, SSG off (SSG_OFF_CHECK); YM3526 timer 1 started; reply E0, then MAIN_LOOP" }
+TAMPER_OP_0144  = { addr = 0x0144, note = "an opcode TAMPER_CHECK reads: CD" }
 MAIN_LOOP       = { addr = 0x016D, note = "QUEUE_RUN with interrupts off, REPLY_READY, DIAG_ROM_CHECK; for ever" }
 SSG_OFF_CHECK   = { addr = 0x017A, note = "HL = YM2203: register 7 (mixer) = 3F, all SSG tones and noise off; resets the CPU if it does not read back" }
+TAMPER_OP_0191  = { addr = 0x0191, note = "an opcode TAMPER_CHECK reads: FE" }
 IRQ_HANDLER     = { addr = 0x0195, note = "YM2203 timer A: OPL_TICK_A, OPL_TICK_B; timer B: OPN_FM_TICK, OPN_SSG_TICK; a new timer A value; TAMPER_CHECK. RET, not RETI: MAIN_LOOP has the EI" }
+TAMPER_OP_019D  = { addr = 0x019D, note = "an opcode TAMPER_CHECK reads: CD" }
 OPL_TIMER_STOP  = { addr = 0x022B, note = "first IRQ only: waits for the YM3526's timer 1 (SOUND_START), then resets its IRQ and stops it" }
 REPLY_READY     = { addr = 0x024D, note = "reply ECHO_CMD in echo mode (SOUND_MODE b0), else E0 while NMI_ENABLE b0 reads clear" }
 DIAG_ROM_CHECK  = { addr = 0x0268, note = "with DIAG_ROM fitted: if E00F gives NZ and E009 gives 53 ('S'), reset" }

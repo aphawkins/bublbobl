@@ -1087,7 +1087,129 @@ L_F70D:                 ; F70D
 ; List n averages n/10 per frame (list 1: one 1 in ten frames; list 40: all 4s).
 ; 0xFF fill to F898.
 SPEED_PATTERNS:         ; F717
-        .incbin "mcu.bin", 0x0717, 0x0182
+        .word   SPEED_LIST_00
+        .word   SPEED_LIST_01
+        .word   SPEED_LIST_02
+        .word   SPEED_LIST_03
+        .word   SPEED_LIST_04
+        .word   SPEED_LIST_05
+        .word   SPEED_LIST_06
+        .word   SPEED_LIST_07
+        .word   SPEED_LIST_08
+        .word   SPEED_LIST_09
+        .word   SPEED_LIST_10
+        .word   SPEED_LIST_11
+        .word   SPEED_LIST_12
+        .word   SPEED_LIST_13
+        .word   SPEED_LIST_14
+        .word   SPEED_LIST_15
+        .word   SPEED_LIST_16
+        .word   SPEED_LIST_17
+        .word   SPEED_LIST_18
+        .word   SPEED_LIST_19
+        .word   SPEED_LIST_20
+        .word   SPEED_LIST_21
+        .word   SPEED_LIST_22
+        .word   SPEED_LIST_23
+        .word   SPEED_LIST_24
+        .word   SPEED_LIST_25
+        .word   SPEED_LIST_26
+        .word   SPEED_LIST_27
+        .word   SPEED_LIST_28
+        .word   SPEED_LIST_29
+        .word   SPEED_LIST_30
+        .word   SPEED_LIST_31
+        .word   SPEED_LIST_32
+        .word   SPEED_LIST_33
+        .word   SPEED_LIST_34
+        .word   SPEED_LIST_35
+        .word   SPEED_LIST_36
+        .word   SPEED_LIST_37
+        .word   SPEED_LIST_38
+        .word   SPEED_LIST_39
+        .word   SPEED_LIST_40
+SPEED_LIST_00:          ; F769
+        .incbin "mcu.bin", 0x0769, 0x0002
+SPEED_LIST_01:          ; F76B
+        .incbin "mcu.bin", 0x076B, 0x000B
+SPEED_LIST_02:          ; F776
+        .incbin "mcu.bin", 0x0776, 0x0006
+SPEED_LIST_03:          ; F77C
+        .incbin "mcu.bin", 0x077C, 0x000B
+SPEED_LIST_04:          ; F787
+        .incbin "mcu.bin", 0x0787, 0x0006
+SPEED_LIST_05:          ; F78D
+        .incbin "mcu.bin", 0x078D, 0x0003
+SPEED_LIST_06:          ; F790
+        .incbin "mcu.bin", 0x0790, 0x0006
+SPEED_LIST_07:          ; F796
+        .incbin "mcu.bin", 0x0796, 0x000B
+SPEED_LIST_08:          ; F7A1
+        .incbin "mcu.bin", 0x07A1, 0x0006
+SPEED_LIST_09:          ; F7A7
+        .incbin "mcu.bin", 0x07A7, 0x000B
+SPEED_LIST_10:          ; F7B2
+        .incbin "mcu.bin", 0x07B2, 0x0002
+SPEED_LIST_11:          ; F7B4
+        .incbin "mcu.bin", 0x07B4, 0x000B
+SPEED_LIST_12:          ; F7BF
+        .incbin "mcu.bin", 0x07BF, 0x0006
+SPEED_LIST_13:          ; F7C5
+        .incbin "mcu.bin", 0x07C5, 0x000B
+SPEED_LIST_14:          ; F7D0
+        .incbin "mcu.bin", 0x07D0, 0x0006
+SPEED_LIST_15:          ; F7D6
+        .incbin "mcu.bin", 0x07D6, 0x0003
+SPEED_LIST_16:          ; F7D9
+        .incbin "mcu.bin", 0x07D9, 0x0006
+SPEED_LIST_17:          ; F7DF
+        .incbin "mcu.bin", 0x07DF, 0x000B
+SPEED_LIST_18:          ; F7EA
+        .incbin "mcu.bin", 0x07EA, 0x0006
+SPEED_LIST_19:          ; F7F0
+        .incbin "mcu.bin", 0x07F0, 0x000B
+SPEED_LIST_20:          ; F7FB
+        .incbin "mcu.bin", 0x07FB, 0x0002
+SPEED_LIST_21:          ; F7FD
+        .incbin "mcu.bin", 0x07FD, 0x000B
+SPEED_LIST_22:          ; F808
+        .incbin "mcu.bin", 0x0808, 0x0006
+SPEED_LIST_23:          ; F80E
+        .incbin "mcu.bin", 0x080E, 0x000B
+SPEED_LIST_24:          ; F819
+        .incbin "mcu.bin", 0x0819, 0x0006
+SPEED_LIST_25:          ; F81F
+        .incbin "mcu.bin", 0x081F, 0x0003
+SPEED_LIST_26:          ; F822
+        .incbin "mcu.bin", 0x0822, 0x0006
+SPEED_LIST_27:          ; F828
+        .incbin "mcu.bin", 0x0828, 0x000B
+SPEED_LIST_28:          ; F833
+        .incbin "mcu.bin", 0x0833, 0x0006
+SPEED_LIST_29:          ; F839
+        .incbin "mcu.bin", 0x0839, 0x000B
+SPEED_LIST_30:          ; F844
+        .incbin "mcu.bin", 0x0844, 0x0002
+SPEED_LIST_31:          ; F846
+        .incbin "mcu.bin", 0x0846, 0x000B
+SPEED_LIST_32:          ; F851
+        .incbin "mcu.bin", 0x0851, 0x0006
+SPEED_LIST_33:          ; F857
+        .incbin "mcu.bin", 0x0857, 0x000B
+SPEED_LIST_34:          ; F862
+        .incbin "mcu.bin", 0x0862, 0x0006
+SPEED_LIST_35:          ; F868
+        .incbin "mcu.bin", 0x0868, 0x0003
+SPEED_LIST_36:          ; F86B
+        .incbin "mcu.bin", 0x086B, 0x0006
+SPEED_LIST_37:          ; F871
+        .incbin "mcu.bin", 0x0871, 0x000B
+SPEED_LIST_38:          ; F87C
+        .incbin "mcu.bin", 0x087C, 0x0006
+SPEED_LIST_39:          ; F882
+        .incbin "mcu.bin", 0x0882, 0x000B
+SPEED_LIST_40:          ; F88D
+        .incbin "mcu.bin", 0x088D, 0x000C
 ; While TIMER_RUN is nonzero, decrement TIMER_HI:TIMER_LO. At zero, clear
 ; TIMER_RUN and set TIMER_DONE = 1.
 TIMER_JOB:              ; F899
@@ -1258,7 +1380,21 @@ L_F982:                 ; F982
 ; and the rest reads as Z80 code too: probably whatever was in the development
 ; system's memory. What the main CPU does with the bytes is for Phase 1.
 FETCH_BLOCKS:           ; F9B1
-        .incbin "mcu.bin", 0x09B1, 0x050A
+        .word   FETCH_BLOCK_0
+        .word   FETCH_BLOCK_1
+        .word   FETCH_BLOCK_2
+        .word   FETCH_BLOCK_3
+        .word   FETCH_BLOCK_4
+FETCH_BLOCK_0:          ; F9BB
+        .incbin "mcu.bin", 0x09BB, 0x0100
+FETCH_BLOCK_1:          ; FABB
+        .incbin "mcu.bin", 0x0ABB, 0x0100
+FETCH_BLOCK_2:          ; FBBB
+        .incbin "mcu.bin", 0x0BBB, 0x0100
+FETCH_BLOCK_3:          ; FCBB
+        .incbin "mcu.bin", 0x0CBB, 0x0100
+FETCH_BLOCK_4:          ; FDBB
+        .incbin "mcu.bin", 0x0DBB, 0x0100
 ; Reset. Stops the timers, then looks for the factory test jig: with every port
 ; still an input, P1, P4, P2 b0-4 and P3 must read 0xAA, then 0x55. Anything else
 ; goes to COLD_START. With the jig: drive 0x0F, wait for TSR b3, drive 0xF0, test

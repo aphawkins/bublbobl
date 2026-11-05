@@ -28,7 +28,8 @@ still differ.
   update `ALIVE_COUNTER` (`FC7F`)?
   Traces so far: the main CPU writes `FC7F` only in its start-up RAM test.
 - **`FFDF` stamp** `BR1O 29.JUN,1986 `: the date matches the MCU date in
-  EXTRACTION_PLAN §1. Do these 17 bytes also balance the ROM word sum to 0?
+  EXTRACTION_PLAN §1. The ROM's big-endian word sum is 0, and the main CPU stops at start-up
+  if `ROM_SUM_HI` is not. Which bytes were set to balance it is not known.
 
 ## Main CPU
 
