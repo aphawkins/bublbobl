@@ -921,9 +921,14 @@ Started (2026-10-27):
   within 13 of `OPL_NOTES` (the pitch envelope and LFO). On the YM2203 command 25's single
   note (voice 32, 96 ticks) writes the voice's registers as `OPN_VOICES` has them and keys
   off 96 timer B ticks (16.5 ms) later. So the event lengths and the voice index are right.
-- Next: turn the
-  voices and envelope tables (`OPL_VOICES`, `OPN_VOICES`, `OPL_ENVS`, `OPN_ENVS`, the SSG
-  tables) into JSON for the synthesiser.
+- The tables (2026-11-05): `tools/soundtables.py` writes `build/sound/tables.json`: both note
+  tables, the 29 YM3526 and 59 YM2203 voices (register values, then the LFO and envelope setup),
+  and the stepped envelopes with their points resolved. The voices follow one another exactly
+  from `OPL_VOICES`' data to `OPN_VOICES`' and on to `COMMAND_TABLE`, which supports the
+  layout (one 1-byte gap in the YM2203's, where a channel 3 envelope mask would add a byte).
+- Next: a synthesiser-side check: play a decoded command through a generic FM model and
+  compare with MAME audio (stage 3, `SharpKind.Audio`), and extend `soundcheck.py` to the
+  YM2203 and the SSG.
 
 ---
 

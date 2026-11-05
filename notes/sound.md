@@ -250,6 +250,25 @@ player starts another step there, with the length set by CE as its duration.
 SSG: 4x–7x are 2 bytes, 8x–Ex are 1. F0 is 1 byte and ends the step (the next duration
 follows it, and can be 40 or more). F1, F3, F7, FB–FF are 2, F2, F4–F6 and F8–FA are 3.
 
+## Voices
+
+`CF` picks a voice from `OPL_VOICES` or `OPN_VOICES` (a word pointer each). `tools/soundtables.py`
+decodes them into `build/sound/tables.json`. A voice is its chip's settings, then the setup of the
+LFO and the envelope.
+
+YM3526: byte 0 feedback (b4-6) and connection (b0); byte 1 the AM depth (b4) and vibrato depth (b0)
+of register BD; then 4 bytes for each of the 2 operators: an attenuation (TL is the low 6 bits
+inverted, b6-7 the KSL) and the registers 20, 60 and 80.
+
+YM2203: byte 0 an LFO sensitivity the chip does not have, byte 1 the algorithm (b0-2) and feedback
+(b4-6, written to B0), then 4 slots (registers +0, +4, +8, +C) of 7 bytes: TL (40), 30, 90, 50, 60,
+70, 80. Checked against the writes MAME made for command 25.
+
+Both end with variable setup that `CF` hands on: a mask byte for the LFO (0: no LFO; else 3 bytes of
+`DC` follow, then a depth for each bit of the mask, as `DD`), a mask for the envelope (nonzero: 2
+bytes of `DE`, then the depths `DF` reads) and the envelope's depth on the LFO rate (`EC`). The
+voices are packed with no gaps, so a voice's length is what this parse reads.
+
 ## Not yet done
 
 - The command catalogue is in `notes/sound_blocks.md` (made by `tools/sounddec.py`, JSON in
