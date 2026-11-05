@@ -20,12 +20,14 @@ emu.register_frame_done(function()
   frame = frame + 1
   main:write_u8(0xFA80, 0) -- the watchdog
   if frame == CFG.start - 30 then local st = m.devices[':maincpu'].state; st['IFF1'].value = 0; st['IFF2'].value = 0; st['PC'].value = 0x01ED end
+  -- Command 00 stops every record, half a second ahead so that its own writes are over. (EE
+  -- only refuses new blocks; what is playing carries on.) The latch holds one byte and the
+  -- sound CPU does not run inside this callback, so a command needs a frame of its own.
+  if frame == next_at - 30 then main:write_u8(0xFA00, 0x00) end
   if frame == next_at and idx < #CFG.cmds then
     idx = idx + 1
     cur = string.format("%02X", CFG.cmds[idx])
     t0 = m.time:as_double()
-    main:write_u8(0xFA00, 0xEE) -- sound off clears the records
-    main:write_u8(0xFA00, 0xEF)
     main:write_u8(0xFA00, CFG.cmds[idx])
     next_at = frame + CFG.gap
   elseif frame == next_at then

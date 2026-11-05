@@ -79,6 +79,9 @@ Other tools:
 - `tools/coverage.py` — merge the traced code into the classification maps
 - `tools/rammap.py` — write `notes/ram_map.md`: who writes and reads each RAM and I/O address
 - `tools/soundcmds.py` — write `notes/sound_commands.md`: every command sent to the sound CPU
+- `tools/soundcmp.py` — log the YM2203 and YM3526 register writes MAME makes for sound commands,
+  `build/soundcmp/regs.csv`; `tools/soundcheck.py` compares that log with the decoded phrases and
+  (`--voices`) voices
 
 `config.local.toml` (git-ignored) holds local paths:
 

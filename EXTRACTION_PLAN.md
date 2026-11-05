@@ -935,7 +935,33 @@ Started (2026-10-27):
   YM3526 notes that are tied (`CC A1`: pitch only, no new key-on) show no key-on, so it
   reports 4 wrong blocks; and the SSG check is weak: command 05's 3 tone events each have a
   tone write within two ticks, and 2E has none.
-- Next: a synthesiser-side check:
+- Every command from silence (2026-11-05): `soundlog.lua` wrote EE, EF and the command in one
+  frame, and the latch keeps only the last byte, so nothing stopped the command before it. EE
+  would not have helped: it only refuses new blocks. Command 00 stops every record, so the capture
+  now sends it half a second ahead of each command, and commands 00-34 and F2-F8 are all logged,
+  14.5 s each. This changes two findings above. The 4 wrong blocks of command 0B came from that
+  leftover sound: 0B has no wrong block, and no phrase uses `CC A1`, so there are no tied notes
+  (the `A0` in `CC B1 A0` is a timer byte). And the fitted ticks are 14.6 to 24.6 ms on the YM3526
+  and 16.0 to 17.2 ms on the YM2203, not 16.3 to 35.8.
+- The voices (2026-11-05): `soundcheck.py --voices all` compares the chip's registers at each
+  key-on with the decoded voice, every register but the total levels. 3487 key-ons, none differ, 4
+  skipped (an operator event had changed the voice). That covers all 29 YM2203 voices that a
+  phrase uses and 12 of the YM3526's 14. Of the other two, voice 8 is never keyed (a silent
+  placeholder on unused channels), and voice 11's notes in command 14 come after the 14.5 s. The
+  writer masks register 50 with DF and 60 and 70 with 1F (`L_1D67`), which matters for voices 3,
+  10, 16, 23 and 53; `tables.json` keeps the ROM's bytes.
+- The rest of the timing (2026-11-05): `soundcheck.py all` now takes each channel's B record where
+  the command starts no A record there, and follows the keying rules. Every note's block is right
+  on the YM3526, and every key-on is within 1.25 ticks of the decoded durations. Only 09, 0A and 29
+  pass 1 tick, and why is not known: 0A and 29 set the timer once and 09 not at all, so it is not a
+  tempo change. The SSG check now compares values: every event's value is written, in order, for
+  all the SSG blocks. F2 is the only one with real content; the others silence the channels.
+- Not checked: an A record playing over a B record and the B record taking over, commands chained
+  through a block's next command, the total levels and pitch under the LFO and stepped envelopes,
+  and anything after the first 14.5 s of a command.
+- Left for stage 3: a synthesiser-side check, which plays a decoded command through a generic FM
+  model and compares it with MAME audio (`SharpKind.Audio`).
+- Next: the Phase 8 relocation test.
 
 ---
 

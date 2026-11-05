@@ -15,12 +15,16 @@ The NMI puts each command in `CMD_QUEUE`, and `MAIN_LOOP` plays them (`QUEUE_RUN
 |---|---|
 | 00–34 | `COMMAND_TABLE` entry |
 | 35–DF | ignored |
-| EE, EF | sound off, sound on (`SOUND_ON`) |
+| EE, EF | refuse new blocks, accept them (`SOUND_ON`); records already playing carry on |
 | F0 | echo mode on/off |
 | F2, F4, F6, F8 | `COMMAND_F_TABLE` entry |
 
 A `COMMAND_TABLE` entry is one block, or a count byte and that many words. A word with
 high byte 0 queues its low byte as another command; any other word is a block.
+
+Commands 00-06 stop records, at priority 0: each block is one step that keys off and sets the total
+levels to 0 (on the SSG, the mixer off and silence). 00 stops every record, 01 and 02 the YM3526's
+A and B records, 03 and 04 the YM2203's, 05 and 06 the SSG's.
 
 ## Blocks and records
 
@@ -269,10 +273,27 @@ Both end with variable setup that `CF` hands on: a mask byte for the LFO (0: no 
 bytes of `DE`, then the depths `DF` reads) and the envelope's depth on the LFO rate (`EC`). The
 voices are packed with no gaps, so a voice's length is what this parse reads.
 
+The YM2203's writer masks three of these (`L_1D67`): register 50 with DF, 60 and 70 with 1F. Voices
+3, 10, 16, 23 and 53 have bits there that never reach the chip. YM3526 voice 8 is never keyed: it
+is a silent placeholder on unused channels.
+
+## Checked against MAME
+
+`tools/soundcmp.py` logs every YM2203 and YM3526 register write for each command, from silence, for
+14.5 s. `tools/soundcheck.py` compares the log with `build/sound/commands.json` and `tables.json`:
+
+- `soundcheck.py --voices all`: the registers at each key-on against the decoded voice, all but the
+  total levels. 3487 key-ons, none differ. It covers all 29 YM2203 voices that a phrase uses and 12
+  of the 14 YM3526 ones.
+- `soundcheck.py all`: key-on times against the decoded durations, within 1.25 ticks, and each
+  note's block on the YM3526. For the SSG, every event's value is written, in order.
+
+No phrase uses `CC A1`, so notes always key on. 15 YM3526 voices and 30 YM2203 voices are not used
+by any phrase.
+
 ## Not yet done
 
-- The command catalogue is in `notes/sound_blocks.md` (made by `tools/sounddec.py`, JSON in
-  `build/sound/commands.json`). It is not yet checked against MAME recordings.
-- Checked against MAME so far: YM3526 commands 08, 13 and 2A, YM2203 commands 2D, 18, 27, 28 and 26
-  (`tools/soundcheck.py`). Not checked: tied notes (command 0B), the second-layer (B) records, the
-  SSG beyond command 05, the voices' and envelopes' register values beyond command 25.
+- Not checked: an A record over a B record and the B record taking over, chained commands (a
+  block's next command), the total levels and pitch under the LFO and stepped envelopes, and
+  anything after the first 14.5 s of a command (voice 11, in command 14, is only used there).
+- Not known: why commands 09, 0A and 29 pass 1 tick. 0A and 29 set the timer once, 09 not at all.
