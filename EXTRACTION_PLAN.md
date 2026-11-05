@@ -912,7 +912,16 @@ Started (2026-10-27):
   almost all of them follow one another with no byte between, which supports the lengths. The
   gaps are four stray bytes before the phrases at `6EAE` and `6F52` and two at `4265`.
   Command 2E's block says 255 phrases but holds one.
-- Next: compare the decoded notes with MAME recordings (register logs), then turn the
+- Checked against MAME (2026-11-05): `tools/soundcmp.py CMD ...` boots MAME headless, parks the
+  main CPU, feeds the watchdog and injects each command into the latch (`tools/soundlog.lua`),
+  logging every YM2203 and YM3526 register write to `build/soundcmp/regs.csv`.
+  `tools/soundcheck.py` compares that with the decoded phrases. Command 08, channels 1-3
+  (52, 52 and 88 notes): one fitted tick period (24.6 ms, timer A) places every key-on within
+  one tick of the decoded step durations, and the block of all 121 notes matches, with the F-number
+  within 13 of `OPL_NOTES` (the pitch envelope and LFO). On the YM2203 command 25's single
+  note (voice 32, 96 ticks) writes the voice's registers as `OPN_VOICES` has them and keys
+  off 96 timer B ticks (16.5 ms) later. So the event lengths and the voice index are right.
+- Next: turn the
   voices and envelope tables (`OPL_VOICES`, `OPN_VOICES`, `OPL_ENVS`, `OPN_ENVS`, the SSG
   tables) into JSON for the synthesiser.
 

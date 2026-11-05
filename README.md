@@ -84,7 +84,7 @@ Other tools:
 
 ```toml
 ROM_DIR = "roms/bublbobl"            # optional
-MAME_DIR = "C:/Games/Retro/mame"     # folder with mame.exe
+MAME_DIR = "C:/Games/Emulated/_Emulators/mame"     # folder with mame.exe
 ```
 
 ## Legal

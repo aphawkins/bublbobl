@@ -254,4 +254,5 @@ follows it, and can be 40 or more). F1, F3, F7, FB–FF are 2, F2, F4–F6 and F
 
 - The command catalogue is in `notes/sound_blocks.md` (made by `tools/sounddec.py`, JSON in
   `build/sound/commands.json`). It is not yet checked against MAME recordings.
-- Check the decoded phrases against MAME recordings of the chips' registers.
+- Check more commands against MAME (`tools/soundcmp.py`, `tools/soundcheck.py`): only command 08
+  (YM3526) and 25 (YM2203) have been compared. The YM2203 and SSG phrases still need a checker.
