@@ -29,6 +29,14 @@ direction it is moving. `BUBBLE_SPEED` (`6144`) decides how many pixels a frame,
 speed pattern that record byte 9 selects (below). In round 1, rows 5–8 are 2 on the left, 3
 on the right and 4 in the middle, so the bubbles gather under the ceiling in the centre.
 
+A bubble from the floor or ceiling gaps does not start with its own cell. `SPAWN_BUBBLE` loads
+its position into HL, but `RAND_TIMER_SET` then leaves `622A + SPEED2_SEL` there, and `GRID_CELL`
+(`6E1F`) reads the cell that address stands for: X `62`, Y the low byte. That cell goes in `IX+0A`
+until the bubble reaches its first boundary, so where such a bubble first drifts depends on the
+layout, the speed selector and the address of the table at `622A`, not on where it came out.
+Seen in MAME on round 22 with the selector at 5: a bubble at Y `08`, X `AB`, whose own cell is 1,
+starts with 3, and with the table moved 8 bytes down it starts with 0 and drifts another way.
+
 Rows 0–3 are behind the score line and rows 30–31 are below the screen, so rows 4–29 are
 the visible playfield.
 

@@ -3,6 +3,15 @@
 -- CFG.out, and plays the input events in CFG.events, as tools/trace.lua does.
 
 local machine = manager.machine
+
+-- MAME reruns this script on each reset, in the same Lua state. A run has no reset in it, so the
+-- second time here means the game crashed or its watchdog fired.
+if RELOC_FRAME then
+  assert(io.open(CFG.reset, "w")):close()
+  machine:exit()
+  return
+end
+
 local frame = 0
 local ev = 1
 local out = assert(io.open(CFG.out, "wb"))

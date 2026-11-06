@@ -1046,10 +1046,10 @@ A byte-exact set gives no checksum warning. Play attract mode, one round and tes
 
 Stage 3 needs level 1. Level 2 is required only for changes to the arcade code itself.
 
-`python toolseloc.py IMAGE...` runs the test. It adds N bytes after the image's fixed vectors,
+`python tools\reloc.py IMAGE...` runs the test. It adds N bytes after the image's fixed vectors,
 takes N out of its free space, and balances the ROM's own sum with the padding, so no code is
-patched. MAME then plays the same inputs on the byte-exact set and the moved set: moving code does
-not change its timing, so every sampled screen must match (attract mode and random play), and for
+patched. MAME then plays the same inputs on the byte-exact set and the moved set: moving these
+images' code does not change their timing, so every sampled screen must match (attract mode and random play), and for
 sound every YM register write must match in value and time. Two broken sub ROMs and a broken sound
 ROM were tried, and each was caught.
 
@@ -1070,24 +1070,33 @@ The test only proves what the run reaches: one round of random play, not all 100
 test mode. For the sub CPU and the MCU the reading of the code covers the rest, as they hold few
 pointers.
 
-**Main CPU: in progress, not done (stopped 2026-11-05 at the project owner's request; nothing is
-committed).** The work is in the working tree, for review. `python tools\reloc.py main` moves the
-fixed ROM and banks 0-3 together, with pads at both ends of each half so that every label changes.
-`sh tools/redo_main.sh` regenerates all of `src\main\`, and `tools\build.py` is still byte-exact.
+**Main CPU: passes, within what the runs reach.** `python tools\reloc.py main` moves the fixed ROM and banks 0-3
+together, with pads at both ends of each half so that every label changes. `sh tools/redo_main.sh`
+regenerates all of `src\main\`, and `tools\build.py` is still byte-exact. No missed pointer is left
+in what the runs reach. When main moves, a race between the CPUs can leave a bubble a pixel off for
+a moment, so a difference of up to 60 frames is allowed (the project owner's decision, 2026-11-06).
+
+Checks of 2026-11-06, all at 300 seconds unless noted:
 
 | Check | Result |
 |---|---|
-| Pads 1, 2, 3, 7, 8, 9, 10, 120 seconds, default seed | Same on all 480 samples |
-| All four moved at once, pad 8, 120 seconds | Same 480 samples; same 523,524 register writes |
-| Sub, MCU, sound alone, pad 8 | Still pass |
-| One pointer broken on purpose (`DATA_60EF`) | Caught at frame 3750 |
-| **Pad 8, 300 seconds, seeds 1, 2, 3** | **Differ** at frames 15555, 15975, 7455: open, see below |
+| Pad 8, seeds 1, 2, 4, 5 | Same on all 1200 samples |
+| Pads 1, 3, 7, 9, 10, seed 1 | Same on all 1200 samples |
+| All four moved at once, pad 8, seed 2 | Same 1200 samples; same 523,524 register writes |
+| Sub, MCU, sound alone, pad 8, 120 seconds | Still pass |
+| One pointer broken on purpose (`DATA_60EF`), 120 seconds | Caught at frame 3750 |
+| The old `IRQ_VECTOR_ENTRY` put back, 30 seconds | Reported as a reset |
+| Pad 8, seed 3 | Passes, with 2 short differences: frames 7455 and 11985-12015. The race below |
+| Pads 2 and 16, seed 1 | Pass, with 1 short difference: frames 8520-8550. The race below |
+| `RELOC_CELL` taken out, pad 8, seed 1 | Fails: frames 15555-15735 and 15810-16710 |
+| The same pointer broken, under the 60 frame rule, 120 seconds | Fails: frames 3750-5175 |
 
 Found so far:
 
 - `IRQ_VECTOR_ENTRY` was read as code, so it kept `044D` and the machine reset every 151 frames.
   It is now `.word IRQ_HANDLER`. (`reloc.py` looked hung: MAME reruns the autoboot script on each
-  reset, so the frame count never ended. MAME runs now have a 600 second limit.)
+  reset, so the frame count never ended. `reloc.lua` now reports a reset as a failure, and MAME runs
+  have a 600 second limit.)
 - `ld hl,BANK_WINDOW` (the palettes) and `ld de,BANK_WINDOW` (bank 3 tiles) were data addresses.
 - **Moving the main CPU's code does change its timing**, unlike the images above: `ADD_HL_A` and
   its like run an extra `inc h` when a table crosses a page. This is the inferred reason `R` differs;
@@ -1095,32 +1104,48 @@ Found so far:
   So `reloc.py` makes them `ld a,i` (same size, time and flags) in both sets, and compares with a
   reference set built the same way with a pad of 0. The random branches therefore always see one
   value in this test, which narrows what it covers.
+- **The game's behaviour depends on where `DATA_622A` is.** `SPAWN_BUBBLE` calls `GRID_CELL` with
+  the HL that `RAND_TIMER_SET` leaves, `DATA_622A + SPEED2_SEL`, and not the bubble's position
+  (`notes/levels.md`). This was the whole of the difference in seeds 1 and 2 (71 and 58 samples),
+  both in the attract demo after game over, where the runs really did part until the demo ended.
+  It predicts the values seen: on round 22 (`ROUND_MAIN` 0x15) with `SPEED2_SEL` 5, the first such bubble's cell is 3 at
+  `622F` and 0 at `6227`. `reloc.py` gives `GRID_CELL` the original value, through `RELOC_CELL` in
+  the cut, in both sets; seeds 1 and 2 then match on every sample. As with sound command 2E, this
+  is the game depending on its layout, and a real change to the code would change how those bubbles
+  drift.
 
-The open item. Seed 3 differs in 4 of 1200 samples and recovers each time. The first (frame 7455)
-is one sprite byte, `DD4C`, of the bubble at `E7E4`. The sub CPU writes that bubble's push
-(`E7F7`, sub `088A`), and its ROM is the same in both sets, but its writes changed by a few
-microseconds and at frame 7453 differ in number and value. So this one looks like a race between
-the two CPUs and not a missed pointer. That is shown for this one difference only. The other seed 3
-difference (frames 11985-12015) and seeds 1 and 2 have not been looked at, and a real missed pointer
-could still be among them.
+The race. Every remaining difference starts at a bubble's push byte, `+13` or `+14` of its slot:
+`E7F7` (seed 3, frame 7453), `E848` (seed 3, frame 11981), `E7A8` and `E910` (pads 2 and 16, frame
+8508). The sub CPU adds to `+14` (sub `06B0`), and the main CPU reads, applies and clears it
+(`62BD`-`62F6`), with nothing to keep them apart, so a few microseconds decide how much lands in
+which frame. A bubble is then a pixel off for up to about 40 frames. In each case the game RAM
+and object RAM (`DD00-DFFF`, `E200-F7FF`) were compared frame by frame: only those bubbles' bytes
+differ, apart from pointers, and then they match again. This comes from the traced bytes and the
+code; the race has not been removed to prove that nothing is left behind it. `+13`'s code was not
+read: the sub CPU writes it at `088A`, as traced on 2026-11-05.
+
+The rule. With main moved, `reloc.py` joins differing samples less than 60 frames apart into
+stretches and prints each one. A stretch of up to 60 frames passes, unless it is still going when
+the run ends. Sub, MCU and sound alone must still match exactly, as their timing does not change.
+The race has lasted up to about 40 frames, and the two faults tried lasted 900 and more. A real
+fault with only a brief effect would pass, so read the stretches a run prints: a new one is worth
+tracing.
 
 To finish:
 
-1. Run seeds 1 and 2 and see whether they recover as seed 3 does; look into each difference.
-2. Decide how the test treats a race between the CPUs, without hiding real faults. The project
-   owner should choose: for example, compare game state as well as screens.
-3. Consider replaying the trace scenarios on the moved set for more rounds (`tools/cheats.lua`
-   holds fixed PCs, which would need mapping through the link symbols).
-4. Hidden 8-bit pointers (`ld h,0xNN`) have not been checked beyond what the runs reach.
-5. `reloc.lua` should report a machine reset as a failure; for now only the time limit catches it.
-6. Update this section's "moving code does not change its timing" and write up in `notes\`: the
-   routine split across the fixed ROM and bank 0 (`STEP_TO_8_DOWN`), the orphaned block at `475B`,
-   and the `0B0C`/`044C` disguised check. `TAMPER_CONSTS_LOAD`'s note says page 2; the data is page 3.
-7. Table names `ANIM_LISTS`, `ENEMY_SCRIPTS` and `SECRET_TABLES` are provisional. The blocks cut
-   for room were never run or read in 86 runs and have no label pointing at them: that is evidence,
-   not proof.
+1. Consider replaying the trace scenarios on the moved set for more rounds (`tools/cheats.lua`
+   holds fixed PCs, which would need mapping through the link symbols). The runs still cover few
+   rounds: the `DATA_622A` fault only showed in the demo, which 120 second runs never reach.
+2. Hidden 8-bit pointers (`ld h,0xNN`) have not been checked beyond what the runs reach.
+3. Write up in `notes\`: the routine split across the fixed ROM and bank 0 (`STEP_TO_8_DOWN`), the
+   orphaned block at `475B`, and the `0B0C`/`044C` disguised check. `TAMPER_CONSTS_LOAD`'s note says
+   page 2; the data is page 3.
+4. Table names `ANIM_LISTS` and `ENEMY_SCRIPTS` are provisional, and `SECRET_TABLES` (`9A6A`) is
+   wrongly named: it is the attract demo's 7 pairs of input pointers, read by `DEMO_GAME`. The blocks
+   cut for room were never run or read in 86 runs and have no label pointing at them: that is
+   evidence, not proof.
 
-Not done: the main CPU (`fixed`, banks 0-3). What it needs:
+What the main CPU (`fixed`, banks 0-3) needed, as listed before the work began:
 - **Labels across images.** The fixed ROM and the banks are linked apart, and refer to each other
   by number: 76 `call`/`jp` in `fixed.s`, plus `fixed.inc`, whose addresses come from
   `symbols.toml` and not from the link. `build.py` needs a second pass that feeds each image's
@@ -1180,8 +1205,9 @@ Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing re
 7. Phase 5 main/sub disassembly (sub done). Replace `.incbin` ranges with code region by region, and keep
    the build byte-exact at each step.
 8. Phase 7 sound.
-9. Phase 8 relocation test (sub, MCU and sound done; the main CPU is in progress: passes 120 second
-   runs, but 300 second runs still differ. Status and next steps in §12.5).
+9. Phase 8 relocation test (sub, MCU and sound done; the main CPU passes within
+   what the runs reach, allowing short differences from a race between the CPUs. Status and next
+   steps in §12.5).
 10. Phase 9 consolidation.
 
 Before starting each phase, check for existing community documentation or disassemblies of

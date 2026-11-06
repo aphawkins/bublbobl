@@ -8,10 +8,11 @@ fixed vectors and takes the same number out of the image's free space, so that e
 between the two moves up by N. The ROM's own integrity checks are left alone: the padding's
 first byte is chosen to balance them. Nothing in src/ changes.
 
-MAME then plays the same scripted inputs on the byte-exact set and on the moved set. Moving
-code does not change how long it takes, so the two runs must show the same screen on every
-sample. The first sample that differs is reported, and both pictures are written to
-build/reloc/.
+MAME then plays the same scripted inputs on the byte-exact set and on the moved set, and the
+two runs must show the same screen on every sample. Moving the sub CPU, MCU or sound code does
+not change how long it takes. Moving the main CPU's does, a little: see R_READ, and for what
+that leaves, EXTRACTION_PLAN 12.5, and SHORT. Every sample that differs is reported, and the
+pictures of the first are written to build/reloc/. A machine reset during a run is a failure.
 
 A moved ROM has the wrong CRC, which is the point: MAME's warning is expected.
 """
@@ -34,6 +35,10 @@ OUT = ROOT / "build" / "reloc"
 SCREEN = 256 * 224 * 4  # bytes in one sample of the screen's pixels
 EVERY = 15  # frames between samples
 MAME_LIMIT = 600  # seconds; two minutes of play takes about five
+# Moving the main CPU changes its timing a little, and a bubble's push bytes are shared with the
+# sub CPU with nothing to keep them apart, so a bubble can sit a pixel off for a while. That has
+# lasted up to about 40 frames; the two faults tried lasted 900 and more. Only main needs this.
+SHORT = 60  # frames
 
 # IMAGE -> the source, the label the padding goes before, the .incbin of free space it comes
 # out of (file, offset, length), the ROM file, and the sum over the whole ROM to keep at 0:
@@ -76,6 +81,15 @@ ROM_SUMS = 23
 # whatever still differs is a fault. The reference set is the same build with a pad of 0.
 R_READ = "ld      a,r\n"
 R_READS = 15
+# SPAWN_BUBBLE calls GRID_CELL with the HL that RAND_TIMER_SET leaves, DATA_622A + SPEED2_SEL, and
+# not the bubble's position, so a bubble from the gaps starts with the current of a cell chosen by
+# the table's address (notes/levels.md). Moved, the same bubble drifts another way. For the test
+# GRID_CELL gets what HL held at the table's true address, in both sets, through this routine,
+# which goes in the cut.
+CELL_CALL = "call    RAND_TIMER_SET\n        call    GRID_CELL\n"
+CELL_FIX = ["RELOC_CELL:", "        ld      de,DATA_622A", "        or      a", "        sbc     hl,de",
+            "        ld      de,0x622A", "        add     hl,de", "        jp      GRID_CELL"]
+CELL_FIX_SIZE = 13
 IDLE = 0x01ED  # where tools/soundlog.lua parks the main CPU; the first pad comes before it
 
 # every command the sound CPU has (tools/sounddec.py), and the frames between them. Not 2E: it
@@ -139,7 +153,11 @@ def moved_main(image: str, pad: int) -> str:
     cfg = MAIN_LAYOUT[image]
     src = (ROOT / "src" / "main" / f"{image}.s").read_text(encoding="utf-8").split("\n")
     addr, pads = cfg["cut"]
-    cut_lines(src, image, addr, pad * pads)
+    fix = image == "fixed"
+    cut_lines(src, image, addr, pad * pads + (CELL_FIX_SIZE if fix else 0))
+    if fix:
+        at = next(x for x in mainptrs.listing(image) if x.addr <= addr < x.addr + x.size).number - 1
+        src[at] = "\n".join([*CELL_FIX, src[at]])
     for n, where in enumerate(cfg["pads"]):
         block = [f"RELOC_PAD_{n}:", f"        .fill   {pad}, 1, 0xFF"]
         if where is None:
@@ -149,7 +167,12 @@ def moved_main(image: str, pad: int) -> str:
         if len(at) != 1:
             raise SystemExit(f"{image}: {where}: {len(at)} matches")
         src[at[0]:at[0]] = block
-    return "\n".join(src)
+    text = "\n".join(src)
+    if fix:
+        if text.count(CELL_CALL) != 1:
+            raise SystemExit("cannot find SPAWN_BUBBLE's GRID_CELL")
+        text = text.replace(CELL_CALL, CELL_CALL.replace("GRID_CELL", "RELOC_CELL"))
+    return text
 
 
 def neutral_sums(text: str) -> tuple[str, int]:
@@ -255,7 +278,8 @@ def run_mame(label: str, rompath: Path, events: list[dict], frames: int) -> Path
         shutil.rmtree(folder)
     folder.mkdir(parents=True)
     samples = folder / "screen.bin"
-    cfg = {"out": str(samples), "frames": frames, "every": EVERY, "events": events}
+    cfg = {"out": str(samples), "reset": str(folder / "reset"), "frames": frames, "every": EVERY,
+           "events": events}
     script = folder / "run.lua"
     script.write_text("CFG = " + trace.lua_value(cfg) + "\n\n"
                       + (ROOT / "tools" / "reloc.lua").read_text(), encoding="utf-8")
@@ -264,6 +288,8 @@ def run_mame(label: str, rompath: Path, events: list[dict], frames: int) -> Path
             "-cfg_directory", str(folder / "cfg"), "-nvram_directory", str(folder / "nvram"),
             "-autoboot_script", str(script), "-video", "none", "-sound", "none", "-nothrottle"]
     run_limited(argv, exe.parent, folder)
+    if (folder / "reset").exists():
+        raise SystemExit(f"{label}: the machine reset during the run")
     if not samples.exists() or samples.stat().st_size < SCREEN:
         raise SystemExit(f"{label}: no pictures from MAME; see {folder / 'mame.log'}")
     return samples
@@ -308,22 +334,45 @@ def picture(data: bytes, path: Path) -> None:
     Image.frombytes("RGBA", (256, 224), data, "raw", "BGRA").convert("RGB").save(path)
 
 
-def compare(base: Path, moved: Path) -> bool:
+def stretches(differs: list[int]) -> list[tuple[int, int]]:
+    """Differing samples as (first, last), joining any closer together than SHORT frames: a
+    fault that flickers on and off is one long stretch."""
+    runs: list[tuple[int, int]] = []
+    for i in differs:
+        if runs and (i - runs[-1][1]) * EVERY <= SHORT:
+            runs[-1] = (runs[-1][0], i)
+        else:
+            runs.append((i, i))
+    return runs
+
+
+def compare(base: Path, moved: Path, race: bool = False) -> bool:
+    """Every sample that differs, not just the first. With `race` (the main CPU moved: see SHORT)
+    a stretch up to SHORT frames long passes, unless it is still going when the run ends."""
     a, b = base.read_bytes(), moved.read_bytes()
     count = min(len(a), len(b)) // SCREEN
-    for i in range(count):
-        x, y = a[i * SCREEN:(i + 1) * SCREEN], b[i * SCREEN:(i + 1) * SCREEN]
-        if x != y:
-            picture(x, OUT / "differs_base.png")
-            picture(y, OUT / "differs_moved.png")
-            print(f"DIFFERENT at sample {i} of {count}, frame {(i + 1) * EVERY}; "
-                  f"see {OUT}/differs_*.png")
-            return False
+    differs = [i for i in range(count)
+               if a[i * SCREEN:(i + 1) * SCREEN] != b[i * SCREEN:(i + 1) * SCREEN]]
+    ok = not differs
+    if differs:
+        i = differs[0]
+        picture(a[i * SCREEN:(i + 1) * SCREEN], OUT / "differs_base.png")
+        picture(b[i * SCREEN:(i + 1) * SCREEN], OUT / "differs_moved.png")
+        print(f"{len(differs)} of {count} samples differ; the first is in {OUT}/differs_*.png")
+        ok = race
+        for first, last in stretches(differs):
+            short = (last - first) * EVERY <= SHORT and last != count - 1
+            ok = ok and short
+            print(f"  frames {(first + 1) * EVERY}-{(last + 1) * EVERY}: "
+                  + ("short, allowed" if short and race else "DIFFERENT"))
     if len(a) != len(b):
         print(f"DIFFERENT lengths: {len(a) // SCREEN} and {len(b) // SCREEN} samples")
         return False
-    print(f"Same screen on all {count} samples, every {EVERY} frames")
-    return True
+    if not differs:
+        print(f"Same screen on all {count} samples, every {EVERY} frames")
+    elif ok:
+        print(f"Passed: every difference cleared within {SHORT} frames")
+    return ok
 
 
 def main() -> int:
@@ -353,7 +402,7 @@ def main() -> int:
     events, frames = scenario(args.seconds, args.seed)
     base = run_mame("base", reference, events, frames)
     moved = run_mame("moved", rompath, events, frames)
-    return 0 if compare(base, moved) and ok else 1
+    return 0 if compare(base, moved, "main" in args.images) and ok else 1
 
 
 if __name__ == "__main__":
