@@ -36,8 +36,9 @@ Direction: **M** = the MCU writes it, **Z** = the main CPU writes it (the MCU on
 | 19 | `RESET_REQUEST` | `F299` | MCU restart on request |
 
 The main CPU's interrupt is raised first, so the main CPU's handler runs while the MCU
-works through the rest of the list. Which values a main-CPU frame sees (this frame's or
-the last) depends on that timing. It must be measured in Phase 1 (PLAN.md §3.3).
+works through the rest of the list. The main CPU reads the MCU's results after they are
+written, but the proximity jobs can read `MCU_OBJECTS` while the main CPU rewrites it:
+`notes/frame_order.md` has the timing.
 
 ## The map
 

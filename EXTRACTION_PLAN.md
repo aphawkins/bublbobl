@@ -114,7 +114,7 @@ There is **no tilemap**. `bublbobl_v.cpp` renders everything from object RAM:
 | Phase | Work | Results | Checked by | State |
 |---|---|---|---|---|
 | 0 | Foundations | `tools\romset.py`, `notes\symbols.toml`, `notes\classmap\` | CRC/SHA1 before every run | Done |
-| 1 | Traces in MAME | `tools\trace.py`, `coverage.py`, `rammap.py`, `soundcmds.py`; `notes\ram_map.md`, `notes\sound_commands.md` | | Done, except one frame's order (§7) |
+| 1 | Traces in MAME | `tools\trace.py`, `coverage.py`, `rammap.py`, `soundcmds.py`, `frameorder.py`; `notes\ram_map.md`, `notes\sound_commands.md`, `notes\frame_order.md` | | Done |
 | 2 | Graphics | `tools\gfx.py`, `palette.py`, `objects.py`, `sprites.py`; `notes\sprites.md` | `objects.py --check`: 30 frames pixel-identical to MAME. Palettes equal palette RAM in 30 snapshots, apart from animated entries | Done, apart from frames no recording reached |
 | 3 | Text | `tools\text.py`, `build\text\strings.csv` (201 prefixed strings, 56 raw runs) | | Catalogue done; attribution open (§7) |
 | 4 | Levels | `tools\levels.py`; `notes\levels.md` | `levels.py --check` against RAM snapshots: grids, tiles, records, round palettes | Done |
@@ -249,15 +249,12 @@ differences of up to 60 frames from a race between the CPUs. Method, results and
 
 ## 7. What is left
 
-1. **One frame's order (Phase 1, needed by `PLAN.md` §3.3).** Record the order of shared-RAM
-   accesses across the main CPU, sub CPU and MCU in one frame, from MAME traces.
-   `notes\mcu_shared_ram.md` has the MCU's side.
-2. **Text (Phase 3).** `PRINT_TEXT` and `PRINT_TEXTS` are known, so what is left is:
+1. **Text (Phase 3).** `PRINT_TEXT` and `PRINT_TEXTS` are known, so what is left is:
    - Attribute each string in `strings.csv` to the routine that prints it, and write up the record
      format, including control codes such as the `:`-separated sequences in the credits.
    - Decode what is left of the tables: default high scores, staff roll, ending texts (two
      variants: "MIGHTA" vs "MAITA"), secret-game hints, test-mode labels.
-3. **Relocation (Phase 8).**
+2. **Relocation (Phase 8).**
    - Consider replaying the trace scenarios on the moved set for more rounds (`tools\cheats.lua`
      holds fixed PCs, which would need mapping through the link symbols). The runs still cover few
      rounds: the `DATA_622A` fault only showed in the demo, which 120 second runs never reach.
@@ -269,11 +266,11 @@ differences of up to 60 frames from a race between the CPUs. Method, results and
      read by `DEMO_GAME`.
    - The blocks cut for room were never run or read in 86 runs and have no label pointing at them:
      that is evidence, not proof.
-4. **Consolidation (Phase 9).**
+3. **Consolidation (Phase 9).**
    - A one-command pipeline (`python tools\extract_all.py --roms <dir>`) that regenerates all of
      `build\` from the ROMs and validates CRCs first.
    - Optional: compare against Ver 0.0 (`a78-06.51`/`a78-05.52`) and the US sets to document
      version differences (the "SELECT GAME MODE" mode-select path, bug fixes).
-5. **Open questions.** `notes\open_questions.md`, and the "Still open" or "Still to do" sections of
+4. **Open questions.** `notes\open_questions.md`, and the "Still open" or "Still to do" sections of
    `notes\levels.md`, `notes\sound.md`, `notes\sprites.md` and `notes\sub.md`. None blocks stage 3
    unless the subsystem it touches is being translated.

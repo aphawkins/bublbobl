@@ -83,6 +83,9 @@ Other tools:
   `--boss-hits 80` traps the round 100 boss in a bubble at once. Needs `MAME_DIR` in
   `config.local.toml`. `rammap.py` reads every run in `build/traces/`, so move runs made
   only for snapshots elsewhere (for example `build/snaps/`)
+- `tools/frameorder.py` — log every shared RAM access on the main CPU, sub CPU and MCU with its
+  time, and report the order within a frame, `build/frameorder/<name>/report.txt`
+  (`notes/frame_order.md`)
 - `tools/coverage.py` — merge the traced code into the classification maps
 - `tools/rammap.py` — write `notes/ram_map.md`: who writes and reads each RAM and I/O address
 - `tools/soundcmds.py` — write `notes/sound_commands.md`: every command sent to the sound CPU

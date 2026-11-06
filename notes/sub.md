@@ -26,6 +26,9 @@ idles. Each vblank interrupt runs `VBLANK`:
 | 2 | `GHOST_HITS` | `02E0` | `SUB_CHECKS` = `'I'`, or main state `E723` = 29 |
 | 3–17 | the hit tests below, then `MAIN_WATCHDOG` | | `SUB_CHECKS` = `'I'` |
 
+This overlaps the main CPU's tasks, by more when there are many bubbles
+(`notes/frame_order.md`).
+
 `SUB_CHECKS` (`F66B`) is `'I'` (49) during play. The main CPU sets it at `080D` and `4E47`
 and clears it at `0660` and `078D`.
 

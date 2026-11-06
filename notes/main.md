@@ -14,6 +14,8 @@ MAME](#read-from-the-code-not-seen-in-mame) lists what has not been watched.
   work runs in the IM 2 interrupt. It writes `2E` to `FC00` at `0130`, with I = `0B`, so the vector
   entry is `0B2E`, which holds `044D`, `IRQ_HANDLER`.
 - `IRQ_HANDLER`: `SCHED_FREE` decides between the full path and `FRAME_TICK` alone on a side stack.
+  The full path also reaches `FRAME_TICK`, because `OBJ_COPY` runs on into it, so it runs every
+  frame. `notes/frame_order.md` has the timing of a frame on all three CPUs.
   `TEST_IRQ` runs in test mode. `TIME ERROR` shows if the interrupted PC is in RAM.
 - `SCHEDULER` is a six-task coroutine scheduler, with RSTs `TASK_KILL`, `TASK_START`, `TASK_SLEEP`,
   `TASK_YIELD`, `TASKS_CLEAR`, `TASK_SPAWN` and `TASK_SWITCH`. `TASK_ENTRIES` (`0B22`) holds the

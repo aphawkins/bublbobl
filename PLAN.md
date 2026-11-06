@@ -85,10 +85,11 @@ The arcade divides the game between four processors. The C# game has one loop pe
 | MCU: inputs, coins, the main IRQ, lives and round counters, proximity checks, speed patterns, a countdown, the EXTEND letter, table fetches (`notes\mcu_shared_ram.md`) | Small services, one for each job that affects the game, run in the MCU's job order |
 | Sound Z80 | Not translated. The game sends **sound command IDs**. Each rendition decides what they sound like |
 
-- **Order in the frame.** At vblank the main CPU, the sub CPU and the MCU all start work.
-  The order in which they read and write shared RAM decides what the game does. Stage 1
-  must record this order (MAME traces of one frame on all three CPUs). The C# loop must
-  keep it.
+- **Order in the frame.** At vblank the main CPU, the sub CPU and the MCU all start work, and
+  they overlap. `notes\frame_order.md` records the order measured in MAME. The closest order
+  for one loop is the MCU, then the sub CPU, then the main CPU. It gives the right byte for
+  all of the main CPU's reads of MCU data, and for at least 91.7% of the other shared reads in
+  each direction, but it cannot reproduce the overlap (§4).
 - **Randomness.** Find the arcade random routine and put it behind `IRandomSource`. The
   EXTEND letter is not random: the MCU increments `FC7C` modulo 6 at each vblank
   (`mcu:$F8F1`). Use a frame counter, not an RNG.
@@ -194,6 +195,11 @@ The game stays playable at each step.
 ## 4. Risks and open questions
 
 - **Licence and distribution of arcade-derived assets** (§3.7).
+- **Overlap between the CPUs.** With many bubbles, the sub CPU's hit tests see some positions
+  from this frame and some from the last (`notes\frame_order.md`). A one-at-a-time loop reads
+  a different byte in up to 3.2% of those reads. How often that changes what the game does has
+  not been measured, and nothing has been measured on a board. The project owner should decide
+  whether that is close enough, or whether the loop must model the overlap.
 - **The sub CPU's role** is not known yet. If it does a large share of the game logic, it
   changes the size of stages 1 and 3.
 - **The C64 art may not cover the arcade.** The arcade has items, enemy behaviour and screens
