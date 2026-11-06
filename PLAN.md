@@ -121,7 +121,7 @@ Each rendition maps these values to its own art. No rendition holds game state.
   (`AssetColourBudget.ChannelBits` = 4). Widen each channel by replication.
 - Sprite and tile sheets come from the extracted graphics (EXTRACTION_PLAN Phase 2). The
   rendition draws frames from sheets. It does not copy the arcade's video RAM and object
-  hardware. The offline object renderer from Phase 2.3 is only a tool to prove the sheets.
+  hardware. The offline object renderer (`tools/objects.py`) is only a tool to prove the sheets.
 - The font comes from the arcade tiles, as a bitmap font sheet.
 
 ### 3.5 Arcade sound for the 16-bit rendition

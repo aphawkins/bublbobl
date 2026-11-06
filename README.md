@@ -28,7 +28,7 @@ The `roms/` folder is git-ignored.
 - Python 3 (with Pillow)
 - [MAME](https://www.mamedev.org/) (including `unidasm`)
 - [GNU Binutils](https://sourceware.org/binutils/) built for `z80-elf` and `m68hc11-elf`
-  (see [EXTRACTION_PLAN.md](EXTRACTION_PLAN.md) §12.1)
+  (see [EXTRACTION_PLAN.md](EXTRACTION_PLAN.md) §5)
 
 ## Building
 
@@ -59,7 +59,8 @@ Other tools:
 - `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
 - `tools/reloc.py` — the relocation test: move an image's code, then compare it with the
   byte-exact set in MAME, screen by screen and (for sound) register write by register write.
-  The sub CPU, MCU and sound pass; the main CPU is in progress (`EXTRACTION_PLAN.md` §12.5)
+  The sub CPU, MCU and sound pass; the main CPU passes within what the runs reach
+  (`notes/relocation.md`)
 - `tools/mainptrs.py` — label the main CPU's pointers across the fixed ROM and banks;
   `tools/redo_main.sh` regenerates all of `src/main/` with it
 - `tools/romreads.py` — replay the traces and log which ROM addresses are read, `build/romreads/`

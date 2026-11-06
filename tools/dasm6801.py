@@ -14,7 +14,7 @@ is edited by hand, so don't run it over an annotated file: write to disasm/ and 
 
 Syntax is m68hc11-elf-as: 68HC11 mnemonics (ldaa, staa, lsld ...), `*addr` for the
 two-byte direct form, a bare address for the three-byte extended form (EXTRACTION_PLAN
-§12.3).
+§5).
 """
 
 import argparse

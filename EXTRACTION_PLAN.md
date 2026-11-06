@@ -8,18 +8,23 @@ This file covers stages 1 and 2 of [PLAN.md](PLAN.md): disassembly to source, an
 reassembly to a byte-exact set that runs in MAME. Stage 3, the C# reimplementation in
 The Sharp Kind, consumes what these stages produce and is planned in `PLAN.md`.
 
+Most of the work is done: §3 says where each result is and §7 lists what is left. Findings live
+in `notes\`, not here.
+
 Reference sources:
 - ROMs: `roms\bublbobl\` (and `roms\bublbobl.zip`) — not in the repo; supply your own
 - MAME driver: [mamedev/mame](https://github.com/mamedev/mame), cloned alongside this repo at
   `..\..\mamedev\mame` — `src\mame\taito\bublbobl.cpp`,
   `bublbobl_m.cpp` (MCU/IO glue), `bublbobl_v.cpp` (video), `bublbobl.h`
-- MAME binaries: `C:\Games\Retro\mame` (`mame.exe`, `unidasm.exe`) — not on PATH; scripts
-  read `MAME_DIR` from `config.local.toml`
+- MAME binaries: `C:\Games\Emulated\_Emulators\mame` (`mame.exe`, `unidasm.exe`) — not on PATH;
+  scripts read `MAME_DIR` from `config.local.toml`
+- Community documents are hints, to be verified against the ROMs. The ones used so far are named
+  in the notes that use them.
 
 > **The repo holds no ROM bytes.** Source in `src\` contains only what has been
-> disassembled. Every region not yet understood is pulled in at build time from the
-> verified images in `build\images\` with `.incbin`. So `src\` never builds without
-> the user's ROMs, and nothing in the repo is a copy of a ROM.
+> disassembled. Every other region is pulled in at build time from the verified images in
+> `build\images\` with `.incbin`. So `src\` never builds without the user's ROMs, and
+> nothing in the repo is a copy of a ROM. ROMs stay out of version control.
 
 ---
 
@@ -30,30 +35,21 @@ The set exactly matches MAME's parent **`bublbobl` — Bubble Bobble (Japan, Ver
 | File | Size | CRC32 | CPU / use | Notes |
 |---|---|---|---|---|
 | `a78-06-1.51` | 32K | 567934b6 | Main Z80, fixed `0000–7FFF` | Game logic, text, "dead copy" tamper trap |
-| `a78-05-1.52` | 64K | 9f8ee242 | Main Z80, banked `8000–BFFF` (4 × 16K) | Test mode, endings, credits, version stamp |
-| `a78-08.37` | 32K | ae11a07b | Sub Z80 `0000–7FFF` | No readable text; role to be established |
+| `a78-05-1.52` | 64K | 9f8ee242 | Main Z80, banked `8000–BFFF` (4 × 16K) | Enemies, items, test mode, endings, level data, version stamp |
+| `a78-08.37` | 32K | ae11a07b | Sub Z80 `0000–7FFF` | Round walls and hit tests |
 | `a78-07.46` | 32K | 4f9a26e8 | Sound Z80 `0000–7FFF` | Music/SFX driver + data (YM2203 + YM3526) |
 | `a78-01.17` | 4K | b1bfb53d | MC6801U4 MCU `F000–FFFF` | Protection/IO MCU, dated "29.JUN,1986" |
 | `a78-09`…`a78-14` | 6 × 32K | — | Graphics, planes 0–1 | |
 | `a78-15`…`a78-20` | 6 × 32K | — | Graphics, planes 2–3 | |
-| `a71-25.41` | 256B | 2d0f8545 | Video timing / object-layout PROM | Used by the renderer, see §6 |
+| `a71-25.41` | 256B | 2d0f8545 | Video timing / object-layout PROM | Used by the renderer, see §2 |
 
-Known landmarks already found:
+Landmarks:
 - `a78-05-1.52` @ `0xFF4C`: `VER 0.1 4.SEP,1986 SUMMER` (Ver 0.0 was `18.AUG,1986`).
-- `a78-06-1.51` @ `0x333F`: tamper check — reads ROM `0x0B2E`, expects `0x4D`; on failure
-  falls into the ASCII `dead copy` (`334A–3352`), which executes as Z80 opcodes and derails
-  the CPU. The `:` after it is `3A`, the first byte of the routine at `3353` (`ld a,($E5D3)`),
-  which runs in normal play.
-- `a78-06-1.51` @ `0x37DF`: 3-letter name table (default high-score initials?), loaded at `0x375A`.
-- MCU `F8F1`: EXTEND letter = shared RAM `FC7C`, incremented mod 6 every vblank.
 - Strings are **length-prefixed ASCII** (e.g. `10 "SELECT GAME MODE"`, `13 "ALL RIGHTS RESERVED"`).
 - The font is in tile bank 0 at the ASCII codes (`0x20–0x5F`, `@` drawn as ©), so a
   string's bytes are its tile numbers.
 - Free space (`0xFF` runs) in `a78-05-1.52`: `0x785C`(+7A4), `0xBC9F`(+361), `0xD583`(+287D).
   `a78-06-1.51` has none.
-
-> ROMs are copyrighted. Keep them **out of version control**; scripts take the ROM directory
-> as an argument (or read `ROM_DIR` from a local, git-ignored config).
 
 ---
 
@@ -64,7 +60,7 @@ Known landmarks already found:
 |---|---|
 | `0000–7FFF` | `a78-06-1.51` |
 | `8000–BFFF` | Bank window into `a78-05-1.52`. Write to `FB40`: entry = `(data ^ 4) & 7`. Entries 0–3 = file offsets `0x0000/0x4000/0x8000/0xC000`; entries 4–7 = empty socket IC53. So the game writes **4–7** to select file pages 0–3. |
-| `C000–DCFF` | "Video RAM" — actually tile-column data for objects (see §6) |
+| `C000–DCFF` | "Video RAM" — actually tile-column data for objects (see Video) |
 | `DD00–DFFF` | Object RAM (4 bytes per object: Y, gfx#, X, attr) |
 | `E000–F7FF` | Work RAM shared with sub CPU |
 | `F800–F9FF` | Palette RAM, 256 × RGBx_444 big-endian (2 bytes/colour) |
@@ -95,879 +91,88 @@ port 4 = address low, port 2 b0–3 = address high, b4 = strobe, port 1 b7 = rea
 port 3 = data. Helpers: `F1BF` read (X=addr → B), `F1DB` write (B → X=addr).
 Addresses `0x000–0x003` select DSW0/DSW1/IN1/IN2; `0xC00–0xFFF` = shared RAM.
 
----
-
-## 3. Work area layout
-
-```
-bublbobl\                     ← repo root
-  PLAN.md                     ← overall plan (all three stages)
-  EXTRACTION_PLAN.md          ← this file
-  README.md                   ← how to run everything
-  config.local.toml           ← ROM_DIR etc. (git-ignored)
-  tools\                      ← Python extraction scripts
-    romset.py                 ← load + CRC-verify the set, build per-CPU images
-    gfx.py, palette.py, text.py, levels.py, sound.py, ...
-    build.py                  ← assemble src\ → build\roms\bublbobl\ and verify CRCs
-  src\                        ← the assembler source: the golden source for stage 3
-    main\  (fixed.s, bank0..3.s, include files)
-    sub\   sound\   mcu\
-  build\                      ← generated, git-ignored
-    images\  (main_fixed.bin, main_bank0..3.bin, sub.bin, sound.bin, mcu.bin)
-    gfx\  text\  levels\  sound\
-    roms\bublbobl\            ← reassembled set, for mame -rompath
-  disasm\                     ← raw unidasm passes, before conversion to src\
-  notes\
-    memory_map.md  ram_map.md  data_formats.md  routines.md  open_questions.md
-  traces\                     ← MAME debugger traces/scripts (raw logs git-ignored)
-```
-
-Tooling: Python 3 (+ Pillow for PNG), GNU Binutils (§12.1), MAME at `C:\Games\Retro\mame` (`mame -debug`,
-ROMs in `roms\bublbobl.zip`), and its bundled `unidasm.exe` (supports `-arch z80` and
-`-arch m6801`), optionally Ghidra for interactive cross-referencing.
-
-Output languages: main, sub and sound CPUs are **Z80** assembly; the MCU is **Motorola
-6801** (6800-family) assembly.
-
-`unidasm` notes: `-skip N` skips N file bytes, `-basepc` is the address of the *first
-disassembled byte* (so `-skip 0x333f -basepc 0x333f`), and `-count` is in bytes. Banked
-code needs the bank's file offset as `-skip` and `0x8000 + offset-within-bank` as `-basepc`.
-
----
-
-## 4. Phase 0 — Foundations
-
-1. **`romset.py`** — load every file, verify CRC32/SHA1 against the MAME list, refuse to run on
-   mismatches. Emit per-CPU images into `build\images\`:
-   - `main_fixed.bin` (0000–7FFF), `main_bank0..3.bin` (each 16K, mapped at 8000).
-   - `sub.bin`, `sound.bin`, `mcu.bin` (based at F000).
-2. **Symbol files** — a single source of truth (`notes\symbols.toml` or similar) for I/O
-   ports, RAM variables and routine labels, exported to whatever format each disassembler
-   needs. Seed it from §2.
-3. **Byte classification map** per image: `code / data / text / fill / unknown`. Starts with
-   fill runs and known strings; grows from traces (§5) and disassembly. Everything downstream
-   uses it to avoid disassembling data.
-
-Deliverable: reproducible images + symbol file + empty classification maps.
-
----
-
-## 5. Phase 1 — Dynamic analysis in MAME (separating code from data)
-
-Run `mame bublbobl -debug` and capture:
-
-1. **Code coverage** — `trace build\traces\main.log,maincpu,noloop` (likewise `sub`,
-   `audiocpu`, `mcu`) across attract mode, a 1P game through several rounds, a 2P game,
-   continue, high-score entry, test mode (service switch) and, if possible, the endings
-   (use the MAME cheat engine / RAM pokes to reach late rounds). Every executed PC is
-   code; feed those addresses into the classification maps.
-   For banked code also log the current bank (breakpoint on `FB40` writes with an action
-   that prints the value) so coverage is attributed to the right bank file.
-2. **Watchpoints** to discover RAM variables and who owns them, e.g.:
-   - round number, lives, score, credits, player state, enemy slots;
-   - `wpset dd00,300,w` (object RAM) to find sprite-building routines;
-   - `wpset c000,1d00,w` at round start to find the level-drawing routine and its ROM source;
-   - `wpset f800,200,w` to find palette loaders and their tables;
-   - `wpset fa00,1,w` to log every sound command (with PC) → sound command catalogue.
-3. **Snapshots** — `save` work RAM, object RAM, video RAM and palette at known moments
-   (title, round 1, boss, ending). Palette RAM is the only source of colour (no colour PROM).
-4. Record every discovered variable in `notes\ram_map.md` with address, size, meaning and
-   writer routine(s).
-
-Deliverable: coverage files per CPU, RAM map, sound-command log, snapshot set.
-
-**Tooling done (2026-10-15).** `tools/trace.py` runs MAME 0.289 headless
-(`-debug -debugger none`) with `tools/trace.lua` as the autoboot script:
-- The debugger traces each CPU into files that change every second. `trace.py` reads
-  and deletes each finished file, so a long run needs little disk space. A watchpoint on
-  `FB40` puts a bank marker into the main CPU's trace, so code in the bank window is
-  credited to the right page.
-- Lua memory taps count, for every RAM and I/O address, which instruction read or wrote it,
-  and log every sound command written to `FA00`.
-- Inputs come from scripted scenarios (`--list`). DIP switches come from a generated MAME
-  cfg, so the user's own MAME settings never reach a run. `play` records a real game at
-  full speed (`-record`) and traces its replay (`-playback`): use it to reach late rounds,
-  bosses and endings.
-- `--snap N` saves a screenshot and the main CPU's `C000–FFFF` every N seconds.
-- `tools/coverage.py` merges the executed code into the classification maps as
-  `source = "trace"` ranges, which add up over runs. `tools/rammap.py` writes
-  `notes\ram_map.md` and `tools/soundcmds.py` writes `notes\sound_commands.md`.
-
-Traps found on the way: the debugger's `noloop` option means *do not* collapse loops (leave
-it off, or the idle loop floods the trace); `focus` makes the debugger ignore the other CPUs;
-Lua notifier and tap handles must stay referenced or the garbage collector cancels them; a
-soft reset leaves the headless debugger stopped. Tracing runs at about 15–100% of full speed,
-limited by MAME flushing the trace file on every line, so run scenarios side by side.
-
-Findings so far:
-- After start-up the main CPU sits in `jr $` at `01ED`. All game work runs in the IM 2
-  interrupt. The main CPU writes `2E` to `FC00` at `0130`, with I = `0B`, so the vector
-  entry is `0B2E`, which holds `044D`, the handler. The tamper check at `333F` and a second
-  check at `bank0:950A` both verify this vector.
-- `dead copy` is `334A–3352`. The `:` after it is the first byte of the routine at `3353`.
-- First runs (attract 150 s, a 1P game 600 s, a 2P game 400 s, both test modes) executed
-  `0x3E07` bytes of the fixed ROM, `0xF5E` of bank 0, `0xD70` of bank 2, `0x42` of bank 3,
-  none of bank 1, `0x833` of the sub CPU and `0x1954` of the sound CPU. Bank 1 and most of
-  bank 3 need later rounds, the endings or the secret mode: record those with `play`.
-- The main CPU sent 20 different sound commands, most of them through one routine at `1374`.
-- Evidence on the MCU questions is in `notes\open_questions.md`.
-- Still to do in this phase: one frame's order of shared-RAM accesses across the CPUs
-  (PLAN §3.3), and runs that reach late rounds.
-
----
-
-## 6. Phase 2 — Graphics
-
-### 6.1 Tiles
-From `bublbobl.cpp` `charlayout`: 8×8, 4bpp, region is **bit-inverted**
-(`ROMREGION_INVERT`), planes `{0, 4, half, half+4}`, x bits `3,2,1,0,11,10,9,8`,
-16 bytes per row-pair stride (`y*16`), 128 bits per tile. Region layout:
-`a78-09..14` at `0x00000–0x2FFFF`, gap `0x30000–0x3FFFF`, `a78-15..20` at
-`0x40000–0x6FFFF`, gap `0x70000–0x7FFFF`.
-
-`gfx.py`: decode all tiles → PNG sheets (greyscale, and per-palette using dumped palettes).
-Validate against MAME's F4 tile viewer.
-
-Done: `tools/gfx.py` writes `build\gfx\tiles_bank00..11.png` (banks 12–15 are the empty
-sockets) as indexed greyscale, raw colour index per pixel. The font and the wall tiles decode
-cleanly. The sprite tiles look broken up in the sheets, because objects are built from tile
-columns (§6.3); the offline renderer will put them back together.
-
-### 6.2 Palettes
-RGBx_444 big-endian, 16 palettes × 16 colours. Extract the tables the game copies into
-`F800` (found in Phase 1) so palettes come from ROM, not just snapshots. Colour 15 is
-transparent for objects.
-
-Done: `tools/palette.py` writes `build\gfx\palettes.json` and a swatch sheet
-`palettes.png`. Every colour comes from ROM:
-- `bank1:8000` (`PALETTES`) is the whole `0x200`-byte palette RAM image. `LOAD_PALETTES`
-  (`0B30`) copies it with `BANK_SELECT` page 1. Palettes 14 and 15 are zero there.
-- `bank1:8200` (`ROUND_PALETTES`) holds 8 round palettes. `LOAD_ROUND_PAL` (`0B43`) copies
-  one into palette 14 or 15, depending on bit 0 of the round number `ROUND_MAIN` (`E64B`).
-  So the old round and the new round each have a palette while the screen scrolls between
-  them. The index is byte 0 of the round's record.
-- The round records are `0x2B` bytes per round at `bank1:A73A` (`ROUND_RECORDS`), and
-  `LOAD_ROUND_REC` (`1775`) copies the current one to `E598`. This is the lead for Phase 4.
-- Animated colours: palette 1 colour 14 cycles through 6 colours at `1BAE`, palette 1
-  colour 1 ramps from black to red through `2895`, palettes 7–8 come from `3CC2`, and
-  palette 11 is changed by `bank0:B764–B7FE` (not decoded yet).
-- Checked against palette RAM in 30 MAME snapshots: palettes 0–13 equal `PALETTES` apart
-  from the animated entries, and palettes 14–15 equal the round palette named by the
-  round's record.
-- `BANK_PAGES` (`0293`) has two sets of `FB40` values. DSW-B:8 (ROM type) picks one: pages
-  0–3 all in IC52, or pages 2–3 in IC53.
-
-### 6.3 Objects / screen composition
+### Video
 There is **no tilemap**. `bublbobl_v.cpp` renders everything from object RAM:
-- each 4-byte object: `Y`, `gfx_num`, `X`, `attr` (attr low nibble = tile bank × 1024,
-  bit 6 = X high);
+- Tiles (`charlayout`): 8×8, 4bpp, region **bit-inverted** (`ROMREGION_INVERT`), planes
+  `{0, 4, half, half+4}`, x bits `3,2,1,0,11,10,9,8`, 16 bytes per row-pair stride (`y*16`), 128
+  bits per tile. `a78-09..14` at `0x00000–0x2FFFF`, gap `0x30000–0x3FFFF`, `a78-15..20` at
+  `0x40000–0x6FFFF`, gap `0x70000–0x7FFFF`.
+- Each 4-byte object: `Y`, `gfx_num`, `X`, `attr` (attr low nibble = tile bank × 1024,
+  bit 6 = X high).
 - `gfx_num` selects a 0x80-byte block of `C000` RAM holding tile/attribute pairs
-  (tile low 8 bits; byte 2: tile bits 8–9, colour b2–5, flipX b6, flipY b7);
-- the `a71-25` PROM (offset `0x80 + (gfx_num & 0xE0)/2`) defines the column shape of each
+  (tile low 8 bits; byte 2: tile bits 8–9, colour b2–5, flipX b6, flipY b7).
+- The `a71-25` PROM (offset `0x80 + (gfx_num & 0xE0)/2`) defines the column shape of each
   object (skip / new column / row select).
-
-`objects.py`: re-implement this renderer offline so RAM snapshots render to PNG
-identically to MAME. That renderer is then reused to preview levels and sprite frames
-straight from ROM data.
-
-Done: `tools/objects.py` renders a `C000–FFFF` RAM image to PNG, following
-`screen_update_bublbobl`. Video enable and flip come from `FB40_COPY` (`E1CB`), the
-main CPU's copy of `FB40`. `--check` renders every RAM image in a `trace.py --snap`
-folder and compares it with MAME's screenshot of the same frame. All 30 frames (title,
-attract demo, a 1P game across rounds 1–2) are pixel-identical.
-
-### 6.4 Sprite/animation tables
-Use object-RAM watchpoints to find the routines that write tile lists into `C000`; follow them
-back to ROM frame tables. Extract each character's frames (Bub, Bob, the 10+ enemies,
-items, bubbles, fonts) into named sheets with JSON metadata.
-
-Started (2026-10-17). Every 16 × 16 sprite goes through `SPRITE` (`147D`) or `SPRITE_FLIPX`
-(`149C`): A = gfx_num, B = the first of four consecutive tiles, C = the tile attribute. So
-a frame is (tile bank, B, C), and the bank comes from the attribute of the object that
-shows the block. The objects are built in `OBJ_SHADOW` (`E1CD`) and copied to `DD00` by
-`OBJ_COPY` (`04AD`) at the next IRQ.
-- Few frames come from ROM tables. Most callers step `ANIM_STEP` (`15CA`, E = frame
-  count, D = delay) and compute B inline (e.g. `26E8`: frame × 4 + `D4`, colour `1C`).
-  The player is the exception: `PLAYER_SPRITE` (`450D`) reads 12 animation records at
-  `PLAYER_ANIMS` (`4584`) and first tiles at `PLAYER_FRAMES` (`45E4`).
-- So the frames are captured, not decoded: `trace.lua` logs every sprite draw with its
-  caller in `sprites.csv`, and `tools/sprites.py` writes one sheet per caller plus
-  `build\gfx\sprites\sprites.json`. Four runs of scripted play (attract, 1P twice, 2P)
-  gave 523 frames from 60 callers: Bub and Bob, bubbles, Zen-chan, items, scores, round
-  banners, HURRY UP, INSERT COIN. A caller is the CALL whose return address is on the
-  stack, so a routine that ends in `JP SPRITE` is listed under its own caller.
-- A recorded game to round 10 added Mighta and Monsta: 622 frames from 72 callers. Each
-  draw also logs IX, which ties it to a slot table. The enemies are six groups, each with
-  its own count (`ENEMY_COUNTS`, from round-record bytes 4–6), slot table and code.
-  `ENEMY_SWAP` (record byte 12) swaps groups 0 and 2 for a second kind, so there are eight
-  kinds. Seen so far: group 0 Zen-chan, group 1 Banebou, group 2 Mighta, group 3 Hidegons,
-  group 4 Pulpul, group 5 Monsta, swapped group 0 Invader, swapped group 2 Drunk, and
-  Skel-Monsta (`GHOST_SLOTS`). All eight kinds are traced, and the round 100 boss,
-  Super Drunk (`BOSS_SLOT`), 16 pieces from `BOSS_POSES`. `trace.py --round N` starts a game on round N. Catalogue:
-  `notes\sprites.md`.
-- The 1P ending is traced (`trace.py --boss-hits 80` traps the boss at once): text screens,
-  then "YOU ZAPPED TO" round 50.
-- The 2-player (true) ending is traced too: HAPPY END, the staff credits and the game's
-  own character list, which confirms every enemy name.
-- Per-character sheets: `sprites.py` writes `build\gfx\sprites\characters\`, one sheet
-  per character (19), picked by slot table or caller, with Super Drunk drawn whole. §6.4
-  is done, apart from frames no recording reached.
-
-Deliverables: `build\gfx\tiles_*.png`, `palettes.json`, `objects.py`, per-character sheets.
+- Palettes: RGBx_444 big-endian, 16 palettes × 16 colours, from `PALETTES` and `ROUND_PALETTES` in
+  bank 1 (no colour PROM). Colour 15 is transparent for objects. Palettes 14 and 15 hold the old and
+  new round's colours while the screen scrolls between them.
 
 ---
 
-## 7. Phase 3 — Text
+## 3. Status
 
-1. `text.py`: scan main ROM images for length-prefixed ASCII (`len, chars…`), plus raw runs,
-   keyed by CPU address (fixed or `bank:addr`). Output `build\text\strings.csv`.
-   Done: `tools/text.py` finds 201 prefixed strings and 56 raw runs. Of the raw runs, 41 are
-   marked `ascending`: they are mostly lists of tile numbers that happen to be printable.
-2. Find the print routine(s) by breaking on writes of a known string to video/object RAM;
-   determine the full record format (position, colour, terminator/control codes such as
-   the `:`-separated sequences seen in credits).
-3. Decode special tables: default high scores (`0x37DF` name table + scores), staff roll,
-   ending texts (two variants: "MIGHTA" vs "MAITA"), secret-game hints, test-mode labels.
-4. Map the custom font: which tile numbers correspond to each character (the
-   `ABCDEFGHIJKLMNOPQRSTUVWXYZ .!~` table at `0x38D4` in `a78-06-1` is the name-entry
-   alphabet).
-
-Deliverable: complete string catalogue with addresses and the routine that prints each.
+| Phase | Work | Results | Checked by | State |
+|---|---|---|---|---|
+| 0 | Foundations | `tools\romset.py`, `notes\symbols.toml`, `notes\classmap\` | CRC/SHA1 before every run | Done |
+| 1 | Traces in MAME | `tools\trace.py`, `coverage.py`, `rammap.py`, `soundcmds.py`; `notes\ram_map.md`, `notes\sound_commands.md` | | Done, except one frame's order (§7) |
+| 2 | Graphics | `tools\gfx.py`, `palette.py`, `objects.py`, `sprites.py`; `notes\sprites.md` | `objects.py --check`: 30 frames pixel-identical to MAME. Palettes equal palette RAM in 30 snapshots, apart from animated entries | Done, apart from frames no recording reached |
+| 3 | Text | `tools\text.py`, `build\text\strings.csv` (201 prefixed strings, 56 raw runs) | | Catalogue done; attribution open (§7) |
+| 4 | Levels | `tools\levels.py`; `notes\levels.md` | `levels.py --check` against RAM snapshots: grids, tiles, records, round palettes | Done |
+| 5 | Game logic | `src\main\`, `src\sub\`; `notes\main.md`, `notes\sub.md` | Byte-exact build | Done: every call goes to a named routine. What stays `L_xxxx` is branch targets inside routines |
+| 6 | MCU | `src\mcu\mcu.s`; `notes\mcu_shared_ram.md` | Byte-exact build | Done |
+| 7 | Sound | `src\sound\sound.s`; `tools\sounddec.py`, `soundtables.py`, `soundcmp.py`, `soundcheck.py`; `notes\sound.md`, `notes\sound_blocks.md`, `build\sound\` | `soundcheck.py` against MAME register writes, all commands from silence | Done. The synthesiser-side check belongs to stage 3 (`PLAN.md` §3.5 D) |
+| 8 | Reassembly | `tools\build.py`, `tools\reloc.py`; `notes\relocation.md` | CRC match; relocation test | Byte-exact. Relocation passes within what the runs reach (§6) |
+| 9 | Consolidation | | | Open (§7) |
 
 ---
 
-## 8. Phase 4 — Level (round) data
+## 4. Working on the source
 
-100 normal rounds plus the secret/“super” variants.
+Layout: `tools\` scripts (listed in `README.md`), `src\` the assembler source and golden source for
+stage 3, `notes\` findings and names, `build\` generated and git-ignored (`images\`, `include\`,
+`gfx\`, `text\`, `levels\`, `sound\`, `traces\`, `roms\bublbobl\`), `disasm\` raw first passes,
+git-ignored.
 
-1. Find the round counter in RAM (Phase 1) and the round-start routine (watch `C000` writes
-   when the round number changes).
-2. Trace back to the ROM tables. Expect, per round:
-   - wall/platform layout (likely a compact bitmap or row-encoded format),
-   - the two-tile wall pattern / colour palette for that round,
-   - enemy list: type, start position, direction, timing,
-   - bubble air-current (wind) data,
-   - possibly special-item / trigger data.
-3. Identify which bank holds them (bank breakpoint during round start).
-4. `levels.py`: decode all rounds → JSON + PNG previews (using the offline renderer).
-   Cross-check against gameplay screenshots for rounds 1, 2, 50 and 100.
-5. Document the "super" mode differences (enemy changes, secret rounds, the
-   `WELCOME TO SECRET ROUND` / `YOU ZAPPED TO` warp logic).
+**Do not edit `src\main\` or `src\sound\` by hand.** They are generated:
+- A name or comment goes in `notes\symbols.toml` (`tools\addnames.py` appends `TABLE|ADDR|NAME|NOTE`
+  lines). A label's note becomes its comment.
+- A new jump table or entry goes in `tools\redo_fixed.sh`, `redo_banks.sh` or `redo_sound.sh`.
+- A range that is data goes in `notes\classmap\<image>.toml`.
+- Then run `sh tools/redo_main.sh` (all of `src\main\`) or `sh tools/redo_sound.sh`, and
+  `python tools\build.py` must still report byte-exact.
 
-Deliverable: `build\levels\round_XXX.json/.png`, `notes\data_formats.md#levels`.
+`src\mcu\mcu.s` and `src\sub\sub.s` are edited by hand; `tools\dasm6801.py` and `tools\dasmz80.py`
+only made their first passes.
 
-Started (2026-10-17). Steps 1–4 are done for the walls:
-- A round is `ROUND_GRID` (`E398`): 32 × 32 cells of 8 × 8, 0 = wall and 1–4 = open,
-  probably the bubbles' air current. It is also the collision map (`GRID_CELL`, `174B`).
-  So walls and wind are one format, not two.
-- Most of it comes from the **sub CPU**, which answers part of Phase 5's question about its
-  role. `GRID_UNPACK` (sub `00A9`) unpacks 0x120 bytes per round from `ROUND_LAYOUTS` (sub
-  `0CFC–7D7B`), 3 bits a cell, into rows 5–28. The main CPU copies the ceiling and the
-  floor (rows 0–4, 29–31) from `bank1:GRID_EDGES`, picked by `ROUND_RECORD` byte 3.
-- Each round has its own five tiles: 0x204 + 5 × round for the 2 × 2 side-wall block and
-  +4 for the walls, colour 14 or 15. `SHADE_GRID_ROW` adds shadow tiles F0–F5.
-- `tools/levels.py` writes `build\levels\round_NNN.json/.png` and `rounds.png`. `--check`
-  rebuilds the grid and wall tiles from the ROMs and compares them with RAM snapshots.
-  Every grid matched (rounds 1, 2, 50, 100), and so did every fully drawn set of tile
-  columns. Notes: `notes\levels.md`.
-- The open values are the air current: 1 up, 2 right, 3 left, 4 down (`BUBBLE_DRIFT`,
-  `6175`).
-- The whole round record is decoded (`notes\levels.md`): item positions, the trap, HURRY UP
-  and Skel-Monsta times, enemy and bubble speeds, seven enemy entries (delay, X, Y, facing),
-  and the mix of special bubbles. `LOAD_ROUND_REC` shifts four of the fields by a
-  difficulty value (`E5DC`) and swaps enemy groups in the super mode. `--check` replays it
-  and matches the record in every RAM snapshot.
-- Step 5 is done. The super mode comes from the title code S J B L R J S R and the SELECT
-  GAME MODE screen; `trace.py super1p` enters it, and `--check`, which now also compares
-  the round palette, matches super rounds 1 and 77. Bubble type 4 never appears: only
-  round 100 lists it, and round 100 has no gaps to spawn bubbles from. The two items are
-  chosen from the last round's time and flags (points) and from counters of what the
-  players have done, against thresholds by difficulty (special); `items.json` holds the
-  tables.
-- Still to do: what most item counters count and what each special item does. These belong
-  to Phase 5's item system.
+After each new trace, run `tools\coverage.py` before the redo scripts. `rammap.py` reads every run
+in `build\traces\`, so keep runs made only for snapshots elsewhere. To trace one round's enemies,
+for example: `trace.py game1p --round 42 --seconds 120 --cpus main`. `trace.py --help` lists the
+cheats (`--round`, `--boss-hits`, `--boss-pop`, `--special`, `--clear`, `--poke`) and
+`--snap`/`--snap-from`. `play` records a real game and traces its replay.
 
----
-
-## 9. Phase 5 — Game logic disassembly (main + sub)
-
-1. Generate first-pass listings with `unidasm` using the classification maps so only code
-   regions are disassembled; data regions get labels and stay as `.incbin` (see the
-   ROM-free rule at the top).
-   (Alternatively import into Ghidra: base `0000` + four overlay blocks at `8000`, Z80.)
-2. Work outward from entry points: reset (`0000`), IM2 vector table (vector byte comes from
-   MCU shared RAM `FC00`), `RST` handlers (`0008`, `0010`, `0018`, `0020`, `0028`, `0030`,
-   `0038`), main loop, bank-switch trampolines.
-3. Identify and name subsystems: attract/demo, coin/credit, game-mode select, player
-   control, bubble physics, enemy AI per type, item/bonus system (EXTEND, special items,
-   "mystery" bonuses), round transition, death, continue, high-score, endings, test mode.
-4. **Sub CPU** (`a78-08`): determine its role — likely handled from shared RAM `E000–F7FF`.
-   Map every shared variable it reads/writes; correlate with main-CPU writes.
-5. Known items to document: the `dead copy` tamper trap (`0x333F`) and any other
-   self-checks (`PS4 SUM ERROR`, `ROM OK`, RAM tests), the SWB#7 `F7FE/F7FF` score output
-   mystery noted in the driver (routines `0F26`, `0F74`).
-6. Write the result as assembler source in `src\main\` and `src\sub\` from the start, and
-   keep it assembling byte-exact at every commit (Phase 8). Do not let a listing-only
-   form drift away from buildable source.
-
-Deliverable: `src\main\*.s`, `src\sub\*.s`, `notes\routines.md`, byte-exact rebuild.
-
-Started (2026-10-17) with the sub CPU, which is now done:
-- `tools/dasmz80.py` is the Z80 counterpart of `dasm6801.py`. It traces from the vectors,
-  the named routines, the traced ranges in the classification map, `--entry` addresses and
-  `--table` jump tables, and writes GNU `as` source with `.incbin` for the rest. An
-  encoding `as` would not reproduce (ED duplicates, undocumented DDCB forms) stays
-  `.incbin` with the reading in a comment. It runs on `sub`, `sound` and `main_fixed`.
-- `src\sub\sub.s` assembles byte-exact. All 0xC85 bytes of code in `0000–0CFB` are
-  instructions, with each routine named and commented; only the RST/NMI gaps, one byte at
-  `018F`, the jump table and the round layouts are `.incbin`. `tools/symbols.py` now
-  writes `sub.inc` (the `[main.mem]` names in `E000–F7FF`).
-- Step 4 is answered. The sub CPU unpacks the round walls and does every hit test (players,
-  enemies, enemy shots, bubbles, effects, the boss) and the bubble pushing and chain pops.
-  It writes flags that the main CPU acts on. It also has a ROM sum that hangs it, and a
-  watchdog that wrecks the work RAM if the main CPU's frame counter stops. Notes:
-  `notes\sub.md`.
-- The sub ROM holds two more layouts after the 100 rounds: the attract screen's
-  (`ROUND_MAIN` 0x64) and one never seen in use.
-- Main fixed ROM, first pass (2026-10-17): `dasmz80.py main_fixed` traces 0x638E code bytes
-  (11728 instructions, 1273 labels) and `src\mainixed.s` is that output; it builds
-  byte-exact. The tool now stops a path at text, fill and hand-marked data ranges of the
-  classification map (a routine whose end the tracer can't see ran into the strings at
-  `2D73`) and at the end of the image. Labels are still `L_xxxx`, and the jump tables that
-  `0DA7` reads (callers such as `50EE`) are only followed where MAME executed them.
-- Jump tables (2026-10-17): the `0DA7` word tables in the fixed ROM were added with
-  `--table 37FD:10 --table 50F6:3 --table 54BC:3 --table 61F4:7 --table 6E50:5 --table 7B8C:4`.
-  That reaches 0x525 more code bytes (0x68B3 in all, 12346 instructions) and still builds
-  byte-exact. Tables in the banks (`80C9`, `8160`, `8009`, `8032`, `95AA`) wait for the banks.
-- Banks, first pass (2026-10-17): `dasmz80.py` now takes `main_bank0`..`main_bank3`. Bank 0
-  traces 0x2848 code bytes (4515 instructions), bank 2 0x1923 (3028) and bank 3 0x42 (34);
-  bank 1 has none (all graphics/level data) and stays one `.incbin`. Banks 0, 2 and 3 are the
-  tool's output and the set still builds byte-exact. The first run read 743 more instructions
-  in bank 2, but they were data: five `jr`/`djnz` aimed into the middle of another
-  instruction. Two ranges are now marked data in the classification map (`9E94–9F75`, the
-  3-byte records and pointers that follow the tamper compare's `RET Z`, and `B339–B4B4`, the
-  "insert coin to continue" text and 5-byte records). Expect the same in bank 0 and the fixed
-  ROM: a conditional `RET` or a path that runs on into data is the sign. Labels were `L_xxxx`
-  at this point; names came later (below).
-  The same check found two in the fixed ROM, now manual data in the map: `0847–085E` (after
-  the `RET Z` of a second tamper compare, of (0004) with `START`) and `5406–5415` (8 words
-  after the `RST 18` that ends the routine at `53CF`, passed as `--table 5406:8`). The fixed
-  ROM is now 12310 instructions, 0x688D code bytes. Other spots are still likely: look for
-  decoded code after an unconditional end that is not a `RET`/`JP`.
-- Annotation started (2026-10-17): names live in `notes/symbols.toml` and are renamed in
-  `src/main/fixed.s` by script. `0000–03B3` is done: the six-task coroutine scheduler
-  (`SCHEDULER`, RSTs `TASK_KILL`/`TASK_START`/`TASK_SLEEP`/`TASK_YIELD`/`TASKS_CLEAR`/
-  `TASK_SPAWN`, `TASK_SWITCH`), the start-up RAM-test failures and small record fillers.
-  `03B4–0535` is done too: the screen/RAM clearers, `VIDEO_ON`/`VIDEO_OFF`/`SET_FLIP`, the IRQ
-  handler (`SCHED_FREE` decides between the full path and `FRAME_TICK` alone on a side stack;
-  `TEST_IRQ` in test mode; `TIME ERROR` if the interrupted PC is in RAM), `CLOCK_TICK` and
-  `SUB_CPU_WATCH`.
-  Also named: the helpers `ZERO_BC`, `PRINT_TEXT`, `SOUND_PUSH`/`SOUND_QUEUE_POP` (a 15-entry
-  sound command queue), the random state (`RAND_INC`/`RAND_DEC`/`RAND_MIX`), `TILT_RESET`,
-  `COIN_SCAN`/`COIN_SOUND` and `SWB7_OUT`. The tool prints a constant such as 0x10 as `TASK_START`
-  when a label has that address; those `ld rr,imm` operands were put back to numbers.
-- The six tasks (2026-10-17): `TASK_ENTRIES` (`0B22`) holds their entries: `ATTRACT_TASK`,
-  `TITLE_TASK`, `ROUND_TASK`, `OBJECTS_TASK`, bank 0 `85A9`, `BUBBLES_TASK`. `ROUND_TASK` and
-  the others were not reached before. `tools/redo_fixed.sh` regenerates `src/main/fixed.s`
-  with every `--table`/`--entry` so far; because names and notes come from `notes/symbols.toml`
-  (labels get their note as a comment), annotating means editing that file and rerunning the
-  script, not editing the source. Add new tables and entries to the script.
-- `ROUND_TASK`'s helpers (2026-10-17): the round variables and clock, `HURRY`/ghost checks,
-  the input path (`READ_INPUTS`; in the attract loop `DEMO_INPUTS` plays (count, input) byte
-  pairs from bank 1, and `DEMO_RECORD`, which would record them, can't be reached), the
-  READY text and `TASKS_RESTART`.
-- Round drawing (2026-10-17): `GRID_DRAW_START`/`GRID_DRAW_NEXT` draw the grid a row at a time,
-  `TILES_SAVE`/`TILES_RESTORE` move 4 tile columns, `ROUND_NUMBER_DRAW` the round number.
-  `ROM_SUM_STEP_A` (`0AE3`) and `ROM_SUM_STEP_B` (`6065`) are ROM checks that sum one byte a
-  call: A every 4th byte of `0004–0C07`, B every 2nd of `2642–731B`.
-- Banks use the same scheme (2026-10-17): `dasmz80.py main_bankN` takes its labels from
-  `[bankN.code]`/`[bankN.data]` and the fixed ROM's names from `build/include/fixed.inc`
-  (`tools/symbols.py` writes it), so a bank's calls into the fixed ROM read `ZERO_BC`, `GRID_CELL`
-  and so on. `tools/redo_banks.sh` regenerates banks 0, 2 and 3. `symbols.py` now stops on a
-  name used twice (my `ROUND_CLOCK` label hid the RAM byte of that name).
-- Gap probe (2026-10-17): `dasmz80.py --probe` also traces an untraced gap that decodes
-  cleanly from its first byte to a `RET`/`JP`/`JR` exactly at its end (4 instructions or more),
-  and drops it if anything then branches into the middle of an instruction. The page-2 calls in
-  `OBJECTS_TASK` land on small init routines, with the per-frame code in the gaps between them.
-  Result: fixed ROM 12595 instructions (0x6AC2 bytes), bank 0 5156 (0x2DBD), bank 2 4784
-  (0x274E), bank 3 unchanged. All still byte-exact, and both scripts use `--probe`. These
-  regions are heuristic: code that MAME has not run. Check one against a MAME trace before
+Reading the tracer's output:
+- A conditional `RET`, or a path that runs on into data, is the sign of data decoded as code. Look
+  for decoded code after an unconditional end that is not a `RET`/`JP`.
+- `--probe` regions are heuristic: code that MAME has not run. Check one against a trace before
   relying on it, and mark it data in the classification map if it is.
-- `OBJECTS_TASK` calls twelve page-2 entries (`8BA7`, `90DD`, `92B6`, `936A`, `96E6`, `99E2`,
-  `9F76`, `A2FC`, `A59B`, `A820`, `AC80`, `B9C4`, with `POINTS_PICK` and `SPECIAL_PICK`). Each
-  is a round-start clear of one state record in `F46B–F65F`; they are named `REC_<addr>_INIT`
-  (with `_RUN` where the per-frame code follows at a label) until the records' meaning is
-  known. `F59E` clears all bubbles and shows a growing sprite pattern in five stages; the
-  bubbles stop while `F59E`, `F595` or `F5B6` is nonzero.
-- Workflow now: `notes/symbols.toml` holds every name and note; `tools/redo_fixed.sh` and
-  `tools/redo_banks.sh` regenerate `src/main/fixed.s` and `bank0/2/3.s` (with `--probe`, the
-  tables and the entries so far) and `tools/build.py` must still report byte-exact. Do not
-  edit those sources by hand: a comment or name goes in `symbols.toml`, a new table or entry
-  goes in the script, a range that is data goes in `notes/classmap/<image>.toml`.
-- Common helpers (2026-10-17): the shifts (`SHR4`, `SHR3`, `SHL5`, `SHL4`, `SAR6`), `TABLE_WORD`
-  (`0DA7`, the table reader), `MUL8`, `TILE_RECT` (`0EC6`, a block of tiles to the tile RAM, the
-  most called helper with 76 callers), `PRINT_TEXTS`, the object-pointer helpers `OBJ_PTR`,
-  `OBJ_POS`, `OBJ_POS_LOAD`, `OBJ_HIDE`, and the grid probes `GRID_CELL_A`, `GRID_PROBE_3`,
-  `CELL_TRACK`.
-- Score code (2026-10-17), read from the code and not yet seen in a MAME run: `SCORE_ADD`
-  (`30A5`, BCD, saturates at 999999), `SCORE_CMP`, `SCORE_UPDATE`, `HIGH_SCORE_CHECK`,
-  `SCORE_SHOW`, `SCORE_DRAW`, `EXTRA_LIFE_CHECK`, with `PLAYER_NOW`, `SCORE_P1/P2`,
-  `HIGH_SCORE`, `LIVES_P1/P2` and `BONUS_NEXT_P1/P2`. `BONUS_TABLE_PTR` (`3170`) is the bonus
-  life table picked by DSW1 b2-3 (8 entries of 3 BCD bytes), first taken for a coinage table.
-  Entry 0 is the start value of `HIGH_SCORE` (`31E1`): confirm this in MAME.
-- Renaming pass (2026-10-18): `tools/addnames.py` appends `TABLE|ADDR|NAME|NOTE` lines to
-  `notes/symbols.toml`; then run `tools/redo_fixed.sh` and `tools/redo_banks.sh` and `tools/build.py`.
-  `redo_banks.sh` now follows the jump tables in banks 0 and 2 (the enemy mode tables, among
-  others), which decoded about 900 more instructions: bank 0 is 6035 instructions, bank 2 5953,
-  and the set is still byte-exact. A 16-bit constant that equals a routine's address now prints
-  as a number, except for `START`, `IRQ_HANDLER` and jump table entries, so `ld hl,0x4000` is no
-  longer shown as a label. Named: the per-frame enemy updates and the shared enemy movers
-  (`ENEMY_WALK_L/R`, `ENEMY_JUMP_L/R`, `ENEMY_FALL`, and each group's `ENEMYn_<mode>` entries in
-  the mode tables), the player record setup, the lives/bonus/score-entry code, the game flow
-  from `ATTRACT_TASK` to `HIGH_SCORE_SCREEN`, the how-to-play and demo screens, and the ROM
-  checksum steps (`ROM_SUM_STEP_C`..`P`). Those steps are called in play (the enemy and player
-  code), so they are tamper checks and not only start-up checks. Names that rest on a guess say
-  so in their note. About 1130 `L_xxxx` labels remain in the fixed ROM, 620 in bank 0 and 560
-  in bank 2; nearly all are branch targets inside a routine.
-- Attack code (2026-10-18): `ENEMY_ATTACK_CHECK` (`7B94`), `ENEMY_DEFEATED` (`7BFD`), group 2's
-  attack and shots (`ENEMY2_ATTACK_RUN`, `ENEMY2_SHOT_LAUNCH/FLY_L/FLY_R/BURST`), group 3's attack
-  start and step, and the boss's four diagonal moves (`BOSS_MOVE_RU/RD/LD/LU`, directions read
-  from which edges flip them). The bank 2 `REC_*` routines are special-item effects: the
-  `SPECIAL_EFFECTS` handlers that start them are in the notes, but the item kinds still have no
-  names, so the `REC_*` names stay until MAME shows each effect. Groups 4, 5, the ghost, `ENEMY2B`
-  and the boss attack code are still `L_xxxx`. Since then the mode tables of groups 4, 5, 0B and
-  the ghost are named by direction (`ENEMY4_FLY_RU`.., `ENEMY5_FLY_*`, `GHOST_FLY_*`,
-  `ENEMY0B_WALK_*`) and the 2B shots fly left or right; the boss's shots (`BOSS_SHOT_MODE0`-`3`) stay numbered.
-- Most-called helpers (2026-10-18): `SCREEN_FLASH`, `MUL16`, `ROUND_x19A`, `TILE_COLS_COPY`,
-  `COUNTER_STEP`, `BUBBLE_RISE`, `BUBBLE_EDGE_CHECK`, `SPRITE_GRID_D`, `TILE_PAIR_PUT_A7` and
-  `FILL_CHECKED` (`5C11`), which hides one more tamper check: bytes `0000–0002` must sum to
-  `3E`. Then `HEX_CHAR`, `TILE_COLS_FILL`, `RAND_TIMER_SET` and `STEP_TO_8_UP`. Not checked
-  in MAME yet. The fixed ROM's remaining `L_xxxx` routines with more than one caller are
-  unclear without a trace (`4195`, `43A0`, `21CF`, `6B80`, `62FB`).
-- Special items in MAME (2026-10-18): `trace.py --special K` makes every special item kind K and
-  moves player 1's object onto it, so `SPECIAL_TAKE` runs. A sweep of kinds 01–35 (not 0E) in
-  `build/traces/specialKK/` gave: 05 `KILL_ALL_A` and 1C `KILL_ALL_B` (every enemy becomes a
-  gem); 09–0B `PICKUP_RUSH_A`, 0D `PICKUP_RUSH_B` and 0C/2F `PICKUP_RUSH_C` (the playfield fills
-  with pickups, with a timer and a P1 vs P2 count); 12 the flood (`TAKE_FLOOD`, once misread
-  as `ROUND_SKIP`). Kinds 13/32, 1A/31/33 and 1D/2D/35 reach `EFFECT_C/A/B_START`. Kinds 1E–28 reach only the start of `REC_F46B_RUN`
-  (which needs `ENEMY_TOTAL` = 0). No kind reached `REC_F519`, `REC_F54B`, `REC_F60F` or `REC_F624`.
-- Big items (2026-10-19): `trace.py --special K --clear` also writes `ENEMY_TOTAL` = 0 once the
-  item is taken. Kinds 1E–28 are the big items: when the round is cleared, a 32 × 32 copy of the
-  item falls to the floor in the middle (28 an ice lolly, 23 a cake, 1E a diamond), and touching it
-  scores 10000 to 80000 (`BIG_ITEM_POINTS`, by `F46D` = 28 − kind). `REC_F46B_*` became
-  `BIG_ITEM_INIT`/`RUN`, with `BIG_ITEM_TAKE` (`8CC7`) and `BIG_ITEM_BURST`. The item appears
-  only from round 2, so these runs need about 70 s. `BIG_ITEM_TAKE` was not seen: the cheat
-  does not walk the player onto the big item.
-  `BIG_ITEM_TAKE` had no label because the fixed ROM's calls into page 2 outside `OBJECTS_TASK`
-  were never entries. `redo_banks.sh` now passes the 17 targets that follow a `BANK_SELECT 2`
-  (among them `8000`, the test-mode start): bank 2 is 5998 instructions, still byte-exact. Calls
-  whose bank is set further away (bank 0 enemy code calling `8879`, `91A6`.., and `A150`, `B34F`,
-  the `B3xx`–`BExx` calls) still need their bank checked before they are added.
-- Stars, food and lightning (2026-10-19): `trace.py --snap` now takes fractions of a second, with
-  `--snap-from` to skip the start (`--snap 0.1 --snap-from 61` catches a fast effect). Effect A is
-  `STARS` (kind 1A; 31 and 33 through `E724`): 8 stars fly about, 2500 an enemy. Effect B is
-  `FOOD_RAIN` (kind 1D; 2D and 35 change the picture by `F4CD`): food falls from the top, 10000 an
-  enemy. Effect C is `LIGHTNING` (kind 13; 32 through `E724`): the screen flashes and a bolt strikes
-  down and to the left, 5000 an enemy. Their sub CPU hit tests are now `STARS_HITS`,
-  `FOOD_RAIN_HITS` and `LIGHTNING_HITS`. Kinds 2D, 35 and the `E724` path (31–33, which set
-  `E723` = 29 and start the effect from the fixed ROM at `50EE`) were not looked at.
-  Kind 29 sets `E603`, one of the two conditions for `REC_F519`.
-- The last records (2026-10-19): `trace.py --poke ADDR=VAL` holds a byte at a value from frame
-  240 (holding it sooner hangs the start-up RAM test at `0216`). `REC_F519` is `ITEM_HINT`: after
-  kind 29 has been taken in a game, a round whose special item is an effect item starts with sound
-  28 and a flash. `REC_F54B` is `WATER` and `REC_F624` is `FIRE`, from the water and fire bubbles,
-  seen on round 13 with `SPECIAL_LIST` held at 2 and at 3. The bubble's `IX+24` is 4 − the list
-  value (`6E50`), so `BUBBLE_FIRE_DROP` is `IX+24` 1 and `BUBBLE_LIGHTNING_POP` is 3. `REC_F60F` is
-  `POTIONS`: round 100's two potions, which set `POTION_P1`/`P2` and turn that player's bubbles into
-  lightning bubbles (`POTION_BUBBLE`). A potion being taken, and a lightning bubble popping, were not
-  seen. `SPECIAL_RULES` (`B4F2–B66B`) is now data in the class map: a ROM sum at `B4CB` runs into it on
-  a mismatch, and the tracer had read 174 instructions there.
-- Kind 0E and the new entries (2026-10-19): `--special 0E` now starts kind 0E's own path (`F513`
-  = FF). `REC_F513` is `INVINCIBLE_ITEM`: an item that, when touched, makes both players
-  invincible for 900 frames. Enemies they touch are beaten for 1000 each (the sub CPU's
-  `PLAYER_ENEMY_HITS`, through player byte +19, which `sub.s` calls +13 hex). All 17 new
-  entries are now named: `HELP_SCENE` (the HELP!! captives at rounds 16, 32 .. 96), `BOMB_RUN` (kind
-  17), `HURRY_HAND_RUN` (kind 30, a hand with a star that brings on HURRY UP), `IDLE_PLAYER_RUN`,
-  `JOIN_PROMPT`, `ENDING_HINT_SCREEN`, `TEST_MODE`. `BF48` was in bank 0 (it is called after
-  `BANK_RESTORE`), not bank 2, so it moved to `BANK0_ENTRIES`.
-- The far calls (2026-10-19): the fixed ROM's calls into page 0 or 3 whose bank is set by the
-  caller are now entries. `B391`, `B3B5` and `B738` ran in bank 0 in MAME and `BE00` in bank 3;
-  `B34F`, `B3AF`, `B732`, `B878`, `B884` and `B8D3` fill gaps in bank 0 (`B34F` follows the
-  `B33E` jump table, where the probe had read 9 data bytes as code). The intro's starry backdrop
-  is `STARFIELD_DRAW` and `STARFIELD_TWINKLE` (seen in a new `intro` trace); the same stars twinkle
-  under the ending. `ENDING_START` (`B34F`) jumps to `563F` in the fixed ROM, which was inside an
-  `.incbin`: it is now `ENDING_SCROLL`, which scrolls up one of bank 1's three ending texts
-  (`ENDING_TEXT_1P`, `_2P`, `_SUPER`, `8D42–95A9`). `ENDING_SCROLL_STEP` and `ENDING_START` each
-  hide one more tamper check on byte `0002`. `BE00` is `TAITO_CREDIT`. Then `trace.py --boss-pop` (pops the
-  round 100 boss's bubble as soon as it is trapped) showed the two-player ending: the captives
-  turn into the players' girlfriends, `HEART_DRAW` puts a big heart between two HAPPY END!!
-  (`HEART_CYCLE` turns it yellow, orange, pink), `ROUND_WIPE` (`BEA9`, one more tamper check, on
-  `0004`) clears the walls, the stars come in (`STARFIELD_DRAW_2P`), and `ENDING_TEXT_2P` scrolls
-  up into the staff list. The other endings, seen the same way: one player gets
-  `ENDING_TEXT_1P` (TRY AGAIN !!) and `ZAP_ROUND`; two players get `ENDING_HINT_SCREEN` after the
-  staff list (8 coded words, and the hint: no miss in rounds 1-20, then the silver door); two
-  players in super mode (`--poke E5DB=1`) free their parents, get `ENDING_TEXT_SUPER` (THE END !)
-  and go straight to the high score table. Bank 0 is 6052 instructions,
-  the fixed ROM 12754; the set is still byte-exact.
-- Task bodies (2026-10-19): `BUBBLES_TASK` calls `SECRET_ROUND_START` (`5046`): special kinds
-  31-33 (`SECRET_ROUND_A`-`C` in bank 2) set `E723` = 29, and the next frame takes the player to the
-  secret room, round record 65 (`STATE29_*` became `SECRET_ROUND_INIT`/`FRAME`; `E724` picks stars or
-  lightning). Its other call is `EXTEND_CHECK` (`6EF8`): with all six letters the letters flash and
-  `EXTEND_SCENE` (`7007`) shows NICE 1UP!, seen with `--poke E742=3F`. Also `EXTEND_LETTERS_DRAW`,
-  `CAPTIVES_INIT`/`STEP` (round 100) and `SCORE_BAR_REDRAW` (`21CF`). Two more tamper checks: the
-  word at `0B2E` must be `IRQ_HANDLER` in `CAPTIVES_STEP` and `EXTEND_SCENE`.
-- The last three (2026-10-27): `43A0` is `PLAYER_FACE_INPUT` (the facing byte `IX+8` from the
-  joystick). `4195` is `SECRET_DEATH_SLEEP`: when the Skel-Monsta kills a player in the secret
-  room, the sub CPU sets `SECRET_DEATH` (`E730`), and after the lost life this sets its b7 and puts
-  the task to sleep. `SECRET_EXIT_CHECK` (`5416`) then runs `SECRET_ROUND_EXIT` (`53CF`), which
-  sends the game on to the round after the one the player left. The code after `4195` is
-  `PLAYER_PLAY_STEP` (`419F`), a player's frame in play. `6B80` is `CAPTIVE_HEART`, the small
-  heart over each captive in the round 100 ending (the end2p trace's sprite sheet shows it).
-  Read from the code, not watched: a Skel-Monsta death in the secret room, and the exit at Y 18,
-  X 77-79 (`539F`).
-- Coverage and the banks' calls (2026-10-27): `tools/coverage.py` had not been run since the
-  ending and special-item traces, so it now merges every run in `build/traces/` into the class
-  maps. That joined neighbouring trace ranges, and `dasmz80.py` lost code that it had only reached
-  from a range start (`0B82`, bank 2 `A310` ..). It now also traces from every byte of a trace
-  range that no decoded instruction covers, and labels a start that nothing falls into. Bank 0's
-  `9CD7` table (10 words, read at `9BB2`) is a `--table`. `redo_fixed.sh` now passes the 16 fixed
-  ROM addresses the banks call or jump to (`BANK_CALLS`); each is named: `ROUND_PAL_SHIFT`,
-  `ADD_BC_A`, `OBJ_NEAR`, `SPRITE_GRID_FX`, `OBJ_TILE_ADDR`, `TILE_ADDR`, `ROUND_REC_BYTE`,
-  `DIFFICULTY_CAP`, `HIGH_ENTRY_CONTINUE` (a continuing player's score goes in the table as `CNT`),
-  `HIGH_ENTRY_INSERT`, `P1_BURN`/`P2_BURN` with `PLAYER_BURN_STEP` (fire slows a player for 30
-  frames; not seen), and two more ROM sums, `ROM_SUM_STEP_Q` (`340B`) and `ROM_SUM_STEP_R` (`65D0`).
-  The fixed ROM is 12763 instructions, bank 0 6052, bank 2 5824; still byte-exact. Rerun
-  `coverage.py` after each new trace, before the redo scripts.
-- Probe and score check (2026-10-27): with every trace merged, `--probe` now takes only 16 regions
-  that MAME never ran: 7 in the fixed ROM, 8 in bank 0, 1 in bank 2. Each reads as code, not data:
-  unused siblings of named routines (`OBJ_STATE_11`, `_14`, `_16`, `_18`-`_1B`, `HEX_BYTE` next to
-  `HEX_CHAR`, `GRID_PROBE_ABOVE3` next to the other probes, now named and marked "never run"),
-  enemy mode exits and turn steps in bank 0 (`8CC9`, `8D7D`, `9465`, `948C`, `94AD`, `94DB`, `97EC`,
-  `A7B9`), and a player record copy in bank 2 (`AFD8`). None was moved to data. Every score
-  routine from the 2026-10-17 note ran in MAME, and the high score starts at bonus table entry 0:
-  with DSW1 = FF (bonus setting 3) every game snapshot has `HIGH_SCORE` = 003000.
-- Skel-Monsta (2026-10-27): `GHOST_UPDATE` (bank 0 `A150`) runs two ghosts, one for each player
-  (`IX+9`); all of it ran in the game2p and bub39 traces. `GHOST_APPEAR` starts each at one of
-  four `GHOST_CORNERS` picked from the players' positions (the middle of the room in the secret
-  round) and fades it in (`GHOST_FADE`). `GHOST_CHASE` moves it by a speed pattern that
-  `GHOST_STEER` points at its player, one axis at a time, switching axis every 0x3A pixels and
-  getting faster as `F1E6` runs down. It leaves (`GHOST_LEAVE`, `GHOST_FADE` backwards,
-  `GHOST_REMOVE`) when its player is hit or the round is cleared, and `GHOST_OFF_CHECK` clears
-  `GHOST_ON` once both are gone. A ghost that kills the other player swaps targets with the other
-  ghost first.
-- Group 4 (2026-10-27), seen in the bub22 trace: it has no attack. `ENEMY4_MOVE` flies it on a
-  diagonal (`ENEMY4_MODES`); each fly probes a side wall and a ceiling or floor with the
-  `ENEMY4_CELL_*` probes. A hit (`ENEMY4_LU_WALL` .. `ENEMY4_RD_FLOOR`) starts one of eight 21-step
-  scripts in `ENEMY4_TURNS` (moves 0-7 by direction, 8 none, 9 end), so the enemy curves away from
-  the wall; `ENEMY4_TURN` plays it one step a frame and `ENEMY4_TURN_BACK` reverses it early if it
-  meets a wall. At the end the mode becomes the one the hit chose. `ENEMY4_LD_FLOOR` hides one more
-  ROM sum, `ROM_SUM_STEP_S` (bank 0 `8150`-`94FD`).
-- Group 5 (2026-10-27), seen in the bt1, bt3, bub13 and r16 traces: no attack either.
-  `ENEMY5_MOVE` flies it on a diagonal (`ENEMY5_MODES`, with `ENEMY5_FALL` as mode 2), and it
-  bounces straight off a wall into the next diagonal (`ENEMY5_TO_RU` .. `ENEMY5_TO_LD_FACE`).
-  `ENEMY5_STUCK_CHECK` compares its position over three bounces and steps the mode on if it has
-  not moved, so it cannot stick in a corner; it also runs `ROM_SUM_STEP_T`, a sum of all of
-  bank 0.
-- Group 3's shots (2026-10-27): no trace had a group 3 enemy, so a new run, `r42` (`trace.py game1p
-  --round 42 --seconds 120 --cpus main`, round 42 has seven), is now merged into the class maps.
-  Everything named here ran in it. A group 3 enemy walking or falling may throw
-  (`ENEMY_ATTACK_CHECK`, `ENEMY3_ATTACK_START`) while `ENEMY3_SHOTS_FREE` (`F05E`) is nonzero:
-  it starts at 2 when the group enters, a throw takes one and `ENEMY3_SHOT_END` gives it back,
-  so at most two fireballs are out. `ENEMY3_SHOT_LOOP` launches the shot from the owner in the
-  owner's facing, and `ENEMY3_SHOT_FLY` moves it left or right (`ENEMY3_SHOT_L`/`_R`) until a
-  wall.
-- Group 2 and 2B (2026-10-27): two more runs, `r26` (seven of group 2) and `r50` (seven of 2B,
-  `ENEMY_SWAP` b4), the same way as `r42`, now merged. Group 2 lifts a rock over its head
-  (`ENEMY2_ATTACK_LIFT`, called off by `ENEMY2_ATTACK_CANCEL` near a wall), and on the last frame
-  `ENEMY2_SHOT_LOOP` takes the rock over and `ENEMY2_SHOT_FLY` throws it. 2B winds up
-  (`ENEMY2B_THROW_ANIM`) and `ENEMY2B_SHOT_LOOP`/`_FLY` throw a bottle, which ends when its owner
-  is trapped or beaten. Shared by every walking group: after each walk step `ENEMY_WALK_THINK`
-  alternates on a timer between `ENEMY_WALK_SEEK` (turn toward the target, read from the MCU
-  proximity record) and `ENEMY_CLIMB_SEEK` (jump up toward it when the cells above are open).
-  `94DB`, `97EC` and `A7B9` are per-group copies of `ENEMY_WALK_THINK` that nothing calls.
-- The boss (2026-10-27), all seen in the round 100 traces (bub100, r100x2, r100pop and the
-  endings): after its entrance (`BOSS_ENTER_END`), `BOSS_FIGHT` throws a volley every 0x78 frames
-  (`BOSS_VOLLEY_TIMER`, `BOSS_VOLLEY`): `BOSS_SHOT_LOOP` launches all 8 bottles, each on its own
-  path (`BOSS_SHOT_PATHS`, `BOSS_SHOT_STEP`, 3 pixels a step or 4 when the boss is angry), until
-  it leaves the playfield (`BOSS_SHOT_OFF_*`); the next volley waits for all 8. At 0x50 hits the
-  boss can be trapped (`BOSS_TRAPPED`); popped, it flies off (`BOSS_BEATEN`) and the round ends,
-  or in super mode with two players `BOSS_SUPER_END` plays the parents' scene; left alone for
-  6 seconds it escapes angry. Read from the code, not seen: with exactly one hit, 7 right-edge
-  bounces (`BOSS_RIGHT_BOUNCES`) and a volley out, the hits jump to 0x50 (notes/open_questions.md).
-- Special item handlers (2026-10-27): every entry of `SPECIAL_EFFECTS` (bank 2 `8AFF`) is named
-  `TAKE_*` by its effect, and all ran in the `specialKK` sweep except kind 0E (a bare `RET`).
-  The player boosts are read from the player record: kind 00 doubles a bubble's range
-  (`IX+49` 40 to 80), 01 its speed (`IX+47` 3 to 6 pixels a frame), 02 shortens the wait between
-  bubbles (`IX+46` 14 to 5), 03 walks faster (`IX+48`, the speed row, 0C to 13); 0F, 10 and 11
-  score for walking, each jump (500) and each bubble (100); 14 blows fireballs 16
-  times; 15, 16 and 18 combine them. 04 freezes the enemies (`TIMER_RUN`), 06-08 skip 3, 5 or 7
-  rounds (`E350`) and 34 skips to round 70 at top difficulty; 2A-2C choose the end-of-round
-  item. Kind 1B (`F676`) sets a flag not yet understood (kind 19 is `TAKE_KILL_ALL_SHAKE`, below).
-- Bank 2's helpers (2026-10-27): every routine that something in bank 2 calls now has a name.
-  Among them, the water (`WATER_CARRY` carries a player who is not pressing jump,
-  `WATER_ENEMY_HITS` and `WATER_ROCK_HITS` sweep enemies and group 2's rocks away), the fire
-  (`FIRE_PLAYER_CHECK` burns a player, `FIRE_ENEMY_HIT` beats an enemy), the pickup rushes'
-  tiles and pickups, the bomb's fireballs, and the test screens (`TEST_INPUTS_SHOW` shows 14
-  input bits as ON/OFF, `TEST_DSW_SHOW` both DIP switch banks as bits).
-- The banks' last calls (2026-10-27): 12 routines in banks 0 and 2 were still called as `L_xxxx`.
-  Bank 0: `GHOST_STEER_TO` (the body of `GHOST_STEER` for one player), `ROM_SUM_STEP_U` (bank 0
-  `A103`-`BFFF`, from `ENEMY0B`'s walk), `ENDING_HAND_WAIT` and `ENDING_HAND_RUN` (600 frames of
-  `HURRY_HAND_RUN`'s sweep in the two-player ending; which sprites `BFF1` gives is not yet seen),
-  `STAR_COLOURS_SET` and `COLOUR_DIM` (the starfield's colours). Bank 2: `TEST_SCREEN_INIT`,
-  `TEST_TEXTS`, `TEST_DELAY` and `TEST_SOUND_SELECT` (the test mode's sound number, up and down on
-  the joystick, played on P1 start), `RUSH_A_PICKUP` and `WATER_CARRY_MOVE`. No call in either
-  bank goes to an unnamed routine now; still byte-exact.
-- The fixed ROM's calls, first batch (2026-10-27): of 74 routines the fixed ROM still called as
-  `L_xxxx`, 22 are named. The tasks: `INSERT_COIN_DRAW` (INSERT COIN or COINS by DSW0 b5 and b7),
-  `JAPAN_NOTICE` (the "for use in Japan only" screen, 12 seconds, only with DSW0 b0 set), and at
-  each round's end `DIFFICULTY_BY_MINUTES` (after 10, 15, 20 and 25 minutes of play the difficulty
-  is raised to at least 0F, 14, 19, 1E), `ROUND_COUNT_UP` and `ROUND_MILESTONE_FLAGS` (rounds 20,
-  30, 40 and 50 set `E60D`-`E610`; what reads them is not known yet). The EXTEND scene, read from
-  the code: the player's dragon jumps under each of the six big letters in turn
-  (`EXTEND_DRAGON_P1`/`_P2`, `EXTEND_JUMP_START`/`_STEP`), and each letter stops wobbling and
-  flashes (`EXTEND_BIG_LETTER_1`-`_6`); then the letters are cleared, the letter bubbles rise
-  (`EXTEND_BUBBLES_RUN`), NICE 1UP! is drawn, one bubble drops into the lives column and the life
-  is added (`EXTEND_LIVES_DRAW`), and `EXTEND_SCENE_END` goes on to the next round. 52 are left:
-  the players, the objects, the secret round, the bubbles and captives, and small helpers.
-- The players (2026-10-27), read from the code: `PLAYER_PLAY_STEP`'s calls are named.
-  `PLAYER_WALK` walks on the input until a wall, and starts `PLAYER_FALL` when there is no floor;
-  `PLAYER_FALL_DRIFT` steers a fall or jump every third frame. `PLAYER_JUMP_INPUT` starts a jump on
-  the button or on a bounce off a bubble, and `PLAYER_JUMP_MOVE` moves it a pixel at a time.
-  `PLAYER_PUSHED` moves a player pushed by `(IX+34)`. `PLAYER_BLOW` writes the blow request
-  (`E75E`/`E764`) with the bubble's range and speed. `PLAYER_POP_CHAIN` scores enemies popped at
-  once (2 = 2000, doubling up to 7 = 64000), with the score shown over the player.
-  `PLAYER_DEATH_STEP` is the hit player's spin, and `PLAYER_WALK_SCORE` the walking points. One
-  more ROM sum, `ROM_SUM_STEP_V` (every 8th byte from `598A`). Still byte-exact; 43 calls left.
-- The objects (2026-10-27), read from the code: `OBJECTS_TASK`'s three pairs. `ROUND_ENTRY_INIT`
-  and `_RUN`: at a round's start each player's bubble floats from where the player was to the
-  start corner (Y 28, X 10 or D0, `ROUND_ENTRY_MOVE`) and bursts, and then the round's tasks
-  start. `KILL_ALL_SHAKE_INIT` and `_RUN` answer special kind 19 (`E720`, now
-  `TAKE_KILL_ALL_SHAKE`): every enemy is beaten, the screen shakes for 0x30 frames, and each enemy
-  scores 3000. `RUSH_COUNT_INIT` and `_RUN` run the pickup rushes' TIME and counts
-  (`RUSH_TIME_STEP`, `RUSH_LABELS_DRAW`); when every pickup is taken each player scores 50000 and
-  the one with more another 50000. Still byte-exact; 33 calls left.
-- The secret round (2026-10-27), read from the code: `SECRET_ROOM_DRAW` puts up one of three
-  pictures from bank 3 by `E724`, and `SECRET_GEMS_INIT` sets up 0x24 gems, 10000 each.
-  After 0x18 gems `SECRET_DROP_GAP` opens a gap that drops a player from Y 58 to Y 18; after all
-  of them `SECRET_EXIT_GAP` opens the way out, and a player at Y 18, X 77-79 leaves by
-  `SECRET_ROUND_EXIT` (the exit noted earlier). Also `SECRET_TILES_FLICKER` and
-  `SECRET_WELCOME_RUN`. Still byte-exact; 27 calls left.
-- The bubbles and captives (2026-10-27), read from the code: `BLOW_REQUEST_TAKE` gives a free
-  bubble slot the request `PLAYER_BLOW` wrote, `BUBBLE_BLOWN_FLY` flies it until a wall,
-  `BUBBLE_FLOAT_SPRITE` and `TRAPPED_BUBBLE_SPRITE` draw an empty bubble and one holding an enemy.
-  With 0x14 or more bubbles floating, `BUBBLE_CROWD_CHECK` and `BUBBLE_CROWD_POP` pop two empty
-  ones. `BUBBLE_NO_CHECK` is `XOR A, RET`, so the jumps after its calls never run. In the round
-  100 ending `CAPTIVE_PLAYER_WALK` walks each player to their captive (X 40 or B0), and
-  `CAPTIVES_SIDE_TILES` and `_MID_TILES` draw two-player tiles not yet matched to the screen.
-  Still byte-exact; 15 calls left, all small helpers.
-- The last helpers (2026-10-27): `INPUT_EDGE` (the coin switches), `MUL_A_BC`, `CMP_DOWN`,
-  `RAND_BELOW`, `GRID_ROW_CLEAR`, `SIDE_WALL_ROW_LAG`, `SIDE_WALL_BLOCK`, `HIGH_SCORE_DRAW`,
-  `ROUND_DIGIT_COLOUR`, the initials entry's `ENTRY_LETTER_NEXT`/`_PREV`/`_PICK`, and the
-  defeated enemy's `DEFEATED_PATH_STEP`. `STEP_TO_8_DOWN` (`7FF8`) runs off the end of the fixed
-  ROM: its last instruction's operand and the rest of the routine are bank 0's first bytes
-  (`07 C8 DD CB 00 66 C8 35 C9`), so it only works with bank 0 in. Every call in the fixed ROM
-  and in banks 0 and 2 now goes to a named routine; still byte-exact.
-- The high-score initials codes (2026-10-30), from an arcade-history.com page: the table at
-  `37DF` is `INITIALS_CODES` (SEX TAK STR KTT ... and five staff initials), and each handler
-  adds 1 to a `SPECIAL_RULES` counter (`SEX_COUNT`, `TAK_COUNT` ... `STAFF_COUNT`), giving
-  special kinds 1D, 2A-2D and 35 (`notes/levels.md`). SEX's handler tests a ROM byte whose bit
-  is always set, so the code after the test is never run. Seen in MAME: each code gives its
-  item (fork, octopus, flamingo, beer mug, knife, can) on round 1 of the next game; still byte-exact.
-- The special item counters (2026-10-30), from Chris Moore's 1998 special items list on
-  tjasink.com, whose 54 rules match `SPECIAL_RULES` exactly: every counter is named
-  (`BLOWS_COUNT`, `WATER_POPS`, `LETTER_COUNTS`, `DOOR_20_DUE` ... ) after checking the code
-  that raises it, and `notes/levels.md` has the full table of kinds, items, counters and
-  thresholds. Kind 1B is `TAKE_FREE_LETTERS`: `FREE_LETTERS` (`F676`) makes the bubbles from
-  the gaps EXTEND letters, and the sub CPU's `POP_CHAIN_HIT` adds to it for chained pops.
-  Kinds 12 and 14 were misnamed: seen in MAME, 12 is the flood (`TAKE_FLOOD`, `FLOOD_INIT`) and
-  14 fire breath (`TAKE_FIRE_BREATH`); `PLAYER_SHIELD_START` is `PLAYER_FIRE_RENEW`, the
-  fireball bubble's 5 rounds of fire breath (`FIREBALL_BUBBLE_POP`). Still byte-exact.
-- From Gareth Hall's FAQ (2026-10-30), checked in MAME: the coinage DIP order is MAME's, since
-  the main CPU counts coins itself from `COIN_TABLE` (bank 3 `COIN_TABLES` by `COIN_REGION`)
-  and writes `CREDITS` (the MCU question is closed); layout 101 is the secret room's; and
-  `SECRET_ROOM` (`E723`) survives a game over in the room, so the demo and the next game go
-  into the secret room. Still byte-exact.
-- Next:
-  1. Name more of what the tasks call (`TITLE_TASK`, `ATTRACT_TASK`, `BUBBLES_TASK` bodies,
-     the `0DA7` dispatcher, the sprite and text helpers still `L_xxxx`). Done (2026-10-27):
-     no call in the fixed ROM goes to an `L_xxxx` label.
-  2. Work out the `REC_*` records in `F46B–F65F` by triggering each effect in MAME with
-     `tools/trace.lua`, then rename them. Done: every `REC_*` record, the 17 new entries and
-     the fixed ROM's calls into a bank chosen further away. All three endings and the hint
-     screen have been seen in MAME.
-  3. Check some `--probe` regions, and the score code above, against a MAME trace. Done
-     (2026-10-27): the 16 regions left are code MAME never ran, and the score code ran.
-  4. Finish bank 0 and bank 2 (`[bank0.code]`, `[bank2.code]`): the enemy movers and modes are
-     named; the attack code in groups 2, 3, 4, 5 and the boss, and the bank 2 `REC_*` routines left, are not.
-     The ghost, groups 2, 2B, 3, 4 and 5 and the boss are done (2026-10-27); groups 4 and 5 have
-     no attack. So are the special item handlers and every called routine in banks 0 and 2
-     (2026-10-27). What is left in banks 0 and 2 is branch targets inside named routines.
-  5. Then Phase 7 (sound) and the Phase 8 relocation test.
+- An encoding `as` would not reproduce (ED duplicates, undocumented DDCB forms) stays `.incbin`
+  with the reading in a comment.
+
+Tool traps:
+- MAME debugger: `noloop` means *do not* collapse loops (leave it off, or the idle loop floods the
+  trace). `focus` makes the debugger ignore the other CPUs. A soft reset leaves the headless
+  debugger stopped. Tracing runs at about 15–100% of full speed, limited by MAME flushing the trace
+  file on every line, so run scenarios side by side.
+- MAME Lua: notifier and tap handles must stay referenced or the garbage collector cancels them.
+- `unidasm`: `-skip N` skips N file bytes, `-basepc` is the address of the *first disassembled
+  byte* (so `-skip 0x333f -basepc 0x333f`), and `-count` is in bytes. Banked code needs the bank's
+  file offset as `-skip` and `0x8000 + offset-within-bank` as `-basepc`.
 
 ---
 
-## 10. Phase 6 — MCU (6801U4)
+## 5. Build
 
-Smallest and most self-contained — a good early win.
-
-1. Disassemble `F000–FFFF` with `unidasm a78-01.17 -arch m6801 -basepc 0xf000`.
-2. Annotate the IRQ1 handler at `F046` (≈25 `JSR`s, one subsystem each). Known:
-   `F1BF`/`F1DB` shared-RAM read/write, `F8F1` EXTEND counter, `F092` checks shared `FF98`
-   for `'G'` (0x47).
-3. Name each job: coin handling + lockout + counters, input/DSW reading and publishing to
-   shared RAM, main-CPU IRQ generation + vector, collision/position checks, timers,
-   test-mode code at `FEBB` (reset path) and the `FFD3` halt loop.
-4. Produce a shared-RAM contract table (`FC00–FFFF`): offset, direction (MCU→Z80 / Z80→MCU),
-   meaning.
-5. Byte-exact rebuild check (Phase 8).
-
-Deliverable: `src\mcu\mcu.s`, `notes\mcu_shared_ram.md`.
-
-**Done (2026-10-15).** `tools/dasm6801.py` traced every routine from the vectors and wrote
-the first `src\mcu\mcu.s`. That file was then annotated by hand. It assembles byte-exact,
-and every byte is classified in `notes\classmap\mcu.toml`: `0x944` code and the rest data.
-Only the data ranges are still `.incbin`. Findings that change this plan:
-- There are 19 jobs, not ≈25. The handler at `F092` is the coin job. It is also the OCF
-  vector, but it ends in `RTS` and is never entered by an interrupt.
-- `FEBB` is a check for the factory test jig. It drives patterns on the ports and tests
-  RAM, timers and the ROM sum. Without the jig it jumps to the normal start at `F003`.
-  `FFD3`/`FFDD` are the jig's pass and fail loops.
-- The MCU raises the main CPU's IRQ (port 1 b6) but never writes the vector at `FC00`.
-- Lives and the round counter live in the MCU's shared RAM. The main CPU changes them by
-  command bytes. With `FF95` = `'B'`, a direct write crashes the MCU (tamper trap).
-- `notes\symbols.toml` is now the single source of names. `tools/symbols.py` writes it
-  as `build\include\<cpu>.inc` for every build.
-- Questions left open: `notes\open_questions.md`.
-
----
-
-## 11. Phase 7 — Sound
-
-1. Disassemble `a78-07.46` (entry points: `0000`, `0038` IRQ from YM chips, `0066` NMI from
-   command latch).
-2. Build the command catalogue: map each command byte (from the `FA00` log in Phase 1) to
-   its handler and data pointer. The pointer tables seen around `0x28DA`–`0x2B00` are the
-   likely song/channel lists.
-3. Decode the sequence format (notes, durations, instrument changes, loops) for both chips.
-   Extract YM2203 and YM3526 instrument/patch tables.
-4. Outputs:
-   - `sound_commands.csv` (id → name → type → data addr),
-   - per-song decoded event lists (JSON),
-   - optional MIDI conversion,
-   - reference audio/VGM captured from MAME for validation.
-
-Decision (2026-10-17): the FM patches and sequences decoded here feed a generic FM synthesiser in
-`SharpKind.Audio` (PLAN §3.5 D), so decode the patch parameters (operator levels, multipliers,
-envelopes, algorithm, feedback) for both chips and not just the notes. MAME recordings are the
-reference to compare against.
-
-Deliverable: `src\sound\*.s`, `build\sound\`, `notes\data_formats.md#sound`.
-
-Started (2026-10-27):
-- Step 1, first pass: `tools/redo_sound.sh` writes `src/sound/sound.s` from `dasmz80.py` and
-  `notes/symbols.toml` (`[sound.io]`, `[sound.mem]`, `[sound.code]`, `[sound.data]`), with
-  `COMMAND_F_JUMPS` as a jump table. 0x2235 bytes are instructions; still byte-exact.
-  `symbols.py` writes `sound.inc`, and the sound source's constants print its own data names.
-- The framework, read from the code. `SOUND_START` clears RAM, starts the YM2203's timers
-  (A = 150, B = D5) and checks the SSG mixer; the YM3526's timer runs only until the first IRQ
-  (`OPL_TIMER_STOP`). The NMI puts every command but FF in a 16-byte ring (`CMD_QUEUE`), and
-  `MAIN_LOOP` plays them (`QUEUE_RUN`): 00-34 through `COMMAND_TABLE`, EE and EF sound off and
-  on (`SOUND_ON`; the main CPU sends EF at reset, from `0176`), F0 an echo mode that keeps commands as
-  the reply instead of playing them, F2-F8 four more entries. The reply is E0 when idle.
-- A command entry is one block or a count of words; a word with high byte 0 queues another
-  command. A block's first byte is a record id (`RECORD_TABLE`): 84/86 the SSG, 8C-96 the
-  YM2203's 3 FM channels, 98-BA the YM3526's 9, two records per channel, and the first of each
-  pair takes the channel from the second while it plays. Ids F0/F1 apply their events to a
-  record at once (`BLOCK_NOW`). Timer A steps the YM3526 records, timer B the YM2203's; the
-  IRQ also runs a tamper check of six opcode bytes. When a sequence ends it can reply its
-  command number and queue another (`SEQ_END_NOTIFY`).
-- Commands 01, 08, 0B, 13, 14, 19, 2A and 2B start all 9 of the YM3526's first records,
-  02, 07, 0A, 0F, 10, 29, 30 and 32 all 9 second ones. 0C-0E, 11, 15-17, 1A, 1D-22, 2C, 2F,
-  31, 33 and 34 start one YM2203 FM record, 05, 06 and 2E one SSG record; 00 and F2-F8 start
-  every record. Which is which piece is not yet heard.
-- `DIAG_ROM` (`E000`): the code calls into an empty socket when a JP is there.
-- The players and the event format (2026-10-30), read from the code; written up in
-  `notes/sound.md`. The event handlers are reached through jump tables (`OPL_EVENT_JUMPS`,
-  `OPL_CC_JUMPS`, `OPN_EVENT_JUMPS`, `SSG_EVENT_JUMPS`, `SSG_F_JUMPS`, the LFO shapes), now
-  followed, so 0x26D8 bytes are instructions. A block is a record id, priority and passes, a
-  phrase count, a next command and 3-byte phrases. A phrase is steps: a duration, then events
-  with b7 set (notes, or C-F commands with an argument byte: operator registers, voice, LFO,
-  envelope, gate, key off, volume). Every FM and SSG event handler and each player's start,
-  phrase, step and register writers are named. Still byte-exact.
-- The FM modulation (2026-10-31), read from the code; written up in `notes/sound.md`. Each FM
-  record has an LFO (8 shapes) and a stepped envelope, and a mask picks their targets: the
-  operators' total levels and the pitch (on the YM2203, channel 3's operator pitches too).
-  The envelope's depth on the LFO rate (EC) has no effect. Every routine in
-  `OPL_MOD_TICK` and `OPN_MOD_TICK` is named. Still byte-exact.
-- The SSG's modulation (2026-10-31): no LFO, but 7 stepped envelopes (tone periods, noise,
-  volumes), plus the hardware envelope (F3, 7x). Every SSG event is now known, and the four
-  envelope tables are named. Still byte-exact.
-- The command catalogue (2026-11-05): `tools/sounddec.py` reads `COMMAND_TABLE` and
-  `COMMAND_F_TABLE` from the sound image and writes `notes/sound_blocks.md` and
-  `build/sound/commands.json`: for each of the 57 commands the blocks it starts (record,
-  priority, passes, next command, phrase addresses). It agrees with the record counts above.
-- The phrases (2026-11-05): `sounddec.py` also decodes every phrase into steps (a duration and
-  its events) in `build/sound/commands.json`. The argument length of each event was read from
-  its handler (`notes/sound.md`, "Event lengths"). All 146 phrases end on their 00 byte, and
-  almost all of them follow one another with no byte between, which supports the lengths. The
-  gaps are four stray bytes before the phrases at `6EAE` and `6F52` and two at `4265`.
-  Command 2E's block says 255 phrases but holds one.
-- Checked against MAME (2026-11-05): `tools/soundcmp.py CMD ...` boots MAME headless, parks the
-  main CPU, feeds the watchdog and injects each command into the latch (`tools/soundlog.lua`),
-  logging every YM2203 and YM3526 register write to `build/soundcmp/regs.csv`.
-  `tools/soundcheck.py` compares that with the decoded phrases. Command 08, channels 1-3
-  (52, 52 and 88 notes): one fitted tick period (24.6 ms, timer A) places every key-on within
-  one tick of the decoded step durations, and the block of all 121 notes matches, with the F-number
-  within 13 of `OPL_NOTES` (the pitch envelope and LFO). On the YM2203 command 25's single
-  note (voice 32, 96 ticks) writes the voice's registers as `OPN_VOICES` has them and keys
-  off 96 timer B ticks (16.5 ms) later. So the event lengths and the voice index are right.
-- The tables (2026-11-05): `tools/soundtables.py` writes `build/sound/tables.json`: both note
-  tables, the 29 YM3526 and 59 YM2203 voices (register values, then the LFO and envelope setup),
-  and the stepped envelopes with their points resolved. The voices follow one another exactly
-  from `OPL_VOICES`' data to `OPN_VOICES`' and on to `COMMAND_TABLE`, which supports the
-  layout (one 1-byte gap in the YM2203's, where a channel 3 envelope mask would add a byte).
-- The check on both chips (2026-11-05): `soundcheck.py` now pools each command's records per chip and
-  fits one tick period. YM3526: commands 08 (384 notes), 13 (74) and 2A (20) keep every key-on
-  within 0.71 ticks of the decoded durations, with the right block each time. YM2203: 2D (10
-  notes over 3 channels), 18 (12), 26 and 28 (8) within 0.28 ticks, so the channels' start delays
-  and the 8F notes (the other note encoding) decode correctly. The tick differs by command (16.3 to
-  35.8 ms; commands set the timers), which is why it is fitted. Two limits: command 0B's
-  YM3526 notes that are tied (`CC A1`: pitch only, no new key-on) show no key-on, so it
-  reports 4 wrong blocks; and the SSG check is weak: command 05's 3 tone events each have a
-  tone write within two ticks, and 2E has none.
-- Every command from silence (2026-11-05): `soundlog.lua` wrote EE, EF and the command in one
-  frame, and the latch keeps only the last byte, so nothing stopped the command before it. EE
-  would not have helped: it only refuses new blocks. Command 00 stops every record, so the capture
-  now sends it half a second ahead of each command, and commands 00-34 and F2-F8 are all logged,
-  14.5 s each. This changes two findings above. The 4 wrong blocks of command 0B came from that
-  leftover sound: 0B has no wrong block, and no phrase uses `CC A1`, so there are no tied notes
-  (the `A0` in `CC B1 A0` is a timer byte). And the fitted ticks are 14.6 to 24.6 ms on the YM3526
-  and 16.0 to 17.2 ms on the YM2203, not 16.3 to 35.8.
-- The voices (2026-11-05): `soundcheck.py --voices all` compares the chip's registers at each
-  key-on with the decoded voice, every register but the total levels. 3487 key-ons, none differ, 4
-  skipped (an operator event had changed the voice). That covers all 29 YM2203 voices that a
-  phrase uses and 12 of the YM3526's 14. Of the other two, voice 8 is never keyed (a silent
-  placeholder on unused channels), and voice 11's notes in command 14 come after the 14.5 s. The
-  writer masks register 50 with DF and 60 and 70 with 1F (`L_1D67`), which matters for voices 3,
-  10, 16, 23 and 53; `tables.json` keeps the ROM's bytes.
-- The rest of the timing (2026-11-05): `soundcheck.py all` now takes each channel's B record where
-  the command starts no A record there, and follows the keying rules. Every note's block is right
-  on the YM3526, and every key-on is within 1.25 ticks of the decoded durations. Only 09, 0A and 29
-  pass 1 tick, and why is not known: 0A and 29 set the timer once and 09 not at all, so it is not a
-  tempo change. The SSG check now compares values: every event's value is written, in order, for
-  all the SSG blocks. F2 is the only one with real content; the others silence the channels.
-- Not checked: an A record playing over a B record and the B record taking over, commands chained
-  through a block's next command, the total levels and pitch under the LFO and stepped envelopes,
-  and anything after the first 14.5 s of a command.
-- Left for stage 3: a synthesiser-side check, which plays a decoded command through a generic FM
-  model and compares it with MAME audio (`SharpKind.Audio`).
-- Next: the Phase 8 relocation test (§12.5).
-
----
-
-## 12. Phase 8 — Reassembly to a byte-exact set that runs in MAME
-
-### 12.1 Toolchain
+### Toolchain
 **GNU Binutils** (`as`, `ld`, `objcopy`), built from `C:\code\sourceware\binutils-gdb` in
 WSL Ubuntu into `~/bublbobl-tools` for two targets:
 
@@ -976,18 +181,13 @@ WSL Ubuntu into `~/bublbobl-tools` for two targets:
 | `z80-elf` | `~/bublbobl-tools/z80/bin/z80-elf-` | main, sub, sound | `-march=z80+xyhl+sli+xdcb` enables the undocumented opcodes |
 | `m68hc11-elf` | `~/bublbobl-tools/m6801/bin/m68hc11-elf-` | MCU | The 68HC11 is a superset of the 6801 with the same encodings |
 
-Each image is assembled to an object, linked at its base (`ld -Ttext=0x0000`, `0x8000` or
-`0xF000`), then written out with `objcopy -O binary`. One syntax (GNU `as`) and one build
-script cover the whole set. Proved on 2026-10-15: the main fixed ROM rebuilt from a
-reset-code split plus `.incbin`, and the MCU image from `.incbin`, both byte-identical.
-
 To rebuild the tools (needs `bison` and `flex` in WSL):
 `configure --target=<target> --prefix=$HOME/bublbobl-tools/<name> --disable-gdb
 --disable-gdbserver --disable-sim --disable-gprofng --disable-gold --disable-nls
 --disable-werror MAKEINFO=true`, then `make all-gas all-ld all-binutils` and the matching
 `install-*` targets.
 
-### 12.2 Source layout and images
+### Source layout and images
 | Source | Link base | Output | Size |
 |---|---|---|---|
 | `src\main\fixed.s` | `0x0000` | `a78-06-1.51` | 32K |
@@ -996,21 +196,19 @@ To rebuild the tools (needs `bison` and `flex` in WSL):
 | `src\sound\sound.s` | `0x0000` | `a78-07.46` | 32K |
 | `src\mcu\mcu.s` | `0xF000` | `a78-01.17` | 4K |
 
-- Shared symbols (I/O ports, shared RAM `E000–F7FF`, MCU RAM `FC00–FFFF`) live in include
-  files that every CPU's source uses. Each address then has one name across all four CPUs.
-- The four banks share `0x8000`, so each bank keeps its own labels. A call into a bank uses
-  the bank-switch helpers in the fixed ROM. Name each helper and its bank argument.
-- **No ROM bytes in source.** Each source file starts as one `.incbin` of its image from
-  `build\images\` (`.incbin "file", offset, length`). As regions are
-  disassembled, the `.incbin` is split around them. Data regions get a label and keep a
-  `.incbin` of just their range, so the label is in the source but the bytes are not.
-  `build.py` runs `romset.py` first so the images exist and are verified.
-- Pad free space to the original length with `0xFF`, and place fixed strings (the version
-  stamp at `0xFF4C` of `a78-05-1`) at their original addresses with `.org` (which stops the build if code has run past it).
+- Each image is assembled to an object, linked at its base, then written out with
+  `objcopy -O binary`.
+- Shared symbols live in include files that `tools\symbols.py` writes to `build\include\`, so
+  each address has one name across all four CPUs.
+- The four banks share `0x8000`, so each bank keeps its own labels.
+- Data regions get a label and a `.incbin` of just their range, so the label is in the source but
+  the bytes are not.
+- Fixed strings (the version stamp at `0xFF4C` of `a78-05-1`) stay at their original addresses with
+  `.org`, which stops the build if code has run past it.
 - Graphics ROMs and `a71-25.41` are data only. `build.py` copies them from the ROM directory
   so that the output folder is a complete set.
 
-### 12.3 Encoding traps
+### Encoding traps
 - **6801 extended addressing below `$0100`.** The MCU uses three-byte extended forms for
   direct-page addresses (e.g. `F6 00 54` = `LDAB $0054`, `7C 00 48` = `INC $0048`). GNU `as`
   for the 68HC11 already uses the extended form for any address, constant or symbol, and
@@ -1023,192 +221,59 @@ To rebuild the tools (needs `bison` and `flex` in WSL):
 - **Ambiguous bytes.** Until a region is proved to be code, keep it as a `.incbin`. Wrong
   code is worse than honest data.
 
-### 12.4 Build and verify
-`python tools\build.py` does these steps:
-1. Assemble every source.
-2. Split or join the output into the original file names.
-3. Compare CRC32 and SHA1 with the MAME list (`romset.py`). Stop with a byte-offset diff on
-   the first mismatch.
-4. Write the complete set to `build\roms\bublbobl\`.
-
-Then confirm in MAME:
+### Build and verify
+`python tools\build.py` assembles every source, splits or joins the output into the original file
+names, compares CRC32 and SHA1 with the MAME list (stopping with a byte-offset diff on the first
+mismatch), and writes the complete set to `build\roms\bublbobl\`. Then confirm in MAME:
 ```bash
 mame bublbobl -rompath build/roms
 ```
 A byte-exact set gives no checksum warning. Play attract mode, one round and test mode.
 
-### 12.5 Two levels of done
+---
+
+## 6. Two levels of done
+
 1. **Byte-exact.** The CRC matches. Numeric addresses are allowed where meaning is unknown.
 2. **Relocatable.** Every pointer is a label: jump and call targets, address tables, and
-   immediate values that are addresses. Test: put padding in each source near its start,
-   then rebuild and play. The game must still run in MAME (the CRC will change). For this
-   test only, make the tamper check at `0x333F` and the ROM checksum tests pass.
+   immediate values that are addresses. Test: `python tools\reloc.py IMAGE...` moves the code, and
+   MAME must play the same as the byte-exact set (the CRC will change).
 
 Stage 3 needs level 1. Level 2 is required only for changes to the arcade code itself.
 
-`python tools\reloc.py IMAGE...` runs the test. It adds N bytes after the image's fixed vectors,
-takes N out of its free space, and balances the ROM's own sum with the padding, so no code is
-patched. MAME then plays the same inputs on the byte-exact set and the moved set: moving these
-images' code does not change their timing, so every sampled screen must match (attract mode and random play), and for
-sound every YM register write must match in value and time. Two broken sub ROMs and a broken sound
-ROM were tried, and each was caught.
-
-Done (2026-11-05), each at several pad sizes, odd ones included, and all three moved at once:
-
-| Image | Found | Result |
-|---|---|---|
-| Sub | Nothing: `ROUND_LAYOUTS` was the only ROM pointer | Same screens |
-| MCU | `SPEED_PATTERNS` and `FETCH_BLOCKS` start with pointers, which were `.incbin` bytes. Moved, the speed lookups read the wrong lists, and an enemy moved differently | Same screens |
-| Sound | 660 pointers in the data, 15 pushed or passed code addresses, and `TAMPER_CHECK`'s 6 fixed reads | Same screens; same writes for 55 of the 57 commands |
-
-Sound command 2E is left out, because what it plays depends on the layout (`notes/sound.md`). 00 is
-not tested on its own: it is the stop sent before each of the others.
-`tools\soundptrs.py` writes the data pointers through `tools\dataptrs.py`, which any data format
-can use.
-
-The test only proves what the run reaches: one round of random play, not all 100 rounds, and not
-test mode. For the sub CPU and the MCU the reading of the code covers the rest, as they hold few
-pointers.
-
-**Main CPU: passes, within what the runs reach.** `python tools\reloc.py main` moves the fixed ROM and banks 0-3
-together, with pads at both ends of each half so that every label changes. `sh tools/redo_main.sh`
-regenerates all of `src\main\`, and `tools\build.py` is still byte-exact. No missed pointer is left
-in what the runs reach. When main moves, a race between the CPUs can leave a bubble a pixel off for
-a moment, so a difference of up to 60 frames is allowed (the project owner's decision, 2026-11-06).
-
-Checks of 2026-11-06, all at 300 seconds unless noted:
-
-| Check | Result |
-|---|---|
-| Pad 8, seeds 1, 2, 4, 5 | Same on all 1200 samples |
-| Pads 1, 3, 7, 9, 10, seed 1 | Same on all 1200 samples |
-| All four moved at once, pad 8, seed 2 | Same 1200 samples; same 523,524 register writes |
-| Sub, MCU, sound alone, pad 8, 120 seconds | Still pass |
-| One pointer broken on purpose (`DATA_60EF`), 120 seconds | Caught at frame 3750 |
-| The old `IRQ_VECTOR_ENTRY` put back, 30 seconds | Reported as a reset |
-| Pad 8, seed 3 | Passes, with 2 short differences: frames 7455 and 11985-12015. The race below |
-| Pads 2 and 16, seed 1 | Pass, with 1 short difference: frames 8520-8550. The race below |
-| `RELOC_CELL` taken out, pad 8, seed 1 | Fails: frames 15555-15735 and 15810-16710 |
-| The same pointer broken, under the 60 frame rule, 120 seconds | Fails: frames 3750-5175 |
-
-Found so far:
-
-- `IRQ_VECTOR_ENTRY` was read as code, so it kept `044D` and the machine reset every 151 frames.
-  It is now `.word IRQ_HANDLER`. (`reloc.py` looked hung: MAME reruns the autoboot script on each
-  reset, so the frame count never ended. `reloc.lua` now reports a reset as a failure, and MAME runs
-  have a 600 second limit.)
-- `ld hl,BANK_WINDOW` (the palettes) and `ld de,BANK_WINDOW` (bank 3 tiles) were data addresses.
-- **Moving the main CPU's code does change its timing**, unlike the images above: `ADD_HL_A` and
-  its like run an extra `inc h` when a table crosses a page. This is the inferred reason `R` differs;
-  the extra instructions were not counted directly. The game's 15 `ld a,r` random reads then differ.
-  So `reloc.py` makes them `ld a,i` (same size, time and flags) in both sets, and compares with a
-  reference set built the same way with a pad of 0. The random branches therefore always see one
-  value in this test, which narrows what it covers.
-- **The game's behaviour depends on where `DATA_622A` is.** `SPAWN_BUBBLE` calls `GRID_CELL` with
-  the HL that `RAND_TIMER_SET` leaves, `DATA_622A + SPEED2_SEL`, and not the bubble's position
-  (`notes/levels.md`). This was the whole of the difference in seeds 1 and 2 (71 and 58 samples),
-  both in the attract demo after game over, where the runs really did part until the demo ended.
-  It predicts the values seen: on round 22 (`ROUND_MAIN` 0x15) with `SPEED2_SEL` 5, the first such bubble's cell is 3 at
-  `622F` and 0 at `6227`. `reloc.py` gives `GRID_CELL` the original value, through `RELOC_CELL` in
-  the cut, in both sets; seeds 1 and 2 then match on every sample. As with sound command 2E, this
-  is the game depending on its layout, and a real change to the code would change how those bubbles
-  drift.
-
-The race. Every remaining difference starts at a bubble's push byte, `+13` or `+14` of its slot:
-`E7F7` (seed 3, frame 7453), `E848` (seed 3, frame 11981), `E7A8` and `E910` (pads 2 and 16, frame
-8508). The sub CPU adds to `+14` (sub `06B0`), and the main CPU reads, applies and clears it
-(`62BD`-`62F6`), with nothing to keep them apart, so a few microseconds decide how much lands in
-which frame. A bubble is then a pixel off for up to about 40 frames. In each case the game RAM
-and object RAM (`DD00-DFFF`, `E200-F7FF`) were compared frame by frame: only those bubbles' bytes
-differ, apart from pointers, and then they match again. This comes from the traced bytes and the
-code; the race has not been removed to prove that nothing is left behind it. `+13`'s code was not
-read: the sub CPU writes it at `088A`, as traced on 2026-11-05.
-
-The rule. With main moved, `reloc.py` joins differing samples less than 60 frames apart into
-stretches and prints each one. A stretch of up to 60 frames passes, unless it is still going when
-the run ends. Sub, MCU and sound alone must still match exactly, as their timing does not change.
-The race has lasted up to about 40 frames, and the two faults tried lasted 900 and more. A real
-fault with only a brief effect would pass, so read the stretches a run prints: a new one is worth
-tracing.
-
-To finish:
-
-1. Consider replaying the trace scenarios on the moved set for more rounds (`tools/cheats.lua`
-   holds fixed PCs, which would need mapping through the link symbols). The runs still cover few
-   rounds: the `DATA_622A` fault only showed in the demo, which 120 second runs never reach.
-2. Hidden 8-bit pointers (`ld h,0xNN`) have not been checked beyond what the runs reach.
-3. Write up in `notes\`: the routine split across the fixed ROM and bank 0 (`STEP_TO_8_DOWN`), the
-   orphaned block at `475B`, and the `0B0C`/`044C` disguised check. `TAMPER_CONSTS_LOAD`'s note says
-   page 2; the data is page 3.
-4. Table names `ANIM_LISTS` and `ENEMY_SCRIPTS` are provisional, and `SECRET_TABLES` (`9A6A`) is
-   wrongly named: it is the attract demo's 7 pairs of input pointers, read by `DEMO_GAME`. The blocks
-   cut for room were never run or read in 86 runs and have no label pointing at them: that is
-   evidence, not proof.
-
-What the main CPU (`fixed`, banks 0-3) needed, as listed before the work began:
-- **Labels across images.** The fixed ROM and the banks are linked apart, and refer to each other
-  by number: 76 `call`/`jp` in `fixed.s`, plus `fixed.inc`, whose addresses come from
-  `symbols.toml` and not from the link. `build.py` needs a second pass that feeds each image's
-  link map to the others.
-- **Sorting the operands.** 975 16-bit operands fall in the ROM's range (632 fixed, 165 bank 0, 174
-  bank 2, 4 bank 3), and only 78 land on a label. The rest are counts, screen sizes, pairs of bytes
-  or pointers, and each needs a decision.
-- **Data pointers.** Bank 1 is one `.incbin`, and the text, sprite and level tables in the other
-  images hold pointers too.
-- **Room.** The fixed ROM has no free space and bank 0 has 1 byte, so the padding has to come out of
-  code that never runs. The IM 2 entry must stay at `0B2E`, or `I` and the MCU's vector must change.
-- **The ROM sums.** There are 30 `ROM_SUM_STEP_*` routines, over ranges that overlap, and they
-  cannot all be balanced with one byte. As planned, these and `0x333F` are made to pass for the test.
-- `tools/soundlog.lua` sets the main CPU's PC to `01ED`, which must be a label's address once main moves.
-
-Deliverable: `tools\build.py`, a byte-exact `build\roms\bublbobl\`, a passing relocation test.
+Sub, MCU and sound pass exactly. The main CPU passes within what the runs reach, allowing
+differences of up to 60 frames from a race between the CPUs. Method, results and the rule:
+`notes\relocation.md`.
 
 ---
 
-## 13. Phase 9 — Consolidation
+## 7. What is left
 
-- `notes\data_formats.md`: every format (text, objects, levels, enemies, sound) with byte
-  diagrams and worked examples.
-- `notes\open_questions.md`: things not yet understood (e.g. SWB#7, unused data,
-  unreferenced strings, the bootleg-vs-original MCU differences).
-- A one-command pipeline (`python tools\extract_all.py --roms <dir>`) that regenerates all of
-  `build\` from the ROMs and validates CRCs first.
-- Optional: compare against Ver 0.0 (`a78-06.51`/`a78-05.52`) and the US sets to document
-  version differences (the "SELECT GAME MODE" mode-select path, bug fixes).
-
----
-
-## 14. Validation strategy
-
-| Area | Check |
-|---|---|
-| ROM loading | CRC/SHA1 match before every run |
-| Disassembly | Byte-exact reassembly of every CPU image |
-| Graphics | Tile sheets match MAME F4 viewer; offline renderer matches MAME screenshots from the same RAM snapshot |
-| Palettes | ROM-extracted palettes equal palette RAM snapshots |
-| Levels | Rendered round previews match in-game screenshots |
-| Text | Every string located and attributed to a print call |
-| Sound | Decoded sequences replay to match MAME audio / VGM register logs |
-| MCU | Shared-RAM contract consistent with main-CPU usage |
-
----
-
-## 15. Suggested order & milestones
-
-1. Phase 0 foundations (ROM loader, images, symbols) and the Phase 8 build skeleton: every
-   ROM starts as one `.incbin` of its image, so `build.py` is byte-exact from day one.
-2. Phase 2.1 tile sheets + Phase 3 text dump — quick, visible results.
-3. Phase 6 MCU — small, complete, byte-exact.
-4. Phase 1 traces + RAM map — unlocks everything else.
-5. Phase 2.2–2.4 palettes, offline renderer and sprite frames (all done).
-6. Phase 4 levels (done; the item counters' meanings move to Phase 5).
-7. Phase 5 main/sub disassembly (sub done). Replace `.incbin` ranges with code region by region, and keep
-   the build byte-exact at each step.
-8. Phase 7 sound.
-9. Phase 8 relocation test (sub, MCU and sound done; the main CPU passes within
-   what the runs reach, allowing short differences from a race between the CPUs. Status and next
-   steps in §12.5).
-10. Phase 9 consolidation.
-
-Before starting each phase, check for existing community documentation or disassemblies of
-Bubble Bobble to cross-reference findings (treat as hints, verify against the ROMs).
+1. **One frame's order (Phase 1, needed by `PLAN.md` §3.3).** Record the order of shared-RAM
+   accesses across the main CPU, sub CPU and MCU in one frame, from MAME traces.
+   `notes\mcu_shared_ram.md` has the MCU's side.
+2. **Text (Phase 3).** `PRINT_TEXT` and `PRINT_TEXTS` are known, so what is left is:
+   - Attribute each string in `strings.csv` to the routine that prints it, and write up the record
+     format, including control codes such as the `:`-separated sequences in the credits.
+   - Decode what is left of the tables: default high scores, staff roll, ending texts (two
+     variants: "MIGHTA" vs "MAITA"), secret-game hints, test-mode labels.
+3. **Relocation (Phase 8).**
+   - Consider replaying the trace scenarios on the moved set for more rounds (`tools\cheats.lua`
+     holds fixed PCs, which would need mapping through the link symbols). The runs still cover few
+     rounds: the `DATA_622A` fault only showed in the demo, which 120 second runs never reach.
+   - Hidden 8-bit pointers (`ld h,0xNN`) have not been checked beyond what the runs reach.
+   - Write up in `notes\`: the orphaned block at `475B`, and the `0B0C`/`044C` disguised check.
+   - `TAMPER_CONSTS_LOAD`'s note says page 2; the data is page 3.
+   - Table names in `tools\mainptrs.py`: `ANIM_LISTS` and `ENEMY_SCRIPTS` are provisional, and
+     `SECRET_TABLES` (`9A6A`) is wrongly named: it is the attract demo's 7 pairs of input pointers,
+     read by `DEMO_GAME`.
+   - The blocks cut for room were never run or read in 86 runs and have no label pointing at them:
+     that is evidence, not proof.
+4. **Consolidation (Phase 9).**
+   - A one-command pipeline (`python tools\extract_all.py --roms <dir>`) that regenerates all of
+     `build\` from the ROMs and validates CRCs first.
+   - Optional: compare against Ver 0.0 (`a78-06.51`/`a78-05.52`) and the US sets to document
+     version differences (the "SELECT GAME MODE" mode-select path, bug fixes).
+5. **Open questions.** `notes\open_questions.md`, and the "Still open" or "Still to do" sections of
+   `notes\levels.md`, `notes\sound.md`, `notes\sprites.md` and `notes\sub.md`. None blocks stage 3
+   unless the subsystem it touches is being translated.

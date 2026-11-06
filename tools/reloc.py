@@ -1,4 +1,4 @@
-"""The relocation test (EXTRACTION_PLAN 12.5): does the source still work when its code moves?
+"""The relocation test (notes/relocation.md): does the source still work when its code moves?
 
 Usage: python tools/reloc.py IMAGE [IMAGE...] [--pad N] [--seconds N] [--seed N] [--no-run]
        python tools/reloc.py --list
@@ -11,7 +11,7 @@ first byte is chosen to balance them. Nothing in src/ changes.
 MAME then plays the same scripted inputs on the byte-exact set and on the moved set, and the
 two runs must show the same screen on every sample. Moving the sub CPU, MCU or sound code does
 not change how long it takes. Moving the main CPU's does, a little: see R_READ, and for what
-that leaves, EXTRACTION_PLAN 12.5, and SHORT. Every sample that differs is reported, and the
+that leaves, notes/relocation.md, and SHORT. Every sample that differs is reported, and the
 pictures of the first are written to build/reloc/. A machine reset during a run is a failure.
 
 A moved ROM has the wrong CRC, which is the point: MAME's warning is expected.

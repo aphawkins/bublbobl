@@ -262,6 +262,12 @@ player starts another step there, with the length set by CE as its duration.
 SSG: 4x–7x are 2 bytes, 8x–Ex are 1. F0 is 1 byte and ends the step (the next duration
 follows it, and can be 40 or more). F1, F3, F7, FB–FF are 2, F2, F4–F6 and F8–FA are 3.
 
+All 146 phrases end on their 00 byte, and almost all follow one another with no byte between,
+which supports these lengths. The gaps are four stray bytes before the phrases at `6EAE` and `6F52`
+and two at `4265`. The voices also follow one another exactly from `OPL_VOICES`' data to
+`OPN_VOICES`' and on to `COMMAND_TABLE`, with one 1-byte gap in the YM2203's, where a channel 3
+envelope mask would add a byte.
+
 ## Voices
 
 `CF` picks a voice from `OPL_VOICES` or `OPN_VOICES` (a word pointer each). `tools/soundtables.py`
@@ -295,6 +301,12 @@ is a silent placeholder on unused channels.
   of the 14 YM3526 ones.
 - `soundcheck.py all`: key-on times against the decoded durations, within 1.25 ticks, and each
   note's block on the YM3526. For the SSG, every event's value is written, in order.
+
+The tick is fitted per command, because commands set the timers: 14.6 to 24.6 ms on the YM3526 and
+16.0 to 17.2 ms on the YM2203. The capture sends command 00 half a second ahead of each command, as
+EE only refuses new blocks and the latch keeps only the last byte of a frame. The voice writer masks
+register 50 with DF and 60 and 70 with 1F (`L_1D67`), which matters for voices 3, 10, 16, 23 and 53;
+`tables.json` keeps the ROM's bytes.
 
 No phrase uses `CC A1`, so notes always key on. 15 YM3526 voices and 30 YM2203 voices are not used
 by any phrase.
