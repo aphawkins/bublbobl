@@ -522,7 +522,7 @@ BUBBLE_CROWD_POP = { addr = 0x6102, note = "an empty floating bubble (state b0):
 BUBBLE_FLOAT_SPRITE = { addr = 0x6115, note = "an empty floating bubble: BUBBLE_TIMER, then BUBBLE_SPRITE_1C with frame 6140[(IX+14)] + (IX+27); every 6 frames (IX+37) clears (IX+27)" }
 BUBBLE_SPRITE_1C = { addr = 0x6138, note = "SPRITE (IX+7) with frame B, colour 1C" }
 BUBBLE_SPEED   = { addr = 0x6144, note = "steps from the SPEED_PATTERNS row SPEED2_SEL (record byte 9), then BUBBLE_DRIFT for each" }
-BUBBLE_DRIFT   = { addr = 0x6175, note = "one pixel by the bubble's cell (IX+0A): 0-1 up (Y+1), 2 right, 3 left, 4 down, 5-6 stay; re-reads the cell on an 8-pixel boundary (61E4)" }
+BUBBLE_DRIFT   = { addr = 0x6175, note = "one pixel by the bubble's cell (IX+0A), through 16 entries at L_61F4: 0-1 up (Y+1), 2 right, 3 left, 4 down, 5-6 stay, 7-F up; re-reads the cell on an 8-pixel boundary (61E4)" }
 CELL_TRACK = { addr = 0x61E4, note = "A = grid cell at the object (X (IX+2), Y (IX+1)); compared with, then stored in, (IX+10): Z = the cell did not change" }
 RAND_TIMER_SET = { addr = 0x6214, note = "(IX+13) = the byte at 622A + SPEED2_SEL, plus R & 7; (IX+12) = 1" }
 BUBBLE_EDGE_CHECK = { addr = 0x6249, note = "carry = a bubble at X < 08 or >= F8 is stopped by the edge bits in E59B (round record byte 3)" }

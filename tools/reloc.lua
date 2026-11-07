@@ -3,7 +3,8 @@
 -- CFG.out, and plays the input events in CFG.events, as tools/trace.lua does. Each change of
 -- ROUND_MAIN goes in CFG.rounds as "frame value", to show which rounds the run really played.
 -- With CFG.special, each time the item shows and goes, "shown gone taker" go in CFG.items: two
--- frames, then P1, P2 or none.
+-- frames, then P1, P2 or none. With CFG.reads, each ROM address the main CPU reads as data goes in
+-- that file once for each instruction that reads it, as "page,addr,pc" (tools/romreads.lua).
 
 local machine = manager.machine
 
@@ -35,6 +36,24 @@ if items then
       if data == 1 then taker = space:read_u8(machine.devices[":maincpu"].state["IX"].value + 9) end
     end)
 end
+
+local reads = {}
+if CFG.reads then
+  local curpc = machine.devices[":maincpu"].state["CURPC"]
+  local page = 0
+  RELOC_READS = {
+    space:install_read_tap(0x0000, 0xBFFF, "reloc_reads", function(offset, data, mask)
+      local pc = curpc.value
+      if (offset - pc) & 0xFFFF >= 4 then  -- not the instruction's own bytes
+        reads[(page << 32) | (offset << 16) | pc] = true
+      end
+    end),
+    space:install_write_tap(0xFB40, 0xFB40, "reloc_bank", function(offset, data, mask)
+      page = (data ~ 4) & 7
+    end),
+  }
+end
+
 local dump = nil  -- CFG.dump: object and game RAM (DD00-DFFF, E000-F7FF) on each frame of a range
 
 -- gfx_num BA-BF and FA-FF make MAME's renderer read past the end of its 0x1D00 bytes of video RAM,
@@ -99,6 +118,13 @@ RELOC_FRAME = emu.add_machine_frame_notifier(function()
     rounds:close()
     if items then items:close() end
     if dump then dump:close() end
+    if CFG.reads then
+      local f = assert(io.open(CFG.reads, "w"))
+      for key in pairs(reads) do
+        f:write(string.format("%d,%04X,%04X\n", key >> 32, (key >> 16) & 0xFFFF, key & 0xFFFF))
+      end
+      f:close()
+    end
     machine:exit()
   end
 end)

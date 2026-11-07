@@ -121,7 +121,7 @@ There is **no tilemap**. `bublbobl_v.cpp` renders everything from object RAM:
 | 5 | Game logic | `src\main\`, `src\sub\`; `notes\main.md`, `notes\sub.md` | Byte-exact build | Done: every call goes to a named routine. What stays `L_xxxx` is branch targets inside routines |
 | 6 | MCU | `src\mcu\mcu.s`; `notes\mcu_shared_ram.md` | Byte-exact build | Done |
 | 7 | Sound | `src\sound\sound.s`; `tools\sounddec.py`, `soundtables.py`, `soundcmp.py`, `soundcheck.py`; `notes\sound.md`, `notes\sound_blocks.md`, `build\sound\` | `soundcheck.py` against MAME register writes, all commands from silence | Done. The synthesiser-side check belongs to stage 3 (`PLAN.md` §3.5 D) |
-| 8 | Reassembly | `tools\build.py`, `tools\reloc.py`; `notes\relocation.md` | CRC match; relocation test | Byte-exact. Relocation passes exactly within what the runs reach: all 100 rounds with one and two players, test mode, every special item taken by either player, the secret rooms (§6) |
+| 8 | Reassembly | `tools\build.py`, `tools\reloc.py`, `unread.py`; `notes\relocation.md` | CRC match; relocation test, on screens and on every data read | Byte-exact. Relocation passes exactly within what the runs reach: all 100 rounds with one and two players, test mode, every special item taken by either player, the secret rooms (§6) |
 | 9 | Consolidation | `tools\extract_all.py` | Run from a copy of the repo with no `build\` | Pipeline done. The version comparison is optional (§7) |
 
 ---
@@ -252,8 +252,9 @@ test. Method, results and the rule: `notes\relocation.md`.
 1. **Relocation (Phase 8).**
    - The moved set has run everything `notes\relocation.md` lists, but by random play, and the
      true ending has been played only through the boss cheats.
-   - Hidden 8-bit pointers: a search of the code found none, but a half read from a data table
-     would not show (`notes\relocation.md`).
+   - Hidden 8-bit pointers: `reloc.py --reads` finds none in anything the runs read. In what no
+     run read (`tools\unread.py`), the pairs that equal a label were not all read by hand
+     (`notes\relocation.md`).
    - The blocks cut for room were never run or read in 86 runs and have no label pointing at them:
      that is evidence, not proof.
 2. **Consolidation (Phase 9).**

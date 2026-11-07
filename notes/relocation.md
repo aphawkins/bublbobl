@@ -193,7 +193,63 @@ neighbouring cells. Of 293 hits, the ones that looked like addresses are:
 | `fixed:3FC1` | `0314` in `+46`, `+47` | Two fields, read one byte at a time |
 
 The rest are positions, sprite coordinates, direction pairs and counters. This was a search of forms
-in the code, not a proof: a pointer half read from a data table would not show.
+in the code, not a proof: a pointer half read from a data table would not show. The data reads below
+cover that case for everything the runs read.
+
+## Data reads
+
+`reloc.py main --reads` logs each ROM address the main CPU reads as data and the instruction reading
+it, on both sets. Each becomes a label and a distance past it, through that set's link symbols, and
+the two lists must be the same. A pointer left as a number, whole or in halves, reads other bytes
+once moved, so it shows here even if no sampled screen does. The 23 ROM sums' `ld a,(de)` are left
+out, as they walk the ROM by number. This sees only what the runs reach, as the screens do.
+
+Checks of 2026-11-07, pad 8 unless noted, every scenario from the tables above:
+
+| Check | Result |
+|---|---|
+| `--round 1-100`, one player and `game2p`, 180 seconds | 200 of 200: same screens, same reads (4639 to 7727 a run) |
+| `--special 1-0x35`, seed 2, 240 seconds, player 1, and `game2p` with player 2 | 106 of 106 (5227 to 12695 a run) |
+| `--special 0x1E-0x28 --clear`, 120 seconds | 11 of 11 |
+| `--round 100 --boss-hits 80 --boss-pop`, 300 seconds: one player, `game2p`, `super1p` | 3 of 3 |
+| `attract`, `japanese`, `super1p`, `testgrid`, `testsound`, `testram` | 6 of 6 |
+| One player and `game2p`, pad 3, seed 2, 300 seconds | 2 of 2 (8291 and 6289 reads) |
+
+Negative controls, through `--break LABEL`:
+
+| Broken | Run | Screens | Reads |
+|---|---|---|---|
+| `B0_SPRITES_9231` | `--round 1-100`, 120 seconds | 10 rounds differ, one of them on 1 sample of 480 | The same 10, and they name the instruction: `L_9148+2` |
+| `DATA_46B8`, the chain pop's sound commands | `--round 1-24`, 120 seconds | 9 rounds differ | All 24: `L_4617+0x12` reads `DATA_46AA+7` |
+
+So reads caught 15 rounds that every sample of the screen missed. Why a wrong sound command changed
+the screen on the other 9 was not followed.
+
+### What no run read
+
+`python tools\unread.py DIR...` counts the `.incbin` bytes no run read, leaving out the ROM sums. Over
+414 logs (the 86 replays in `build\romreads\` and the 328 runs above):
+
+| Image | `.incbin` bytes | Read | Unread | Unread 00 or FF |
+|---|---|---|---|---|
+| `fixed` | 4806 | 3901 | 782 | 123 |
+| `bank0` | 2420 | 2174 | 225 | 21 |
+| `bank1` | 16292 | 12076 | 1936 | 2280 |
+| `bank2` | 3751 | 2574 | 249 | 928 |
+| `bank3` | 16318 | 5590 | 41 | 10687 |
+
+A pointer in these bytes would pass every run, so they were searched two ways. 107 unread pairs equal
+a label's address. Those looked at are chance: text, and the unread end of `DEMO_INPUT_LISTS`, which
+is most of `bank1`'s, are input and characters and not addresses. Not every one was read by hand.
+
+The second search found a real one. Every run of `.word` lines that stops at an `.incbin` was checked
+for going on with labels, and `L_61F4`, `BUBBLE_DRIFT`'s table, did: 7 entries were declared, and 9 more
+`L_61B4` were left as bytes at `6202`. The index is a 4-bit cell, so the table has 16 entries. Every
+round's grid, the attract and secret layouts and all 16 edge patterns hold only cells 0-4, so these
+entries are never reached, which is why no run could show them. They are `.word` now
+(`--table 61F4:16`). No other table in the five images went on like this. With that change the build
+is still byte-exact, all 16 entries move in the moved set, and `--round 1-100 --reads`, 180 seconds,
+passes 100 of 100. The other runs above were made just before it and were not repeated.
 
 ## The rule
 

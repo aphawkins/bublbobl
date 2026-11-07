@@ -3,6 +3,7 @@
 Usage: python tools/reloc.py IMAGE [IMAGE...] [--pad N] [--seconds N] [--seed N] [--no-run]
                              [--scenario NAME] [--round N|N-M] [--special K|K-L] [--clear]
                              [--special-player N] [--boss-hits N] [--boss-pop] [--jobs N]
+                             [--reads] [--break LABEL]
        python tools/reloc.py --list
 
 For each IMAGE this copies its source to build/reloc/src/, puts N bytes of padding after the
@@ -27,10 +28,19 @@ round, never took its item or never entered the room is a failure, and a pair th
 only its logs. --special-player 2, with --scenario game2p, puts player 2 on the item, and a run in
 which player 2 never took one is a failure too.
 
+--reads, with main, also logs every ROM address the main CPU reads as data, and which instruction
+reads it, on both sets. Each is turned into a label and a distance past it, through each set's link
+symbols, and the two lists must be the same. A pointer left as a number reads the wrong bytes even
+if no sampled screen shows it. The ROM sums' reads are left out: they walk the ROM by number.
+
+--break LABEL, with main, puts this label's uses back as the number it has in the byte-exact build,
+in both sets: right at pad 0 and wrong once moved. It is the negative control for all of this.
+
 A moved ROM has the wrong CRC, which is the point: MAME's warning is expected.
 """
 
 import argparse
+import bisect
 import concurrent.futures
 import random
 import re
@@ -120,6 +130,11 @@ CHEAT_PCS = {"round": ("fixed", 0x1DCD), "boss": ("fixed", 0x0D50), "pop": ("ban
              "pick": ("bank2", 0x85EB), "pick_item": ("bank2", 0x863A), "pick_end": ("bank2", 0x8667)}
 SECRET_DOORS = (0x31, 0x32, 0x33)  # the special kinds that open the secret room
 SECRET_ROUND = 0x65  # ROUND_MAIN in the room
+# the loop of each ROM sum: `ld a,(de)` walks the ROM by number from a cursor in RAM, so it reads
+# other bytes once the code moves. It is the one instruction --reads leaves out.
+SUM_LOOP = re.compile(r"^(L_\w+):.*\n +ld +de,\(0x\w+\)\n +ld +a,\(de\)\n +ld +hl,0x\w+\n +add +a,\(hl\)", re.M)
+SUM_LOOP_READ = 4  # how far past the label that `ld a,(de)` is
+READS_SHOWN = 12  # of the reads that differ, how many to print
 
 
 def moved_source(cfg: dict, pad: int) -> str:
@@ -177,7 +192,12 @@ def constant_time(site: re.Match) -> str:
     return call + "        nop\n" * (3 if jump == "jp" else 2)
 
 
-def moved_main(image: str, pad: int) -> str:
+def break_label(text: str, label: str, value: int) -> str:
+    """Every use of `label` as a number, and the label itself left where it is."""
+    return re.sub(rf"\b{label}\b(?!:)", f"0x{value:04X}", text)
+
+
+def moved_main(image: str, pad: int, broken: tuple[str, int] | None = None) -> str:
     """One main image's source with its pads added, its cut taken and its ROM sums made to pass."""
     cfg = MAIN_LAYOUT[image]
     src = (ROOT / "src" / "main" / f"{image}.s").read_text(encoding="utf-8").split("\n")
@@ -204,7 +224,7 @@ def moved_main(image: str, pad: int) -> str:
         text, sites = CARRY_SITE.subn(constant_time, text)
         if sites != CARRY_SITES:
             raise SystemExit(f"found {sites} carry sites, expected {CARRY_SITES}")
-    return text
+    return break_label(text, *broken) if broken else text
 
 
 def neutral_sums(text: str) -> tuple[str, int]:
@@ -213,12 +233,12 @@ def neutral_sums(text: str) -> tuple[str, int]:
     return SUM_END.subn(lambda m: m[1] + m[4] + m[3] + m[4] + m[5], text)
 
 
-def build_main(pad: int, roms: Path) -> None:
+def build_main(pad: int, roms: Path, broken: tuple[str, int] | None = None) -> None:
     total = 0
     for image in MAIN_LAYOUT:
         path = OUT / "src" / "main" / f"{image}.s"
         path.parent.mkdir(parents=True, exist_ok=True)
-        text, n = neutral_sums(moved_main(image, pad))
+        text, n = neutral_sums(moved_main(image, pad, broken))
         total += n
         path.write_text(text, encoding="utf-8", newline="\n")
     if total != ROM_SUMS:
@@ -253,14 +273,16 @@ def balance(data: bytearray, at: int, kind: str) -> None:
         data[at:at + 2] = (-total & 0xFFFF).to_bytes(2, "big")
 
 
+def symbols(obj_dir: str, image: str) -> dict[str, int]:
+    """One main image's labels, as a build left them."""
+    src = f"main/{image}.s"
+    tool = f"{build.binutils_dir()}/{build.SOURCES[src][1]}/bin/{build.SOURCES[src][0]}-"
+    return build.read_symbols(tool, f"{obj_dir}/main_{image}", build.SOURCES[src][3])[0]
+
+
 def cheat_pcs() -> dict[str, int]:
     """Where the last main build put the code tools/cheats.lua waits for: the same distance past
     the same label as in the byte-exact build."""
-    def symbols(obj_dir: str, image: str) -> dict[str, int]:
-        src = f"main/{image}.s"
-        tool = f"{build.binutils_dir()}/{build.SOURCES[src][1]}/bin/{build.SOURCES[src][0]}-"
-        return build.read_symbols(tool, f"{obj_dir}/main_{image}", build.SOURCES[src][3])[0]
-
     pcs = {}
     for name, (image, pc) in CHEAT_PCS.items():
         old = symbols("build/obj", image)
@@ -269,7 +291,58 @@ def cheat_pcs() -> dict[str, int]:
     return pcs
 
 
-def build_moved(names: list[str], pad: int, folder: str = "roms") -> Path:
+def link_map() -> dict[str, list[tuple[int, str]]]:
+    """The last main build's labels, in address order, for each image. A label that shares its
+    address with another comes down to the last by name, so a pad of 0 must not count."""
+    found = {}
+    for image in MAIN_LAYOUT:
+        names = symbols("build/reloc/obj", image)
+        taken = {a for n, a in names.items() if not n.startswith("RELOC_PAD")}
+        found[image] = sorted((a, n) for n, a in names.items() if not (n.startswith("RELOC_PAD") and a in taken))
+    return found
+
+
+def place(labels: dict[str, list[tuple[int, str]]], page: int, addr: int) -> tuple[str, int]:
+    """An address as (label, distance past it), which is the same in both sets."""
+    if addr >= 0xC000 or (addr >= 0x8000 and page > 3):
+        return ("number", addr)
+    table = labels["fixed" if addr < 0x8000 else f"bank{page}"]
+    i = bisect.bisect_right(table, (addr, "~")) - 1
+    return (table[i][1], addr - table[i][0]) if i >= 0 else ("number", addr)
+
+
+def sum_loops() -> set[tuple[str, int]]:
+    """The instruction in each ROM sum that reads the ROM, as a place."""
+    text = "".join((ROOT / "src" / "main" / f"{image}.s").read_text(encoding="utf-8") for image in MAIN_LAYOUT)
+    return {(label, SUM_LOOP_READ) for label in SUM_LOOP.findall(text)}
+
+
+def read_list(path: Path, labels: dict) -> set[tuple]:
+    """A run's reads as places, (what was read, what read it), without the ROM sums'."""
+    found = set()
+    for line in path.read_text().split("\n"):
+        if line:
+            page, addr, pc = line.split(",")
+            found.add((place(labels, int(page), int(addr, 16)), place(labels, int(page), int(pc, 16))))
+    loops = sum_loops()
+    return {r for r in found if r[1] not in loops}
+
+
+def compare_reads(base: Path, moved: Path, maps: tuple[dict, dict]) -> bool:
+    """Every data read on one set must be on the other, at the same place."""
+    a = read_list(base.parent / "reads.csv", maps[0])
+    b = read_list(moved.parent / "reads.csv", maps[1])
+    if a == b:
+        print(f"Same {len(a)} data reads")
+        return True
+    for name, only in (("reference", a - b), ("moved", b - a)):
+        print(f"{len(only)} of the data reads are only on the {name} set")
+        for read, reader in sorted(only, key=str)[:READS_SHOWN]:
+            print(f"  {read[0]}+{read[1]:#x} by {reader[0]}+{reader[1]:#x}")
+    return False
+
+
+def build_moved(names: list[str], pad: int, folder: str = "roms", broken: tuple[str, int] | None = None) -> Path:
     """Write the full set to build/reloc/<folder>/bublbobl/ with these images moved."""
     roms = OUT / folder / "bublbobl"
     roms.mkdir(parents=True, exist_ok=True)
@@ -277,7 +350,7 @@ def build_moved(names: list[str], pad: int, folder: str = "roms") -> Path:
         shutil.copy(f, roms / f.name)
     for name in names:
         if name == "main":
-            build_main(pad, roms)
+            build_main(pad, roms, broken)
             continue
         cfg = IMAGES[name]
         path = OUT / "src" / cfg["source"]
@@ -327,7 +400,7 @@ def run_limited(argv: list[str], cwd: Path, folder: Path) -> None:
 
 
 def run_mame(label: str, rompath: Path, events: list[dict], frames: int, cheats: dict | None = None,
-             dips: dict | None = None) -> Path:
+             dips: dict | None = None, reads: bool = False) -> Path:
     folder = OUT / label
     if folder.exists():
         shutil.rmtree(folder)
@@ -338,6 +411,8 @@ def run_mame(label: str, rompath: Path, events: list[dict], frames: int, cheats:
     cfg = {"out": str(samples), "rounds": str(folder / "rounds.txt"), "items": str(folder / "items.txt"),
            "reset": str(folder / "reset"),
            "frames": frames, "every": EVERY, "events": events, **(cheats or {})}
+    if reads:
+        cfg["reads"] = str(folder / "reads.csv")
     script = folder / "run.lua"
     lua = (ROOT / "tools" / "cheats.lua").read_text() + "\n" if cheats else ""
     script.write_text("CFG = " + trace.lua_value(cfg) + "\n\n" + lua
@@ -459,7 +534,7 @@ def items_taken(samples: Path) -> list[str]:
 
 
 def run_cases(cases: list[tuple[int, int]], reference: Path, rompath: Path, cheats: dict, pcs: tuple,
-              play: tuple, jobs: int) -> bool:
+              play: tuple, jobs: int, maps: tuple | None = None) -> bool:
     """The same game for each (round, special kind), on both sets, `jobs` runs at a time."""
     events, frames, dips = play
     start = min(e["f"] for e in events if e["field"].startswith("Coin"))
@@ -470,8 +545,8 @@ def run_cases(cases: list[tuple[int, int]], reference: Path, rompath: Path, chea
 
     def pair(case: tuple[int, int]) -> tuple[Path, Path]:
         chosen = {**cheats, "round": case[0], "special": case[1]}
-        return (run_mame(f"{name(case)}/base", reference, events, frames, {**chosen, "pc": pcs[0]}, dips),
-                run_mame(f"{name(case)}/moved", rompath, events, frames, {**chosen, "pc": pcs[1]}, dips))
+        return (run_mame(f"{name(case)}/base", reference, events, frames, {**chosen, "pc": pcs[0]}, dips, bool(maps)),
+                run_mame(f"{name(case)}/moved", rompath, events, frames, {**chosen, "pc": pcs[1]}, dips, bool(maps)))
 
     failed = []
     with concurrent.futures.ThreadPoolExecutor(jobs) as pool:
@@ -488,6 +563,8 @@ def run_cases(cases: list[tuple[int, int]], reference: Path, rompath: Path, chea
                 continue
             played = [reached(s, start) for s in (base, moved)]
             ok = compare(base, moved)
+            if maps and not compare_reads(base, moved, maps):
+                ok = False
             if played[0] != played[1]:
                 print(f"  DIFFERENT rounds: {played[0]} and {played[1]}")
                 ok = False
@@ -539,6 +616,8 @@ def main() -> int:
     ap.add_argument("--boss-hits", type=int, default=0, help="with --round: hits the round 100 boss has taken")
     ap.add_argument("--boss-pop", action="store_true", help="with --round: the boss's bubble pops at once")
     ap.add_argument("--jobs", type=int, default=8, help="with --round: MAME runs at a time")
+    ap.add_argument("--reads", action="store_true", help="with main: the data reads must match too")
+    ap.add_argument("--break", dest="broken", metavar="LABEL", help="with main: this label's uses become its number")
     args = ap.parse_args()
     if args.list or not args.images:
         print("\n".join([*IMAGES, "main"]))
@@ -548,10 +627,20 @@ def main() -> int:
             raise SystemExit(f"no image {name}: try --list")
     # main is compared with itself unmoved, as its sets have the constant sites: see CARRY_SITE
     moves_main = "main" in args.images
-    reference = build_moved(["main"], 0, "ref_roms") if moves_main else ROOT / "build" / "roms"
+    if (args.reads or args.broken) and not moves_main:
+        raise SystemExit("--reads and --break need main")
+    broken = None
+    if args.broken:
+        image = next((i for i in MAIN_LAYOUT if args.broken in symbols("build/obj", i)), None)
+        if image is None:
+            raise SystemExit(f"no label {args.broken}")
+        broken = (args.broken, symbols("build/obj", image)[args.broken])
+    reference = build_moved(["main"], 0, "ref_roms", broken) if moves_main else ROOT / "build" / "roms"
     base_pcs = cheat_pcs() if moves_main else {name: pc for name, (_, pc) in CHEAT_PCS.items()}
-    rompath = build_moved(args.images, args.pad)
+    base_map = link_map() if args.reads else None
+    rompath = build_moved(args.images, args.pad, broken=broken)
     moved_pcs = cheat_pcs() if moves_main else base_pcs
+    maps = (base_map, link_map()) if args.reads else None
     if args.no_run:
         return 0
     ok = True
@@ -563,11 +652,12 @@ def main() -> int:
         cases = [(n, kind) for n in args.round or [1] for kind in args.special or [0]]
         cheats = {"boss_hits": args.boss_hits, "boss_pop": args.boss_pop, "clear": args.clear,
                   "special_player": args.special_player}
-        return 0 if run_cases(cases, reference, rompath, cheats, (base_pcs, moved_pcs), play, args.jobs) and ok else 1
+        return 0 if run_cases(cases, reference, rompath, cheats, (base_pcs, moved_pcs), play, args.jobs, maps) and ok else 1
     events, frames, dips = play
-    base = run_mame("base", reference, events, frames, dips=dips)
-    moved = run_mame("moved", rompath, events, frames, dips=dips)
-    return 0 if compare(base, moved) and ok else 1
+    base = run_mame("base", reference, events, frames, dips=dips, reads=args.reads)
+    moved = run_mame("moved", rompath, events, frames, dips=dips, reads=args.reads)
+    ok = compare(base, moved) and ok
+    return 0 if (compare_reads(base, moved, maps) if maps else True) and ok else 1
 
 
 if __name__ == "__main__":

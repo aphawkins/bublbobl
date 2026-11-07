@@ -12260,7 +12260,7 @@ L_616A:                 ; 616A
         djnz    L_616A
         ret
 
-; one pixel by the bubble's cell (IX+0A): 0-1 up (Y+1), 2 right, 3 left, 4 down, 5-6 stay; re-reads the cell on an 8-pixel boundary (61E4)
+; one pixel by the bubble's cell (IX+0A), through 16 entries at L_61F4: 0-1 up (Y+1), 2 right, 3 left, 4 down, 5-6 stay, 7-F up; re-reads the cell on an 8-pixel boundary (61E4)
 BUBBLE_DRIFT:           ; 6175
         ld      a,(ix+10)
         ld      hl,L_61F4
@@ -12342,7 +12342,15 @@ L_61F4:                 ; 61F4
         .word   L_61CC
         .word   L_61E3
         .word   L_61E3
-        .incbin "main_fixed.bin", 0x6202, 0x0012
+        .word   L_61B4
+        .word   L_61B4
+        .word   L_61B4
+        .word   L_61B4
+        .word   L_61B4
+        .word   L_61B4
+        .word   L_61B4
+        .word   L_61B4
+        .word   L_61B4
 ; (IX+13) = the byte at 622A + SPEED2_SEL, plus R & 7; (IX+12) = 1
 RAND_TIMER_SET:         ; 6214
         ld      a,(SPEED2_SEL)

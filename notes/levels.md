@@ -23,8 +23,8 @@ The game reads cells through `GRID_CELL` (`174B`: object X in H, Y in L), and ob
 probes the cells around a sprite with it, so the grid is also the collision map. It is also
 the air current. `BUBBLE_DRIFT` (`6175`) moves a floating bubble one pixel by the value of
 its cell (`IX+0A`), through the table at `61F4`: 0 and 1 add 1 to Y (up the screen), 2 adds
-1 to X, 3 takes 1 from X, 4 takes 1 from Y. 5 and 6 would leave it still, but no layout uses
-them. A bubble reads its cell again (`61E4`) only when it reaches an 8-pixel boundary in the
+1 to X, 3 takes 1 from X, 4 takes 1 from Y. 5 and 6 would leave it still and 7 to F are the same
+as 0, but no layout uses them. A bubble reads its cell again (`61E4`) only when it reaches an 8-pixel boundary in the
 direction it is moving. `BUBBLE_SPEED` (`6144`) decides how many pixels a frame, from the
 speed pattern that record byte 9 selects (below). In round 1, rows 5–8 are 2 on the left, 3
 on the right and 4 in the middle, so the bubbles gather under the ceiling in the centre.
