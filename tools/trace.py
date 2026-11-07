@@ -163,6 +163,17 @@ def scenario(name, seconds, seed):
         return ev, 30, False, MODE_TEST_GRID
     if name == "testram":
         return ev, 60, False, MODE_TEST_RAM
+    if name == "testsound":
+        # Start leaves the grid for the inputs screen. TEST_SOUND_SELECT then steps its number
+        # once every 0x3C frames that Left or Right is held, and Start plays it.
+        f = 5 * FPS
+        press(ev, f, ":IN1", "1 Player Start", 30)
+        f += 2 * FPS
+        for side in ["P1 Left"] * 0x36 + ["P1 Right"] * 4:
+            press(ev, f, ":IN1", side, 0x3C)
+            press(ev, f + 0x3C + 4, ":IN1", "1 Player Start", 6)
+            f += 0x3C + 40
+        return ev, f // FPS + 5, False, MODE_TEST_GRID
     if name == "play":
         return ev, 0, True, {}
     raise SystemExit(f"unknown scenario {name!r}; try --list")
@@ -176,6 +187,7 @@ SCENARIOS = {
     "super1p": "the super mode code on the title, coin, 1P start, super mode, random play (120 s)",
     "testgrid": "DSW mode 'Test (Grid and Inputs)', every input pressed in turn (30 s)",
     "testram": "DSW mode 'Test (RAM and Sound)/Pause' (60 s)",
+    "testsound": "DSW mode 'Test (Grid and Inputs)', every number on the sound picker played (about 110 s)",
     "play": "record your own play in a MAME window, then trace the replay",
 }
 

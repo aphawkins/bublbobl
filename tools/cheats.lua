@@ -16,7 +16,8 @@ local cpu = manager.machine.devices[":maincpu"]
 local curpc = cpu.state["CURPC"]
 local space = cpu.spaces["program"]
 -- Where the code the taps below wait for is. tools/reloc.py moves it, and gives its addresses here.
-local PC = CFG.pc or {round = 0x1DCD, boss = 0x0D50, pop = 0xA972}
+local PC = CFG.pc or {round = 0x1DCD, boss = 0x0D50, pop = 0xA972,
+                     pick = 0x85EB, pick_item = 0x863A, pick_end = 0x8667}
 
 -- Keep the taps referenced: the garbage collector would remove them.
 if CFG.round and CFG.round > 1 then
@@ -50,12 +51,12 @@ end
 -- SPECIAL_TAKE runs. Kind 0E is the exception: it sets F513 = FF (as SPECIAL_PICK does at
 -- 864C), and player 1 is put on F513's own item when it shows (F514 b0).
 if CFG.special and CFG.special > 0 then
-  local in_pick = function() local pc = curpc.value; return pc >= 0x85EB and pc < 0x8667 end
+  local in_pick = function() local pc = curpc.value; return pc >= PC.pick and pc < PC.pick_end end
   CHEAT_SPECIAL_KIND = space:install_write_tap(0xF45E, 0xF45E, "cheat_special_kind",
     function(offset, data, mask) if in_pick() then return CFG.special end end)
   CHEAT_SPECIAL_STATE = space:install_write_tap(0xF45F, 0xF45F, "cheat_special_state",
     function(offset, data, mask)
-      if curpc.value == 0x863A and data & 0x08 ~= 0 then
+      if curpc.value == PC.pick_item and data & 0x08 ~= 0 then
         if CFG.special == 0x0E then  -- kind 0E has no normal item: SPECIAL_PICK starts F513 instead
           space:write_u8(0xF513, 0xFF)
           return

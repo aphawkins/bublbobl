@@ -10,9 +10,10 @@ plays the same inputs on the byte-exact set and the moved set. Every sampled scr
 time. Two broken sub ROMs and a broken sound ROM were tried, and each was caught.
 
 The test only proves what the run reaches. `--round` (below) starts the game on any round, so all
-100 have been played, but by random play, which loses its lives soon, and not in test mode or with
-two players. For the sub CPU and the MCU the reading of the code covers the rest, as they hold few
-pointers.
+100 have been played, by one player and by two, and `--scenario` and `--special` reach test mode,
+the super mode, the Japanese notice, every special item and the secret rooms. All of that is random
+play, which loses its lives soon. For the sub CPU and the MCU the reading of the code covers the
+rest, as they hold few pointers.
 
 ## Sub CPU, MCU and sound
 
@@ -69,6 +70,60 @@ differences, and used `ld a,i`:
 | Pads 2 and 16, seed 1 | Pass, with 1 short difference: frames 8520-8550. The race below |
 | `RELOC_CELL` taken out, pad 8, seed 1 | Fails: frames 15555-15735 and 15810-16710 |
 | The same pointer broken, under the 60 frame rule, 120 seconds | Fails: frames 3750-5175 |
+
+Checks of 2026-11-07 of the paths the random game does not reach, main moved, all passing unless noted:
+
+| Check | Result |
+|---|---|
+| `--scenario testgrid`, pad 8 | Same on all 120 samples |
+| `--scenario testsound`, pads 8 and 3: the sound picker stepped up 0x36 times and down 4, each number played | Same on all 432 samples |
+| `--scenario testram`, pad 8, 6 runs | Same on all 240 samples in 5. MAME crashed in the sixth (below) |
+| `--scenario japanese`, pad 8 | Same on all 600 samples |
+| `--scenario super1p`, pad 8, 180 seconds | Same on all 720 samples |
+| `--scenario game2p`, pad 8 seed 1 and pad 3 seed 2, 300 seconds | Same on all 1200 samples |
+| `--scenario game2p --round 1-100`, pad 8, 180 seconds | Same on every sample, all 100 rounds |
+| `--scenario game2p --round 100 --boss-hits 80 --boss-pop`, 300 seconds | Same on all 1200 samples; went on to `ROUND_MAIN` 0x64 |
+| `--special 1-0x35`, pad 8, seed 1, 120 seconds | 53 of 53 |
+| `--special 1-0x35`, pad 8, seed 2, 240 seconds | 53 of 53; in 52 the item is taken at frame 4740, so about 200 seconds of play follow |
+| `--special 0x1E-0x28 --clear`, pad 8, 120 seconds | 11 of 11 |
+| Kinds 31, 32, 33 in that 240 second run | Each entered the secret room three times and left it each time |
+
+A special run fails if its item never showed and went, and a door's if it never reached the room.
+The item is on screen for one frame, as the cheat puts player 1 on it. In the first special run the
+item came at frame 6649 of 7200, so that run leaves only 9 seconds for its effect: hence the second.
+
+Negative controls, each a label put back as its number, so right at pad 0 and wrong once moved:
+
+| Broken | Run | Result |
+|---|---|---|
+| `B2_DATA_830C`, the test screen's input table | `--scenario testgrid` | Caught: 68 of 120 samples, frames 795-1800 |
+| The same | The one-player game, 120 seconds | Not caught: same on all 480 samples |
+| `SPECIAL_EFFECTS` | `--special 2` | Caught: 37 of 480 samples, and the rounds played differ |
+| `DATA_55BB`, the secret room's colours | `--special 0x31` | Caught: 31 of 480 samples |
+
+## The RAM test and MAME's renderer
+
+In `testram` the same set gave different pictures from run to run, at frames 150 and 300 on the
+reference set (2598 and 342 pixels, in one column of objects), with every byte of RAM the same. The
+byte-exact set did not vary in 3 runs. Some runs also ended early, and one that was caught exited
+with `0xC0000005`, an access violation in MAME. So the machine was not what varied.
+
+The RAM test fills object RAM with its patterns, such as `FF FF FF FF`. In `bublbobl_v.cpp`
+`gfx_offs` plus the tile offset reaches `0x1FFF`, and `m_videoram` is `0x1D00` bytes, so `gfx_num`
+BA-BF and FA-FF read past its end, into MAME's heap. These values were found from the PROM with the
+driver's loop. Not every frame with such an object varied, so this explains the crash and the
+variation but it was not shown pixel by pixel; the evidence is what happened when it was taken out.
+`reloc.lua` now writes video, object and palette RAM (`C000-DFFF`, `F800-F9FF`) in place of any
+sample with such an object on screen. These compare the same in every run; they hold no pointers.
+In `testram` that is 231 of 240 samples, and no other scenario has one.
+
+The crash stays. In 60 boots of each set in this DIP mode, 320 frames each, it came 2 times on the
+moved set, once on the reference set, whose code has not moved, and never on the byte-exact set. So
+moving code is not needed for it, but these counts are too small to say more, and why the byte-exact
+set showed neither the crash nor the variation is not known: the constant sites change the test's
+timing, which may be why. That the read past the buffer is what crashes is inferred from the exit
+code, not seen in a debugger. `reloc.py` reports MAME's exit code as a failure, so run `testram`
+again if the code is `0xC0000005`. This has not been reported to MAME.
 
 What the work found:
 
@@ -138,4 +193,5 @@ in the code, not a proof: a pointer half read from a data table would not show.
 ## The rule
 
 Every sample must match, for every image. The 60 frame allowance has gone: with the race out of the
-test it could only hide faults, as the broken pointer above showed.
+test it could only hide faults, as the broken pointer above showed. A sample with an object that
+MAME draws from outside video RAM is compared as RAM, not as a picture.

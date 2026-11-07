@@ -1,7 +1,8 @@
 """The relocation test (notes/relocation.md): does the source still work when its code moves?
 
 Usage: python tools/reloc.py IMAGE [IMAGE...] [--pad N] [--seconds N] [--seed N] [--no-run]
-                             [--round N|N-M] [--boss-hits N] [--boss-pop] [--jobs N]
+                             [--scenario NAME] [--round N|N-M] [--special K|K-L] [--clear]
+                             [--boss-hits N] [--boss-pop] [--jobs N]
        python tools/reloc.py --list
 
 For each IMAGE this copies its source to build/reloc/src/, puts N bytes of padding after the
@@ -16,9 +17,14 @@ the sites in CARRY_SITE made constant (notes/relocation.md). Every sample that d
 reported, and the pictures of the first are written beside the moved run's samples. A machine
 reset during a run is a failure.
 
+--scenario plays one of tools/trace.py's scenarios instead of the one-player game: game2p,
+testgrid, testram, testsound and so on, with their DIP switches.
+
 --round runs that game on each round asked for, through tools/cheats.lua, side by side in
-build/reloc/rounds/. A run that never reached its round is a failure, and a pair that passes
-keeps only its logs.
+build/reloc/rounds/. --special does the same for each special item kind, on each --round, in
+build/reloc/specials/; kinds 31-33 are the secret room's doors. A run that never reached its
+round, never took its item or never entered the room is a failure, and a pair that passes keeps
+only its logs.
 
 A moved ROM has the wrong CRC, which is the point: MAME's warning is expected.
 """
@@ -109,7 +115,10 @@ IDLE = 0x01ED  # where tools/soundlog.lua parks the main CPU; the first pad come
 SOUND_COMMANDS = [c for c in (*range(0x01, 0x35), 0xF2, 0xF4, 0xF6, 0xF8) if c != 0x2E]
 SOUND_GAP = 900
 # what tools/cheats.lua waits for, in the byte-exact build
-CHEAT_PCS = {"round": ("fixed", 0x1DCD), "boss": ("fixed", 0x0D50), "pop": ("bank0", 0xA972)}
+CHEAT_PCS = {"round": ("fixed", 0x1DCD), "boss": ("fixed", 0x0D50), "pop": ("bank0", 0xA972),
+             "pick": ("bank2", 0x85EB), "pick_item": ("bank2", 0x863A), "pick_end": ("bank2", 0x8667)}
+SECRET_DOORS = (0x31, 0x32, 0x33)  # the special kinds that open the secret room
+SECRET_ROUND = 0x65  # ROUND_MAIN in the room
 
 
 def moved_source(cfg: dict, pad: int) -> str:
@@ -297,22 +306,36 @@ def scenario(seconds: int, seed: int) -> tuple[list[dict], int]:
     return sorted(events, key=lambda e: e["f"]), frames
 
 
+def chosen_play(name: str | None, seconds: int | None, seed: int) -> tuple[list[dict], int, dict]:
+    """The game to play, as (events, frames, DIP switches): --scenario's, or the default."""
+    if name is None:
+        return *scenario(seconds or 120, seed), {}
+    events, default, _, dips = trace.scenario(name, seconds, seed)
+    return sorted(events, key=lambda e: e["f"]), (seconds or default) * trace.FPS, dips
+
+
 def run_limited(argv: list[str], cwd: Path, folder: Path) -> None:
     """Run MAME, and stop if it outlasts MAME_LIMIT: a moved set that hangs is a failure."""
     try:
         result = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, timeout=MAME_LIMIT)
     except subprocess.TimeoutExpired:
         raise SystemExit(f"{folder.name}: MAME still running after {MAME_LIMIT} seconds") from None
-    (folder / "mame.log").write_text(result.stdout + result.stderr)
+    (folder / "mame.log").write_text(f"{result.stdout}{result.stderr}\nexit code {result.returncode}\n")
+    if result.returncode:
+        raise SystemExit(f"{folder.name}: MAME stopped with exit code {result.returncode:#x}")
 
 
-def run_mame(label: str, rompath: Path, events: list[dict], frames: int, cheats: dict | None = None) -> Path:
+def run_mame(label: str, rompath: Path, events: list[dict], frames: int, cheats: dict | None = None,
+             dips: dict | None = None) -> Path:
     folder = OUT / label
     if folder.exists():
         shutil.rmtree(folder)
     folder.mkdir(parents=True)
     samples = folder / "screen.bin"
-    cfg = {"out": str(samples), "rounds": str(folder / "rounds.txt"), "reset": str(folder / "reset"),
+    if dips:
+        trace.write_cfg(folder / "cfg", dips)
+    cfg = {"out": str(samples), "rounds": str(folder / "rounds.txt"), "items": str(folder / "items.txt"),
+           "reset": str(folder / "reset"),
            "frames": frames, "every": EVERY, "events": events, **(cheats or {})}
     script = folder / "run.lua"
     lua = (ROOT / "tools" / "cheats.lua").read_text() + "\n" if cheats else ""
@@ -397,16 +420,28 @@ def compare(base: Path, moved: Path) -> bool:
         print(f"DIFFERENT lengths: {len(a) // SCREEN} and {len(b) // SCREEN} samples")
         return False
     if not differs:
-        print(f"Same screen on all {count} samples, every {EVERY} frames")
+        samples = [a[i * SCREEN:(i + 1) * SCREEN] for i in range(count)]
+        ram = [s for s in samples if s[-1] == 0]  # a picture's last byte is alpha, FF; see reloc.lua
+        print(f"Same screen on all {count} samples, every {EVERY} frames "
+              f"({len(set(samples) - set(ram))} different pictures; {len(ram)} samples of video RAM instead, "
+              f"{len(set(ram))} different)")
     return not differs
 
 
-def round_list(text: str) -> list[int]:
+def number_list(text: str, low: int, high: int, name: str) -> list[int]:
     first, _, last = text.partition("-")
-    rounds = list(range(int(first), int(last or first) + 1))
-    if not rounds or not 1 <= rounds[0] <= rounds[-1] <= 100:
-        raise SystemExit("--round must be 1-100")
-    return rounds
+    numbers = list(range(int(first, 0), int(last or first, 0) + 1))
+    if not numbers or not low <= numbers[0] <= numbers[-1] <= high:
+        raise SystemExit(f"{name} must be within {low:#x}-{high:#x}")
+    return numbers
+
+
+def round_list(text: str) -> list[int]:
+    return number_list(text, 1, 100, "--round")
+
+
+def special_list(text: str) -> list[int]:
+    return number_list(text, 1, 0x35, "--special")
 
 
 def reached(samples: Path, start: int) -> list[int]:
@@ -417,28 +452,38 @@ def reached(samples: Path, start: int) -> list[int]:
     return held + [value for frame, value in pairs if frame >= start]
 
 
-def run_rounds(rounds: list[int], reference: Path, rompath: Path, cheats: dict, pcs: tuple,
-               seconds: int, seed: int, jobs: int) -> bool:
-    """The same game on each round, on both sets, `jobs` runs at a time."""
-    events, frames = scenario(seconds, seed)
-    start = min(frames // 3, 2400)
+def items_taken(samples: Path) -> list[str]:
+    """Each time the special item showed and went, as "shown-gone" in frames."""
+    return [line.replace(" ", "-") for line in (samples.parent / "items.txt").read_text().split("\n") if line]
 
-    def pair(n: int) -> tuple[Path, Path]:
-        chosen = {**cheats, "round": n}
-        return (run_mame(f"rounds/{n:03}/base", reference, events, frames, {**chosen, "pc": pcs[0]}),
-                run_mame(f"rounds/{n:03}/moved", rompath, events, frames, {**chosen, "pc": pcs[1]}))
+
+def run_cases(cases: list[tuple[int, int]], reference: Path, rompath: Path, cheats: dict, pcs: tuple,
+              play: tuple, jobs: int) -> bool:
+    """The same game for each (round, special kind), on both sets, `jobs` runs at a time."""
+    events, frames, dips = play
+    start = min(e["f"] for e in events if e["field"].startswith("Coin"))
+
+    def name(case: tuple[int, int]) -> str:
+        n, kind = case
+        return f"specials/{kind:02X}_{n:03}" if kind else f"rounds/{n:03}"
+
+    def pair(case: tuple[int, int]) -> tuple[Path, Path]:
+        chosen = {**cheats, "round": case[0], "special": case[1]}
+        return (run_mame(f"{name(case)}/base", reference, events, frames, {**chosen, "pc": pcs[0]}, dips),
+                run_mame(f"{name(case)}/moved", rompath, events, frames, {**chosen, "pc": pcs[1]}, dips))
 
     failed = []
     with concurrent.futures.ThreadPoolExecutor(jobs) as pool:
-        running = {pool.submit(pair, n): n for n in rounds}
+        running = {pool.submit(pair, case): case for case in cases}
         for done in concurrent.futures.as_completed(running):
-            n = running[done]
-            print(f"Round {n}:", flush=True)
+            case = running[done]
+            n, kind = case
+            print(f"Round {n}" + (f", special {kind:02X}:" if kind else ":"), flush=True)
             try:
                 base, moved = done.result()
             except SystemExit as stop:
                 print(f"  FAILED: {stop}")
-                failed.append(n)
+                failed.append(case)
                 continue
             played = [reached(s, start) for s in (base, moved)]
             ok = compare(base, moved)
@@ -449,12 +494,24 @@ def run_rounds(rounds: list[int], reference: Path, rompath: Path, cheats: dict, 
                 print(f"  NOT REACHED: ROUND_MAIN took {played[0]}")
                 ok = False
             print(f"  played {[v + 1 for v in played[0]]}", flush=True)
+            if kind:
+                taken = [items_taken(s) for s in (base, moved)]
+                print(f"  item shown-gone {taken[0]}", flush=True)
+                if taken[0] != taken[1]:
+                    print(f"  DIFFERENT items: {taken[0]} and {taken[1]}")
+                    ok = False
+                if not taken[0]:
+                    print("  NOT REACHED: the item never showed and went")
+                    ok = False
+                if kind in SECRET_DOORS and SECRET_ROUND not in played[0]:
+                    print("  NOT REACHED: the secret room")
+                    ok = False
             if ok:
                 base.unlink()
                 moved.unlink()
             else:
-                failed.append(n)
-    print(f"{len(rounds) - len(failed)} of {len(rounds)} rounds passed"
+                failed.append(case)
+    print(f"{len(cases) - len(failed)} of {len(cases)} runs passed"
           + (f"; failed: {sorted(failed)}" if failed else ""))
     return not failed
 
@@ -464,10 +521,14 @@ def main() -> int:
     ap.add_argument("images", nargs="*")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--pad", type=int, default=16)
-    ap.add_argument("--seconds", type=int, default=120)
+    ap.add_argument("--seconds", type=int, help="default: 120, or the --scenario's own length")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--no-run", action="store_true", help="build the moved set only")
+    ap.add_argument("--scenario", choices=[n for n in trace.SCENARIOS if n != "play"],
+                    help="play this trace.py scenario instead of the one-player game")
     ap.add_argument("--round", type=round_list, help="start each game on this round, or on each of N-M")
+    ap.add_argument("--special", type=special_list, help="force this special item kind, or each of K-L")
+    ap.add_argument("--clear", action="store_true", help="with --special: the round clears once the item is taken")
     ap.add_argument("--boss-hits", type=int, default=0, help="with --round: hits the round 100 boss has taken")
     ap.add_argument("--boss-pop", action="store_true", help="with --round: the boss's bubble pops at once")
     ap.add_argument("--jobs", type=int, default=8, help="with --round: MAME runs at a time")
@@ -490,13 +551,14 @@ def main() -> int:
     if any(n in IMAGES and IMAGES[n].get("check") == "sound" for n in args.images):
         ok = compare_sound(run_sound("sound_base", reference),
                            run_sound("sound_moved", rompath, IDLE + args.pad if "main" in args.images else IDLE))
-    if args.round:
-        cheats = {"boss_hits": args.boss_hits, "boss_pop": args.boss_pop}
-        return 0 if run_rounds(args.round, reference, rompath, cheats, (base_pcs, moved_pcs), args.seconds,
-                               args.seed, args.jobs) and ok else 1
-    events, frames = scenario(args.seconds, args.seed)
-    base = run_mame("base", reference, events, frames)
-    moved = run_mame("moved", rompath, events, frames)
+    play = chosen_play(args.scenario, args.seconds, args.seed)
+    if args.round or args.special:
+        cases = [(n, kind) for n in args.round or [1] for kind in args.special or [0]]
+        cheats = {"boss_hits": args.boss_hits, "boss_pop": args.boss_pop, "clear": args.clear}
+        return 0 if run_cases(cases, reference, rompath, cheats, (base_pcs, moved_pcs), play, args.jobs) and ok else 1
+    events, frames, dips = play
+    base = run_mame("base", reference, events, frames, dips=dips)
+    moved = run_mame("moved", rompath, events, frames, dips=dips)
     return 0 if compare(base, moved) and ok else 1
 
 
