@@ -75,7 +75,8 @@ all of these out (`PLAN.md` §3.3).
 - At each round's end `DIFFICULTY_BY_MINUTES` raises the difficulty to at least 0F, 14, 19, 1E after
   10, 15, 20 and 25 minutes of play. `ROUND_MILESTONE_FLAGS` sets the door flags (`notes/levels.md`).
 - The HELP!! scene (`HELP_SCENE_RUN`): the captives at rounds 16, 32 .. 96.
-- `JAPAN_NOTICE`: the "for use in Japan only" screen, 12 seconds, only with DSW0 b0 set.
+- `JAPAN_NOTICE`: the "for use in Japan only" screen, 12 seconds, only with DSW0 b0 set (MAME's Mode
+  "Game, Japanese"; `trace.py japanese` runs it).
 - Coins: the main CPU counts coins itself, from `COIN_TABLE` (bank 3 `COIN_TABLES` by `COIN_REGION`),
   and writes `CREDITS`. The coinage DIP order is MAME's.
 
@@ -234,7 +235,8 @@ With every trace merged, `--probe` takes 16 regions that MAME never ran: 7 in th
 bank 0, 1 in bank 2. Each reads as code, not data: unused siblings of named routines
 (`OBJ_STATE_11`, `_14`, `_16`, `_18`-`_1B`, `HEX_BYTE`, `GRID_PROBE_ABOVE3`, marked "never run"),
 enemy mode exits and turn steps in bank 0 (`8CC9`, `8D7D`, `9465`, `948C`, `94AD`, `94DB`, `97EC`,
-`A7B9`), and a player record copy in bank 2 (`AFD8`).
+`A7B9`), and a player record copy in bank 2 (`AFD8`). `VIDEO_RAM_TEST` (`bank2:8024`) was found from
+its strings instead, and has no caller (`notes/text.md`).
 
 ## Read from the code, not seen in MAME
 

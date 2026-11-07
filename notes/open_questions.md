@@ -33,6 +33,9 @@ still differ.
 
 ## Main CPU
 
+- **The runes (`bank2:B8BA`, the secret room plaques in bank 3).** What do the 8 big words and the
+  plaques say? They are pictures, not strings (`notes/text.md`), so it needs reading the glyphs from
+  the art. Nothing in the code depends on it.
 - SWB#7 `F7FE/F7FF` score output, routines `0F26` and `0F74` (from the MAME driver notes).
 - **The boss's one-hit shortcut (`bank0:A948`).** In `BOSS_FIGHT`, if the boss has taken
   exactly one hit (`BOSS_SLOT` +0B = 1), `BOSS_RIGHT_BOUNCES` (`F3CA`) is 7 and a volley is out,

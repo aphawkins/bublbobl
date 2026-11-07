@@ -5,12 +5,13 @@ set -e
 cd "$(dirname "$0")/.."
 python tools/symbols.py > /dev/null
 # entries: the calls OBJECTS_TASK (3DF0) makes into page 2, then the fixed ROM's other
-# calls right after BANK_SELECT 2 (8000 is the test-mode start at 0168)
+# calls right after BANK_SELECT 2 (8000 is the test-mode start at 0168). 8024 has no caller,
+# but it reads as a complete routine
 BANK2_ENTRIES="--entry A59B --entry A2FC --entry 936A --entry 99E2 --entry 96E6 --entry 90DD
   --entry 92B6 --entry A820 --entry 9F76 --entry B9C4 --entry 8BA7 --entry AC80
   --entry 8000 --entry 8CC7 --entry 91A3 --entry 9233 --entry 8DFF --entry 8FA6 --entry 92CF
   --entry 9C7D --entry 9D35 --entry A480 --entry AAC5 --entry ACBA --entry AD98 --entry B18F
-  --entry B77A --entry B9CD"
+  --entry B77A --entry B9CD --entry 8024"
 # bank 0: OBJECTS_TASK calls BF48 after BANK_RESTORE; the fixed ROM's calls into B3xx-B8xx
 # run with page 0 in (B391, B3B5 and B738 seen in MAME; the rest sit in page 0's gaps)
 BANK0_ENTRIES="--entry BF48 --entry B34F --entry B391 --entry B3AF --entry B3B5 --entry B732

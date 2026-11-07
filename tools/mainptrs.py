@@ -110,7 +110,7 @@ TABLES = {
               ("PRINT_TEXTS", 0x3574, 7, 5, 2), ("PLAYER_ANIMS", 0x4584, 12, 8, 5)],
     "bank0": [("ENEMY_SCRIPTS", 0x80C9, 7, 2, 0), ("ENEMY_SCRIPTS", 0x8160, 7, 2, 0)],
     "bank1": [("GRID_EDGES", 0x95AA, 32, 2, 0), ("SECRET_TABLES", 0x9A6A, 14, 2, 0)],
-    "bank2": [("PRINT_TEXTS", 0x819B, 0x16, 5, 2)],
+    "bank2": [("PRINT_TEXTS", 0x819B, 0x17, 5, 2), ("VIDEO_RAM_AREAS", 0x8070, 2, 6, 4)],
 }
 # .word entries in the fixed ROM that point into a bank: value -> bank. Task 3 is ROUND_ENEMIES
 WORDS = {0x85A9: "bank0"}

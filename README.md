@@ -56,7 +56,9 @@ Other tools:
 - `tools/levels.py` — decode the 100 round layouts, `build/levels/round_NNN.json` and `.png`
   plus `rounds.png`, the same in the super mode's palettes (`_super.png`), and the item
   tables (`items.json`); `--check <snap folder>` compares them with RAM snapshots
-- `tools/text.py` — catalogue the strings in the main CPU images, `build/text/strings.csv`
+- `tools/text.py` — catalogue the strings in the main CPU images and who prints them,
+  `build/text/strings.csv` and `prints.csv`; `--check` finds the prints in RAM snapshots.
+  Formats and tables are in `notes/text.md`
 - `tools/reloc.py` — the relocation test: move an image's code, then compare it with the
   byte-exact set in MAME, screen by screen and (for sound) register write by register write.
   The sub CPU, MCU and sound pass; the main CPU passes within what the runs reach

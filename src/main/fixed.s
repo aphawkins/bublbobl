@@ -5056,7 +5056,7 @@ DIFFICULTY_BY_MINUTES:  ; 2355
         jr      c,L_2344
         ret
 
-; ATTRACT_TASK, only when DSW0 b0 is set: the screen cleared, then 0x0D texts from 23AF (NOTICE, THIS GAME IS FOR USE IN JAPAN ONLY ...) for 0x2D0 frames (12 seconds), then CLEAR_ROWS_A
+; Seen in MAME (trace.py japanese). ATTRACT_TASK, only when DSW0 b0 is set (MAME's Mode 'Game, Japanese'): the screen cleared, then 0x0D texts from 23AF (NOTICE, THIS GAME IS FOR USE IN JAPAN ONLY ...) for 0x2D0 frames (12 seconds), then CLEAR_ROWS_A
 JAPAN_NOTICE:           ; 2375
         ld      a,(DSW0_COPY)
         bit     0,a

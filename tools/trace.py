@@ -111,6 +111,7 @@ def write_cfg(folder: Path, dips: dict) -> None:
 
 MODE_TEST_GRID = {(":DSW0", 0x05): (0x04, 0x01)}  # Mode: Game, English -> Test (Grid and Inputs)
 MODE_TEST_RAM = {(":DSW0", 0x05): (0x04, 0x00)}   # -> Test (RAM and Sound)/Pause
+MODE_JAPANESE = {(":DSW0", 0x05): (0x04, 0x05)}   # -> Game, Japanese
 
 
 def scenario(name, seconds, seed):
@@ -119,6 +120,8 @@ def scenario(name, seconds, seed):
     ev = []
     if name == "attract":
         return ev, 150, False, {}
+    if name == "japanese":
+        return ev, 150, False, MODE_JAPANESE
     if name in ("game1p", "game2p"):
         players = 1 if name == "game1p" else 2
         total = (seconds or 600) * FPS
@@ -167,6 +170,7 @@ def scenario(name, seconds, seed):
 
 SCENARIOS = {
     "attract": "attract mode, no inputs (150 s)",
+    "japanese": "attract mode in DSW mode 'Game, Japanese', which shows JAPAN_NOTICE (150 s)",
     "game1p": "coin, 1P start, random play, re-coin every 20 s (600 s)",
     "game2p": "coins, 2P start, random play for both (600 s)",
     "super1p": "the super mode code on the title, coin, 1P start, super mode, random play (120 s)",

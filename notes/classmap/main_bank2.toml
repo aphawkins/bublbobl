@@ -9,6 +9,20 @@ source = "trace"
 note = "executed in MAME"
 
 [[range]]
+start = 0x8024
+end = 0x806F
+kind = "code"
+source = "manual"
+note = "VIDEO_RAM_TEST: no caller, read by hand"
+
+[[range]]
+start = 0x8070
+end = 0x807B
+kind = "data"
+source = "manual"
+note = "VIDEO_RAM_AREAS"
+
+[[range]]
 start = 0x807C
 end = 0x808C
 kind = "text"

@@ -362,7 +362,7 @@ DIFFICULTY_UP = { addr = 0x22F0, note = "DIFFICULTY += C, to at most 1E" }
 DIFFICULTY_DOWN = { addr = 0x22FE, note = "DIFFICULTY -= C, to at least E5DD" }
 DIFFICULTY_TICK = { addr = 0x2310, note = "E5DE counts up (unless E34F); every second count DIFFICULTY_UP 1; at 1E it jumps up by 1E" }
 DIFFICULTY_BY_MINUTES = { addr = 0x2355, note = "ROUND_LOOP at each round's end: with the CLOCK_TICK minutes (E337) over 0A, 0F, 14 or 19, C = 0F, 14, 19 or 1E; then (2344) E5DD and DIFFICULTY are raised to C if lower" }
-JAPAN_NOTICE = { addr = 0x2375, note = "ATTRACT_TASK, only when DSW0 b0 is set: the screen cleared, then 0x0D texts from 23AF (NOTICE, THIS GAME IS FOR USE IN JAPAN ONLY ...) for 0x2D0 frames (12 seconds), then CLEAR_ROWS_A" }
+JAPAN_NOTICE = { addr = 0x2375, note = "Seen in MAME (trace.py japanese). ATTRACT_TASK, only when DSW0 b0 is set (MAME's Mode 'Game, Japanese'): the screen cleared, then 0x0D texts from 23AF (NOTICE, THIS GAME IS FOR USE IN JAPAN ONLY ...) for 0x2D0 frames (12 seconds), then CLEAR_ROWS_A" }
 ROM_SUM_STEP_E = { addr = 0x24B1, note = "one byte a call of a sum from 0020, in E617 (E614 starts it, E615 is the pointer)" }
 TAMPER_CONSTS_LOAD = { addr = 0x24ED, note = "copies bytes 9380-9386 of the page-2 data to E35D, E37E, E396, E618, E653, E6F9, E6FE" }
 INTRO_STORY = { addr = 0x2578, note = "after the start: the story text 'NOW,IT IS BEGINNING OF A FANTASTIC STORY ...' with the two players' objects" }
@@ -899,9 +899,10 @@ ROUND_RECORDS  = { addr = 0xA73A, size = 0x10CC, note = "100 x 0x2B bytes, one p
 [bank2.code]
 # a78-05-1.52 page 2 (file 0x8000-0xBFFF), mapped at 8000 when FB40 = 6.
 TEST_MODE = { addr = 0x8000, note = "jumped to from 0168 when DSW0 b2 is clear: with DSW0 b0 and b2 both clear goes to BB7E, else clears the palette and loops on the test screens (82CB, 83B3, 8360)" }
+VIDEO_RAM_TEST = { addr = 0x8024, note = "not called from any image, never seen in MAME: writes and reads back FF, AA, 55, 00 through each area of VIDEO_RAM_AREAS, and at the first mismatch prints that area's text at D020" }
 TEST_SCREEN_INIT = { addr = 0x809F, note = "TEST_MODE: palette cleared, 16 colour words from 8172 to F802 (every 0x20 bytes), OBJ_TILES filled with 16 x 16 blocks of tiles 14-17, 16 TEST_BLOCK_4X4 from the table at 8142 (address, attribute), objects at DD01 and DD05-DD3D; then waits on IN1_COPY b6 and sets LOCKOUT_REQ = FF" }
 TEST_BLOCK_4X4 = { addr = 0x812D, note = "TEST_MODE: 4 rows of 4 tile words, tile 18 with attribute E, at HL (0x40 a row)" }
-TEST_TEXTS = { addr = 0x8192, note = "TEST_MODE: PRINT_TEXTS, 0x16 texts from 819B" }
+TEST_TEXTS = { addr = 0x8192, note = "TEST_MODE: PRINT_TEXTS, 0x16 texts from 819B. A 23rd record follows at 8209 (ROM OK at C1B6), past the count, so it is never printed" }
 TEST_DELAY = { addr = 0x82C3, note = "a busy wait: A counts 256 twice" }
 TEST_INPUTS_SHOW = { addr = 0x82CB, note = "TEST_MODE: 14 input bits as ON or OFF (texts at 8304), one entry of 6 bytes each at 830C: the byte (IN0_COPY, IN1_COPY, IN2_COPY), the tile address, the bit, and 1 to invert" }
 TEST_SOUND_SELECT = { addr = 0x8360, note = "TEST_MODE, each frame: every 0x3C frames IN1_COPY b0 clear moves the sound number F449 up, b1 clear down; F449 shown with DECIMAL3_DRAW at C46E. When IN1_COPY b6 goes clear (once, F44A): sound 0, 60 TEST_DELAYs, then sound F449" }
@@ -1042,6 +1043,7 @@ ENEMY_HIT_NEAR8 = { addr = 0xBB0F, note = "carry, HL and B = the first ENEMY_HIT
 PALETTE0_SET = { addr = 0xBC2F, note = "video off, the first byte of PALETTE_RAM = C, video on" }
 
 [bank2.data]
+VIDEO_RAM_AREAS = { addr = 0x8070, note = "VIDEO_RAM_TEST: 2 entries of 6 bytes: start, length, text. C000 for 1D00, SCREEN RAM ERROR; DD00 for 300, OBJECT RAM ERROR" }
 POINTS_FLAGS  = { addr = 0x8463, size = 0x36, note = "3 x 0x12 bytes: a flag address (F454, F453, F452), then 16 kinds; the first set flag gives a random one" }
 SPECIAL_CLASS = { addr = 0x8667, note = "SPECIAL_RULES threshold column by DIFFICULTY: 0-4 column 2, 5-7 column 3, 8-11 column 1, from 12 column 0" }
 SPECIAL_EFFECTS = { addr = 0x8AFF, size = 0x6C, note = "word table: SPECIAL_TAKE jumps to entry SPECIAL_KIND" }

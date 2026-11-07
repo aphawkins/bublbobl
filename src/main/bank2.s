@@ -21,7 +21,63 @@ L_8016:                 ; 8016
         ld      (WATCHDOG),a
         jr      L_8016
 
-        .incbin "main_bank2.bin", 0x0024, 0x007B
+; not called from any image, never seen in MAME: writes and reads back FF, AA, 55, 00 through each area of VIDEO_RAM_AREAS, and at the first mismatch prints that area's text at D020
+VIDEO_RAM_TEST:         ; 8024
+        ld      b,0x02
+        ld      ix,VIDEO_RAM_AREAS
+L_802A:                 ; 802A
+        ld      l,(ix+0)
+        ld      h,(ix+1)
+        ld      e,(ix+2)
+        ld      d,(ix+3)
+L_8036:                 ; 8036
+        ld      a,0xFF
+        ld      (hl),a
+        cp      (hl)
+        jr      nz,L_8062
+        ld      a,0xAA
+        ld      (hl),a
+        cp      (hl)
+        jr      nz,L_8062
+        ld      a,0x55
+        ld      (hl),a
+        cp      (hl)
+        jr      nz,L_8062
+        xor     a
+        ld      (hl),a
+        cp      (hl)
+        jr      nz,L_8062
+        inc     hl
+        dec     de
+        ld      a,e
+        or      d
+        jr      nz,L_8036
+        inc     ix
+        inc     ix
+        inc     ix
+        inc     ix
+        inc     ix
+        inc     ix
+        djnz    L_802A
+        ret
+
+L_8062:                 ; 8062
+        ld      l,(ix+4)
+        ld      h,(ix+5)
+        ld      de,0xD020
+        ld      c,0x00
+        jp      PRINT_TEXT
+
+; VIDEO_RAM_TEST: 2 entries of 6 bytes: start, length, text. C000 for 1D00, SCREEN RAM ERROR; DD00 for 300, OBJECT RAM ERROR
+VIDEO_RAM_AREAS:        ; 8070
+        .incbin "main_bank2.bin", 0x0070, 0x0004
+        .word   B2_DATA_807C
+        .incbin "main_bank2.bin", 0x0076, 0x0004
+        .word   B2_DATA_808D
+B2_DATA_807C:           ; 807C
+        .incbin "main_bank2.bin", 0x007C, 0x0011
+B2_DATA_808D:           ; 808D
+        .incbin "main_bank2.bin", 0x008D, 0x0012
 ; TEST_MODE: palette cleared, 16 colour words from 8172 to F802 (every 0x20 bytes), OBJ_TILES filled with 16 x 16 blocks of tiles 14-17, 16 TEST_BLOCK_4X4 from the table at 8142 (address, attribute), objects at DD01 and DD05-DD3D; then waits on IN1_COPY b6 and sets LOCKOUT_REQ = FF
 TEST_SCREEN_INIT:       ; 809F
         ld      hl,PALETTE_RAM
@@ -119,7 +175,7 @@ B2_DATA_8142:           ; 8142
         .incbin "main_bank2.bin", 0x0142, 0x0030
 B2_DATA_8172:           ; 8172
         .incbin "main_bank2.bin", 0x0172, 0x0020
-; TEST_MODE: PRINT_TEXTS, 0x16 texts from 819B
+; TEST_MODE: PRINT_TEXTS, 0x16 texts from 819B. A 23rd record follows at 8209 (ROM OK at C1B6), past the count, so it is never printed
 TEST_TEXTS:             ; 8192
         ld      iy,B2_TEXT_819B
         ld      b,0x16
@@ -170,7 +226,9 @@ B2_TEXT_819B:           ; 819B
         .word   B2_DATA_82A9
         .incbin "main_bank2.bin", 0x0203, 0x0003
         .word   B2_DATA_82B4
-        .incbin "main_bank2.bin", 0x0208, 0x0006
+        .incbin "main_bank2.bin", 0x0208, 0x0003
+        .word   B2_DATA_82BB
+        .incbin "main_bank2.bin", 0x020D, 0x0001
 B2_DATA_820E:           ; 820E
         .incbin "main_bank2.bin", 0x020E, 0x000A
 B2_DATA_8218:           ; 8218
@@ -212,7 +270,9 @@ B2_DATA_82A1:           ; 82A1
 B2_DATA_82A9:           ; 82A9
         .incbin "main_bank2.bin", 0x02A9, 0x000B
 B2_DATA_82B4:           ; 82B4
-        .incbin "main_bank2.bin", 0x02B4, 0x000F
+        .incbin "main_bank2.bin", 0x02B4, 0x0007
+B2_DATA_82BB:           ; 82BB
+        .incbin "main_bank2.bin", 0x02BB, 0x0008
 ; a busy wait: A counts 256 twice
 TEST_DELAY:             ; 82C3
         xor     a
