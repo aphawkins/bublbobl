@@ -109,9 +109,10 @@ def cross_links(symbols: dict[str, tuple[dict[str, int], list[str]]]) -> dict[st
     return options
 
 
-def assemble(src_dir: str = "src", obj_dir: str = "build/obj",
-             sources: list[str] | None = None) -> dict[str, bytes]:
-    """Assemble and link sources (default all). Both folders are relative to the repo root.
+def assemble(src_dir: str = "src", obj_dir: str = "build/obj", sources: list[str] | None = None,
+             lst_dir: str | None = None) -> dict[str, bytes]:
+    """Assemble and link sources (default all), writing listings to lst_dir if given. The folders
+    are relative to the repo root.
 
     The main CPU's images use each other's labels. Nothing in them changes size with a label's
     value, so each is assembled once, leaving those names undefined, and given them at the link."""
@@ -125,8 +126,13 @@ def assemble(src_dir: str = "src", obj_dir: str = "build/obj",
     def prefix(src: str) -> str:
         return f"{tools}/{SOURCES[src][1]}/bin/{SOURCES[src][0]}-"
 
+    def listing(src: str) -> list[str]:
+        return [f"-aln={lst_dir}/{Path(src).stem}.lst"] if lst_dir else []
+
+    if lst_dir:
+        (ROOT / lst_dir).mkdir(parents=True, exist_ok=True)
     run_unix([[prefix(src) + "as", *SOURCES[src][2], "-I", "build/images", "-I", "build/include",
-               "-o", f"{stem(src)}.o", f"{src_dir}/{src}"] for src in names])
+               *listing(src), "-o", f"{stem(src)}.o", f"{src_dir}/{src}"] for src in names])
     main = [src for src in names if src in MAIN]
     links = cross_links({src: read_symbols(prefix(src), stem(src), SOURCES[src][3]) for src in main})
     commands = []
@@ -163,7 +169,7 @@ def main() -> int:
         (images / name).write_bytes(data)
     symbols.write_includes(BUILD / "include")
 
-    built = assemble()
+    built = assemble(lst_dir="build/lst")
     out_dir = BUILD / "roms" / "bublbobl"
     out_dir.mkdir(parents=True, exist_ok=True)
     ok = True

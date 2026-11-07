@@ -166,7 +166,7 @@ B1_DATA_9A0A:           ; 9A0A
         .incbin "main_bank1.bin", 0x1A0A, 0x0030
 B1_DATA_9A3A:           ; 9A3A
         .incbin "main_bank1.bin", 0x1A3A, 0x0030
-B1_DATA_9A6A:           ; 9A6A
+DEMO_INPUT_LISTS:       ; 9A6A
         .word   B1_DATA_9A86
         .word   B1_DATA_9B60
         .word   B1_DATA_9C00

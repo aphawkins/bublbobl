@@ -105,11 +105,11 @@ PAGES = [(0x24ED, 0x2571, 3), (0x258A, 0x25A6, 0), (0x2B50, 0x2B56, 1), (0x5644,
          (0x72C9, 0x77FF, 1), (0x7A00, 0x7FFF, 0)]
 # name, start, count (None: until the first target), stride, the pointer's offset in a record
 TABLES = {
-    "fixed": [("ANIM_LISTS", 0x10A2, 32, 2, 0), ("SPEED_PATTERNS", 0x11CE, None, 2, 0),
+    "fixed": [("MOVE_PATHS", 0x10A2, 32, 2, 0), ("SPEED_PATTERNS", 0x11CE, None, 2, 0),
               ("PRINT_TEXTS", 0x23AF, 13, 5, 2), ("PRINT_TEXTS", 0x320D, 3, 5, 2),
               ("PRINT_TEXTS", 0x3574, 7, 5, 2), ("PLAYER_ANIMS", 0x4584, 12, 8, 5)],
-    "bank0": [("ENEMY_SCRIPTS", 0x80C9, 7, 2, 0), ("ENEMY_SCRIPTS", 0x8160, 7, 2, 0)],
-    "bank1": [("GRID_EDGES", 0x95AA, 32, 2, 0), ("SECRET_TABLES", 0x9A6A, 14, 2, 0)],
+    "bank0": [("DEFEATED_FLIGHTS", 0x80C9, 7, 2, 0), ("DEFEATED_REBOUNDS", 0x8160, 7, 2, 0)],
+    "bank1": [("GRID_EDGES", 0x95AA, 32, 2, 0), ("DEMO_INPUT_LISTS", 0x9A6A, 14, 2, 0)],
     "bank2": [("PRINT_TEXTS", 0x819B, 0x17, 5, 2), ("VIDEO_RAM_AREAS", 0x8070, 2, 6, 4)],
 }
 # .word entries in the fixed ROM that point into a bank: value -> bank. Task 3 is ROUND_ENEMIES

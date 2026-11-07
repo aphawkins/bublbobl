@@ -122,7 +122,7 @@ There is **no tilemap**. `bublbobl_v.cpp` renders everything from object RAM:
 | 6 | MCU | `src\mcu\mcu.s`; `notes\mcu_shared_ram.md` | Byte-exact build | Done |
 | 7 | Sound | `src\sound\sound.s`; `tools\sounddec.py`, `soundtables.py`, `soundcmp.py`, `soundcheck.py`; `notes\sound.md`, `notes\sound_blocks.md`, `build\sound\` | `soundcheck.py` against MAME register writes, all commands from silence | Done. The synthesiser-side check belongs to stage 3 (`PLAN.md` §3.5 D) |
 | 8 | Reassembly | `tools\build.py`, `tools\reloc.py`; `notes\relocation.md` | CRC match; relocation test | Byte-exact. Relocation passes within what the runs reach (§6) |
-| 9 | Consolidation | | | Open (§7) |
+| 9 | Consolidation | `tools\extract_all.py` | Run from a copy of the repo with no `build\` | Pipeline done. The version comparison is optional (§7) |
 
 ---
 
@@ -254,16 +254,9 @@ differences of up to 60 frames from a race between the CPUs. Method, results and
      holds fixed PCs, which would need mapping through the link symbols). The runs still cover few
      rounds: the `DATA_622A` fault only showed in the demo, which 120 second runs never reach.
    - Hidden 8-bit pointers (`ld h,0xNN`) have not been checked beyond what the runs reach.
-   - Write up in `notes\`: the orphaned block at `475B`, and the `0B0C`/`044C` disguised check.
-   - `TAMPER_CONSTS_LOAD`'s note says page 2; the data is page 3.
-   - Table names in `tools\mainptrs.py`: `ANIM_LISTS` and `ENEMY_SCRIPTS` are provisional, and
-     `SECRET_TABLES` (`9A6A`) is wrongly named: it is the attract demo's 7 pairs of input pointers,
-     read by `DEMO_GAME`.
    - The blocks cut for room were never run or read in 86 runs and have no label pointing at them:
      that is evidence, not proof.
 2. **Consolidation (Phase 9).**
-   - A one-command pipeline (`python tools\extract_all.py --roms <dir>`) that regenerates all of
-     `build\` from the ROMs and validates CRCs first.
    - Optional: compare against Ver 0.0 (`a78-06.51`/`a78-05.52`) and the US sets to document
      version differences (the "SELECT GAME MODE" mode-select path, bug fixes).
 3. **Open questions.** `notes\open_questions.md`, and the "Still open" or "Still to do" sections of

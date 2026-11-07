@@ -4891,7 +4891,7 @@ L_A426:                 ; A426
         call    ROM_SUM_STEP_H
         ret
 
-; Seen in MAME (--special 13): the screen flashes, then a lightning bolt strikes down and to the left from a random X at the top, again and again until no enemies are left. clears F595 (9 bytes) and sets up the bolt at F597/F596 with 8 sprite slots
+; Seen in MAME (--special 13): the screen flashes, then a lightning bolt strikes down and to the left from a random X at the top, again and again until no enemies are left. clears F595 (9 bytes) and sets up the bolt at F597/F596 with 8 sprite slots. Tamper check at A46B, with its operands disguised (notes/main.md): on a mismatch the RET takes the saved IX as its return address
 LIGHTNING_START:        ; A433
         push    ix
         ld      hl,0xF595

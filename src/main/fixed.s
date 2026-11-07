@@ -2526,12 +2526,13 @@ DECIMAL_DIGITS:         ; 1040
         ret
 
         .incbin "main_fixed.bin", 0x1052, 0x004A
-; DE = the word at 10A2 + 2 x A: a movement path (bytes 88 end a repeat, 99 stop; see ENEMY_PATH_STEP)
+; DE = MOVE_PATHS[A]: a movement path (bytes 88 end a repeat, 99 stop; see ENEMY_PATH_STEP)
 PATH_PTR:               ; 109C
-        ld      hl,DATA_10A2
+        ld      hl,MOVE_PATHS
         jp      TABLE_WORD
 
-DATA_10A2:              ; 10A2
+; 32 pointers to movement paths, for PATH_PTR: one step byte a frame, ended by 88
+MOVE_PATHS:             ; 10A2
         .word   DATA_10E2
         .word   DATA_10E4
         .word   DATA_10EA
@@ -5171,7 +5172,7 @@ L_24DF:                 ; 24DF
         cp      (hl)
         ret     z
         push    af
-; copies bytes 9380-9386 of the page-2 data to E35D, E37E, E396, E618, E653, E6F9, E6FE
+; copies the 23 bytes 9380-9396 of the page-3 data, one at a time, to where the tamper sums expect them: E35D, E37E, E396 ... BANK2_SUM ...
 TAMPER_CONSTS_LOAD:     ; 24ED
         ld      a,(B3_DATA_9380)
         ld      (0xE35D),a
@@ -6146,7 +6147,7 @@ DEMO_GAME:              ; 2ECA
         ld      a,(0xE634)
         add     a,a
         add     a,a
-        ld      hl,B1_DATA_9A6A
+        ld      hl,DEMO_INPUT_LISTS
         call    ADD_HL_A
         ld      e,(hl)
         inc     hl
@@ -9083,6 +9084,8 @@ L_4759:                 ; 4759
         pop     bc
         ret
 
+; dead code, nothing points at it: two walk steps, right then left, that push the other player. See notes/main.md
+PLAYER_PUSH_ORPHAN:     ; 475B
         .incbin "main_fixed.bin", 0x475B, 0x00B4
 ; the word E5E5 + (IX+32) (pixels walked); with +45 b0 (TAKE_WALK_POINTS) 10 points
 PLAYER_WALK_SCORE:      ; 480F
@@ -15605,7 +15608,7 @@ L_7BE3:                 ; 7BE3
         call    GRID_CELL_A
         ret
 
-; tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along a path from the table at 80C9
+; tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along DEFEATED_FLIGHTS
 ENEMY_DEFEATED:         ; 7BFD
         ld      hl,IRQ_HANDLER
         ld      de,(IRQ_VECTOR_ENTRY)
@@ -15693,7 +15696,7 @@ L_7C8E:                 ; 7C8E
         inc     hl
         ld      (hl),0x13
         ld      a,(ix+9)
-        ld      hl,B0_DATA_80C9
+        ld      hl,DEFEATED_FLIGHTS
         call    TABLE_WORD
         bit     4,(ix+0)
         jr      z,L_7CA5
@@ -15777,7 +15780,7 @@ L_7D3D:                 ; 7D3D
         jr      nc,L_7D71
         ld      (ix+8),0x01
         ld      a,(ix+9)
-        ld      hl,B0_DATA_8160
+        ld      hl,DEFEATED_REBOUNDS
         call    TABLE_WORD
         ld      (ix+16),e
         ld      (ix+17),d
@@ -15836,7 +15839,7 @@ L_7DD1:                 ; 7DD1
         jr      c,L_7DF7
         ld      (ix+8),0x03
         ld      a,(ix+9)
-        ld      hl,B0_DATA_8160
+        ld      hl,DEFEATED_REBOUNDS
         call    TABLE_WORD
         ld      (ix+16),e
         ld      (ix+17),d

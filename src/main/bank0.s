@@ -25,7 +25,8 @@ B0_DATA_808D:           ; 808D
         .incbin "main_bank0.bin", 0x008D, 0x0029
 B0_DATA_80B6:           ; 80B6
         .incbin "main_bank0.bin", 0x00B6, 0x0013
-B0_DATA_80C9:           ; 80C9
+; 7 pointers by (IX+9): (MOVE_PATHS number, repeats) pairs ended by 99, for DEFEATED_PATH_STEP
+DEFEATED_FLIGHTS:       ; 80C9
         .word   B0_DATA_80D7
         .word   B0_DATA_80EA
         .word   B0_DATA_80FD
@@ -47,7 +48,8 @@ B0_DATA_813A:           ; 813A
         .incbin "main_bank0.bin", 0x013A, 0x0013
 B0_DATA_814D:           ; 814D
         .incbin "main_bank0.bin", 0x014D, 0x0013
-B0_DATA_8160:           ; 8160
+; as DEFEATED_FLIGHTS: the flight after ENEMY_DEFEATED reaches X 18 or E8
+DEFEATED_REBOUNDS:      ; 8160
         .word   B0_DATA_816E
         .word   B0_DATA_8171
         .word   B0_DATA_8178

@@ -267,7 +267,7 @@ HEX_CHAR = { addr = 0x0FFE, note = "A (0-F) to its ASCII digit or letter" }
 DECIMAL_SPLIT = { addr = 0x1008, note = "A divided by the table at 1025 (100, 10): B = quotient and C, A the remainders" }
 DECIMAL_ASCII = { addr = 0x1028, note = "A (0-99x) to ASCII digits in B, C, A: hundreds, tens, units, via DECIMAL_SPLIT" }
 DECIMAL_DIGITS = { addr = 0x1040, note = "as DECIMAL_ASCII, digits 0-9 and not ASCII" }
-PATH_PTR = { addr = 0x109C, note = "DE = the word at 10A2 + 2 x A: a movement path (bytes 88 end a repeat, 99 stop; see ENEMY_PATH_STEP)" }
+PATH_PTR = { addr = 0x109C, note = "DE = MOVE_PATHS[A]: a movement path (bytes 88 end a repeat, 99 stop; see ENEMY_PATH_STEP)" }
 SOUND_PUSH = { addr = 0x1350, note = "C = sound command: appended to SOUND_QUEUE (up to 15, else dropped); skipped in the attract loop when DSW0 b3 is clear" }
 SOUND_QUEUE_POP = { addr = 0x136C, note = "each IRQ: if SOUND_QUEUE_LEN, sends SOUND_QUEUE[0] to SOUND_CMD and shifts the 16-byte queue down" }
 ROM_SUM_STEP_D = { addr = 0x1387, note = "one byte a call of a sum from 0000, in E395 (E392 starts it, E393 is the pointer); the end compares with E396" }
@@ -364,7 +364,7 @@ DIFFICULTY_TICK = { addr = 0x2310, note = "E5DE counts up (unless E34F); every s
 DIFFICULTY_BY_MINUTES = { addr = 0x2355, note = "ROUND_LOOP at each round's end: with the CLOCK_TICK minutes (E337) over 0A, 0F, 14 or 19, C = 0F, 14, 19 or 1E; then (2344) E5DD and DIFFICULTY are raised to C if lower" }
 JAPAN_NOTICE = { addr = 0x2375, note = "Seen in MAME (trace.py japanese). ATTRACT_TASK, only when DSW0 b0 is set (MAME's Mode 'Game, Japanese'): the screen cleared, then 0x0D texts from 23AF (NOTICE, THIS GAME IS FOR USE IN JAPAN ONLY ...) for 0x2D0 frames (12 seconds), then CLEAR_ROWS_A" }
 ROM_SUM_STEP_E = { addr = 0x24B1, note = "one byte a call of a sum from 0020, in E617 (E614 starts it, E615 is the pointer)" }
-TAMPER_CONSTS_LOAD = { addr = 0x24ED, note = "copies bytes 9380-9386 of the page-2 data to E35D, E37E, E396, E618, E653, E6F9, E6FE" }
+TAMPER_CONSTS_LOAD = { addr = 0x24ED, note = "copies the 23 bytes 9380-9396 of the page-3 data, one at a time, to where the tamper sums expect them: E35D, E37E, E396 ... BANK2_SUM ..." }
 INTRO_STORY = { addr = 0x2578, note = "after the start: the story text 'NOW,IT IS BEGINNING OF A FANTASTIC STORY ...' with the two players' objects" }
 BUBBLE_SLOTS_SETUP = { addr = 0x264B, note = "BUBBLE_SLOTS: object number (IX+9), object pointers into E20D" }
 BUBBLE_SLOTS_STEP = { addr = 0x269E, note = "steps the 32 BUBBLE_SLOTS" }
@@ -578,7 +578,7 @@ ENEMY3_SHOT_SPRITE = { addr = 0x7B1E, note = "ANIM_STEP 6 frames (faster in HURR
 ENEMY3_SHOT_END = { addr = 0x7B61, note = "also while F44E: clears the shot, the owner's (IX+24) b3, hides it, ENEMY3_SHOTS_FREE + 1" }
 ENEMY3_SHOT_NEXT = { addr = 0x7B75, note = "next ENEMY3_SHOTS record (0x12 bytes) and owner (0x1B bytes), ED41 in all" }
 ENEMY_ATTACK_CHECK = { addr = 0x7B94, note = "NZ when this enemy may attack: (IX+14) b1, target alive, the MCU proximity bytes near enough (FC2B record: first under 8, second 40 or more) and open cells ahead" }
-ENEMY_DEFEATED = { addr = 0x7BFD, note = "tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along a path from the table at 80C9" }
+ENEMY_DEFEATED = { addr = 0x7BFD, note = "tamper compare, then the killed/trapped enemy: (b2 of IX+14) ENEMY_TOTAL - 1, E5EE + 1, flies off along DEFEATED_FLIGHTS" }
 DEFEATED_PATH_STEP = { addr = 0x7F79, note = "ENEMY_DEFEATED: one step of the path at (IX+16) (PATH_PTR, step (IX+18); mirrored 20 - n with (IX+8) b1): b0 moves Y (b3 down, STEP_TO_8_DOWN, else STEP_TO_8_UP), b4 X (b7 left). 99 ends: Z" }
 STEP_TO_8_UP = { addr = 0x7FE7, note = "(HL) + 1 up to three times, stopping at a multiple of 8; the third step only if (IX+0) b4" }
 STEP_TO_8_DOWN = { addr = 0x7FF8, note = "STEP_TO_8_UP downwards: (HL) - 1, stopping at a multiple of 8. The code runs past 7FFF: its AND's operand and the rest (RET Z, the (IX+0) b4 test, a third DEC) are the first bytes of the bank at 8000, so it works only with bank 0 in (bank 0 starts 07 C8 DD ..)" }
@@ -593,6 +593,7 @@ ROUND_TEXT = { addr = 0x09D2, size = 26, note = "length-prefixed ROUND, READY ! 
 TASK_ENTRIES = { addr = 0x0B22, size = 12, note = "6 words: the entry of each task for TASK_SPAWN: ATTRACT_TASK, TITLE_TASK, ROUND_TASK, OBJECTS_TASK, bank0:85A9 (a bank 0 task), BUBBLES_TASK" }
 IRQ_VECTOR_ENTRY = { addr = 0x0B2E, size = 2, note = "word 044D: the IM 2 table entry (I = 0B, FC00 = 2E); checked at 333F and bank0:950A" }
 TILT_TEXT = { addr = 0x0D0F, size = 5, note = "length-prefixed TILT" }
+MOVE_PATHS = { addr = 0x10A2, note = "32 pointers to movement paths, for PATH_PTR: one step byte a frame, ended by 88" }
 SPEED_PATTERNS = { addr = 0x11CE, note = "word table of step patterns, picked by SPEED2_SEL for bubbles and (IX+0C) for enemies" }
 CYCLE_1_14       = { addr = 0x1BAE, size = 12, note = "6 colours" }
 TITLE_CODES      = { addr = 0x1CBE, size = 0x18, note = "3 x 8 inputs (IN1 & 7F, active low): super mode S J B L R J S R, original game B J B J B J R S, power up L J L S L B L S" }
@@ -604,6 +605,7 @@ ENTRY_ALPHABET = { addr = 0x38D4, note = "name-entry alphabet" }
 PALETTES_7_8     = { addr = 0x3CC2, size = 0x40 }
 PLAYER_ANIMS     = { addr = 0x4584, size = 0x60, note = "12 x 8 bytes: frame count, delay for each of 4 speeds (IX+2C), frame list pointer, flags (b0 one-shot, b1 list holds every frame; else first tile + 4 x frame)" }
 PLAYER_FRAMES    = { addr = 0x45E4, size = 0x0D, note = "first tiles for PLAYER_ANIMS" }
+PLAYER_PUSH_ORPHAN = { addr = 0x475B, size = 0xB4, note = "dead code, nothing points at it: two walk steps, right then left, that push the other player. See notes/main.md" }
 ENEMY3_SHOT_MODES = { addr = 0x7B8C, note = "(IX+7) 0 and 2 ENEMY3_SHOT_SPRITE only, 1 ENEMY3_SHOT_R, 3 ENEMY3_SHOT_L" }
 
 [bank0.code]
@@ -867,6 +869,8 @@ HURRY_HAND_RUN = { addr = 0xBF48, note = "Seen in MAME (--special 30): each fram
 ENDING_HAND_RUN = { addr = 0xBF61, note = "HURRY_HAND_RUN's sweep without the ATTRACT and NO_SPECIAL checks, for two players (E5D8): SOUND_CMD = 3, and with F448 b0 clear the sprites come from BFF1, not BFF8. Which sprites those are has not been checked in MAME" }
 
 [bank0.data]
+DEFEATED_FLIGHTS = { addr = 0x80C9, note = "7 pointers by (IX+9): (MOVE_PATHS number, repeats) pairs ended by 99, for DEFEATED_PATH_STEP" }
+DEFEATED_REBOUNDS = { addr = 0x8160, note = "as DEFEATED_FLIGHTS: the flight after ENEMY_DEFEATED reaches X 18 or E8" }
 ENEMY4_MODES = { addr = 0x9CCF, note = "ENEMY4_FLY_RU, _RD, _LD, _LU for (IX+7) = 0-3 (ENEMY4_MOVE)" }
 ENEMY4_STEP_TABLE = { addr = 0x9CD7, note = "10 words: the turn script steps 0-9 for ENEMY4_TURN_STEP" }
 ENEMY4_TURNS = { addr = 0x9CEB, note = "8 turn scripts of 0x15 step bytes, each ended by 9 (ENEMY4_STEP_END): steps 0 up, 1 up right, 2 right, 3 down right, 4 down, 5 down left, 6 left, 7 up left, 8 none. A wall hit picks one through (IX+16)" }
@@ -894,6 +898,7 @@ ENDING_TEXT_SUPER = { addr = 0x91BF, size = 0x3EB, note = "0x8B rows, two player
 GRID_EDGES     = { addr = 0x95AA, size = 0x40, note = "32 pointers; LOAD_GRID_EDGES uses 0-15 for both edges: 0x50 bytes for the top, the first 0x30 for the bottom. 16-31 point at GRID_EDGE_LOW, never read there" }
 GRID_EDGE_ROWS = { addr = 0x95EA, size = 0x02D0, note = "9 x 0x50 bytes: ROUND_GRID rows 0-4; the first 0x30 also fill rows 29-31" }
 GRID_EDGE_LOW  = { addr = 0x98BA, size = 0x01B0, note = "9 x 0x30 bytes, each the same as the first 0x30 of the matching GRID_EDGE_ROWS pattern; unreferenced" }
+DEMO_INPUT_LISTS = { addr = 0x9A6A, size = 0x1C, note = "7 pairs of pointers by E634, P1 then P2: DEMO_GAME sets E353 and E355 from them for DEMO_INPUTS" }
 ROUND_RECORDS  = { addr = 0xA73A, size = 0x10CC, note = "100 x 0x2B bytes, one per round" }
 
 [bank2.code]
@@ -1015,7 +1020,7 @@ WATER_ENEMY_TAKE = { addr = 0xA25B, note = "the enemy's ENEMY_HITS record: state
 WATER_ROCK_HITS = { addr = 0xA26D, note = "each thrown group 2 rock (ENEMY2_SHOTS) within 10 of the stream head bursts (+0 b3) at the stream's Y, X. Tamper check: the word at 0004 must be START, else it stops after the first" }
 ROM_SUM_STEP_N = { addr = 0xA2C0, note = "as ROM_SUM_STEP_H: pointer F58C, sum F58E, flag F58B" }
 FLOOD_INIT = { addr = 0xA2FC, note = "Seen in MAME (special kind 12): water rises from the bottom of the playfield and the enemies drown and become diamonds; the round then ends. round start, called by OBJECTS_TASK: clears the state record at F590 (FLOOD). Part of the effect started by special kind 12" }
-LIGHTNING_START = { addr = 0xA433, note = "Seen in MAME (--special 13): the screen flashes, then a lightning bolt strikes down and to the left from a random X at the top, again and again until no enemies are left. clears F595 (9 bytes) and sets up the bolt at F597/F596 with 8 sprite slots" }
+LIGHTNING_START = { addr = 0xA433, note = "Seen in MAME (--special 13): the screen flashes, then a lightning bolt strikes down and to the left from a random X at the top, again and again until no enemies are left. clears F595 (9 bytes) and sets up the bolt at F597/F596 with 8 sprite slots. Tamper check at A46B, with its operands disguised (notes/main.md): on a mismatch the RET takes the saved IX as its return address" }
 LIGHTNING_RUN = { addr = 0xA480, note = "each frame while F595 is 01-7F: the screen flashes (F9DE/F9FE 00FF and 0000) for a while, then LIGHTNING_STRIKE; ends (F595 = FF) when no enemies are left or NO_SPECIAL" }
 LIGHTNING_STRIKE = { addr = 0xA4CE, note = "starts a bolt: 8 sprites from A58B at Y E8 and a random X, sound 23" }
 LIGHTNING_FLY = { addr = 0xA501, note = "moves the bolt down 6 and left 2 a frame, animating it, until it leaves the bottom" }

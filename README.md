@@ -40,6 +40,11 @@ mame bublbobl -rompath build/roms
 `build.py` checks your ROMs, assembles `src/`, and stops unless every program ROM
 matches the original byte for byte. The rebuilt set is written to `build/roms/bublbobl/`.
 
+`python tools/extract_all.py --roms <dir>` verifies the set, then remakes everything in `build/`
+that needs only the ROMs and this repo: the images, the rebuilt set, graphics, palettes, levels,
+text and sound data. Sprite sheets also need traces, so they are remade only if `build/traces/` has
+some.
+
 Other tools:
 
 - `tools/romset.py` — verify the set, write per-CPU images to `build/images/`

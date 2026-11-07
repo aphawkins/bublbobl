@@ -60,6 +60,12 @@ all of these out (`PLAN.md` §3.3).
 - `FILL_CHECKED` (`5C11`): bytes `0000–0002` must sum to `3E`. `ENDING_SCROLL_STEP` and
   `ENDING_START` each check byte `0002`.
 - `BANK2_CHECK`: see `notes/levels.md`.
+- `LIGHTNING_START` (`bank2:A46B`) makes the same check on `0B2E` in disguise. Its operands are
+  `0B0C` and `044C`, and neither address appears in the bytes: `ld ix,0x0B0C` then reads `(IX+34)`
+  and `(IX+35)`, and `ld hl,0x044C` then `inc hl` makes `044D`, so a search for `2E 0B` or `4D 04`
+  misses it. The routine pushed IX at its start, and a match pops it. On a mismatch the `RET` takes
+  that saved IX as its return address. The source writes the operands as `IRQ_VECTOR_ENTRY-34` and
+  `IRQ_HANDLER-1`, so they follow the labels when the code moves.
 - 30 `ROM_SUM_STEP_*` routines, called in play from the enemy and player code, add one byte a call
   over ranges that overlap. For example A: every 4th byte of `0004–0C07`; B: every 2nd of
   `2642–731B`; S: bank 0 `8150–94FD`; T: all of bank 0; U: bank 0 `A103–BFFF`; V: every 8th from
@@ -237,6 +243,23 @@ bank 0, 1 in bank 2. Each reads as code, not data: unused siblings of named rout
 enemy mode exits and turn steps in bank 0 (`8CC9`, `8D7D`, `9465`, `948C`, `94AD`, `94DB`, `97EC`,
 `A7B9`), and a player record copy in bank 2 (`AFD8`). `VIDEO_RAM_TEST` (`bank2:8024`) was found from
 its strings instead, and has no caller (`notes/text.md`).
+
+`PLAYER_PUSH_ORPHAN` (`475B-480E`, 0xB4 bytes) is different: it stays `.incbin`, as no entry reaches
+it. The routine before it ends in a `RET`, nothing points at it, and it was never run or read in 86
+runs, which is evidence and not proof. `tools\reloc.py` cuts it for room. It holds two walk steps,
+right (`475B`) then left (`47B5`), and reads as an earlier way for one player to push the other:
+
+1. Take the other player's position (`E6C4`, or `E692` when `(IX+9)` b0 is set).
+2. If that player is within 12 in Y and ahead by under 14 in X, write this player's pixels a frame
+   `(IX+32)` to the other's `+34`, then look for a wall 0x15 ahead, at Y and Y + 8, and return if
+   there is one.
+3. Move a pixel, set the facing `(IX+8)` to 1 or 0, and go to `PLAYER_WALK_SCORE` at `480F`, the
+   right step by `jr` and the left by running on into it.
+
+`PLAYER_PUSHED`, just before it, still moves a player by `+34`, in both directions. In the code that
+runs, the main CPU only clears `+34`, and the sub CPU sets it when a player pushes a bubble
+(`06AD`, `070F`). So nothing that runs makes one player push the other. That the block is older than
+the code that replaced it is an inference from this, not something the ROM records.
 
 ## Read from the code, not seen in MAME
 
