@@ -50,8 +50,10 @@ end
 -- (word at P1_REC +3; OBJ_POS_LOAD reads the record's Y, X from it) is put on it, so
 -- SPECIAL_TAKE runs. Kind 0E is the exception: it sets F513 = FF (as SPECIAL_PICK does at
 -- 864C), and player 1 is put on F513's own item when it shows (F514 b0).
+-- CFG.special_player = 2 puts player 2 on the item instead, through P2_REC.
 if CFG.special and CFG.special > 0 then
   local in_pick = function() local pc = curpc.value; return pc >= PC.pick and pc < PC.pick_end end
+  local rec = CFG.special_player == 2 and 0xE6C3 or 0xE691  -- P2_REC or P1_REC
   CHEAT_SPECIAL_KIND = space:install_write_tap(0xF45E, 0xF45E, "cheat_special_kind",
     function(offset, data, mask) if in_pick() then return CFG.special end end)
   CHEAT_SPECIAL_STATE = space:install_write_tap(0xF45F, 0xF45F, "cheat_special_state",
@@ -71,8 +73,8 @@ if CFG.special and CFG.special > 0 then
     end)
   CHEAT_SPECIAL_FRAME = emu.add_machine_frame_notifier(function()
     local shown = space:read_u8(0xF45F) & 1 ~= 0 or (CFG.special == 0x0E and space:read_u8(0xF514) & 1 ~= 0)
-    if shown and space:read_u8(0xE691) & 1 ~= 0 then
-      local obj = space:read_u8(0xE694) | (space:read_u8(0xE695) << 8)
+    if shown and space:read_u8(rec) & 1 ~= 0 then
+      local obj = space:read_u8(rec + 3) | (space:read_u8(rec + 4) << 8)
       space:write_u8(obj, space:read_u8(0xE2B1))
       space:write_u8(obj + 2, space:read_u8(0xE2B3))
     end

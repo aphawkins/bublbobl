@@ -87,9 +87,12 @@ Checks of 2026-11-07 of the paths the random game does not reach, main moved, al
 | `--special 1-0x35`, pad 8, seed 2, 240 seconds | 53 of 53; in 52 the item is taken at frame 4740, so about 200 seconds of play follow |
 | `--special 0x1E-0x28 --clear`, pad 8, 120 seconds | 11 of 11 |
 | Kinds 31, 32, 33 in that 240 second run | Each entered the secret room three times and left it each time |
+| `--scenario game2p --special 1-0x35 --special-player 2`, pad 8, seed 2, 240 seconds | 53 of 53, on all 960 samples each. Player 2 took 354 items and player 1 none; 3 went untaken (one of kind 05, two of 1A). Kinds 31, 32 and 33 each entered the secret room four times |
 
-A special run fails if its item never showed and went, and a door's if it never reached the room.
-The item is on screen for one frame, as the cheat puts player 1 on it. In the first special run the
+A special run fails if its item never showed and went, if the player asked for never took one, and
+a door's if it never reached the room. The taker comes from the game's own write: `F460` in
+`SPECIAL_TAKE`, or `IX+9` as `INVINCIBLE_ITEM_TAKE` writes `F518`, as kind 0E's item does not use `F460`.
+The item is on screen for one frame, as the cheat puts the player on it. In the first special run the
 item came at frame 6649 of 7200, so that run leaves only 9 seconds for its effect: hence the second.
 
 Negative controls, each a label put back as its number, so right at pad 0 and wrong once moved:
@@ -100,6 +103,8 @@ Negative controls, each a label put back as its number, so right at pad 0 and wr
 | The same | The one-player game, 120 seconds | Not caught: same on all 480 samples |
 | `SPECIAL_EFFECTS` | `--special 2` | Caught: 37 of 480 samples, and the rounds played differ |
 | `DATA_55BB`, the secret room's colours | `--special 0x31` | Caught: 31 of 480 samples |
+| `SPECIAL_EFFECTS` | `--scenario game2p --special 2 --special-player 2`, seed 2 | Caught: 308 of 480 samples, and the rounds played differ |
+| `TEXT_35D8`, read only for player 2's name entry (`fixed:34D7`) | `--scenario game2p --special 1-0x35 --special-player 2`, seed 2, 240 seconds | Caught on 9 of the 53 kinds (15, 18, 1C, 20, 22, 24, 25, 26, 28), 14 to 203 of 960 samples. So those 9 games reached the entry, and with the label in place they matched |
 
 ## The RAM test and MAME's renderer
 

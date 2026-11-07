@@ -2,7 +2,7 @@
 
 Usage: python tools/reloc.py IMAGE [IMAGE...] [--pad N] [--seconds N] [--seed N] [--no-run]
                              [--scenario NAME] [--round N|N-M] [--special K|K-L] [--clear]
-                             [--boss-hits N] [--boss-pop] [--jobs N]
+                             [--special-player N] [--boss-hits N] [--boss-pop] [--jobs N]
        python tools/reloc.py --list
 
 For each IMAGE this copies its source to build/reloc/src/, puts N bytes of padding after the
@@ -24,7 +24,8 @@ testgrid, testram, testsound and so on, with their DIP switches.
 build/reloc/rounds/. --special does the same for each special item kind, on each --round, in
 build/reloc/specials/; kinds 31-33 are the secret room's doors. A run that never reached its
 round, never took its item or never entered the room is a failure, and a pair that passes keeps
-only its logs.
+only its logs. --special-player 2, with --scenario game2p, puts player 2 on the item, and a run in
+which player 2 never took one is a failure too.
 
 A moved ROM has the wrong CRC, which is the point: MAME's warning is expected.
 """
@@ -453,7 +454,7 @@ def reached(samples: Path, start: int) -> list[int]:
 
 
 def items_taken(samples: Path) -> list[str]:
-    """Each time the special item showed and went, as "shown-gone" in frames."""
+    """Each time the special item showed and went, as "shown-gone-taker", the first two in frames."""
     return [line.replace(" ", "-") for line in (samples.parent / "items.txt").read_text().split("\n") if line]
 
 
@@ -496,12 +497,16 @@ def run_cases(cases: list[tuple[int, int]], reference: Path, rompath: Path, chea
             print(f"  played {[v + 1 for v in played[0]]}", flush=True)
             if kind:
                 taken = [items_taken(s) for s in (base, moved)]
-                print(f"  item shown-gone {taken[0]}", flush=True)
+                print(f"  item shown-gone-taker {taken[0]}", flush=True)
                 if taken[0] != taken[1]:
                     print(f"  DIFFERENT items: {taken[0]} and {taken[1]}")
                     ok = False
                 if not taken[0]:
                     print("  NOT REACHED: the item never showed and went")
+                    ok = False
+                player = f"P{cheats['special_player']}"
+                if not any(item.endswith(player) for item in taken[0]):
+                    print(f"  NOT REACHED: {player} never took the item")
                     ok = False
                 if kind in SECRET_DOORS and SECRET_ROUND not in played[0]:
                     print("  NOT REACHED: the secret room")
@@ -529,6 +534,8 @@ def main() -> int:
     ap.add_argument("--round", type=round_list, help="start each game on this round, or on each of N-M")
     ap.add_argument("--special", type=special_list, help="force this special item kind, or each of K-L")
     ap.add_argument("--clear", action="store_true", help="with --special: the round clears once the item is taken")
+    ap.add_argument("--special-player", type=int, choices=(1, 2), default=1,
+                    help="with --special: the player put on the item (2 needs --scenario game2p)")
     ap.add_argument("--boss-hits", type=int, default=0, help="with --round: hits the round 100 boss has taken")
     ap.add_argument("--boss-pop", action="store_true", help="with --round: the boss's bubble pops at once")
     ap.add_argument("--jobs", type=int, default=8, help="with --round: MAME runs at a time")
@@ -554,7 +561,8 @@ def main() -> int:
     play = chosen_play(args.scenario, args.seconds, args.seed)
     if args.round or args.special:
         cases = [(n, kind) for n in args.round or [1] for kind in args.special or [0]]
-        cheats = {"boss_hits": args.boss_hits, "boss_pop": args.boss_pop, "clear": args.clear}
+        cheats = {"boss_hits": args.boss_hits, "boss_pop": args.boss_pop, "clear": args.clear,
+                  "special_player": args.special_player}
         return 0 if run_cases(cases, reference, rompath, cheats, (base_pcs, moved_pcs), play, args.jobs) and ok else 1
     events, frames, dips = play
     base = run_mame("base", reference, events, frames, dips=dips)

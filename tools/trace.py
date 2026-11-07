@@ -13,7 +13,7 @@ Cheats (tools/cheats.lua), in the recording and in its replay alike: --round N s
 game on round N; --boss-hits N starts the round 100 boss with N of its 80 hits taken (80:
 it is beaten as soon as it drifts to the middle), and --boss-pop pops its bubble as soon as it
 is trapped; --special K makes every special item kind K
-and walks player 1 onto it, and --clear then sets the enemy count to 0; --poke ADDR=VAL holds
+and walks player 1 (or --special-player 2) onto it, and --clear then sets the enemy count to 0; --poke ADDR=VAL holds
 a byte at VAL. A recording keeps its cheats in
 <name>.cheats beside the .inp.
 
@@ -290,6 +290,7 @@ def main() -> int:
     ap.add_argument("--boss-pop", action="store_true", help="the round 100 boss's bubble pops as soon as it is trapped")
     ap.add_argument("--special", type=lambda v: int(v, 0), help="force every special item to this SPECIAL_KIND (1-0x35) and walk P1 onto it")
     ap.add_argument("--clear", action="store_true", help="with --special: once the item is taken, ENEMY_TOTAL is 0 (the round is cleared)")
+    ap.add_argument("--special-player", type=int, choices=(1, 2), default=1, help="with --special: walk this player onto the item instead of P1")
     ap.add_argument("--poke", action="append", default=[], metavar="ADDR=VAL",
                     help="hold main CPU address ADDR (hex) at VAL: every write becomes VAL; may repeat")
     ap.add_argument("--list", action="store_true", help="list the scenarios")
@@ -339,6 +340,7 @@ def main() -> int:
         cheats["round"] = int(inp.with_suffix(".round").read_text())
     cheats = {"round": cheats["round"] or 1, "boss_hits": cheats["boss_hits"] or 0,
               "boss_pop": args.boss_pop, "special": args.special or 0, "clear": args.clear,
+              "special_player": args.special_player,
               "poke": [[int(a, 16), int(v, 16)] for a, v in (x.split("=") for x in args.poke)]}
     if not 1 <= cheats["round"] <= 100:
         raise SystemExit("--round must be 1-100")
@@ -364,7 +366,7 @@ def main() -> int:
         if not args.inp:
             record = common + ["-window", "-record", inp.name]
             if cheats != {"round": 1, "boss_hits": 0, "boss_pop": False, "special": 0, "clear": False,
-                          "poke": []}:
+                          "special_player": 1, "poke": []}:
                 rec_script = out / "record.lua"
                 rec_script.write_text("CFG = " + lua_value(cheats) + "\n\n" + cheats_lua,
                                       encoding="utf-8")

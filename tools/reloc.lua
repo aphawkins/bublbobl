@@ -2,7 +2,8 @@
 -- table in front of it. Every CFG.every frames it appends the screen's pixels to
 -- CFG.out, and plays the input events in CFG.events, as tools/trace.lua does. Each change of
 -- ROUND_MAIN goes in CFG.rounds as "frame value", to show which rounds the run really played.
--- With CFG.special, each time the item shows and goes, "shown gone" frames go in CFG.items.
+-- With CFG.special, each time the item shows and goes, "shown gone taker" go in CFG.items: two
+-- frames, then P1, P2 or none.
 
 local machine = manager.machine
 
@@ -22,6 +23,18 @@ local space = machine.devices[":maincpu"].spaces["program"]
 local round = nil
 local items = CFG.special and CFG.special > 0 and assert(io.open(CFG.items, "w"))
 local shown = nil  -- the frame the special item appeared on
+local taker = nil  -- who took it: IX+9 as it was stored, 0 or 1
+
+-- Keep the taps referenced. SPECIAL_TAKE writes the player to F460. INVINCIBLE_ITEM_TAKE, for kind
+-- 0E's own item, does not, but it has the player's record in IX as it writes F518 = 1.
+if items then
+  RELOC_TAKER = space:install_write_tap(0xF460, 0xF460, "reloc_taker",
+    function(offset, data, mask) taker = data end)
+  RELOC_TAKER_0E = space:install_write_tap(0xF518, 0xF518, "reloc_taker_0e",
+    function(offset, data, mask)
+      if data == 1 then taker = space:read_u8(machine.devices[":maincpu"].state["IX"].value + 9) end
+    end)
+end
 local dump = nil  -- CFG.dump: object and game RAM (DD00-DFFF, E000-F7FF) on each frame of a range
 
 -- gfx_num BA-BF and FA-FF make MAME's renderer read past the end of its 0x1D00 bytes of video RAM,
@@ -59,8 +72,9 @@ RELOC_FRAME = emu.add_machine_frame_notifier(function()
     local up = space:read_u8(0xF45F) & 1 ~= 0 or (CFG.special == 0x0E and space:read_u8(0xF514) & 1 ~= 0)
     if up and not shown then
       shown = frame
+      taker = nil
     elseif shown and not up then
-      items:write(shown, " ", frame, "\n")
+      items:write(shown, " ", frame, " ", taker and "P" .. (taker + 1) or "none", "\n")
       shown = nil
     end
   end
