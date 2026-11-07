@@ -121,7 +121,7 @@ There is **no tilemap**. `bublbobl_v.cpp` renders everything from object RAM:
 | 5 | Game logic | `src\main\`, `src\sub\`; `notes\main.md`, `notes\sub.md` | Byte-exact build | Done: every call goes to a named routine. What stays `L_xxxx` is branch targets inside routines |
 | 6 | MCU | `src\mcu\mcu.s`; `notes\mcu_shared_ram.md` | Byte-exact build | Done |
 | 7 | Sound | `src\sound\sound.s`; `tools\sounddec.py`, `soundtables.py`, `soundcmp.py`, `soundcheck.py`; `notes\sound.md`, `notes\sound_blocks.md`, `build\sound\` | `soundcheck.py` against MAME register writes, all commands from silence | Done. The synthesiser-side check belongs to stage 3 (`PLAN.md` §3.5 D) |
-| 8 | Reassembly | `tools\build.py`, `tools\reloc.py`; `notes\relocation.md` | CRC match; relocation test | Byte-exact. Relocation passes within what the runs reach (§6) |
+| 8 | Reassembly | `tools\build.py`, `tools\reloc.py`; `notes\relocation.md` | CRC match; relocation test | Byte-exact. Relocation passes exactly within what the runs reach, on all 100 rounds (§6) |
 | 9 | Consolidation | `tools\extract_all.py` | Run from a copy of the repo with no `build\` | Pipeline done. The version comparison is optional (§7) |
 
 ---
@@ -241,24 +241,26 @@ A byte-exact set gives no checksum warning. Play attract mode, one round and tes
 
 Stage 3 needs level 1. Level 2 is required only for changes to the arcade code itself.
 
-Sub, MCU and sound pass exactly. The main CPU passes within what the runs reach, allowing
-differences of up to 60 frames from a race between the CPUs. Method, results and the rule:
-`notes\relocation.md`.
+All four images pass exactly, within what the runs reach. The main CPU's sets are built with its
+carry-dependent address sums made constant in time, which takes a race between the CPUs out of the
+test. Method, results and the rule: `notes\relocation.md`.
 
 ---
 
 ## 7. What is left
 
 1. **Relocation (Phase 8).**
-   - Consider replaying the trace scenarios on the moved set for more rounds (`tools\cheats.lua`
-     holds fixed PCs, which would need mapping through the link symbols). The runs still cover few
-     rounds: the `DATA_622A` fault only showed in the demo, which 120 second runs never reach.
-   - Hidden 8-bit pointers (`ld h,0xNN`) have not been checked beyond what the runs reach.
+   - The moved set has played all 100 rounds, but only with random play from one player. Test mode,
+     two players, the secret rooms and the special items (`--special`, whose PCs `reloc.py` does not
+     map) have not been run on it.
+   - Hidden 8-bit pointers: a search of the code found none, but a half read from a data table
+     would not show (`notes\relocation.md`).
    - The blocks cut for room were never run or read in 86 runs and have no label pointing at them:
      that is evidence, not proof.
 2. **Consolidation (Phase 9).**
    - Optional: compare against Ver 0.0 (`a78-06.51`/`a78-05.52`) and the US sets to document
-     version differences (the "SELECT GAME MODE" mode-select path, bug fixes).
+     version differences (the "SELECT GAME MODE" mode-select path, bug fixes). This needs those
+     sets: `roms\` holds only Ver 0.1.
 3. **Open questions.** `notes\open_questions.md`, and the "Still open" or "Still to do" sections of
    `notes\levels.md`, `notes\sound.md`, `notes\sprites.md` and `notes\sub.md`. None blocks stage 3
    unless the subsystem it touches is being translated.

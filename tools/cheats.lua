@@ -15,19 +15,21 @@
 local cpu = manager.machine.devices[":maincpu"]
 local curpc = cpu.state["CURPC"]
 local space = cpu.spaces["program"]
+-- Where the code the taps below wait for is. tools/reloc.py moves it, and gives its addresses here.
+local PC = CFG.pc or {round = 0x1DCD, boss = 0x0D50, pop = 0xA972}
 
 -- Keep the taps referenced: the garbage collector would remove them.
 if CFG.round and CFG.round > 1 then
   CHEAT_ROUND_TAP = space:install_write_tap(0xE64B, 0xE64B, "cheat_round",
     function(offset, data, mask)
-      if curpc.value == 0x1DCD then return CFG.round - 1 end
+      if curpc.value == PC.round then return CFG.round - 1 end
     end)
 end
 
 if CFG.boss_hits and CFG.boss_hits > 0 then
   CHEAT_BOSS_TAP = space:install_write_tap(0xF2A1, 0xF2A1, "cheat_boss_hits",
     function(offset, data, mask)
-      if curpc.value == 0x0D50 and space:read_u8(0xE64B) == 0x63 then return CFG.boss_hits end
+      if curpc.value == PC.boss and space:read_u8(0xE64B) == 0x63 then return CFG.boss_hits end
     end)
 end
 
@@ -36,7 +38,7 @@ end
 if CFG.boss_pop then
   CHEAT_BOSS_POP_TAP = space:install_write_tap(0xF296, 0xF296, "cheat_boss_pop",
     function(offset, data, mask)
-      if data == 0x02 and curpc.value == 0xA972 then return 0x06 end
+      if data == 0x02 and curpc.value == PC.pop then return 0x06 end
     end)
 end
 

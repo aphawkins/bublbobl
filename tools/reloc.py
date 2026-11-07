@@ -1,6 +1,7 @@
 """The relocation test (notes/relocation.md): does the source still work when its code moves?
 
 Usage: python tools/reloc.py IMAGE [IMAGE...] [--pad N] [--seconds N] [--seed N] [--no-run]
+                             [--round N|N-M] [--boss-hits N] [--boss-pop] [--jobs N]
        python tools/reloc.py --list
 
 For each IMAGE this copies its source to build/reloc/src/, puts N bytes of padding after the
@@ -10,14 +11,20 @@ first byte is chosen to balance them. Nothing in src/ changes.
 
 MAME then plays the same scripted inputs on the byte-exact set and on the moved set, and the
 two runs must show the same screen on every sample. Moving the sub CPU, MCU or sound code does
-not change how long it takes. Moving the main CPU's does, a little: see R_READ, and for what
-that leaves, notes/relocation.md, and SHORT. Every sample that differs is reported, and the
-pictures of the first are written to build/reloc/. A machine reset during a run is a failure.
+not change how long it takes. Moving the main CPU's would, so both of its sets are built with
+the sites in CARRY_SITE made constant (notes/relocation.md). Every sample that differs is
+reported, and the pictures of the first are written beside the moved run's samples. A machine
+reset during a run is a failure.
+
+--round runs that game on each round asked for, through tools/cheats.lua, side by side in
+build/reloc/rounds/. A run that never reached its round is a failure, and a pair that passes
+keeps only its logs.
 
 A moved ROM has the wrong CRC, which is the point: MAME's warning is expected.
 """
 
 import argparse
+import concurrent.futures
 import random
 import re
 import shutil
@@ -35,10 +42,6 @@ OUT = ROOT / "build" / "reloc"
 SCREEN = 256 * 224 * 4  # bytes in one sample of the screen's pixels
 EVERY = 15  # frames between samples
 MAME_LIMIT = 600  # seconds; two minutes of play takes about five
-# Moving the main CPU changes its timing a little, and a bubble's push bytes are shared with the
-# sub CPU with nothing to keep them apart, so a bubble can sit a pixel off for a while. That has
-# lasted up to about 40 frames; the two faults tried lasted 900 and more. Only main needs this.
-SHORT = 60  # frames
 
 # IMAGE -> the source, the label the padding goes before, the .incbin of free space it comes
 # out of (file, offset, length), the ROM file, and the sum over the whole ROM to keep at 0:
@@ -75,12 +78,6 @@ MAIN_ROMS = {"a78-06-1.51": ["main/fixed.s"],
 # the end of each of the 23 ROM sums: `ld a,(EXPECTED)`, `ld hl,SUM`, `cp (hl)`
 SUM_END = re.compile(r"(ld      a,\()(\w+)(\)\n\s+ld      hl,)(\w+)(\n\s+cp      \(hl\)\n\s+ret     z)")
 ROM_SUMS = 23
-# The game's random numbers are `ld a,r`, and R counts instructions. ADD_HL_A and its like run one
-# more when a table crosses a 256-byte page, so moving a table changes R, and so the game. `ld a,i`
-# is the same size and time and sets the same flags, but I never changes: with it in both sets,
-# whatever still differs is a fault. The reference set is the same build with a pad of 0.
-R_READ = "ld      a,r\n"
-R_READS = 15
 # SPAWN_BUBBLE calls GRID_CELL with the HL that RAND_TIMER_SET leaves, DATA_622A + SPEED2_SEL, and
 # not the bubble's position, so a bubble from the gaps starts with the current of a cell chosen by
 # the table's address (notes/levels.md). Moved, the same bubble drifts another way. For the test
@@ -90,6 +87,19 @@ CELL_CALL = "call    RAND_TIMER_SET\n        call    GRID_CELL\n"
 CELL_FIX = ["RELOC_CELL:", "        ld      de,DATA_622A", "        or      a", "        sbc     hl,de",
             "        ld      de,0x622A", "        add     hl,de", "        jp      GRID_CELL"]
 CELL_FIX_SIZE = 13
+# A + the low byte of a pair, carrying into the high byte, takes longer and runs one more
+# instruction when the sum crosses a page. So moving a table changes the main CPU's timing, which
+# decides the race in notes/relocation.md, and R, which is the game's random numbers (`ld a,r`).
+# In both sets these sites call a routine that takes the same time either way, so whatever still
+# differs is a fault. It leaves the pair and A as the original does, but not the flags. The
+# reference set is the same build with a pad of 0.
+CARRY_SITE = re.compile(r" +add +a,([lec])\n +ld +\1,a\n +(?:(ret +nc)|(jr|jp) +nc,\w+)\n +inc +[hdb]\n( +ret\n)?")
+CARRY_SITES = 7
+CARRY_PAIRS = {"l": "h", "e": "d", "c": "b"}
+CARRY_FIX = [line for low, high in CARRY_PAIRS.items() for line in (
+    f"RELOC_ADD_{low}:", f"        add     a,{low}", f"        ld      {low},a", "        ld      a,0",
+    f"        adc     a,{high}", f"        ld      {high},a", f"        ld      a,{low}", "        ret")]
+CARRY_FIX_SIZE = 24
 IDLE = 0x01ED  # where tools/soundlog.lua parks the main CPU; the first pad comes before it
 
 # every command the sound CPU has (tools/sounddec.py), and the frames between them. Not 2E: it
@@ -98,6 +108,8 @@ IDLE = 0x01ED  # where tools/soundlog.lua parks the main CPU; the first pad come
 # test screen's sound picker (F449) might.
 SOUND_COMMANDS = [c for c in (*range(0x01, 0x35), 0xF2, 0xF4, 0xF6, 0xF8) if c != 0x2E]
 SOUND_GAP = 900
+# what tools/cheats.lua waits for, in the byte-exact build
+CHEAT_PCS = {"round": ("fixed", 0x1DCD), "boss": ("fixed", 0x0D50), "pop": ("bank0", 0xA972)}
 
 
 def moved_source(cfg: dict, pad: int) -> str:
@@ -148,16 +160,23 @@ def cut_lines(src: list[str], image: str, addr: int, size: int) -> None:
         src[lines[i - 1].number - 1] = f"        .fill   {extra}, 1, 0xFF"
 
 
+def constant_time(site: re.Match) -> str:
+    """A CARRY_SITE as a call to its routine, in the same number of bytes."""
+    low, returns, jump, _ = site.groups()
+    call = f"        {'jp  ' if returns else 'call'}    RELOC_ADD_{low}\n"
+    return call + "        nop\n" * (3 if jump == "jp" else 2)
+
+
 def moved_main(image: str, pad: int) -> str:
     """One main image's source with its pads added, its cut taken and its ROM sums made to pass."""
     cfg = MAIN_LAYOUT[image]
     src = (ROOT / "src" / "main" / f"{image}.s").read_text(encoding="utf-8").split("\n")
     addr, pads = cfg["cut"]
     fix = image == "fixed"
-    cut_lines(src, image, addr, pad * pads + (CELL_FIX_SIZE if fix else 0))
+    cut_lines(src, image, addr, pad * pads + (CELL_FIX_SIZE + CARRY_FIX_SIZE if fix else 0))
     if fix:
         at = next(x for x in mainptrs.listing(image) if x.addr <= addr < x.addr + x.size).number - 1
-        src[at] = "\n".join([*CELL_FIX, src[at]])
+        src[at] = "\n".join([*CELL_FIX, *CARRY_FIX, src[at]])
     for n, where in enumerate(cfg["pads"]):
         block = [f"RELOC_PAD_{n}:", f"        .fill   {pad}, 1, 0xFF"]
         if where is None:
@@ -172,6 +191,9 @@ def moved_main(image: str, pad: int) -> str:
         if text.count(CELL_CALL) != 1:
             raise SystemExit("cannot find SPAWN_BUBBLE's GRID_CELL")
         text = text.replace(CELL_CALL, CELL_CALL.replace("GRID_CELL", "RELOC_CELL"))
+        text, sites = CARRY_SITE.subn(constant_time, text)
+        if sites != CARRY_SITES:
+            raise SystemExit(f"found {sites} carry sites, expected {CARRY_SITES}")
     return text
 
 
@@ -183,18 +205,14 @@ def neutral_sums(text: str) -> tuple[str, int]:
 
 def build_main(pad: int, roms: Path) -> None:
     total = 0
-    reads = 0
     for image in MAIN_LAYOUT:
         path = OUT / "src" / "main" / f"{image}.s"
         path.parent.mkdir(parents=True, exist_ok=True)
         text, n = neutral_sums(moved_main(image, pad))
         total += n
-        reads += text.count(R_READ)
-        path.write_text(text.replace(R_READ, "ld      a,i\n"), encoding="utf-8", newline="\n")
+        path.write_text(text, encoding="utf-8", newline="\n")
     if total != ROM_SUMS:
         raise SystemExit(f"found {total} ROM sums, expected {ROM_SUMS}")
-    if reads != R_READS:
-        raise SystemExit(f"found {reads} reads of R, expected {R_READS}")
     built = build.assemble("build/reloc/src", "build/reloc/obj", build.MAIN)
     for rom, sources in MAIN_ROMS.items():
         data = b"".join(built[src] for src in sources)
@@ -223,6 +241,22 @@ def balance(data: bytearray, at: int, kind: str) -> None:
         data[at:at + 2] = bytes(2)
         total = sum(data[i] << 8 | data[i + 1] for i in range(0, len(data), 2))
         data[at:at + 2] = (-total & 0xFFFF).to_bytes(2, "big")
+
+
+def cheat_pcs() -> dict[str, int]:
+    """Where the last main build put the code tools/cheats.lua waits for: the same distance past
+    the same label as in the byte-exact build."""
+    def symbols(obj_dir: str, image: str) -> dict[str, int]:
+        src = f"main/{image}.s"
+        tool = f"{build.binutils_dir()}/{build.SOURCES[src][1]}/bin/{build.SOURCES[src][0]}-"
+        return build.read_symbols(tool, f"{obj_dir}/main_{image}", build.SOURCES[src][3])[0]
+
+    pcs = {}
+    for name, (image, pc) in CHEAT_PCS.items():
+        old = symbols("build/obj", image)
+        label = max((n for n, a in old.items() if a <= pc), key=old.get)
+        pcs[name] = symbols("build/reloc/obj", image)[label] + pc - old[label]
+    return pcs
 
 
 def build_moved(names: list[str], pad: int, folder: str = "roms") -> Path:
@@ -272,16 +306,17 @@ def run_limited(argv: list[str], cwd: Path, folder: Path) -> None:
     (folder / "mame.log").write_text(result.stdout + result.stderr)
 
 
-def run_mame(label: str, rompath: Path, events: list[dict], frames: int) -> Path:
+def run_mame(label: str, rompath: Path, events: list[dict], frames: int, cheats: dict | None = None) -> Path:
     folder = OUT / label
     if folder.exists():
         shutil.rmtree(folder)
     folder.mkdir(parents=True)
     samples = folder / "screen.bin"
-    cfg = {"out": str(samples), "reset": str(folder / "reset"), "frames": frames, "every": EVERY,
-           "events": events}
+    cfg = {"out": str(samples), "rounds": str(folder / "rounds.txt"), "reset": str(folder / "reset"),
+           "frames": frames, "every": EVERY, "events": events, **(cheats or {})}
     script = folder / "run.lua"
-    script.write_text("CFG = " + trace.lua_value(cfg) + "\n\n"
+    lua = (ROOT / "tools" / "cheats.lua").read_text() + "\n" if cheats else ""
+    script.write_text("CFG = " + trace.lua_value(cfg) + "\n\n" + lua
                       + (ROOT / "tools" / "reloc.lua").read_text(), encoding="utf-8")
     exe = trace.mame_exe()
     argv = [str(exe), "bublbobl", "-rompath", str(rompath), "-skip_gameinfo",
@@ -335,44 +370,93 @@ def picture(data: bytes, path: Path) -> None:
 
 
 def stretches(differs: list[int]) -> list[tuple[int, int]]:
-    """Differing samples as (first, last), joining any closer together than SHORT frames: a
-    fault that flickers on and off is one long stretch."""
+    """The samples that differ as runs of neighbours: (first, last)."""
     runs: list[tuple[int, int]] = []
     for i in differs:
-        if runs and (i - runs[-1][1]) * EVERY <= SHORT:
+        if runs and i == runs[-1][1] + 1:
             runs[-1] = (runs[-1][0], i)
         else:
             runs.append((i, i))
     return runs
 
 
-def compare(base: Path, moved: Path, race: bool = False) -> bool:
-    """Every sample that differs, not just the first. With `race` (the main CPU moved: see SHORT)
-    a stretch up to SHORT frames long passes, unless it is still going when the run ends."""
+def compare(base: Path, moved: Path) -> bool:
+    """Every sample must match; each stretch that does not is printed."""
     a, b = base.read_bytes(), moved.read_bytes()
     count = min(len(a), len(b)) // SCREEN
     differs = [i for i in range(count)
                if a[i * SCREEN:(i + 1) * SCREEN] != b[i * SCREEN:(i + 1) * SCREEN]]
-    ok = not differs
     if differs:
         i = differs[0]
-        picture(a[i * SCREEN:(i + 1) * SCREEN], OUT / "differs_base.png")
-        picture(b[i * SCREEN:(i + 1) * SCREEN], OUT / "differs_moved.png")
-        print(f"{len(differs)} of {count} samples differ; the first is in {OUT}/differs_*.png")
-        ok = race
+        picture(a[i * SCREEN:(i + 1) * SCREEN], moved.parent / "differs_base.png")
+        picture(b[i * SCREEN:(i + 1) * SCREEN], moved.parent / "differs_moved.png")
+        print(f"{len(differs)} of {count} samples differ; the first is in {moved.parent}/differs_*.png")
         for first, last in stretches(differs):
-            short = (last - first) * EVERY <= SHORT and last != count - 1
-            ok = ok and short
-            print(f"  frames {(first + 1) * EVERY}-{(last + 1) * EVERY}: "
-                  + ("short, allowed" if short and race else "DIFFERENT"))
+            print(f"  frames {(first + 1) * EVERY}-{(last + 1) * EVERY}: DIFFERENT")
     if len(a) != len(b):
         print(f"DIFFERENT lengths: {len(a) // SCREEN} and {len(b) // SCREEN} samples")
         return False
     if not differs:
         print(f"Same screen on all {count} samples, every {EVERY} frames")
-    elif ok:
-        print(f"Passed: every difference cleared within {SHORT} frames")
-    return ok
+    return not differs
+
+
+def round_list(text: str) -> list[int]:
+    first, _, last = text.partition("-")
+    rounds = list(range(int(first), int(last or first) + 1))
+    if not rounds or not 1 <= rounds[0] <= rounds[-1] <= 100:
+        raise SystemExit("--round must be 1-100")
+    return rounds
+
+
+def reached(samples: Path, start: int) -> list[int]:
+    """The values ROUND_MAIN held from when the coin went in, in order."""
+    lines = (samples.parent / "rounds.txt").read_text().split("\n")
+    pairs = [tuple(map(int, line.split())) for line in lines if line]
+    held = [value for frame, value in pairs if frame < start][-1:]
+    return held + [value for frame, value in pairs if frame >= start]
+
+
+def run_rounds(rounds: list[int], reference: Path, rompath: Path, cheats: dict, pcs: tuple,
+               seconds: int, seed: int, jobs: int) -> bool:
+    """The same game on each round, on both sets, `jobs` runs at a time."""
+    events, frames = scenario(seconds, seed)
+    start = min(frames // 3, 2400)
+
+    def pair(n: int) -> tuple[Path, Path]:
+        chosen = {**cheats, "round": n}
+        return (run_mame(f"rounds/{n:03}/base", reference, events, frames, {**chosen, "pc": pcs[0]}),
+                run_mame(f"rounds/{n:03}/moved", rompath, events, frames, {**chosen, "pc": pcs[1]}))
+
+    failed = []
+    with concurrent.futures.ThreadPoolExecutor(jobs) as pool:
+        running = {pool.submit(pair, n): n for n in rounds}
+        for done in concurrent.futures.as_completed(running):
+            n = running[done]
+            print(f"Round {n}:", flush=True)
+            try:
+                base, moved = done.result()
+            except SystemExit as stop:
+                print(f"  FAILED: {stop}")
+                failed.append(n)
+                continue
+            played = [reached(s, start) for s in (base, moved)]
+            ok = compare(base, moved)
+            if played[0] != played[1]:
+                print(f"  DIFFERENT rounds: {played[0]} and {played[1]}")
+                ok = False
+            if n - 1 not in played[0]:
+                print(f"  NOT REACHED: ROUND_MAIN took {played[0]}")
+                ok = False
+            print(f"  played {[v + 1 for v in played[0]]}", flush=True)
+            if ok:
+                base.unlink()
+                moved.unlink()
+            else:
+                failed.append(n)
+    print(f"{len(rounds) - len(failed)} of {len(rounds)} rounds passed"
+          + (f"; failed: {sorted(failed)}" if failed else ""))
+    return not failed
 
 
 def main() -> int:
@@ -383,6 +467,10 @@ def main() -> int:
     ap.add_argument("--seconds", type=int, default=120)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--no-run", action="store_true", help="build the moved set only")
+    ap.add_argument("--round", type=round_list, help="start each game on this round, or on each of N-M")
+    ap.add_argument("--boss-hits", type=int, default=0, help="with --round: hits the round 100 boss has taken")
+    ap.add_argument("--boss-pop", action="store_true", help="with --round: the boss's bubble pops at once")
+    ap.add_argument("--jobs", type=int, default=8, help="with --round: MAME runs at a time")
     args = ap.parse_args()
     if args.list or not args.images:
         print("\n".join([*IMAGES, "main"]))
@@ -390,19 +478,26 @@ def main() -> int:
     for name in args.images:
         if name not in IMAGES and name != "main":
             raise SystemExit(f"no image {name}: try --list")
-    # main is compared with itself unmoved, as its moved set cannot use R: see R_READ
-    reference = build_moved(["main"], 0, "ref_roms") if "main" in args.images else ROOT / "build" / "roms"
+    # main is compared with itself unmoved, as its sets have the constant sites: see CARRY_SITE
+    moves_main = "main" in args.images
+    reference = build_moved(["main"], 0, "ref_roms") if moves_main else ROOT / "build" / "roms"
+    base_pcs = cheat_pcs() if moves_main else {name: pc for name, (_, pc) in CHEAT_PCS.items()}
     rompath = build_moved(args.images, args.pad)
+    moved_pcs = cheat_pcs() if moves_main else base_pcs
     if args.no_run:
         return 0
     ok = True
     if any(n in IMAGES and IMAGES[n].get("check") == "sound" for n in args.images):
-        ok = compare_sound(run_sound("sound_base", ROOT / "build" / "roms"),
+        ok = compare_sound(run_sound("sound_base", reference),
                            run_sound("sound_moved", rompath, IDLE + args.pad if "main" in args.images else IDLE))
+    if args.round:
+        cheats = {"boss_hits": args.boss_hits, "boss_pop": args.boss_pop}
+        return 0 if run_rounds(args.round, reference, rompath, cheats, (base_pcs, moved_pcs), args.seconds,
+                               args.seed, args.jobs) and ok else 1
     events, frames = scenario(args.seconds, args.seed)
     base = run_mame("base", reference, events, frames)
     moved = run_mame("moved", rompath, events, frames)
-    return 0 if compare(base, moved, "main" in args.images) and ok else 1
+    return 0 if compare(base, moved) and ok else 1
 
 
 if __name__ == "__main__":

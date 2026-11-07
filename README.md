@@ -66,7 +66,7 @@ Other tools:
   Formats and tables are in `notes/text.md`
 - `tools/reloc.py` — the relocation test: move an image's code, then compare it with the
   byte-exact set in MAME, screen by screen and (for sound) register write by register write.
-  The sub CPU, MCU and sound pass; the main CPU passes within what the runs reach
+  All four pass within what the runs reach; `--round 1-100` plays each round in turn
   (`notes/relocation.md`)
 - `tools/mainptrs.py` — label the main CPU's pointers across the fixed ROM and banks;
   `tools/redo_main.sh` regenerates all of `src/main/` with it
